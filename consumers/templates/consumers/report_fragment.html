@@ -1,0 +1,163 @@
+{% extends "consumers/base.html" %}
+{% load humanize %}
+
+{% block title %}System Reports{% endblock %}
+
+{% block extra_css %}
+<style>
+/* === Use base CSS for alignment and spacing === */
+.report-section {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+.report-section h5 {
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+.modal-table th, .modal-table td {
+    padding: 0.75rem;
+    border: 1px solid #dee2e6;
+}
+.modal-table th {
+    background-color: #f8f9fa;
+}
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid">
+
+    <div class="page-header">
+        <h1>System Reports</h1>
+        <p>Generate reports for Balilihan Waterworks operations and billing.</p>
+    </div>
+
+    <!-- Revenue Report -->
+    <div class="report-section">
+        <h5>Monthly Revenue Report</h5>
+        <form class="form-row">
+            <input type="month" name="month_year" id="revenue_month_year" class="form-control mb-2"
+                value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="revenue">
+                Generate Revenue Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Delinquency Report -->
+    <div class="report-section">
+        <h5>Delinquent Accounts Report</h5>
+        <form class="form-row">
+            <input type="month" name="month_year" id="delinquency_month_year" class="form-control mb-2"
+                value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="delinquency">
+                Generate Delinquency Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Summary Report -->
+    <div class="report-section">
+        <h5>Payment Summary Report</h5>
+        <form class="form-row">
+            <input type="month" name="month_year" id="summary_month_year" class="form-control mb-2"
+                value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="summary">
+                Generate Summary Report
+            </button>
+        </form>
+    </div>
+
+</div>
+
+<!-- Modal (holds all reports) -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="reportModalLabel">Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reportContent" class="table-responsive">
+                    <p class="text-center">Generating report...</p>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-success" id="downloadExcelBtn">
+                    Download as Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generateButtons = document.querySelectorAll('.generate-report-btn');
+    const reportModal = new bootstrap.Modal(document.getElementById('reportModal'));
+    const reportContent = document.getElementById('reportContent');
+    const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+
+    generateButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const reportType = this.dataset.reportType;
+            const monthYear = this.closest('form').querySelector('input[name="month_year"]').value;
+
+            if (!monthYear) return alert('Please select a month & year.');
+
+            reportContent.innerHTML = '<p class="text-center">Generating report...</p>';
+            reportModal.show();
+
+            fetch(`{% url 'consumers:reports' %}?report_type=${reportType}&month_year=${monthYear}&ajax=true`)
+                .then(res => res.text())
+                .then(html => {
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const reportFragment = doc.querySelector('#generated-report-container');
+
+                    if (reportFragment) {
+                        reportContent.innerHTML = reportFragment.innerHTML;
+                    } else {
+                        reportContent.innerHTML = '<p class="text-danger text-center">No report data found.</p>';
+                    }
+                })
+                .catch(err => {
+                    console.error(err);
+                    reportContent.innerHTML = '<p class="text-danger text-center">Error generating report.</p>';
+                });
+        });
+    });
+
+    downloadExcelBtn.addEventListener('click', function() {
+        const table = reportContent.querySelector('table');
+        if (!table) return alert('No data to export.');
+
+        let csv = '';
+        table.querySelectorAll('tr').forEach(tr => {
+            let row = [];
+            tr.querySelectorAll('th, td').forEach(td => {
+                let val = td.textContent.trim().replace(/"/g, '""');
+                if (val.includes(',') || val.includes('"')) val = `"${val}"`;
+                row.push(val);
+            });
+            csv += row.join(',') + '\n';
+        });
+
+        const link = document.createElement('a');
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        link.download = `${document.getElementById('reportModalLabel').textContent.replace(/\s+/g,'_')}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+});
+</script>
+{% endblock %}

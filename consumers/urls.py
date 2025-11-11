@@ -1,0 +1,60 @@
+# consumers/urls.py
+from django.urls import path
+from . import views
+
+app_name = 'consumers'  # Enables {% url 'consumers:view_name' %}
+
+urlpatterns = [
+    # Auth
+    path('login/', views.staff_login, name='staff_login'),
+    path('logout/', views.staff_logout, name='staff_logout'),
+
+    # Dashboard
+    path('home/', views.home, name='home'),
+
+    # Consumer Management
+    path('consumer-management/', views.consumer_management, name='consumer_management'),
+    path('consumer/add/', views.add_consumer, name='add_consumer'),
+    path('consumers/', views.consumer_list, name='consumer_list'),
+    path('consumer/<int:consumer_id>/', views.consumer_detail, name='consumer_detail'),
+    path('consumer/<int:consumer_id>/edit/', views.edit_consumer, name='edit_consumer'),
+    path('consumer/<int:consumer_id>/bills/', views.consumer_bill, name='consumer_bill'),
+
+    # Meter Readings
+    path('meter-readings/', views.meter_reading_overview, name='meter_readings'),
+    path('meter-readings/barangay/<int:barangay_id>/', views.barangay_meter_readings, name='barangay_meter_readings'),
+    path('meter-readings/barangay/<int:barangay_id>/confirm-all/', views.confirm_all_readings, name='confirm_all_readings'),
+    path('meter-readings/barangay/<int:barangay_id>/export/', views.export_barangay_readings, name='export_barangay_readings'),
+    path('meter-readings/<int:reading_id>/confirm/', views.confirm_reading, name='confirm_reading'),
+    path('meter-readings/barangay/<int:barangay_id>/confirm-selected/', views.confirm_selected_readings, name='confirm_selected_readings'),
+
+    # Smart Meter
+    path('smart-meter-webhook/', views.smart_meter_webhook, name='smart_meter_webhook'),
+
+    # Consumer Status Filters
+    path('connected-consumers/', views.connected_consumers, name='connected_consumers'),
+    path('disconnected/', views.disconnected_consumers_list, name='disconnected_consumers'),  # ← View must be named `disconnected_consumers`
+    path('disconnect/<int:consumer_id>/', views.disconnect_consumer, name='disconnect_consumer'),
+     path('reconnect/<int:consumer_id>/', views.reconnect_consumer, name='reconnect_consumer'),
+    path('delinquent-consumers/', views.delinquent_consumers, name='delinquent_consumers'),
+    path('delinquent-consumers/export/', views.export_delinquent_consumers, name='export_delinquent_consumers'),
+
+    # AJAX
+    path('ajax/load-puroks/', views.load_puroks, name='ajax_load_puroks'),
+
+# Reports 
+path('reports/', views.reports, name='reports'),
+    
+    path('system-management/', views.system_management, name='system_management'),
+
+    # Payments
+    path('payment/', views.inquire, name='inquire'),
+    path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
+
+    # API Endpoints (Android App)
+    path('api/login/', views.api_login, name='api_login'),
+    path('api/consumers/', views.api_consumers, name='api_consumers'),
+    path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
+    path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
+    path('user-login-history/', views.user_login_history, name='user_login_history'),
+]

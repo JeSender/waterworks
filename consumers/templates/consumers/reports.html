@@ -1,0 +1,163 @@
+{% extends "consumers/base.html" %}
+{% load humanize %}
+
+{% block title %}System Reports{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid">
+    <div class="page-header">
+        <h1><i class="bi bi-file-earmark-text-fill me-2"></i> System Reports</h1>
+        <p>Generate reports for Balilihan Waterworks operations and billing.</p>
+    </div>
+
+    <!-- Revenue Report -->
+    <div class="report-section">
+        <h5><i class="bi bi-cash-stack me-2"></i> Monthly Revenue Report</h5>
+        <form class="form-row">
+            <label class="form-label">Select Month & Year</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                <input type="month" name="month_year" class="form-control"
+                    value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            </div>
+            <input type="hidden" value="revenue" name="report_type">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="revenue">
+                <i class="bi bi-search me-1"></i> Generate Revenue Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Delinquency Report -->
+    <div class="report-section">
+        <h5><i class="bi bi-exclamation-triangle-fill me-2"></i> Delinquent Accounts Report</h5>
+        <form class="form-row">
+            <label class="form-label">Select Month & Year</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                <input type="month" name="month_year" class="form-control"
+                    value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            </div>
+            <input type="hidden" value="delinquency" name="report_type">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="delinquency">
+                <i class="bi bi-search me-1"></i> Generate Delinquency Report
+            </button>
+        </form>
+    </div>
+
+    <!-- Summary Report -->
+    <div class="report-section">
+        <h5><i class="bi bi-bar-chart-line me-2"></i> Payment Summary Report</h5>
+        <form class="form-row">
+            <label class="form-label">Select Month & Year</label>
+            <div class="input-group">
+                <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                <input type="month" name="month_year" class="form-control"
+                    value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}">
+            </div>
+            <input type="hidden" value="summary" name="report_type">
+            <button type="button" class="btn btn-primary generate-report-btn" data-report-type="summary">
+                <i class="bi bi-search me-1"></i> Generate Summary Report
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="reportModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Report</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="reportContent" class="text-center">Generating report...</div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-outline-primary" onclick="window.print()">
+                    <i class="bi bi-printer me-1"></i> Print
+                </button>
+                <button type="button" class="btn btn-outline-success" id="downloadExcelBtn">
+                    <i class="bi bi-file-earmark-excel me-1"></i> Download Excel
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const generateButtons = document.querySelectorAll('.generate-report-btn');
+    const reportModalEl = document.getElementById('reportModal');
+    const reportModal = new bootstrap.Modal(reportModalEl);
+    const reportContent = document.getElementById('reportContent');
+    const downloadExcelBtn = document.getElementById('downloadExcelBtn');
+
+    function showLoading() {
+        reportContent.innerHTML = '<p class="text-center">Generating report...</p>';
+    }
+
+    function displayReport(title, tableHtml) {
+        reportModalEl.querySelector('.modal-title').textContent = title;
+        reportContent.innerHTML = tableHtml;
+        downloadExcelBtn.disabled = !tableHtml.includes('<tr>');
+    }
+
+    function generateReport(reportType, monthYear) {
+        showLoading();
+        reportModal.show();
+
+        fetch("{% url 'consumers:reports' %}?report_type=" + reportType + "&month_year=" + monthYear + "&ajax=true")
+        .then(resp => resp.text())
+        .then(html => {
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const container = doc.querySelector('#generated-report-container');
+            if(container) {
+                const cardHeader = container.querySelector('.card-header h6');
+                const table = container.querySelector('table');
+                displayReport(cardHeader.textContent, table.outerHTML);
+            } else {
+                reportContent.innerHTML = '<p class="text-danger text-center">No report data found.</p>';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            reportContent.innerHTML = '<p class="text-danger text-center">Error generating report.</p>';
+        });
+    }
+
+    generateButtons.forEach(btn => {
+        btn.addEventListener('click', function() {
+            const form = this.closest('form');
+            const monthYear = form.querySelector('input[name="month_year"]').value;
+            const reportType = this.dataset.reportType;
+            if(!monthYear) { alert('Select month & year'); return; }
+            generateReport(reportType, monthYear);
+        });
+    });
+
+    downloadExcelBtn.addEventListener('click', function() {
+        const table = reportContent.querySelector('table');
+        if(!table) { alert('No data to export'); return; }
+
+        let csv = '';
+        table.querySelectorAll('tr').forEach(row => {
+            const cells = row.querySelectorAll('th, td');
+            const rowData = Array.from(cells).map(c => `"${c.textContent.replace(/"/g,'""')}"`);
+            csv += rowData.join(',') + '\n';
+        });
+
+        const link = document.createElement('a');
+        link.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+        link.download = reportModalEl.querySelector('.modal-title').textContent.replace(/\s+/g,'_') + '.csv';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    });
+});
+</script>
+{% endblock %}

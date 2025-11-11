@@ -1,0 +1,297 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Waterworks{% endblock %}</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css  " rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css  " rel="stylesheet">
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="{% static 'consumers/style.css' %}">
+
+    <style>
+        /* Dark Mode Styles */
+        .dark-mode {
+            background-color: #1a1a1a !important;
+            color: #ffffff;
+        }
+        
+        .dark-mode .sidebar {
+            background-color: #2d2d2d !important;
+            color: #ffffff;
+        }
+        
+        .dark-mode .sidebar a {
+            color: #e0e0e0 !important;
+        }
+        
+        .dark-mode .sidebar a:hover {
+            background-color: #404040 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .main-content {
+            background-color: #1a1a1a !important;
+            color: #ffffff;
+        }
+        
+        .dark-mode .card {
+            background-color: #2d2d2d !important;
+            color: #ffffff;
+            border: 1px solid #404040 !important;
+        }
+        
+        .dark-mode .table {
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .table th {
+            background-color: #3a3a3a !important;
+            color: #ffffff !important;
+            border-color: #404040 !important;
+        }
+        
+        .dark-mode .table td {
+            border-color: #404040 !important;
+        }
+        
+        .dark-mode .table-hover tbody tr:hover {
+            background-color: #3a3a3a !important;
+        }
+        
+        .dark-mode .btn-outline-info {
+            color: #0ea5e9 !important;
+            border-color: #0ea5e9 !important;
+        }
+        
+        .dark-mode .btn-outline-info:hover {
+            background-color: #0ea5e9 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .text-dark {
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .text-muted {
+            color: #a0a0a0 !important;
+        }
+        
+        .dark-mode .border-top {
+            border-color: #404040 !important;
+        }
+        
+        .dark-mode .border-secondary {
+            border-color: #404040 !important;
+        }
+        
+        .dark-mode .input-group-text {
+            background-color: #3a3a3a !important;
+            border-color: #404040 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .form-control {
+            background-color: #3a3a3a !important;
+            border-color: #404040 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .form-control:focus {
+            background-color: #3a3a3a !important;
+            border-color: #818cf8 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .btn-primary {
+            background-color: #4f46e5 !important;
+            border-color: #4f46e5 !important;
+        }
+        
+        .dark-mode .btn-primary:hover {
+            background-color: #4338ca !important;
+            border-color: #4338ca !important;
+        }
+        
+        .dark-mode .btn-outline-primary {
+            color: #4f46e5 !important;
+            border-color: #4f46e5 !important;
+        }
+        
+        .dark-mode .btn-outline-primary:hover {
+            background-color: #4f46e5 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .btn-outline-success {
+            color: #10b981 !important;
+            border-color: #10b981 !important;
+        }
+        
+        .dark-mode .btn-outline-success:hover {
+            background-color: #10b981 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .btn-outline-info {
+            color: #0ea5e9 !important;
+            border-color: #0ea5e9 !important;
+        }
+        
+        .dark-mode .btn-outline-info:hover {
+            background-color: #0ea5e9 !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .report-section {
+            background-color: #2d2d2d !important;
+            border: 1px solid #404040 !important;
+            color: #ffffff;
+        }
+        
+        .dark-mode .modal-content {
+            background-color: #2d2d2d !important;
+            color: #ffffff;
+            border: 1px solid #404040 !important;
+        }
+        
+        .dark-mode .modal-header,
+        .dark-mode .modal-footer {
+            border-color: #404040 !important;
+        }
+        
+        .dark-mode .close {
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .close:hover {
+            color: #e0e0e0 !important;
+        }
+        
+        .dark-mode .report-table th {
+            background-color: #3a3a3a !important;
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .report-table td {
+            color: #ffffff !important;
+        }
+        
+        .dark-mode .dashboard-header {
+            background: linear-gradient(120deg, #4f46e5, #7c3aed) !important;
+        }
+    </style>
+</head>
+<body class="bg-white" id="main-body">
+
+    <!-- Sidebar Only (No Header) -->
+    <div class="sidebar bg-white text-dark position-fixed top-0 start-0 bottom-0 d-flex flex-column p-3" style="width: 250px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.1);" id="sidebar">
+        <div class="logo text-center mb-4">
+            <img src="{% static 'consumers/images/water_icon.png' %}" alt="Waterworks Logo" class="rounded-circle" style="width: 70px; height: 70px; border: 2px solid #00e6e6;">
+            <h2 class="mt-2 fs-5 fw-bold text-info">Balilihan Waterworks</h2>
+        </div>
+        <nav class="flex-grow-1">
+            <a href="{% url 'consumers:home' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-house-door-fill me-2"></i> Home
+            </a>
+            <a href="{% url 'consumers:consumer_management' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-people-fill me-2"></i> Consumer Management
+            </a>
+            <a href="{% url 'consumers:inquire' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-cash-coin me-2"></i> Inquire
+            </a>
+            <a href="{% url 'consumers:meter_readings' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-speedometer2 me-2"></i> Meter Readings
+            </a>
+            <a href="{% url 'consumers:reports' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-file-earmark-text-fill me-2"></i> Reports
+            </a>
+            <a href="{% url 'consumers:system_management' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-gear-fill me-2"></i> System Management
+            </a>
+
+            <!-- NEW: Link to Django Admin User List -->
+<a href="{% url 'admin:auth_user_changelist' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+    <i class="bi bi-people me-2"></i> <!-- Using Bootstrap Icons for consistency -->
+    Manage Users (Admin)
+</a>
+
+<!-- NEW: Link to Custom User Login History Page -->
+<a href="{% url 'consumers:user_login_history' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+    <i class="bi bi-clock-history me-2"></i> <!-- Using a history icon -->
+    Login History
+</a>
+        </nav>
+
+        <!-- Logout and Dark Mode in Sidebar -->
+        <div class="mt-auto pt-3 border-top border-secondary">
+            <div class="d-flex align-items-center justify-content-between px-2">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-person-circle me-2"></i>
+                    <span class="text-dark">{{ request.user.username }}</span>
+                </div>
+                <div>
+                    <a href="{% url 'consumers:staff_logout' %}" class="text-danger text-decoration-none me-3">Logout <i class="bi bi-box-arrow-right"></i></a>
+                    <button class="btn btn-sm btn-outline-info" onclick="toggleDarkMode()" id="dark-mode-toggle">
+                        <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content" style="margin-left: 250px; padding: 20px; min-height: 100vh; overflow-y: hidden;" id="main-content">
+        {% block main_content %}
+        <div class="card p-4 mt-3">
+            <h3 class="mb-3">Welcome, {{ request.user.username }}</h3>
+            <p class="text-muted">Select a menu from the sidebar to start.</p>
+        </div>
+        {% endblock %}
+    </div>
+
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js  "></script>
+
+    <!-- Dark Mode Toggle Script -->
+    <script>
+        // Dark mode toggle functionality
+        function toggleDarkMode() {
+            const body = document.getElementById('main-body');
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('main-content');
+            const darkModeIcon = document.getElementById('dark-mode-icon');
+            const darkModeToggle = document.getElementById('dark-mode-toggle');
+            
+            body.classList.toggle('dark-mode');
+            sidebar.classList.toggle('dark-mode');
+            mainContent.classList.toggle('dark-mode');
+            
+            if (body.classList.contains('dark-mode')) {
+                darkModeIcon.className = 'bi bi-sun-fill';
+                darkModeToggle.className = 'btn btn-sm btn-outline-warning';
+                
+                // Save preference to localStorage
+                localStorage.setItem('darkMode', 'enabled');
+            } else {
+                darkModeIcon.className = 'bi bi-moon-fill';
+                darkModeToggle.className = 'btn btn-sm btn-outline-info';
+                
+                // Remove preference from localStorage
+                localStorage.removeItem('darkMode');
+            }
+        }
+        
+        // Check for saved dark mode preference
+        document.addEventListener('DOMContentLoaded', function() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                toggleDarkMode();
+            }
+        });
+    </script>
+</body>
+</html>

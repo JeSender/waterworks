@@ -1,0 +1,56 @@
+<!-- consumers/templates/consumers/system_management.html -->
+{% extends "consumers/base.html" %} <!-- Or your base template name -->
+{% load static %} <!-- Load static files if needed -->
+
+{% block title %}System Management{% endblock %}
+
+{% block main_content %}
+<h2 class="mb-4">System Management</h2>
+
+<!-- Messages -->
+{% if messages %}
+  {% for message in messages %}
+    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+  {% endfor %}
+{% endif %}
+
+<!-- Rate Management Card -->
+<div class="card shadow-sm">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0">Update Water Rates</h5>
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="residential_rate_per_cubic" class="form-label fw-bold">Residential Rate (₱ / m³)</label>
+                <input type="number" step="0.01" min="0.01"
+                       name="residential_rate_per_cubic" id="residential_rate_per_cubic"
+                       class="form-control form-control-lg"
+                       value="{{ setting.residential_rate_per_cubic }}"
+                       required>
+                <div class="form-text">Rate applied to residential consumers.</div>
+            </div>
+
+            <div class="mb-4">
+                <label for="commercial_rate_per_cubic" class="form-label fw-bold">Commercial Rate (₱ / m³)</label>
+                <input type="number" step="0.01" min="0.01"
+                       name="commercial_rate_per_cubic" id="commercial_rate_per_cubic"
+                       class="form-control form-control-lg"
+                       value="{{ setting.commercial_rate_per_cubic }}"
+                       required>
+                <div class="form-text">Rate applied to commercial consumers.</div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-lg w-100">
+                <i class="bi bi-save"></i> Save Rates
+            </button>
+        </form>
+    </div>
+</div>
+
+{% endblock %}

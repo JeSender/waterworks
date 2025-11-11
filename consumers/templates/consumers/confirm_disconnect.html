@@ -1,0 +1,48 @@
+<!-- consumers/templates/consumers/confirm_disconnect.html -->
+{% extends "consumers/base.html" %} <!-- Extend your base template -->
+
+{% block title %}Confirm Disconnection{% endblock %}
+
+{% block main_content %} <!-- Use the block defined in your base.html for main content -->
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <div class="card shadow-sm border-danger">
+                <div class="card-header bg-danger text-white text-center">
+                    <h5 class="mb-0"><i class="bi bi-exclamation-triangle-fill me-2"></i>Confirm Disconnection</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Are you sure you want to disconnect the following consumer?</p>
+                    
+                    <div class="alert alert-warning d-flex align-items-center">
+                        <i class="bi bi-person-circle me-2"></i>
+                        <div>
+                            <strong>{{ consumer.account_number }} – {{ consumer.first_name }} {{ consumer.last_name }}</strong><br>
+                            <small class="text-muted">Barangay: {{ consumer.barangay.name }}</small>
+                        </div>
+                    </div>
+
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label for="reason" class="form-label">Reason (Optional)</label>
+                            <input type="text" name="reason" id="reason" class="form-control" 
+                                   placeholder="e.g., Non-payment, Requested, Violation">
+                        </div>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="{% url 'consumers:consumer_detail' consumer.id %}" class="btn btn-outline-secondary me-md-2">
+                                <i class="bi bi-x-circle me-1"></i> Cancel
+                            </a>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="bi bi-trash me-1"></i> Yes, Disconnect
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %} <!-- End the main_content block -->
