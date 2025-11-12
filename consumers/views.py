@@ -20,7 +20,8 @@ from .models import (
 from .forms import ConsumerForm
 import openpyxl
 from openpyxl.styles import Font, PatternFill
-from django.db.models import Count, Q, Max, OuterRef, Subquery
+from django.db.models import Count, Q, Max, OuterRef, Subquery, Value
+from django.db.models.functions import Concat
 from django.contrib.auth.models import User
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
@@ -159,44 +160,69 @@ def api_submit_reading(request):
 
 @csrf_exempt
 def api_login(request):
-    """Login API for Android app"""
-    if request.method != 'POST':    
+    """Enhanced API login for Android app with security tracking."""
+    from .decorators import get_client_ip, get_user_agent
+
+    if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
-    
+
     try:
         data = json.loads(request.body)
         username = data.get('username')
         password = data.get('password')
-        
+
+        # Get security information
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
+
         user = authenticate(request, username=username, password=password)
         if user and user.is_staff:
             login(request, user)
             # Get staff's assigned barangay
             try:
                 profile = StaffProfile.objects.get(user=user)
-                
-                # --- NEW: Record the login event ---
-                # Create a new UserLoginEvent record for this successful login
+
+                # Record successful mobile login event
                 UserLoginEvent.objects.create(
                     user=user,
-                    login_timestamp=timezone.now() # Automatically sets the current time
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    login_method='mobile',
+                    status='success',
+                    session_key=request.session.session_key
                 )
-                # --- END NEW ---
-                
+
                 return JsonResponse({
                     'status': 'success',
                     'token': request.session.session_key,
-                    'barangay': profile.assigned_barangay.name
+                    'barangay': profile.assigned_barangay.name,
+                    'user': {
+                        'username': user.username,
+                        'full_name': user.get_full_name()
+                    }
                 })
             except StaffProfile.DoesNotExist:
                 # Still record the login even if there's no profile
                 UserLoginEvent.objects.create(
                     user=user,
-                    login_timestamp=timezone.now()
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    login_method='mobile',
+                    status='success'
                 )
                 return JsonResponse({'error': 'No assigned barangay'}, status=403)
-        return JsonResponse({'error': 'Invalid credentials'}, status=401)
-    
+        else:
+            # Record failed login attempt
+            if user:
+                UserLoginEvent.objects.create(
+                    user=user,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    login_method='mobile',
+                    status='failed'
+                )
+            return JsonResponse({'error': 'Invalid credentials'}, status=401)
+
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
     except Exception as e:
@@ -509,21 +535,70 @@ def smart_meter_webhook(request):
 # ======================
 
 def staff_login(request):
+    """Enhanced staff login with security tracking."""
+    from .decorators import get_client_ip, get_user_agent
+
     if request.method == "POST":
         username = request.POST.get('username')
         password = request.POST.get('password')
         user = authenticate(request, username=username, password=password)
+
+        # Get security information
+        ip_address = get_client_ip(request)
+        user_agent = get_user_agent(request)
+
         if user is not None and user.is_staff:
+            # Successful login
             login(request, user)
+
+            # Record login event
+            UserLoginEvent.objects.create(
+                user=user,
+                ip_address=ip_address,
+                user_agent=user_agent,
+                login_method='web',
+                status='success',
+                session_key=request.session.session_key
+            )
+
+            messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
             return redirect('consumers:home')
         else:
-            messages.error(request, "Invalid credentials or not staff")
+            # Failed login attempt
+            if user:
+                # User exists but not staff - record failed attempt
+                UserLoginEvent.objects.create(
+                    user=user,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    login_method='web',
+                    status='failed'
+                )
+            messages.error(request, "Invalid credentials or not staff member.")
+
     return render(request, 'consumers/login.html')
 
 
 @login_required
 def staff_logout(request):
+    """Enhanced logout with session tracking."""
+    # Update the latest active session for this user
+    try:
+        latest_session = UserLoginEvent.objects.filter(
+            user=request.user,
+            session_key=request.session.session_key,
+            logout_timestamp__isnull=True
+        ).first()
+
+        if latest_session:
+            latest_session.logout_timestamp = timezone.now()
+            latest_session.save()
+    except Exception as e:
+        # Log error but don't prevent logout
+        print(f"Error updating logout timestamp: {e}")
+
     logout(request)
+    messages.info(request, "You have been logged out successfully.")
     return redirect("consumers:staff_login")
 
 
@@ -535,37 +610,55 @@ def staff_logout(request):
 @login_required
 def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
+    from django.db.models import Sum
+
     current_month = datetime.now().month
     current_year = datetime.now().year
 
     # Get counts
     connected_count = Consumer.objects.filter(status='active').count()
     disconnected_count = Consumer.objects.filter(status='disconnected').count()
-    
+
     # Delinquent count (consumers with pending bills older than today)
     delinquent_count = Consumer.objects.filter(
         bills__status='Pending',
         bills__billing_period__lt=datetime.now().date()
     ).distinct().count()
 
-    # Handle report filter
-    selected_month = request.GET.get('month', current_month)
-    selected_year = request.GET.get('year', current_year)
+    # Handle report filter - support both month_year and separate month/year
+    month_year = request.GET.get('month_year')
+    if month_year:
+        try:
+            selected_year, selected_month = month_year.split('-')
+            selected_year = int(selected_year)
+            selected_month = int(selected_month)
+        except:
+            selected_month = current_month
+            selected_year = current_year
+    else:
+        selected_month = int(request.GET.get('month', current_month))
+        selected_year = int(request.GET.get('year', current_year))
 
     # Get delinquent bills for the selected month/year
     delinquent_bills = Bill.objects.filter(
         status='Pending',
         billing_period__month=selected_month,
         billing_period__year=selected_year
-    ).select_related('consumer').order_by('-billing_period')
+    ).select_related('consumer', 'consumer__barangay').order_by('-billing_period')
+
+    # Calculate total delinquent amount
+    total_delinquent_amount = delinquent_bills.aggregate(
+        total=Sum('total_amount')
+    )['total'] or Decimal('0.00')
 
     context = {
         'connected_count': connected_count,
         'disconnected_count': disconnected_count,
         'delinquent_count': delinquent_count,
         'delinquent_bills': delinquent_bills,
-        'selected_month': int(selected_month),
-        'selected_year': int(selected_year),
+        'total_delinquent_amount': total_delinquent_amount,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
     }
     return render(request, 'consumers/home.html', context)
 
@@ -774,61 +867,370 @@ from django.db.models import Sum, Count
 from .models import Payment, Bill
 from django.http import HttpResponse
 
+@login_required
 def reports(request):
-    report_type = request.GET.get('report_type', 'revenue')
-    month_year = request.GET.get('month_year')
-    ajax = request.GET.get('ajax', False)
+    """
+    Simplified reports view - displays reports inline on the page.
+    No AJAX, no modals, just simple form submission and display.
+    """
+    from datetime import datetime
+    from calendar import month_name
 
-    selected_year = int(month_year.split('-')[0]) if month_year else None
-    selected_month = int(month_year.split('-')[1]) if month_year else None
+    # Get parameters from GET or POST
+    report_type = request.GET.get('report_type') or request.POST.get('report_type', 'revenue')
+    month_year = request.GET.get('month_year') or request.POST.get('month_year')
 
-    revenue_report_data = []
-    delinquency_report_data = []
-    summary_report_data = []
+    # Default to current month/year
+    now = datetime.now()
+    if month_year:
+        try:
+            selected_year = int(month_year.split('-')[0])
+            selected_month = int(month_year.split('-')[1])
+        except:
+            selected_year = now.year
+            selected_month = now.month
+    else:
+        selected_year = now.year
+        selected_month = now.month
 
-    total_revenue = total_delinquency = total_summary = 0
+    # Format month/year for display
+    month_year_value = f"{selected_year}-{selected_month:02d}"
+    month_display = f"{month_name[selected_month]} {selected_year}"
 
-    if report_type == 'revenue' and month_year:
-        revenue_report_data = Payment.objects.filter(
+    # Initialize report data
+    report_data = None
+    report_title = ""
+    total_amount = 0
+    record_count = 0
+
+    # Generate report based on type
+    if report_type == 'revenue':
+        report_title = f"Revenue Report - {month_display}"
+        report_data = Payment.objects.filter(
             payment_date__year=selected_year,
             payment_date__month=selected_month
-        ).select_related('bill__consumer')
-        total_revenue = revenue_report_data.aggregate(total=Sum('received_amount'))['total'] or 0
+        ).select_related('bill__consumer').order_by('payment_date')
 
-    elif report_type == 'delinquency' and month_year:
-        delinquency_report_data = Bill.objects.filter(
+        total_amount = report_data.aggregate(total=Sum('amount_paid'))['total'] or 0
+        record_count = report_data.count()
+
+    elif report_type == 'delinquency':
+        report_title = f"Delinquent Accounts Report - {month_display}"
+        report_data = Bill.objects.filter(
             billing_period__year=selected_year,
             billing_period__month=selected_month,
-            is_paid=False
-        ).select_related('consumer')
-        total_delinquency = delinquency_report_data.aggregate(total=Sum('total_amount'))['total'] or 0
+            status__in=['Pending', 'Overdue']
+        ).select_related('consumer', 'consumer__barangay').order_by('consumer__account_number')
 
-    elif report_type == 'summary' and month_year:
-        summary_report_data = Payment.objects.filter(
+        total_amount = report_data.aggregate(total=Sum('total_amount'))['total'] or 0
+        record_count = report_data.count()
+
+    elif report_type == 'summary':
+        report_title = f"Payment Summary Report - {month_display}"
+        report_data = Payment.objects.filter(
             payment_date__year=selected_year,
             payment_date__month=selected_month
-        ).values('bill__consumer__full_name').annotate(
-            total_paid=Sum('received_amount'),
-            count=Count('id')
-        )
-        total_summary = summary_report_data.aggregate(total=Sum('total_paid'))['total'] or 0
+        ).values('bill__consumer__account_number').annotate(
+            bill__consumer__full_name=Concat(
+                'bill__consumer__first_name',
+                Value(' '),
+                'bill__consumer__middle_name',
+                Value(' '),
+                'bill__consumer__last_name'
+            ),
+            total_paid=Sum('amount_paid'),
+            payment_count=Count('id')
+        ).order_by('bill__consumer__account_number')
+
+        total_amount = report_data.aggregate(total=Sum('total_paid'))['total'] or 0
+        record_count = report_data.count()
 
     context = {
         'report_type': report_type,
-        'selected_month': selected_month,
+        'month_year_value': month_year_value,
+        'month_display': month_display,
         'selected_year': selected_year,
-        'revenue_report_data': revenue_report_data,
-        'total_revenue': total_revenue,
-        'delinquency_report_data': delinquency_report_data,
-        'total_delinquency': total_delinquency,
-        'summary_report_data': summary_report_data,
-        'total_summary': total_summary
+        'selected_month': selected_month,
+        'report_title': report_title,
+        'report_data': report_data,
+        'total_amount': total_amount,
+        'record_count': record_count,
     }
 
-    if ajax:
-        return render(request, 'consumers/report_fragment.html', context)
-
     return render(request, 'consumers/reports.html', context)
+
+
+@login_required
+def export_report_excel(request):
+    """Export report as Excel (.xlsx) file with formatting"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+
+    report_type = request.GET.get('report_type', 'revenue')
+    month_year = request.GET.get('month_year')
+
+    if not month_year:
+        return HttpResponse("Month/Year parameter required", status=400)
+
+    selected_year = int(month_year.split('-')[0])
+    selected_month = int(month_year.split('-')[1])
+
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+
+    # Month name for display
+    from calendar import month_name
+    month_display = month_name[selected_month]
+
+    # Styling
+    header_font = Font(bold=True, color="FFFFFF", size=12)
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    title_font = Font(bold=True, size=14)
+    total_font = Font(bold=True, size=11)
+    total_fill = PatternFill(start_color="E7E6E6", end_color="E7E6E6", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    if report_type == 'revenue':
+        # Revenue Report
+        ws.title = f"Revenue {month_display} {selected_year}"
+
+        # Title
+        ws['A1'] = "BALILIHAN WATERWORKS - REVENUE REPORT"
+        ws['A1'].font = title_font
+        ws['A2'] = f"Period: {month_display} {selected_year}"
+        ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
+
+        # Headers
+        headers = ['OR Number', 'Consumer Name', 'Account Number', 'Payment Date', 'Amount Paid', 'Change Given', 'Total Received']
+        ws.append([])  # Empty row
+        ws.append(headers)
+
+        header_row = ws[5]
+        for cell in header_row:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+
+        # Data
+        payments = Payment.objects.filter(
+            payment_date__year=selected_year,
+            payment_date__month=selected_month
+        ).select_related('bill__consumer').order_by('payment_date')
+
+        total_amount = 0
+        total_change = 0
+        total_received = 0
+
+        for payment in payments:
+            consumer = payment.bill.consumer
+            ws.append([
+                payment.or_number,
+                consumer.full_name,
+                consumer.account_number,
+                payment.payment_date.strftime('%Y-%m-%d'),
+                float(payment.amount_paid),
+                float(payment.change),
+                float(payment.received_amount)
+            ])
+            total_amount += payment.amount_paid
+            total_change += payment.change
+            total_received += payment.received_amount
+
+        # Total row
+        total_row = ws.max_row + 1
+        ws[f'A{total_row}'] = 'TOTAL'
+        ws[f'A{total_row}'].font = total_font
+        ws[f'E{total_row}'] = float(total_amount)
+        ws[f'F{total_row}'] = float(total_change)
+        ws[f'G{total_row}'] = float(total_received)
+
+        for col in ['A', 'E', 'F', 'G']:
+            ws[f'{col}{total_row}'].font = total_font
+            ws[f'{col}{total_row}'].fill = total_fill
+            ws[f'{col}{total_row}'].border = border
+
+        # Format currency columns
+        for row in range(6, ws.max_row + 1):
+            for col in ['E', 'F', 'G']:
+                ws[f'{col}{row}'].number_format = '₱#,##0.00'
+                ws[f'{col}{row}'].border = border
+                ws[f'{col}{row}'].alignment = Alignment(horizontal='right')
+
+        filename = f"Revenue_Report_{month_display}_{selected_year}.xlsx"
+
+    elif report_type == 'delinquency':
+        # Delinquency Report
+        ws.title = f"Delinquency {month_display}"
+
+        # Title
+        ws['A1'] = "BALILIHAN WATERWORKS - DELINQUENT ACCOUNTS REPORT"
+        ws['A1'].font = title_font
+        ws['A2'] = f"Period: {month_display} {selected_year}"
+        ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
+
+        # Headers
+        headers = ['Account Number', 'Consumer Name', 'Barangay', 'Billing Period', 'Due Date', 'Amount Due', 'Status']
+        ws.append([])
+        ws.append(headers)
+
+        header_row = ws[5]
+        for cell in header_row:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+
+        # Data
+        bills = Bill.objects.filter(
+            billing_period__year=selected_year,
+            billing_period__month=selected_month,
+            status__in=['Pending', 'Overdue']
+        ).select_related('consumer__barangay').order_by('consumer__account_number')
+
+        total_due = 0
+
+        for bill in bills:
+            consumer = bill.consumer
+            ws.append([
+                consumer.account_number,
+                consumer.full_name,
+                consumer.barangay.name if consumer.barangay else 'N/A',
+                bill.billing_period.strftime('%B %Y'),
+                bill.due_date.strftime('%Y-%m-%d'),
+                float(bill.total_amount),
+                bill.status
+            ])
+            total_due += bill.total_amount
+
+        # Total row
+        total_row = ws.max_row + 1
+        ws[f'A{total_row}'] = 'TOTAL DELINQUENT AMOUNT'
+        ws[f'A{total_row}'].font = total_font
+        ws[f'F{total_row}'] = float(total_due)
+        ws[f'F{total_row}'].font = total_font
+        ws[f'F{total_row}'].fill = total_fill
+        ws[f'F{total_row}'].border = border
+        ws[f'F{total_row}'].number_format = '₱#,##0.00'
+
+        # Format currency column
+        for row in range(6, ws.max_row):
+            ws[f'F{row}'].number_format = '₱#,##0.00'
+            ws[f'F{row}'].border = border
+            ws[f'F{row}'].alignment = Alignment(horizontal='right')
+            for col in ['A', 'B', 'C', 'D', 'E', 'G']:
+                ws[f'{col}{row}'].border = border
+
+        filename = f"Delinquency_Report_{month_display}_{selected_year}.xlsx"
+
+    elif report_type == 'summary':
+        # Summary Report
+        ws.title = f"Summary {month_display}"
+
+        # Title
+        ws['A1'] = "BALILIHAN WATERWORKS - PAYMENT SUMMARY REPORT"
+        ws['A1'].font = title_font
+        ws['A2'] = f"Period: {month_display} {selected_year}"
+        ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
+
+        # Headers
+        headers = ['Account Number', 'Consumer Name', 'Total Amount Paid', 'Number of Payments']
+        ws.append([])
+        ws.append(headers)
+
+        header_row = ws[5]
+        for cell in header_row:
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+            cell.border = border
+
+        # Data
+        summary_data = Payment.objects.filter(
+            payment_date__year=selected_year,
+            payment_date__month=selected_month
+        ).values('bill__consumer__account_number').annotate(
+            bill__consumer__full_name=Concat(
+                'bill__consumer__first_name',
+                Value(' '),
+                'bill__consumer__middle_name',
+                Value(' '),
+                'bill__consumer__last_name'
+            ),
+            total_paid=Sum('amount_paid'),
+            count=Count('id')
+        ).order_by('bill__consumer__account_number')
+
+        total_amount = 0
+        total_count = 0
+
+        for item in summary_data:
+            ws.append([
+                item['bill__consumer__account_number'],
+                item['bill__consumer__full_name'],
+                float(item['total_paid']),
+                item['count']
+            ])
+            total_amount += item['total_paid']
+            total_count += item['count']
+
+        # Total row
+        total_row = ws.max_row + 1
+        ws[f'A{total_row}'] = 'TOTAL'
+        ws[f'A{total_row}'].font = total_font
+        ws[f'C{total_row}'] = float(total_amount)
+        ws[f'D{total_row}'] = total_count
+
+        for col in ['A', 'B', 'C', 'D']:
+            ws[f'{col}{total_row}'].font = total_font
+            ws[f'{col}{total_row}'].fill = total_fill
+            ws[f'{col}{total_row}'].border = border
+
+        # Format currency column
+        for row in range(6, ws.max_row + 1):
+            ws[f'C{row}'].number_format = '₱#,##0.00'
+            ws[f'C{row}'].alignment = Alignment(horizontal='right')
+            for col in ['A', 'B', 'C', 'D']:
+                ws[f'{col}{row}'].border = border
+
+        filename = f"Payment_Summary_{month_display}_{selected_year}.xlsx"
+
+    else:
+        return HttpResponse("Invalid report type", status=400)
+
+    # Auto-size columns
+    for column in ws.columns:
+        max_length = 0
+        column_letter = get_column_letter(column[0].column)
+        for cell in column:
+            try:
+                if cell.value:
+                    max_length = max(max_length, len(str(cell.value)))
+            except:
+                pass
+        adjusted_width = min(max_length + 2, 50)
+        ws.column_dimensions[column_letter].width = adjusted_width
+
+    # Save to response
+    output = BytesIO()
+    wb.save(output)
+    output.seek(0)
+
+    response = HttpResponse(
+        output.read(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    return response
 
 
 # ... other view functions ...
@@ -1487,13 +1889,90 @@ def payment_receipt(request, payment_id):
 @login_required
 def user_login_history(request):
     """
-    Display a list of user login events.
+    Enhanced login history with filtering, search, and analytics.
+    Restricted to superusers and admins for security.
     """
-    # Fetch all login events, ordered by most recent first
-    login_events = UserLoginEvent.objects.select_related('user').order_by('-login_timestamp')
+    from .decorators import admin_or_superuser_required
+    from django.db.models import Count, Q
+    from datetime import timedelta
+    from django.core.paginator import Paginator
+
+    # Security check - only admins and superusers
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to view login history.")
+        return render(request, 'consumers/403.html', status=403)
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    status_filter = request.GET.get('status', '')
+    method_filter = request.GET.get('method', '')
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+
+    # Base query
+    login_events = UserLoginEvent.objects.select_related('user').all()
+
+    # Apply filters
+    if search_query:
+        login_events = login_events.filter(
+            Q(user__username__icontains=search_query) |
+            Q(user__first_name__icontains=search_query) |
+            Q(user__last_name__icontains=search_query) |
+            Q(ip_address__icontains=search_query)
+        )
+
+    if status_filter:
+        login_events = login_events.filter(status=status_filter)
+
+    if method_filter:
+        login_events = login_events.filter(login_method=method_filter)
+
+    if date_from:
+        login_events = login_events.filter(login_timestamp__gte=date_from)
+
+    if date_to:
+        from datetime import datetime
+        date_to_obj = datetime.strptime(date_to, '%Y-%m-%d')
+        date_to_end = date_to_obj.replace(hour=23, minute=59, second=59)
+        login_events = login_events.filter(login_timestamp__lte=date_to_end)
+
+    # Order by most recent
+    login_events = login_events.order_by('-login_timestamp')
+
+    # Analytics
+    total_logins = login_events.count()
+    successful_logins = login_events.filter(status='success').count()
+    failed_logins = login_events.filter(status='failed').count()
+    active_sessions = login_events.filter(status='success', logout_timestamp__isnull=True).count()
+
+    # Recent activity (last 24 hours)
+    last_24_hours = timezone.now() - timedelta(hours=24)
+    recent_logins = login_events.filter(login_timestamp__gte=last_24_hours).count()
+
+    # Top users
+    top_users = User.objects.annotate(
+        login_count=Count('userloginevent')
+    ).filter(login_count__gt=0).order_by('-login_count')[:5]
+
+    # Pagination
+    paginator = Paginator(login_events, 25)  # 25 items per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
 
     context = {
-        'login_events': login_events,
+        'login_events': page_obj,
+        'search_query': search_query,
+        'status_filter': status_filter,
+        'method_filter': method_filter,
+        'date_from': date_from,
+        'date_to': date_to,
+        # Analytics
+        'total_logins': total_logins,
+        'successful_logins': successful_logins,
+        'failed_logins': failed_logins,
+        'active_sessions': active_sessions,
+        'recent_logins': recent_logins,
+        'top_users': top_users,
     }
     return render(request, 'consumers/user_login_history.html', context)
 
@@ -1509,11 +1988,325 @@ def consumer_bill(request, consumer_id):
         'current_reading__consumer',
         'previous_reading__consumer'
     ).order_by('-billing_period')
-    
+
     return render(request, 'consumers/consumer_bill.html', {
-        'consumer': consumer, 
+        'consumer': consumer,
         'bills': bills
-        
-        
- })
-    
+    })
+
+
+# ======================
+# USER MANAGEMENT (SECURE)
+# ======================
+
+@login_required
+def admin_verification(request):
+    """
+    Admin verification - requires password re-entry before accessing user management.
+    Provides extra security layer for sensitive operations.
+    """
+    from .decorators import get_client_ip
+    from django.contrib.auth import authenticate
+
+    # Only superusers can even see this page
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can access this area.")
+        return render(request, 'consumers/403.html', status=403)
+
+    if request.method == 'POST':
+        password = request.POST.get('password', '')
+        destination = request.POST.get('destination', 'user_management')
+
+        # Verify the password
+        user = authenticate(username=request.user.username, password=password)
+
+        if user is not None and user == request.user:
+            # Password verified - store verification in session with timestamp
+            request.session['admin_verified'] = True
+            request.session['admin_verified_time'] = timezone.now().isoformat()
+
+            # Log the verification
+            UserLoginEvent.objects.create(
+                user=request.user,
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                login_method='web',
+                status='success',
+                session_key=request.session.session_key
+            )
+
+            messages.success(request, "Admin verification successful!")
+
+            # Redirect to requested destination
+            if destination == 'django_admin':
+                return redirect('/admin/')
+            else:
+                return redirect('consumers:user_management')
+        else:
+            # Failed verification
+            messages.error(request, "Incorrect password. Verification failed.")
+            UserLoginEvent.objects.create(
+                user=request.user,
+                ip_address=get_client_ip(request),
+                user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                login_method='web',
+                status='failed'
+            )
+
+    return render(request, 'consumers/admin_verification.html')
+
+
+@login_required
+def user_management(request):
+    """
+    Custom user management interface with enhanced security.
+    Only accessible by superusers with admin verification.
+    """
+    from .decorators import superuser_required, get_client_ip
+    from django.db.models import Count, Q
+    from django.core.paginator import Paginator
+
+    # Security check - only superusers
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can manage users.")
+        return render(request, 'consumers/403.html', status=403)
+
+    # Check if admin verification is required
+    admin_verified = request.session.get('admin_verified', False)
+    if not admin_verified:
+        # Redirect to verification page
+        messages.warning(request, "Admin verification required to access User Management.")
+        return redirect('consumers:admin_verification')
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    role_filter = request.GET.get('role', '')
+    status_filter = request.GET.get('status', '')
+
+    # Base query
+    users = User.objects.all()
+
+    # Apply filters
+    if search_query:
+        users = users.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    if role_filter:
+        if role_filter == 'superuser':
+            users = users.filter(is_superuser=True)
+        elif role_filter == 'staff':
+            users = users.filter(is_staff=True, is_superuser=False)
+        elif role_filter == 'regular':
+            users = users.filter(is_staff=False, is_superuser=False)
+
+    if status_filter:
+        if status_filter == 'active':
+            users = users.filter(is_active=True)
+        elif status_filter == 'inactive':
+            users = users.filter(is_active=False)
+
+    # Annotate with login count
+    users = users.annotate(
+        login_count=Count('userloginevent')
+    ).select_related('staffprofile').order_by('-date_joined')
+
+    # Pagination
+    paginator = Paginator(users, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Statistics
+    total_users = User.objects.count()
+    active_users = User.objects.filter(is_active=True).count()
+    staff_users = User.objects.filter(is_staff=True).count()
+    superusers = User.objects.filter(is_superuser=True).count()
+
+    # Available barangays for assignment
+    barangays = Barangay.objects.all()
+
+    context = {
+        'users': page_obj,
+        'search_query': search_query,
+        'role_filter': role_filter,
+        'status_filter': status_filter,
+        'total_users': total_users,
+        'active_users': active_users,
+        'staff_users': staff_users,
+        'superusers': superusers,
+        'barangays': barangays,
+    }
+    return render(request, 'consumers/user_management.html', context)
+
+
+@login_required
+def create_user(request):
+    """Create a new user with security validations."""
+    from .decorators import check_password_strength
+    from django.contrib.auth.hashers import make_password
+
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can create users.")
+        return redirect('consumers:user_management')
+
+    if request.method == 'POST':
+        username = request.POST.get('username', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+        password = request.POST.get('password', '')
+        password_confirm = request.POST.get('password_confirm', '')
+        is_staff = request.POST.get('is_staff') == 'on'
+        is_superuser = request.POST.get('is_superuser') == 'on'
+        assigned_barangay_id = request.POST.get('assigned_barangay')
+        role = request.POST.get('role', 'field_staff')
+
+        # Validation
+        if not username or not password:
+            messages.error(request, "Username and password are required.")
+            return redirect('consumers:user_management')
+
+        if password != password_confirm:
+            messages.error(request, "Passwords do not match.")
+            return redirect('consumers:user_management')
+
+        # Check password strength
+        is_strong, msg = check_password_strength(password)
+        if not is_strong:
+            messages.error(request, f"Weak password: {msg}")
+            return redirect('consumers:user_management')
+
+        # Check if username exists
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"Username '{username}' already exists.")
+            return redirect('consumers:user_management')
+
+        try:
+            # Create user
+            user = User.objects.create(
+                username=username,
+                first_name=first_name,
+                last_name=last_name,
+                email=email,
+                is_staff=is_staff,
+                is_superuser=is_superuser,
+                is_active=True
+            )
+            user.set_password(password)
+            user.save()
+
+            # Create staff profile if barangay assigned
+            if assigned_barangay_id:
+                barangay = Barangay.objects.get(id=assigned_barangay_id)
+                StaffProfile.objects.create(
+                    user=user,
+                    assigned_barangay=barangay,
+                    role=role
+                )
+
+            messages.success(request, f"User '{username}' created successfully!")
+            return redirect('consumers:user_management')
+
+        except Exception as e:
+            messages.error(request, f"Error creating user: {str(e)}")
+            return redirect('consumers:user_management')
+
+    return redirect('consumers:user_management')
+
+
+@login_required
+def edit_user(request, user_id):
+    """Edit user details with security checks."""
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can edit users.")
+        return redirect('consumers:user_management')
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == 'POST':
+        user.first_name = request.POST.get('first_name', '').strip()
+        user.last_name = request.POST.get('last_name', '').strip()
+        user.email = request.POST.get('email', '').strip()
+        user.is_staff = request.POST.get('is_staff') == 'on'
+        user.is_active = request.POST.get('is_active') == 'on'
+
+        # Only allow changing superuser status if current user is superuser
+        if request.user.is_superuser:
+            user.is_superuser = request.POST.get('is_superuser') == 'on'
+
+        user.save()
+
+        # Update staff profile
+        assigned_barangay_id = request.POST.get('assigned_barangay')
+        role = request.POST.get('role', 'field_staff')
+
+        if assigned_barangay_id:
+            barangay = Barangay.objects.get(id=assigned_barangay_id)
+            profile, created = StaffProfile.objects.get_or_create(user=user)
+            profile.assigned_barangay = barangay
+            profile.role = role
+            profile.save()
+
+        messages.success(request, f"User '{user.username}' updated successfully!")
+        return redirect('consumers:user_management')
+
+    return redirect('consumers:user_management')
+
+
+@login_required
+def delete_user(request, user_id):
+    """Delete a user with confirmation."""
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can delete users.")
+        return redirect('consumers:user_management')
+
+    user = get_object_or_404(User, id=user_id)
+
+    # Prevent self-deletion
+    if user == request.user:
+        messages.error(request, "You cannot delete your own account.")
+        return redirect('consumers:user_management')
+
+    if request.method == 'POST':
+        username = user.username
+        user.delete()
+        messages.success(request, f"User '{username}' deleted successfully!")
+        return redirect('consumers:user_management')
+
+    return redirect('consumers:user_management')
+
+
+@login_required
+def reset_user_password(request, user_id):
+    """Reset user password (superuser only)."""
+    from .decorators import check_password_strength
+
+    if not request.user.is_superuser:
+        messages.error(request, "Access Denied: Only superusers can reset passwords.")
+        return redirect('consumers:user_management')
+
+    user = get_object_or_404(User, id=user_id)
+
+    if request.method == 'POST':
+        new_password = request.POST.get('new_password', '')
+        confirm_password = request.POST.get('confirm_password', '')
+
+        if new_password != confirm_password:
+            messages.error(request, "Passwords do not match.")
+            return redirect('consumers:user_management')
+
+        # Check password strength
+        is_strong, msg = check_password_strength(new_password)
+        if not is_strong:
+            messages.error(request, f"Weak password: {msg}")
+            return redirect('consumers:user_management')
+
+        user.set_password(new_password)
+        user.save()
+        messages.success(request, f"Password reset successfully for user '{user.username}'!")
+        return redirect('consumers:user_management')
+
+    return redirect('consumers:user_management')

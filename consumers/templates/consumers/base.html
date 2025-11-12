@@ -184,6 +184,28 @@
         .dark-mode .dashboard-header {
             background: linear-gradient(120deg, #4f46e5, #7c3aed) !important;
         }
+
+        /* === Print Styles for Base Layout === */
+        @media print {
+            /* Hide sidebar completely */
+            .sidebar,
+            #sidebar {
+                display: none !important;
+            }
+
+            /* Remove margin from main content */
+            .main-content,
+            #main-content {
+                margin-left: 0 !important;
+                padding: 0 !important;
+            }
+
+            /* Ensure full width printing */
+            body {
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+        }
     </style>
 </head>
 <body class="bg-white" id="main-body">
@@ -214,17 +236,21 @@
                 <i class="bi bi-gear-fill me-2"></i> System Management
             </a>
 
-            <!-- NEW: Link to Django Admin User List -->
-<a href="{% url 'admin:auth_user_changelist' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
-    <i class="bi bi-people me-2"></i> <!-- Using Bootstrap Icons for consistency -->
-    Manage Users (Admin)
-</a>
+            <!-- Secure User Management (Superuser Only) -->
+            {% if user.is_superuser %}
+            <a href="{% url 'consumers:admin_verification' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-shield-lock-fill me-2"></i>
+                Manage Users
+            </a>
+            {% endif %}
 
-<!-- NEW: Link to Custom User Login History Page -->
-<a href="{% url 'consumers:user_login_history' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
-    <i class="bi bi-clock-history me-2"></i> <!-- Using a history icon -->
-    Login History
-</a>
+            <!-- Login History (Admin/Superuser Only) -->
+            {% if user.is_superuser %}
+            <a href="{% url 'consumers:user_login_history' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-clock-history me-2"></i>
+                Login History
+            </a>
+            {% endif %}
         </nav>
 
         <!-- Logout and Dark Mode in Sidebar -->

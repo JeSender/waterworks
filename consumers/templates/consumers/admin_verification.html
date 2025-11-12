@@ -1,0 +1,160 @@
+{% extends "consumers/base.html" %}
+
+{% block title %}Admin Verification{% endblock %}
+
+{% block extra_css %}
+<style>
+    .verification-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 70vh;
+    }
+    .verification-card {
+        background: white;
+        border-radius: 16px;
+        padding: 3rem;
+        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+        max-width: 500px;
+        width: 100%;
+        border-top: 5px solid #dc3545;
+    }
+    .verification-icon {
+        font-size: 4rem;
+        color: #dc3545;
+        margin-bottom: 1.5rem;
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+    .verification-title {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+    .verification-subtitle {
+        color: #64748b;
+        margin-bottom: 2rem;
+    }
+    .security-badge {
+        background: linear-gradient(135deg, #dc3545, #c82333);
+        color: white;
+        padding: 0.5rem 1rem;
+        border-radius: 50px;
+        font-weight: 600;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    .password-input-group {
+        position: relative;
+    }
+    .password-input-group input {
+        padding-right: 45px;
+    }
+    .toggle-password {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        cursor: pointer;
+        color: #6c757d;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="verification-container">
+    <div class="verification-card text-center">
+        <div class="verification-icon">
+            <i class="bi bi-shield-lock-fill"></i>
+        </div>
+        <h2 class="verification-title">Admin Verification Required</h2>
+        <div class="security-badge">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <span>High Security Area</span>
+        </div>
+        <p class="verification-subtitle">
+            You are attempting to access a restricted area. Please re-enter your password to verify your identity.
+        </p>
+
+        <!-- Verification Form -->
+        <form method="POST" id="verificationForm">
+            {% csrf_token %}
+            <input type="hidden" name="destination" value="user_management">
+
+            <div class="mb-4">
+                <label class="form-label text-start d-block fw-semibold">
+                    <i class="bi bi-person-badge me-1"></i>Username
+                </label>
+                <input type="text" class="form-control form-control-lg" value="{{ request.user.username }}" disabled>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label text-start d-block fw-semibold">
+                    <i class="bi bi-key-fill me-1"></i>Password
+                </label>
+                <div class="password-input-group">
+                    <input type="password"
+                           name="password"
+                           id="password"
+                           class="form-control form-control-lg"
+                           placeholder="Enter your password"
+                           required
+                           autofocus>
+                    <i class="bi bi-eye-fill toggle-password" id="togglePassword"></i>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2 mb-3">
+                <button type="submit" class="btn btn-danger btn-lg">
+                    <i class="bi bi-shield-check me-2"></i>Verify & Continue
+                </button>
+            </div>
+
+            <div class="text-center">
+                <a href="{% url 'consumers:home' %}" class="btn btn-link text-muted">
+                    <i class="bi bi-arrow-left me-1"></i>Cancel and Go Back
+                </a>
+            </div>
+        </form>
+
+        <!-- Security Info -->
+        <div class="alert alert-info mt-4 text-start">
+            <small>
+                <i class="bi bi-info-circle-fill me-1"></i>
+                <strong>Security Notice:</strong> This verification is required for accessing sensitive system functions. Your activity is being logged for security purposes.
+            </small>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle password visibility
+document.getElementById('togglePassword')?.addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const icon = this;
+
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('bi-eye-fill');
+        icon.classList.add('bi-eye-slash-fill');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('bi-eye-slash-fill');
+        icon.classList.add('bi-eye-fill');
+    }
+});
+
+// Auto-focus on password field
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById('password')?.focus();
+});
+</script>
+{% endblock %}

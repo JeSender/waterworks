@@ -42,9 +42,10 @@ urlpatterns = [
     # AJAX
     path('ajax/load-puroks/', views.load_puroks, name='ajax_load_puroks'),
 
-# Reports 
-path('reports/', views.reports, name='reports'),
-    
+    # Reports
+    path('reports/', views.reports, name='reports'),
+    path('reports/export-excel/', views.export_report_excel, name='export_report_excel'),
+
     path('system-management/', views.system_management, name='system_management'),
 
     # Payments
@@ -56,5 +57,13 @@ path('reports/', views.reports, name='reports'),
     path('api/consumers/', views.api_consumers, name='api_consumers'),
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
+
+    # User Management & Security
+    path('admin-verification/', views.admin_verification, name='admin_verification'),
     path('user-login-history/', views.user_login_history, name='user_login_history'),
+    path('user-management/', views.user_management, name='user_management'),
+    path('user/create/', views.create_user, name='create_user'),
+    path('user/<int:user_id>/edit/', views.edit_user, name='edit_user'),
+    path('user/<int:user_id>/delete/', views.delete_user, name='delete_user'),
+    path('user/<int:user_id>/reset-password/', views.reset_user_password, name='reset_user_password'),
 ]

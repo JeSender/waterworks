@@ -8,27 +8,57 @@ from django.contrib.auth.models import User
 
 
 
-# NEW: Model to track user login events
+# Enhanced Model to track user login events with security features
 class UserLoginEvent(models.Model):
     """
-    Stores information about when a user logged in via the Android app.
+    Stores comprehensive information about user login attempts and sessions.
+    Includes security tracking features for audit and monitoring purposes.
     """
     user = models.ForeignKey(User, on_delete=models.CASCADE, help_text="The user who logged in.")
-    login_timestamp = models.DateTimeField(default=timezone.now, help_text="The date and time the user logged in.")
-    # Optional: Add IP address, device info, etc., if needed later
-    # ip_address = models.GenericIPAddressField(null=True, blank=True)
-    # user_agent = models.TextField(blank=True) # Stores device/app info from the request header
+    login_timestamp = models.DateTimeField(default=timezone.now, help_text="The date and time the user logged in.", db_index=True)
+
+    # Security tracking fields
+    ip_address = models.GenericIPAddressField(null=True, blank=True, help_text="IP address of the login attempt")
+    user_agent = models.TextField(blank=True, help_text="Browser/device information")
+    login_method = models.CharField(max_length=20, default='web', choices=[
+        ('web', 'Web Portal'),
+        ('mobile', 'Mobile App'),
+        ('api', 'API')
+    ], help_text="Method used to login")
+    status = models.CharField(max_length=20, default='success', choices=[
+        ('success', 'Successful'),
+        ('failed', 'Failed'),
+        ('locked', 'Account Locked')
+    ], help_text="Login attempt status")
+
+    # Session tracking
+    session_key = models.CharField(max_length=40, blank=True, null=True, help_text="Django session key")
+    logout_timestamp = models.DateTimeField(null=True, blank=True, help_text="When the user logged out")
 
     class Meta:
-        # Order logins by most recent first by default
         ordering = ['-login_timestamp']
-        # Add an index on login_timestamp for faster queries if needed
-        # indexes = [
-        #     models.Index(fields=['login_timestamp']),
-        # ]
+        indexes = [
+            models.Index(fields=['login_timestamp']),
+            models.Index(fields=['user', 'login_timestamp']),
+            models.Index(fields=['status']),
+        ]
+        verbose_name = "User Login Event"
+        verbose_name_plural = "User Login Events"
 
     def __str__(self):
-        return f"{self.user.username} logged in at {self.login_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+        return f"{self.user.username} - {self.status} - {self.login_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    @property
+    def session_duration(self):
+        """Calculate session duration if logged out"""
+        if self.logout_timestamp:
+            return self.logout_timestamp - self.login_timestamp
+        return None
+
+    @property
+    def is_active_session(self):
+        """Check if session is still active"""
+        return self.status == 'success' and self.logout_timestamp is None
 
 # ... (rest of your existing models) ...
 
