@@ -2012,9 +2012,9 @@ def admin_verification(request):
     from .decorators import get_client_ip
     from django.contrib.auth import authenticate
 
-    # Only superusers can even see this page
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can access this area.")
+    # Only superusers and admins can access this page
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required.")
         return render(request, 'consumers/403.html', status=403)
 
     if request.method == 'POST':
@@ -2070,9 +2070,9 @@ def user_management(request):
     from django.db.models import Count, Q
     from django.core.paginator import Paginator
 
-    # Security check - only superusers
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can manage users.")
+    # Security check - only superusers and admins
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to manage users.")
         return render(request, 'consumers/403.html', status=403)
 
     # Check if admin verification is required and not expired
@@ -2174,8 +2174,8 @@ def create_user(request):
     from .decorators import check_password_strength
     from django.contrib.auth.hashers import make_password
 
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can create users.")
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to create users.")
         return redirect('consumers:user_management')
 
     if request.method == 'POST':
@@ -2208,6 +2208,11 @@ def create_user(request):
         # Check if username exists
         if User.objects.filter(username=username).exists():
             messages.error(request, f"Username '{username}' already exists.")
+            return redirect('consumers:user_management')
+
+        # Only superusers can create other superusers
+        if is_superuser and not request.user.is_superuser:
+            messages.error(request, "Access Denied: Only superusers can create other superusers.")
             return redirect('consumers:user_management')
 
         try:
@@ -2246,8 +2251,8 @@ def create_user(request):
 @login_required
 def edit_user(request, user_id):
     """Edit user details with security checks."""
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can edit users.")
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to edit users.")
         return redirect('consumers:user_management')
 
     user = get_object_or_404(User, id=user_id)
@@ -2285,8 +2290,8 @@ def edit_user(request, user_id):
 @login_required
 def delete_user(request, user_id):
     """Delete a user with confirmation."""
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can delete users.")
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to delete users.")
         return redirect('consumers:user_management')
 
     user = get_object_or_404(User, id=user_id)
@@ -2307,11 +2312,11 @@ def delete_user(request, user_id):
 
 @login_required
 def reset_user_password(request, user_id):
-    """Reset user password (superuser only)."""
+    """Reset user password (superuser and admin)."""
     from .decorators import check_password_strength
 
-    if not request.user.is_superuser:
-        messages.error(request, "Access Denied: Only superusers can reset passwords.")
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to reset passwords.")
         return redirect('consumers:user_management')
 
     user = get_object_or_404(User, id=user_id)
