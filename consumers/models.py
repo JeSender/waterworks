@@ -307,6 +307,22 @@ class SystemSetting(models.Model):
     )
     # --- END NEW ---
 
+    # Billing configuration
+    fixed_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('50.00'),
+        help_text="Fixed charge added to every bill (₱)"
+    )
+    billing_day_of_month = models.IntegerField(
+        default=1,
+        help_text="Day of month for billing period (1-28)"
+    )
+    due_day_of_month = models.IntegerField(
+        default=20,
+        help_text="Day of month for bill due date (1-28)"
+    )
+
     # Optional: Keep a field to track when the settings were last updated
     updated_at = models.DateTimeField(auto_now=True)
 

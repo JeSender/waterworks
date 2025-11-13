@@ -36,13 +36,11 @@ from django.views.decorators.csrf import csrf_exempt
 def api_submit_reading(request):
     """API endpoint for Android app to submit meter readings."""
     if request.method != 'POST':
-        print("Error submitting reading: Method not allowed") # Add print here for clarity
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
         # Parse JSON data from the request body
         data = json.loads(request.body.decode('utf-8'))
-        print(f"DEBUG: Received JSON  {data}") # Log the received data
 
         # Extract data from the request - MATCHING ANDROID APP FORMAT
         consumer_id = data.get('consumer_id') # Expecting consumer ID from app
@@ -50,21 +48,14 @@ def api_submit_reading(request):
         # Optional: Check if reading_date is sent, otherwise default to today
         reading_date_str = data.get('reading_date') # Expecting 'reading_date' key from app, can be None initially
 
-        print(f"DEBUG: Parsed - consumer_id: {consumer_id}, reading_value: {reading_value}, reading_date: {reading_date_str}") # Log parsed values
-
         # Validate required fields (assuming reading_date is sent by the app now, or use today's date)
         if consumer_id is None or reading_value is None:
-            error_msg = f"Missing required fields: consumer_id or reading. Received: consumer_id={consumer_id}, reading={reading_value}, reading_date={reading_date_str}"
-            print(f"Error submitting reading: {error_msg}") # More detailed print
             return JsonResponse({'error': 'Missing required fields: consumer_id or reading'}, status=400)
 
         # Get the consumer based on ID (as sent by the app)
         try:
             consumer = Consumer.objects.get(id=consumer_id) # Use id instead of account_number
-            print(f"DEBUG: Found consumer: {consumer}") # Log consumer lookup
         except Consumer.DoesNotExist:
-            error_msg = f"Consumer not found for id: {consumer_id}"
-            print(f"Error submitting reading: {error_msg}") # Print specific error
             return JsonResponse({'error': 'Consumer not found'}, status=404)
 
         # Determine the reading date
@@ -72,14 +63,10 @@ def api_submit_reading(request):
             # Parse the date string if provided by the app
             try:
                 reading_date = timezone.datetime.strptime(reading_date_str, '%Y-%m-%d').date()
-                print(f"DEBUG: Parsed date from app: {reading_date}") # Log date parsing
             except ValueError:
-                error_msg = f"Invalid date format: {reading_date_str}. Expected YYYY-MM-DD."
-                print(f"Error submitting reading: {error_msg}") # Print specific error
                 return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
         else:
             # Use the current date if no date is provided by the app
-            print("DEBUG: No reading_date provided by app, using today's date.")
             reading_date = timezone.now().date()
 
         # Validate reading value (should be a positive number, handle potential float from app)
@@ -89,10 +76,7 @@ def api_submit_reading(request):
             reading_value = int(reading_value) # Convert float to int
             if reading_value < 0:
                 raise ValueError("Reading value cannot be negative")
-            print(f"DEBUG: Validated reading value: {reading_value}") # Log value validation
         except (ValueError, TypeError):
-            error_msg = f"Invalid reading value: {reading_value}. Must be a non-negative number."
-            print(f"Error submitting reading: {error_msg}") # Print specific error
             return JsonResponse({'error': 'Invalid reading value. Must be a non-negative number.'}, status=400)
 
         # --- NEW LOGIC: Check for existing unconfirmed reading on the same date ---
@@ -105,14 +89,12 @@ def api_submit_reading(request):
             if existing_reading.is_confirmed:
                 # If it's already confirmed, don't allow updates
                 error_msg = f"Reading for {consumer.account_number} on {reading_date} is already confirmed and cannot be updated via API."
-                print(f"Error submitting reading: {error_msg}")
                 return JsonResponse({'error': error_msg}, status=400)
             else:
                 # If it's unconfirmed, update the existing record
                 existing_reading.reading_value = reading_value
                 existing_reading.source = 'mobile_app' # Update source to reflect API submission
                 existing_reading.save()
-                print(f"Info: Updated existing unconfirmed reading {existing_reading.id} for {consumer.account_number} on {reading_date}.")
                 # Return success response for update
                 return JsonResponse({
                     'status': 'success',
@@ -132,8 +114,6 @@ def api_submit_reading(request):
                 reading_value=reading_value,
                 source='mobile_app' # Mark source as coming from the mobile app
             )
-            success_msg = f"Successfully created reading: {reading.id} for {consumer.account_number}"
-            print(f"Info: {success_msg}") # Print success info
             # Return success response for creation
             return JsonResponse({
                 'status': 'success',
@@ -145,13 +125,13 @@ def api_submit_reading(request):
                 'reading_date': reading.reading_date.isoformat()
             })
 
-    except json.JSONDecodeError as e:
-        error_msg = f"Invalid JSON in request body: {e}"
-        print(f"Error submitting reading: {error_msg}") # Print specific error
+    except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
     except Exception as e:
-        # Log the error for debugging (consider using logging module)
-        print(f"Error submitting reading: {e}") # This should catch unexpected errors
+        # Log unexpected errors (Railway will capture this in logs)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error submitting reading: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
@@ -226,8 +206,10 @@ def api_login(request):
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
     except Exception as e:
-        # Log the error for debugging (consider using logging module)
-        print(f"Error during API login: {e}")
+        # Log unexpected errors (Railway will capture this in logs)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error during API login: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
@@ -360,8 +342,10 @@ def api_get_current_rates(request):
         })
 
     except Exception as e:
-        # Log the error for debugging (consider using logging module)
-        print(f"Error fetching rates: {e}")
+        # Log unexpected errors (Railway will capture this in logs)
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching rates: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 # ... (rest of your views) ...# consumers/views.py
@@ -385,36 +369,40 @@ def system_management(request):
 
     if request.method == "POST":
         try:
-            # Get the new rates from the form
+            # Get the new values from the form
             new_res_rate_str = request.POST.get("residential_rate_per_cubic")
             new_comm_rate_str = request.POST.get("commercial_rate_per_cubic")
+            new_fixed_charge_str = request.POST.get("fixed_charge")
+            billing_day = request.POST.get("billing_day_of_month")
+            due_day = request.POST.get("due_day_of_month")
 
             # Validate and convert to Decimal
             new_res_rate = Decimal(new_res_rate_str)
             new_comm_rate = Decimal(new_comm_rate_str)
+            new_fixed_charge = Decimal(new_fixed_charge_str)
+            billing_day = int(billing_day)
+            due_day = int(due_day)
 
-            if new_res_rate <= 0 or new_comm_rate <= 0:
-                raise ValueError("Rates must be positive.")
+            if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
+                raise ValueError("Rates must be positive and fixed charge cannot be negative.")
 
-            # Store old rates for the success message
-            old_res_rate = setting.residential_rate_per_cubic
-            old_comm_rate = setting.commercial_rate_per_cubic
+            if billing_day < 1 or billing_day > 28 or due_day < 1 or due_day > 28:
+                raise ValueError("Billing and due days must be between 1 and 28.")
 
             # Update the setting object
             setting.residential_rate_per_cubic = new_res_rate
             setting.commercial_rate_per_cubic = new_comm_rate
+            setting.fixed_charge = new_fixed_charge
+            setting.billing_day_of_month = billing_day
+            setting.due_day_of_month = due_day
             setting.save() # Save the changes to the database
 
             # Send success message
-            messages.success(
-                request,
-                f"✅ Rates updated successfully! Residential: ₱{old_res_rate:.2f} -> ₱{new_res_rate:.2f}, "
-                f"Commercial: ₱{old_comm_rate:.2f} -> ₱{new_comm_rate:.2f}"
-            )
+            messages.success(request, "✅ System settings updated successfully!")
         except (InvalidOperation, ValueError, TypeError) as e:
-            messages.error(request, f"❌ Invalid rate(s) entered: {e}")
+            messages.error(request, f"❌ Invalid input: {e}")
         except Exception as e:
-            messages.error(request, f"❌ Error updating rates: {e}")
+            messages.error(request, f"❌ Error updating settings: {e}")
 
         # Redirect back to the system management page after processing POST
         return redirect("consumers:system_management")
@@ -595,7 +583,9 @@ def staff_logout(request):
             latest_session.save()
     except Exception as e:
         # Log error but don't prevent logout
-        print(f"Error updating logout timestamp: {e}")
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Error updating logout timestamp: {e}")
 
     logout(request)
     messages.info(request, "You have been logged out successfully.")
@@ -1693,8 +1683,22 @@ def confirm_reading(request, reading_id):
     # Generate bill
     try:
         setting = SystemSetting.objects.first()
-        rate = setting.rate_per_cubic if setting else Decimal('22.50')
-        fixed_charge = Decimal('50.00')
+
+        # Apply correct rate based on consumer usage type
+        if setting:
+            if consumer.usage_type == 'Residential':
+                rate = setting.residential_rate_per_cubic
+            else:  # Commercial
+                rate = setting.commercial_rate_per_cubic
+            fixed_charge = setting.fixed_charge
+            billing_day = setting.billing_day_of_month
+            due_day = setting.due_day_of_month
+        else:
+            # Fallback rates if SystemSetting doesn't exist
+            rate = Decimal('22.50') if consumer.usage_type == 'Residential' else Decimal('25.00')
+            fixed_charge = Decimal('50.00')
+            billing_day = 1
+            due_day = 20
 
         total_amount = (Decimal(consumption) * rate) + fixed_charge
 
@@ -1702,8 +1706,8 @@ def confirm_reading(request, reading_id):
             consumer=consumer,
             previous_reading=previous, # Will be None if this is the first reading
             current_reading=current,
-            billing_period=current.reading_date.replace(day=1), # First day of the month
-            due_date=current.reading_date.replace(day=20), # 20th of the month
+            billing_period=current.reading_date.replace(day=billing_day),
+            due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
             rate_per_cubic=rate,
             fixed_charge=fixed_charge,
@@ -2071,11 +2075,33 @@ def user_management(request):
         messages.error(request, "Access Denied: Only superusers can manage users.")
         return render(request, 'consumers/403.html', status=403)
 
-    # Check if admin verification is required
+    # Check if admin verification is required and not expired
     admin_verified = request.session.get('admin_verified', False)
-    if not admin_verified:
+    admin_verified_time_str = request.session.get('admin_verified_time')
+
+    # Check if verification has expired (15 minutes = 900 seconds)
+    verification_expired = False
+    if admin_verified and admin_verified_time_str:
+        try:
+            from datetime import timedelta
+            verified_time = timezone.datetime.fromisoformat(admin_verified_time_str)
+            if timezone.is_naive(verified_time):
+                verified_time = timezone.make_aware(verified_time)
+            time_since_verification = timezone.now() - verified_time
+            if time_since_verification > timedelta(minutes=15):
+                verification_expired = True
+                # Clear expired verification
+                request.session.pop('admin_verified', None)
+                request.session.pop('admin_verified_time', None)
+        except (ValueError, TypeError):
+            verification_expired = True
+
+    if not admin_verified or verification_expired:
         # Redirect to verification page
-        messages.warning(request, "Admin verification required to access User Management.")
+        if verification_expired:
+            messages.warning(request, "Admin verification expired. Please verify again.")
+        else:
+            messages.warning(request, "Admin verification required to access User Management.")
         return redirect('consumers:admin_verification')
 
     # Get filter parameters
