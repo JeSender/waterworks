@@ -214,6 +214,7 @@
     <div class="sidebar bg-white text-dark position-fixed top-0 start-0 bottom-0 d-flex flex-column p-3" style="width: 250px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.1);" id="sidebar">
         <div class="logo text-center mb-4">
             <img src="{% static 'consumers/images/water_icon.png' %}" alt="Waterworks Logo" class="rounded-circle" style="width: 70px; height: 70px; border: 2px solid #00e6e6;">
+           
             <h2 class="mt-2 fs-5 fw-bold text-info">Balilihan Waterworks</h2>
         </div>
         <nav class="flex-grow-1">
@@ -236,16 +237,16 @@
                 <i class="bi bi-gear-fill me-2"></i> System Management
             </a>
 
-            <!-- Secure User Management (Superadmin & Admin Only) -->
-            {% if user.is_superuser or user.is_staff and user.staffprofile.role == 'admin' %}
+            <!-- Secure User Management (Superuser Only) -->
+            {% if user.is_superuser %}
             <a href="{% url 'consumers:admin_verification' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
                 <i class="bi bi-shield-lock-fill me-2"></i>
                 Manage Users
             </a>
             {% endif %}
 
-            <!-- Login History (Superadmin & Admin Only) -->
-            {% if user.is_superuser or user.is_staff and user.staffprofile.role == 'admin' %}
+            <!-- Login History (Admin/Superuser Only) -->
+            {% if user.is_superuser %}
             <a href="{% url 'consumers:user_login_history' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
                 <i class="bi bi-clock-history me-2"></i>
                 Login History
@@ -255,17 +256,19 @@
 
         <!-- Logout and Dark Mode in Sidebar -->
         <div class="mt-auto pt-3 border-top border-secondary">
+            <!-- User Info -->
+            <div class="d-flex align-items-center px-2 mb-2">
+                <i class="bi bi-person-circle me-2"></i>
+                <span class="text-dark small text-truncate">{{ request.user.username }}</span>
+            </div>
+            <!-- Action Buttons -->
             <div class="d-flex align-items-center justify-content-between px-2">
-                <div class="d-flex align-items-center">
-                    <i class="bi bi-person-circle me-2"></i>
-                    <span class="text-dark">{{ request.user.username }}</span>
-                </div>
-                <div>
-                    <a href="{% url 'consumers:staff_logout' %}" class="text-danger text-decoration-none me-3">Logout <i class="bi bi-box-arrow-right"></i></a>
-                    <button class="btn btn-sm btn-outline-info" onclick="toggleDarkMode()" id="dark-mode-toggle">
-                        <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
-                    </button>
-                </div>
+                <a href="{% url 'consumers:staff_logout' %}" class="text-danger text-decoration-none">
+                    Logout <i class="bi bi-box-arrow-right"></i>
+                </a>
+                <button class="btn btn-sm btn-outline-info" onclick="toggleDarkMode()" id="dark-mode-toggle">
+                    <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
+                </button>
             </div>
         </div>
     </div>
