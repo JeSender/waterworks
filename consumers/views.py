@@ -31,10 +31,60 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 
 
+# Helper function to get previous confirmed reading
+def get_previous_reading(consumer):
+    """Get the most recent confirmed meter reading for a consumer."""
+    latest_reading = MeterReading.objects.filter(
+        consumer=consumer,
+        is_confirmed=True
+    ).order_by('-reading_date', '-created_at').first()
+
+    return latest_reading.reading_value if latest_reading else 0
+
+
+# Helper function to calculate water bill
+def calculate_water_bill(consumer, consumption):
+    """Calculate water bill based on consumption and consumer type."""
+    from decimal import Decimal
+
+    # Get system settings for rates
+    settings = SystemSetting.objects.first()
+
+    if not settings:
+        # Fallback to default rates if no settings exist
+        residential_rate = Decimal('22.50')
+        commercial_rate = Decimal('25.00')
+        fixed_charge = Decimal('50.00')
+    else:
+        residential_rate = settings.residential_rate_per_cubic
+        commercial_rate = settings.commercial_rate_per_cubic
+        fixed_charge = settings.fixed_charge
+
+    # Determine rate based on usage type
+    if consumer.usage_type == 'Commercial':
+        rate = commercial_rate
+    else:
+        rate = residential_rate
+
+    # Calculate total: (consumption × rate) + fixed charge
+    consumption_charge = Decimal(str(consumption)) * rate
+    total_amount = consumption_charge + fixed_charge
+
+    return float(rate), float(total_amount)
+
+
 # NEW: API View for submitting meter readings from the Android app (Updated to match app data format)
 @csrf_exempt # Be careful with CSRF in production, consider using proper tokens for mobile apps
 def api_submit_reading(request):
-    """API endpoint for Android app to submit meter readings."""
+    """
+    API endpoint for Android app to submit meter readings.
+
+    Returns complete bill details including:
+    - status, message
+    - consumer_name, account_number, reading_date
+    - previous_reading, current_reading, consumption
+    - rate, total_amount, field_staff_name
+    """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -73,11 +123,32 @@ def api_submit_reading(request):
         try:
             # Convert to int, assuming the app sends an integer or a float that represents an integer
             # If the app sends a float representing a non-integer reading, this might need adjustment
-            reading_value = int(reading_value) # Convert float to int
-            if reading_value < 0:
+            current_reading = int(reading_value) # Convert float to int
+            if current_reading < 0:
                 raise ValueError("Reading value cannot be negative")
         except (ValueError, TypeError):
             return JsonResponse({'error': 'Invalid reading value. Must be a non-negative number.'}, status=400)
+
+        # Get previous reading
+        previous_reading = get_previous_reading(consumer)
+
+        # Calculate consumption
+        consumption = current_reading - previous_reading
+
+        # Validate consumption (current should be >= previous)
+        if consumption < 0:
+            return JsonResponse({
+                'error': 'Invalid reading',
+                'message': f'Current reading ({current_reading}) cannot be less than previous reading ({previous_reading})'
+            }, status=400)
+
+        # Calculate bill
+        rate, total_amount = calculate_water_bill(consumer, consumption)
+
+        # Get field staff name
+        field_staff_name = "System"  # Default
+        if request.user.is_authenticated:
+            field_staff_name = request.user.get_full_name() or request.user.username
 
         # --- NEW LOGIC: Check for existing unconfirmed reading on the same date ---
         try:
@@ -92,38 +163,34 @@ def api_submit_reading(request):
                 return JsonResponse({'error': error_msg}, status=400)
             else:
                 # If it's unconfirmed, update the existing record
-                existing_reading.reading_value = reading_value
+                existing_reading.reading_value = current_reading
                 existing_reading.source = 'mobile_app' # Update source to reflect API submission
                 existing_reading.save()
-                # Return success response for update
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Meter reading updated successfully',
-                    'reading_id': existing_reading.id,
-                    'consumer_name': f"{consumer.first_name} {consumer.last_name}",
-                    'account_number': consumer.account_number,
-                    'reading_value': existing_reading.reading_value,
-                    'reading_date': existing_reading.reading_date.isoformat()
-                })
 
         except MeterReading.DoesNotExist:
             # If no existing reading for the date, create a new one (original behavior)
             reading = MeterReading.objects.create(
                 consumer=consumer,
                 reading_date=reading_date,
-                reading_value=reading_value,
-                source='mobile_app' # Mark source as coming from the mobile app
+                reading_value=current_reading,
+                source='mobile_app', # Mark source as coming from the mobile app
+                is_confirmed=True  # Auto-confirm readings from mobile app
             )
-            # Return success response for creation
-            return JsonResponse({
-                'status': 'success',
-                'message': 'Meter reading submitted successfully',
-                'reading_id': reading.id,
-                'consumer_name': f"{consumer.first_name} {consumer.last_name}",
-                'account_number': consumer.account_number,
-                'reading_value': reading.reading_value,
-                'reading_date': reading.reading_date.isoformat()
-            })
+
+        # Return complete bill details (ALL 11 REQUIRED FIELDS)
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading submitted successfully',
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'account_number': consumer.account_number,
+            'reading_date': str(reading_date),
+            'previous_reading': int(previous_reading),
+            'current_reading': int(current_reading),
+            'consumption': int(consumption),
+            'rate': rate,
+            'total_amount': total_amount,
+            'field_staff_name': field_staff_name
+        })
 
     except json.JSONDecodeError:
         return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
@@ -600,7 +667,9 @@ def staff_logout(request):
 @login_required
 def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
-    from django.db.models import Sum
+    from django.db.models import Sum, Count, Q
+    from django.db.models.functions import TruncMonth
+    import json
 
     current_month = datetime.now().month
     current_year = datetime.now().year
@@ -641,6 +710,54 @@ def home(request):
         total=Sum('total_amount')
     )['total'] or Decimal('0.00')
 
+    # Chart Data: Monthly Revenue Trend (Last 6 months)
+    from dateutil.relativedelta import relativedelta
+    end_date = datetime.now().date()
+    start_date = end_date - relativedelta(months=5)
+
+    monthly_payments = Payment.objects.filter(
+        payment_date__gte=start_date,
+        payment_date__lte=end_date
+    ).annotate(
+        month=TruncMonth('payment_date')
+    ).values('month').annotate(
+        total=Sum('amount_paid')
+    ).order_by('month')
+
+    revenue_labels = []
+    revenue_data = []
+    for item in monthly_payments:
+        revenue_labels.append(item['month'].strftime('%b %Y'))
+        revenue_data.append(float(item['total'] or 0))
+
+    # Chart Data: Payment Status Distribution
+    total_bills = Bill.objects.count()
+    paid_bills = Bill.objects.filter(status='Paid').count()
+    pending_bills = Bill.objects.filter(status='Pending').count()
+
+    # Chart Data: Barangay Consumer Distribution
+    barangay_data = Consumer.objects.values('barangay__name').annotate(
+        count=Count('id')
+    ).order_by('-count')[:10]
+
+    barangay_labels = [item['barangay__name'] or 'Unassigned' for item in barangay_data]
+    barangay_counts = [item['count'] for item in barangay_data]
+
+    # Chart Data: Monthly Consumption Trend
+    monthly_consumption = Bill.objects.filter(
+        billing_period__gte=start_date
+    ).annotate(
+        month=TruncMonth('billing_period')
+    ).values('month').annotate(
+        total_consumption=Sum('consumption')
+    ).order_by('month')
+
+    consumption_labels = []
+    consumption_data = []
+    for item in monthly_consumption:
+        consumption_labels.append(item['month'].strftime('%b %Y'))
+        consumption_data.append(float(item['total_consumption'] or 0))
+
     context = {
         'connected_count': connected_count,
         'disconnected_count': disconnected_count,
@@ -649,6 +766,16 @@ def home(request):
         'total_delinquent_amount': total_delinquent_amount,
         'selected_month': selected_month,
         'selected_year': selected_year,
+        # Chart data
+        'revenue_labels': json.dumps(revenue_labels),
+        'revenue_data': json.dumps(revenue_data),
+        'paid_bills': paid_bills,
+        'pending_bills': pending_bills,
+        'barangay_labels': json.dumps(barangay_labels),
+        'barangay_counts': json.dumps(barangay_counts),
+        'consumption_labels': json.dumps(consumption_labels),
+        'consumption_data': json.dumps(consumption_data),
+        'total_bills': total_bills,
     }
     return render(request, 'consumers/home.html', context)
 

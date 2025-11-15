@@ -213,8 +213,7 @@
                                 </button>
                                 {% if user != request.user %}
                                 <button class="btn btn-outline-danger"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#deleteUserModal{{ user.id }}"
+                                        onclick="confirmDeleteUser('{{ user.id }}', '{{ user.username }}')"
                                         title="Delete User">
                                     <i class="bi bi-trash-fill"></i>
                                 </button>
@@ -497,6 +496,65 @@ document.getElementById('password')?.addEventListener('input', function(e) {
     if (strength === 1) strengthDiv.classList.add('weak');
     else if (strength === 2) strengthDiv.classList.add('medium');
     else if (strength === 3) strengthDiv.classList.add('strong');
+});
+
+// Delete user confirmation
+async function confirmDeleteUser(userId, username) {
+    const result = await Swal.fire({
+        title: 'Delete User?',
+        html: `
+            <div class="text-start">
+                <div class="alert alert-danger mb-3">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                    <strong>Warning!</strong> This action cannot be undone.
+                </div>
+                <p>Are you sure you want to delete user <strong>${username}</strong>?</p>
+                <p class="text-muted">All associated data will be permanently removed.</p>
+            </div>
+        `,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: '<i class="bi bi-trash-fill me-1"></i> Delete User',
+        cancelButtonText: 'Cancel',
+        focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+        showLoading('Deleting user...');
+
+        // Create and submit form
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/user/${userId}/delete/`;
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+// Show success message if user was created/updated/deleted
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const success = urlParams.get('success');
+
+    if (success === 'user_created') {
+        showToast('success', 'User created successfully!');
+    } else if (success === 'user_updated') {
+        showToast('success', 'User updated successfully!');
+    } else if (success === 'user_deleted') {
+        showToast('success', 'User deleted successfully!');
+    } else if (success === 'password_reset') {
+        showToast('success', 'Password reset successfully!');
+    }
 });
 </script>
 {% endblock %}
