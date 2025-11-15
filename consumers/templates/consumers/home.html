@@ -15,44 +15,77 @@
         overflow-y: auto !important;
     }
 
-    /* Compact Dashboard Header */
+    /* Ultra Compact Dashboard Header */
     .dashboard-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 1.25rem 1.5rem;
-        border-radius: 12px;
-        margin-bottom: 1rem;
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        margin-bottom: 0.75rem;
         box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
     .dashboard-header h2 {
         font-weight: 700;
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
+        font-size: 1.25rem;
+        margin: 0;
     }
 
     .dashboard-header p {
         opacity: 0.95;
-        font-size: 0.9rem;
+        font-size: 0.8rem;
         margin: 0;
     }
 
-    /* Compact Metric Cards with View Buttons */
+    /* Filter Section */
+    .filter-section {
+        background: white;
+        padding: 0.75rem 1rem;
+        border-radius: 10px;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .dark-mode .filter-section {
+        background-color: #2d2d2d !important;
+        border: 1px solid #404040;
+    }
+
+    .filter-section label {
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin: 0;
+        white-space: nowrap;
+    }
+
+    .filter-section select {
+        font-size: 0.85rem;
+        padding: 0.375rem 0.75rem;
+        border-radius: 6px;
+    }
+
+    /* Ultra Compact Metric Cards */
     .metric-card {
         background: white;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
-        border-top: 4px solid;
+        border-top: 3px solid;
         height: 100%;
         display: flex;
         flex-direction: column;
     }
 
     .metric-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     }
 
     .metric-card.success {
@@ -72,8 +105,8 @@
     }
 
     .metric-icon {
-        font-size: 2rem;
-        margin-bottom: 0.5rem;
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
     }
 
     .metric-card.success .metric-icon {
@@ -93,7 +126,7 @@
     }
 
     .metric-card .value {
-        font-size: 2rem;
+        font-size: 1.5rem;
         font-weight: 800;
         color: #1e293b;
         line-height: 1;
@@ -101,31 +134,31 @@
     }
 
     .metric-card h6 {
-        font-size: 0.75rem;
+        font-size: 0.7rem;
         color: #64748b;
         text-transform: uppercase;
-        letter-spacing: 0.5px;
+        letter-spacing: 0.3px;
         font-weight: 600;
         margin-bottom: auto;
     }
 
     .metric-card .btn {
-        padding: 0.4rem 1rem;
-        font-size: 0.75rem;
+        padding: 0.3rem 0.75rem;
+        font-size: 0.7rem;
         font-weight: 600;
-        border-radius: 8px;
-        margin-top: 0.75rem;
+        border-radius: 6px;
+        margin-top: 0.5rem;
         text-transform: uppercase;
     }
 
-    /* Compact Chart Containers */
+    /* Ultra Compact Chart Containers */
     .chart-container {
         position: relative;
-        height: 220px;
+        height: 180px;
         background: white;
-        border-radius: 12px;
-        padding: 1rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         border: 1px solid #f0f0f0;
     }
 
@@ -135,10 +168,10 @@
     }
 
     .chart-title {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         font-weight: 700;
         color: #1e293b;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -161,35 +194,44 @@
         color: #a0a0a0;
     }
 
-    /* Recent Bills Table - Compact */
+    /* Ultra Compact Bills Table */
     .bills-table-container {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        border-radius: 10px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         overflow: hidden;
     }
 
     .bills-table-container .card-header {
-        padding: 0.75rem 1rem;
+        padding: 0.5rem 0.75rem;
+    }
+
+    .bills-table-container .card-header h5 {
+        font-size: 0.85rem !important;
+        margin: 0;
     }
 
     .bills-table-container .table {
-        font-size: 0.85rem;
+        font-size: 0.75rem;
         margin-bottom: 0;
     }
 
     .bills-table-container .table th,
     .bills-table-container .table td {
-        padding: 0.5rem;
+        padding: 0.35rem 0.5rem;
+    }
+
+    .bills-table-container .table th {
+        font-size: 0.7rem;
     }
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .chart-container {
-            height: 200px;
+            height: 160px;
         }
         .metric-card .value {
-            font-size: 1.75rem;
+            font-size: 1.25rem;
         }
     }
 
@@ -203,15 +245,32 @@
 {% endblock %}
 
 {% block main_content %}
-<div class="container-fluid p-3">
+<div class="container-fluid p-2">
     <!-- Dashboard Header -->
     <div class="dashboard-header">
-        <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard Overview</h2>
-        <p>Welcome, {{ request.user.get_full_name|default:request.user.username }}! Here's your complete system overview.</p>
+        <div>
+            <h2><i class="bi bi-speedometer2 me-2"></i>Dashboard</h2>
+        </div>
+        <div class="text-end">
+            <small>{{ request.user.get_full_name|default:request.user.username }}</small>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="filter-section">
+        <i class="bi bi-funnel-fill text-primary"></i>
+        <label for="viewType"><i class="bi bi-calendar3 me-1"></i>View:</label>
+        <select id="viewType" class="form-select form-select-sm" style="width: auto;" onchange="updateCharts()">
+            <option value="monthly" selected>Monthly</option>
+            <option value="yearly">Yearly</option>
+        </select>
+        <label for="selectedPeriod" class="ms-3">Period:</label>
+        <input type="month" id="selectedPeriod" class="form-control form-control-sm" style="width: auto;"
+               value="{{ selected_year }}-{{ selected_month|stringformat:'02d' }}" onchange="updateCharts()">
     </div>
 
     <!-- Key Metrics Row with View Buttons -->
-    <div class="row g-3 mb-3">
+    <div class="row g-2 mb-2">
         <div class="col-lg-3 col-md-6">
             <div class="metric-card success">
                 <div class="metric-icon"><i class="bi bi-droplet-fill"></i></div>
@@ -255,7 +314,7 @@
     </div>
 
     <!-- Charts Row 1: Revenue & Payment Status -->
-    <div class="row g-3 mb-3">
+    <div class="row g-2 mb-2">
         <div class="col-lg-8">
             <div class="chart-container">
                 <div class="chart-title">
@@ -277,7 +336,7 @@
     </div>
 
     <!-- Charts Row 2: Consumption & Barangay Distribution -->
-    <div class="row g-3 mb-3">
+    <div class="row g-2 mb-2">
         <div class="col-lg-8">
             <div class="chart-container">
                 <div class="chart-title">
@@ -307,7 +366,7 @@
             </h5>
         </div>
         <div class="card-body p-0">
-            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+            <div class="table-responsive" style="max-height: 200px; overflow-y: auto;">
                 <table class="table table-hover align-middle mb-0">
                     <thead class="table-light sticky-top">
                         <tr>
@@ -358,16 +417,35 @@
 
 {% block extra_js %}
 <script>
+// Update charts based on filter selection
+function updateCharts() {
+    const viewType = document.getElementById('viewType').value;
+    const selectedPeriod = document.getElementById('selectedPeriod').value;
+
+    // Extract year and month from the period input
+    const [year, month] = selectedPeriod.split('-');
+
+    // Reload the page with the selected parameters
+    window.location.href = `?month_year=${selectedPeriod}&view_type=${viewType}`;
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Chart.js default configuration
+    // Chart.js default configuration for compact layout
     Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
-    Chart.defaults.font.size = 12;
+    Chart.defaults.font.size = 10;
     Chart.defaults.color = '#64748b';
 
     // Check if dark mode is enabled
     const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
     const textColor = isDarkMode ? '#ffffff' : '#64748b';
     const gridColor = isDarkMode ? '#404040' : '#e2e8f0';
+
+    // Restore filter selection from URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const viewType = urlParams.get('view_type');
+    if (viewType) {
+        document.getElementById('viewType').value = viewType;
+    }
 
     // 1. Revenue Trend Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
@@ -380,14 +458,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 data: {{ revenue_data|safe }},
                 borderColor: '#667eea',
                 backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                borderWidth: 3,
+                borderWidth: 2,
                 fill: true,
                 tension: 0.4,
-                pointRadius: 5,
-                pointHoverRadius: 7,
+                pointRadius: 3,
+                pointHoverRadius: 5,
                 pointBackgroundColor: '#667eea',
                 pointBorderColor: '#fff',
-                pointBorderWidth: 2
+                pointBorderWidth: 1
             }]
         },
         options: {
@@ -397,7 +475,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     display: true,
                     position: 'bottom',
-                    labels: { color: textColor }
+                    labels: {
+                        color: textColor,
+                        padding: 8,
+                        font: { size: 9 }
+                    }
                 },
                 tooltip: {
                     callbacks: {
@@ -486,7 +568,11 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     display: true,
                     position: 'bottom',
-                    labels: { color: textColor }
+                    labels: {
+                        color: textColor,
+                        padding: 8,
+                        font: { size: 9 }
+                    }
                 }
             },
             scales: {
