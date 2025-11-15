@@ -268,3 +268,4 @@ class SystemSettingAdmin(admin.ModelAdmin):
     # fields = ['residential_rate_per_cubic', 'commercial_rate_per_cubic'] # Show only these fields in the edit form
 
 # ... (register other models if needed) ...
+

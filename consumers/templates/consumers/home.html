@@ -5,13 +5,126 @@
 
 {% block extra_css %}
 <style>
-    /* Dashboard specific styles */
-    .chart-container {
-        position: relative;
-        height: 300px;
+    /* Compact Dashboard Layout */
+    body {
+        overflow-y: auto !important;
+    }
+
+    .main-content {
+        max-height: 100vh;
+        overflow-y: auto !important;
+    }
+
+    /* Compact Dashboard Header */
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.25rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+    }
+
+    .dashboard-header h2 {
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .dashboard-header p {
+        opacity: 0.95;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Compact Metric Cards with View Buttons */
+    .metric-card {
         background: white;
         border-radius: 12px;
-        padding: 1.5rem;
+        padding: 1rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border-top: 4px solid;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+    }
+
+    .metric-card.success {
+        border-top-color: #10b981;
+    }
+
+    .metric-card.warning {
+        border-top-color: #f59e0b;
+    }
+
+    .metric-card.danger {
+        border-top-color: #ef4444;
+    }
+
+    .metric-card.primary {
+        border-top-color: #667eea;
+    }
+
+    .metric-icon {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .metric-card.success .metric-icon {
+        color: #10b981;
+    }
+
+    .metric-card.danger .metric-icon {
+        color: #ef4444;
+    }
+
+    .metric-card.warning .metric-icon {
+        color: #f59e0b;
+    }
+
+    .metric-card.primary .metric-icon {
+        color: #667eea;
+    }
+
+    .metric-card .value {
+        font-size: 2rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+    }
+
+    .metric-card h6 {
+        font-size: 0.75rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 600;
+        margin-bottom: auto;
+    }
+
+    .metric-card .btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.75rem;
+        font-weight: 600;
+        border-radius: 8px;
+        margin-top: 0.75rem;
+        text-transform: uppercase;
+    }
+
+    /* Compact Chart Containers */
+    .chart-container {
+        position: relative;
+        height: 220px;
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
         box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
         border: 1px solid #f0f0f0;
     }
@@ -22,10 +135,10 @@
     }
 
     .chart-title {
-        font-size: 1rem;
+        font-size: 0.85rem;
         font-weight: 700;
         color: #1e293b;
-        margin-bottom: 1rem;
+        margin-bottom: 0.75rem;
         display: flex;
         align-items: center;
         gap: 0.5rem;
@@ -35,71 +148,48 @@
         color: #ffffff;
     }
 
-    .metric-card {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1.5rem;
+    .dark-mode .metric-card {
+        background-color: #2d2d2d !important;
+        color: #ffffff;
+    }
+
+    .dark-mode .metric-card .value {
+        color: #ffffff;
+    }
+
+    .dark-mode .metric-card h6 {
+        color: #a0a0a0;
+    }
+
+    /* Recent Bills Table - Compact */
+    .bills-table-container {
+        background: white;
         border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
-        transition: transform 0.3s ease;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        overflow: hidden;
     }
 
-    .metric-card:hover {
-        transform: translateY(-4px);
+    .bills-table-container .card-header {
+        padding: 0.75rem 1rem;
     }
 
-    .metric-card h6 {
-        font-size: 0.8rem;
-        opacity: 0.9;
-        margin-bottom: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .bills-table-container .table {
+        font-size: 0.85rem;
+        margin-bottom: 0;
     }
 
-    .metric-card .value {
-        font-size: 2rem;
-        font-weight: 800;
-        line-height: 1;
-    }
-
-    .metric-card.success {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-    }
-
-    .metric-card.warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-    }
-
-    .metric-card.danger {
-        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
-    }
-
-    /* Dashboard Header */
-    .dashboard-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.5rem;
-        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
-    }
-
-    .dashboard-header h2 {
-        font-weight: 700;
-        font-size: 1.75rem;
-        margin-bottom: 0.5rem;
-    }
-
-    .dashboard-header p {
-        opacity: 0.95;
-        font-size: 1rem;
-        margin: 0;
+    .bills-table-container .table th,
+    .bills-table-container .table td {
+        padding: 0.5rem;
     }
 
     /* Responsive adjustments */
     @media (max-width: 768px) {
         .chart-container {
-            height: 250px;
+            height: 200px;
+        }
+        .metric-card .value {
+            font-size: 1.75rem;
         }
     }
 
@@ -120,40 +210,52 @@
         <p>Welcome, {{ request.user.get_full_name|default:request.user.username }}! Here's your complete system overview.</p>
     </div>
 
-    <!-- Key Metrics Row -->
-    <div class="row g-3 mb-4">
+    <!-- Key Metrics Row with View Buttons -->
+    <div class="row g-3 mb-3">
         <div class="col-lg-3 col-md-6">
             <div class="metric-card success">
-                <h6><i class="bi bi-droplet-fill me-1"></i>Connected</h6>
+                <div class="metric-icon"><i class="bi bi-droplet-fill"></i></div>
                 <div class="value">{{ connected_count }}</div>
-                <small>Active Consumers</small>
+                <h6>Connected Consumers</h6>
+                <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-success w-100">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="metric-card danger">
-                <h6><i class="bi bi-x-circle-fill me-1"></i>Disconnected</h6>
+                <div class="metric-icon"><i class="bi bi-x-circle-fill"></i></div>
                 <div class="value">{{ disconnected_count }}</div>
-                <small>Inactive Consumers</small>
+                <h6>Disconnected Consumers</h6>
+                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-danger w-100">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
             <div class="metric-card warning">
-                <h6><i class="bi bi-exclamation-triangle-fill me-1"></i>Delinquent</h6>
+                <div class="metric-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
                 <div class="value">{{ delinquent_count }}</div>
-                <small>Overdue Bills</small>
+                <h6>Delinquent Accounts</h6>
+                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-warning w-100">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
             </div>
         </div>
         <div class="col-lg-3 col-md-6">
-            <div class="metric-card">
-                <h6><i class="bi bi-file-earmark-text me-1"></i>Total Bills</h6>
+            <div class="metric-card primary">
+                <div class="metric-icon"><i class="bi bi-file-earmark-text"></i></div>
                 <div class="value">{{ total_bills }}</div>
-                <small>All Time</small>
+                <h6>Total Bills</h6>
+                <a href="{% url 'consumers:reports' %}" class="btn btn-primary w-100">
+                    <i class="bi bi-graph-up me-1"></i>Generate Report
+                </a>
             </div>
         </div>
     </div>
 
     <!-- Charts Row 1: Revenue & Payment Status -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         <div class="col-lg-8">
             <div class="chart-container">
                 <div class="chart-title">
@@ -175,7 +277,7 @@
     </div>
 
     <!-- Charts Row 2: Consumption & Barangay Distribution -->
-    <div class="row g-3 mb-4">
+    <div class="row g-3 mb-3">
         <div class="col-lg-8">
             <div class="chart-container">
                 <div class="chart-title">
@@ -196,18 +298,18 @@
         </div>
     </div>
 
-    <!-- Recent Delinquent Bills Section -->
-    <div class="card shadow-sm border-0 rounded-3">
+    <!-- Recent Delinquent Bills Section - Compact -->
+    <div class="bills-table-container card shadow-sm border-0 rounded-3">
         <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-            <h5 class="mb-0">
+            <h5 class="mb-0" style="font-size: 1rem;">
                 <i class="bi bi-clock-history me-2"></i>
                 Recent Delinquent Bills - {{ selected_month|date:"F" }} {{ selected_year }}
             </h5>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover align-middle">
-                    <thead class="table-light">
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 300px; overflow-y: auto;">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light sticky-top">
                         <tr>
                             <th>Account No.</th>
                             <th>Consumer Name</th>
@@ -243,8 +345,8 @@
                 </table>
             </div>
             {% if delinquent_bills.count > 10 %}
-            <div class="text-center mt-3">
-                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-outline-primary">
+            <div class="text-center p-2 border-top">
+                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-outline-primary btn-sm">
                     View All {{ delinquent_bills.count }} Delinquent Bills
                 </a>
             </div>
