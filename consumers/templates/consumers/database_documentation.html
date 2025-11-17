@@ -1,0 +1,763 @@
+{% extends "consumers/base.html" %}
+{% load humanize %}
+
+{% block title %}Database Documentation - Balilihan Waterworks{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Database Documentation Styles */
+    .doc-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+
+    .doc-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        margin: 0 0 0.5rem 0;
+    }
+
+    .doc-header p {
+        margin: 0;
+        opacity: 0.95;
+    }
+
+    /* Statistics Cards */
+    .stat-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .stat-card.primary {
+        border-left-color: #667eea;
+    }
+
+    .stat-card.success {
+        border-left-color: #10b981;
+    }
+
+    .stat-card.info {
+        border-left-color: #06b6d4;
+    }
+
+    .stat-card.warning {
+        border-left-color: #f59e0b;
+    }
+
+    .stat-card .stat-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        margin-bottom: 0.25rem;
+    }
+
+    .stat-card.primary .stat-value {
+        color: #667eea;
+    }
+
+    .stat-card.success .stat-value {
+        color: #10b981;
+    }
+
+    .stat-card.info .stat-value {
+        color: #06b6d4;
+    }
+
+    .stat-card.warning .stat-value {
+        color: #f59e0b;
+    }
+
+    .stat-card .stat-label {
+        color: #64748b;
+        font-size: 0.875rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    /* Section Headers */
+    .section-header {
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        margin: 2rem 0 1rem 0;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+        border-left: 4px solid #667eea;
+    }
+
+    .section-header h2 {
+        margin: 0;
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .section-header p {
+        margin: 0.25rem 0 0 0;
+        color: #64748b;
+        font-size: 0.9rem;
+    }
+
+    /* Table Schema Cards */
+    .table-schema-card {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+
+    .table-schema-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+    }
+
+    .table-schema-header h3 {
+        margin: 0 0 0.25rem 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+    }
+
+    .table-schema-header .model-name {
+        opacity: 0.9;
+        font-size: 0.85rem;
+        font-family: 'Courier New', monospace;
+    }
+
+    .table-schema-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.95;
+        font-size: 0.9rem;
+    }
+
+    .table-schema-body {
+        padding: 0;
+    }
+
+    .schema-table {
+        width: 100%;
+        margin: 0;
+    }
+
+    .schema-table th {
+        background: #f8fafc;
+        color: #475569;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .schema-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.9rem;
+    }
+
+    .schema-table tr:last-child td {
+        border-bottom: none;
+    }
+
+    .schema-table .field-name {
+        font-family: 'Courier New', monospace;
+        color: #667eea;
+        font-weight: 600;
+    }
+
+    .schema-table .field-type {
+        color: #10b981;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+
+    .schema-table .field-constraint {
+        color: #f59e0b;
+        font-size: 0.85rem;
+    }
+
+    /* Data Table Cards */
+    .data-card {
+        background: white;
+        border-radius: 12px;
+        padding: 0;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #e2e8f0;
+    }
+
+    .data-card-header {
+        background: #f8fafc;
+        padding: 1rem 1.5rem;
+        border-bottom: 2px solid #e2e8f0;
+    }
+
+    .data-card-header h3 {
+        margin: 0;
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+
+    .data-table-container {
+        overflow-x: auto;
+        max-height: 400px;
+    }
+
+    .data-table {
+        width: 100%;
+        margin: 0;
+    }
+
+    .data-table th {
+        background: #667eea;
+        color: white;
+        font-weight: 600;
+        padding: 0.75rem 1rem;
+        font-size: 0.85rem;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .data-table td {
+        padding: 0.75rem 1rem;
+        border-bottom: 1px solid #f1f5f9;
+        font-size: 0.875rem;
+    }
+
+    .data-table tr:hover {
+        background: #f8fafc;
+    }
+
+    .badge-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-active {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-disconnected {
+        background: #fee2e2;
+        color: #991b1b;
+    }
+
+    .badge-paid {
+        background: #d1fae5;
+        color: #065f46;
+    }
+
+    .badge-pending {
+        background: #fef3c7;
+        color: #92400e;
+    }
+
+    /* Tab Navigation */
+    .doc-tabs {
+        display: flex;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .doc-tab {
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        background: white;
+        border: 2px solid #e2e8f0;
+        color: #64748b;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+    }
+
+    .doc-tab:hover {
+        background: #f8fafc;
+        border-color: #667eea;
+        color: #667eea;
+    }
+
+    .doc-tab.active {
+        background: #667eea;
+        border-color: #667eea;
+        color: white;
+    }
+
+    /* Dark Mode Support */
+    .dark-mode .stat-card,
+    .dark-mode .section-header,
+    .dark-mode .table-schema-card,
+    .dark-mode .data-card {
+        background-color: #2d2d2d;
+        border-color: #404040;
+    }
+
+    .dark-mode .stat-card .stat-label,
+    .dark-mode .section-header h2,
+    .dark-mode .data-card-header h3 {
+        color: #ffffff;
+    }
+
+    .dark-mode .section-header p {
+        color: #a0a0a0;
+    }
+
+    .dark-mode .schema-table th,
+    .dark-mode .data-card-header {
+        background-color: #3a3a3a;
+        color: #ffffff;
+    }
+
+    .dark-mode .schema-table td,
+    .dark-mode .data-table td {
+        border-color: #404040;
+    }
+
+    .dark-mode .data-table tr:hover {
+        background-color: #3a3a3a;
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid px-3 py-2">
+    <!-- Documentation Header -->
+    <div class="doc-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1><i class="bi bi-database-fill me-2"></i>Database Documentation</h1>
+                <p>Comprehensive database schema, tables, and test data for Balilihan Waterworks System</p>
+            </div>
+            <div>
+                <a href="{% url 'consumers:home' %}" class="btn btn-light">
+                    <i class="bi bi-arrow-left me-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Overview -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card primary">
+                <div class="stat-value">{{ total_consumers|intcomma }}</div>
+                <div class="stat-label">Total Consumers</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card success">
+                <div class="stat-value">{{ total_bills|intcomma }}</div>
+                <div class="stat-label">Total Bills</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card info">
+                <div class="stat-value">{{ total_meter_readings|intcomma }}</div>
+                <div class="stat-label">Meter Readings</div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card warning">
+                <div class="stat-value">{{ total_payments|intcomma }}</div>
+                <div class="stat-label">Total Payments</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="doc-tabs">
+        <a href="#schema" class="doc-tab active" onclick="showSection('schema'); return false;">
+            <i class="bi bi-table me-1"></i>Database Schema
+        </a>
+        <a href="#test-data" class="doc-tab" onclick="showSection('test-data'); return false;">
+            <i class="bi bi-file-earmark-spreadsheet me-1"></i>Test Data
+        </a>
+        <a href="#system-settings" class="doc-tab" onclick="showSection('system-settings'); return false;">
+            <i class="bi bi-gear me-1"></i>System Settings
+        </a>
+    </div>
+
+    <!-- DATABASE SCHEMA SECTION -->
+    <div id="schema-section">
+        <div class="section-header">
+            <h2><i class="bi bi-diagram-3 me-2"></i>Database Schema</h2>
+            <p>Detailed table structures and field definitions</p>
+        </div>
+
+        {% for table in database_tables %}
+        <div class="table-schema-card">
+            <div class="table-schema-header">
+                <h3>{{ table.name }}</h3>
+                <div class="model-name">{{ table.model }}</div>
+                <p>{{ table.description }}</p>
+            </div>
+            <div class="table-schema-body">
+                <table class="schema-table">
+                    <thead>
+                        <tr>
+                            <th>Field Name</th>
+                            <th>Data Type</th>
+                            <th>Constraints</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for field in table.fields %}
+                        <tr>
+                            <td class="field-name">{{ field.name }}</td>
+                            <td class="field-type">{{ field.type }}</td>
+                            <td class="field-constraint">{{ field.constraints }}</td>
+                            <td>{{ field.description }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- TEST DATA SECTION -->
+    <div id="test-data-section" style="display: none;">
+        <div class="section-header">
+            <h2><i class="bi bi-file-earmark-spreadsheet me-2"></i>Test Data</h2>
+            <p>Sample data currently in the database</p>
+        </div>
+
+        <!-- Barangays Data -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-geo-alt-fill me-2"></i>Barangays ({{ total_barangays }})</h3>
+            </div>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Barangay Name</th>
+                            <th>Total Puroks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for barangay in barangays %}
+                        <tr>
+                            <td>{{ barangay.id }}</td>
+                            <td><strong>{{ barangay.name }}</strong></td>
+                            <td>{{ barangay.puroks.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No barangays found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Meter Brands Data -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-speedometer2 me-2"></i>Meter Brands ({{ total_meter_brands }})</h3>
+            </div>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Brand Name</th>
+                            <th>Consumers Using</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for brand in meter_brands %}
+                        <tr>
+                            <td>{{ brand.id }}</td>
+                            <td><strong>{{ brand.name }}</strong></td>
+                            <td>{{ brand.consumer_set.count }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="3" class="text-center text-muted">No meter brands found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Consumers Data -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-people-fill me-2"></i>Consumers (Showing 8 of {{ total_consumers }})</h3>
+            </div>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Account No.</th>
+                            <th>Full Name</th>
+                            <th>Barangay</th>
+                            <th>Usage Type</th>
+                            <th>Status</th>
+                            <th>Registration Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for consumer in consumers %}
+                        <tr>
+                            <td><strong>{{ consumer.account_number }}</strong></td>
+                            <td>{{ consumer.full_name }}</td>
+                            <td>{{ consumer.barangay.name|default:"N/A" }}</td>
+                            <td>{{ consumer.usage_type }}</td>
+                            <td>
+                                {% if consumer.status == 'active' %}
+                                <span class="badge-status badge-active">Active</span>
+                                {% else %}
+                                <span class="badge-status badge-disconnected">Disconnected</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ consumer.registration_date|date:"M d, Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No consumers found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Bills Data -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-file-earmark-text-fill me-2"></i>Recent Bills (Showing 10 of {{ total_bills }})</h3>
+            </div>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Bill ID</th>
+                            <th>Consumer</th>
+                            <th>Billing Period</th>
+                            <th>Consumption (m³)</th>
+                            <th>Total Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in bills %}
+                        <tr>
+                            <td><strong>#{{ bill.id }}</strong></td>
+                            <td>{{ bill.consumer.account_number }} - {{ bill.consumer.full_name }}</td>
+                            <td>{{ bill.billing_period|date:"F Y" }}</td>
+                            <td>{{ bill.consumption }} m³</td>
+                            <td><strong>₱{{ bill.total_amount|floatformat:2|intcomma }}</strong></td>
+                            <td>
+                                {% if bill.status == 'Paid' %}
+                                <span class="badge-status badge-paid">Paid</span>
+                                {% else %}
+                                <span class="badge-status badge-pending">{{ bill.status }}</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No bills found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Payments Data -->
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-cash-coin me-2"></i>Recent Payments (Showing 10 of {{ total_payments }})</h3>
+            </div>
+            <div class="data-table-container">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>OR Number</th>
+                            <th>Consumer</th>
+                            <th>Amount Paid</th>
+                            <th>Received Amount</th>
+                            <th>Change</th>
+                            <th>Payment Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for payment in payments %}
+                        <tr>
+                            <td><strong>{{ payment.or_number }}</strong></td>
+                            <td>{{ payment.bill.consumer.account_number }} - {{ payment.bill.consumer.full_name }}</td>
+                            <td>₱{{ payment.amount_paid|floatformat:2|intcomma }}</td>
+                            <td>₱{{ payment.received_amount|floatformat:2|intcomma }}</td>
+                            <td>₱{{ payment.change|floatformat:2|intcomma }}</td>
+                            <td>{{ payment.payment_date|date:"M d, Y h:i A" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center text-muted">No payments found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- SYSTEM SETTINGS SECTION -->
+    <div id="system-settings-section" style="display: none;">
+        <div class="section-header">
+            <h2><i class="bi bi-gear-fill me-2"></i>System Settings</h2>
+            <p>Current system configuration and billing rates</p>
+        </div>
+
+        {% if system_settings %}
+        <div class="data-card">
+            <div class="data-card-header">
+                <h3><i class="bi bi-sliders me-2"></i>Billing Configuration</h3>
+            </div>
+            <div class="table-responsive">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Setting</th>
+                            <th>Value</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Residential Rate</strong></td>
+                            <td class="text-success"><strong>₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} / m³</strong></td>
+                            <td>Rate applied to residential consumers</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Commercial Rate</strong></td>
+                            <td class="text-success"><strong>₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} / m³</strong></td>
+                            <td>Rate applied to commercial consumers</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Fixed Charge</strong></td>
+                            <td class="text-primary"><strong>₱{{ system_settings.fixed_charge|floatformat:2 }}</strong></td>
+                            <td>Fixed monthly charge added to all bills</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Billing Day</strong></td>
+                            <td><strong>Day {{ system_settings.billing_day_of_month }}</strong></td>
+                            <td>Day of the month when billing period starts</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Due Day</strong></td>
+                            <td><strong>Day {{ system_settings.due_day_of_month }}</strong></td>
+                            <td>Day of the month when payment is due</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Last Updated</strong></td>
+                            <td>{{ system_settings.updated_at|date:"M d, Y h:i A" }}</td>
+                            <td>Last time settings were modified</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Sample Billing Calculation -->
+        <div class="data-card mt-4">
+            <div class="data-card-header">
+                <h3><i class="bi bi-calculator me-2"></i>Sample Billing Calculation</h3>
+            </div>
+            <div class="p-4">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h5 class="text-primary mb-3"><i class="bi bi-house-fill me-2"></i>Residential Example</h5>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2"><strong>Consumption:</strong> 15 m³</p>
+                            <p class="mb-2"><strong>Rate:</strong> ₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} / m³</p>
+                            <p class="mb-2"><strong>Water Charge:</strong> 15 × ₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} = ₱{{ system_settings.residential_rate_per_cubic|multiply:15|floatformat:2 }}</p>
+                            <p class="mb-2"><strong>Fixed Charge:</strong> ₱{{ system_settings.fixed_charge|floatformat:2 }}</p>
+                            <hr>
+                            <p class="mb-0"><strong class="text-success">Total Bill:</strong> <span class="h4 text-success">₱{{ system_settings.residential_rate_per_cubic|multiply:15|add:system_settings.fixed_charge|floatformat:2 }}</span></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <h5 class="text-info mb-3"><i class="bi bi-building me-2"></i>Commercial Example</h5>
+                        <div class="bg-light p-3 rounded">
+                            <p class="mb-2"><strong>Consumption:</strong> 30 m³</p>
+                            <p class="mb-2"><strong>Rate:</strong> ₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} / m³</p>
+                            <p class="mb-2"><strong>Water Charge:</strong> 30 × ₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} = ₱{{ system_settings.commercial_rate_per_cubic|multiply:30|floatformat:2 }}</p>
+                            <p class="mb-2"><strong>Fixed Charge:</strong> ₱{{ system_settings.fixed_charge|floatformat:2 }}</p>
+                            <hr>
+                            <p class="mb-0"><strong class="text-info">Total Bill:</strong> <span class="h4 text-info">₱{{ system_settings.commercial_rate_per_cubic|multiply:30|add:system_settings.fixed_charge|floatformat:2 }}</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            No system settings configured. Please configure system settings in the admin panel.
+        </div>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function showSection(section) {
+    // Hide all sections
+    document.getElementById('schema-section').style.display = 'none';
+    document.getElementById('test-data-section').style.display = 'none';
+    document.getElementById('system-settings-section').style.display = 'none';
+
+    // Remove active class from all tabs
+    document.querySelectorAll('.doc-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Show selected section
+    if (section === 'schema') {
+        document.getElementById('schema-section').style.display = 'block';
+        document.querySelector('a[href="#schema"]').classList.add('active');
+    } else if (section === 'test-data') {
+        document.getElementById('test-data-section').style.display = 'block';
+        document.querySelector('a[href="#test-data"]').classList.add('active');
+    } else if (section === 'system-settings') {
+        document.getElementById('system-settings-section').style.display = 'block';
+        document.querySelector('a[href="#system-settings"]').classList.add('active');
+    }
+}
+</script>
+{% endblock %}

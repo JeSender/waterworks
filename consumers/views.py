@@ -2468,3 +2468,146 @@ def reset_user_password(request, user_id):
         return redirect('consumers:user_management')
 
     return redirect('consumers:user_management')
+
+
+# ===========================
+# DATABASE DOCUMENTATION VIEW
+# ===========================
+@login_required
+def database_documentation(request):
+    """Display database schema, tables, and test data in a user-friendly UI."""
+
+    # Get database statistics
+    context = {
+        # Table counts
+        'total_consumers': Consumer.objects.count(),
+        'total_barangays': Barangay.objects.count(),
+        'total_puroks': Purok.objects.count(),
+        'total_meter_brands': MeterBrand.objects.count(),
+        'total_meter_readings': MeterReading.objects.count(),
+        'total_bills': Bill.objects.count(),
+        'total_payments': Payment.objects.count(),
+        'total_users': User.objects.count(),
+
+        # Sample data - Barangays
+        'barangays': Barangay.objects.all().order_by('name')[:10],
+
+        # Sample data - Puroks
+        'puroks': Purok.objects.select_related('barangay').all()[:10],
+
+        # Sample data - Meter Brands
+        'meter_brands': MeterBrand.objects.all(),
+
+        # Sample data - Consumers
+        'consumers': Consumer.objects.select_related('barangay', 'purok', 'meter_brand').all()[:8],
+
+        # Sample data - Meter Readings
+        'meter_readings': MeterReading.objects.select_related('consumer').order_by('-reading_date')[:10],
+
+        # Sample data - Bills
+        'bills': Bill.objects.select_related('consumer', 'current_reading', 'previous_reading').order_by('-billing_period')[:10],
+
+        # Sample data - Payments
+        'payments': Payment.objects.select_related('bill', 'bill__consumer').order_by('-payment_date')[:10],
+
+        # System Settings
+        'system_settings': SystemSetting.objects.first(),
+
+        # Database schema information
+        'database_tables': [
+            {
+                'name': 'Barangay',
+                'model': 'consumers_barangay',
+                'description': 'Stores barangay (village) information',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'name', 'type': 'VARCHAR(100)', 'constraints': 'UNIQUE, NOT NULL', 'description': 'Barangay name'},
+                ]
+            },
+            {
+                'name': 'Purok',
+                'model': 'consumers_purok',
+                'description': 'Stores purok (zone) information within barangays',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'name', 'type': 'VARCHAR(100)', 'constraints': 'NOT NULL', 'description': 'Purok name'},
+                    {'name': 'barangay_id', 'type': 'INTEGER', 'constraints': 'FOREIGN KEY', 'description': 'Reference to Barangay'},
+                ]
+            },
+            {
+                'name': 'MeterBrand',
+                'model': 'consumers_meterbrand',
+                'description': 'Stores water meter brand information',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'name', 'type': 'VARCHAR(100)', 'constraints': 'UNIQUE, NOT NULL', 'description': 'Meter brand name'},
+                ]
+            },
+            {
+                'name': 'Consumer',
+                'model': 'consumers_consumer',
+                'description': 'Main consumer information table with personal, household, and meter details',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'account_number', 'type': 'VARCHAR(20)', 'constraints': 'UNIQUE, AUTO', 'description': 'Format: BW-XXXXX'},
+                    {'name': 'first_name', 'type': 'VARCHAR(50)', 'constraints': 'NOT NULL', 'description': 'First name'},
+                    {'name': 'middle_name', 'type': 'VARCHAR(50)', 'constraints': 'NULL', 'description': 'Middle name'},
+                    {'name': 'last_name', 'type': 'VARCHAR(50)', 'constraints': 'NOT NULL', 'description': 'Last name'},
+                    {'name': 'birth_date', 'type': 'DATE', 'constraints': 'NOT NULL', 'description': 'Date of birth'},
+                    {'name': 'gender', 'type': 'VARCHAR(10)', 'constraints': 'NOT NULL', 'description': 'Male/Female/Other'},
+                    {'name': 'phone_number', 'type': 'VARCHAR(15)', 'constraints': 'NOT NULL', 'description': 'Contact number'},
+                    {'name': 'status', 'type': 'VARCHAR(20)', 'constraints': "DEFAULT 'active'", 'description': 'active/disconnected'},
+                ]
+            },
+            {
+                'name': 'MeterReading',
+                'model': 'consumers_meterreading',
+                'description': 'Stores meter reading records with confirmation status',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'consumer_id', 'type': 'INTEGER', 'constraints': 'FOREIGN KEY', 'description': 'Reference to Consumer'},
+                    {'name': 'reading_date', 'type': 'DATE', 'constraints': 'NOT NULL', 'description': 'Date of reading'},
+                    {'name': 'reading_value', 'type': 'INTEGER', 'constraints': 'NOT NULL', 'description': 'Cumulative meter value'},
+                    {'name': 'is_confirmed', 'type': 'BOOLEAN', 'constraints': 'DEFAULT FALSE', 'description': 'Confirmation status'},
+                ]
+            },
+            {
+                'name': 'Bill',
+                'model': 'consumers_bill',
+                'description': 'Stores billing information with consumption and payment status',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'consumer_id', 'type': 'INTEGER', 'constraints': 'FOREIGN KEY', 'description': 'Reference to Consumer'},
+                    {'name': 'billing_period', 'type': 'DATE', 'constraints': 'NOT NULL', 'description': 'First day of billing month'},
+                    {'name': 'consumption', 'type': 'INTEGER', 'constraints': 'NOT NULL', 'description': 'Water consumption (m³)'},
+                    {'name': 'total_amount', 'type': 'DECIMAL(10,2)', 'constraints': 'NOT NULL', 'description': 'Total bill amount'},
+                    {'name': 'status', 'type': 'VARCHAR(20)', 'constraints': "DEFAULT 'Pending'", 'description': 'Pending/Paid/Overdue'},
+                ]
+            },
+            {
+                'name': 'Payment',
+                'model': 'consumers_payment',
+                'description': 'Records all payment transactions with OR numbers',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'bill_id', 'type': 'INTEGER', 'constraints': 'FOREIGN KEY', 'description': 'Reference to Bill'},
+                    {'name': 'amount_paid', 'type': 'DECIMAL(10,2)', 'constraints': 'NOT NULL', 'description': 'Bill amount'},
+                    {'name': 'or_number', 'type': 'VARCHAR(50)', 'constraints': 'UNIQUE, AUTO', 'description': 'Official Receipt number'},
+                    {'name': 'payment_date', 'type': 'DATETIME', 'constraints': 'AUTO', 'description': 'Payment timestamp'},
+                ]
+            },
+            {
+                'name': 'SystemSetting',
+                'model': 'consumers_systemsetting',
+                'description': 'System-wide configuration settings for billing rates',
+                'fields': [
+                    {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
+                    {'name': 'residential_rate_per_cubic', 'type': 'DECIMAL(10,2)', 'constraints': 'DEFAULT 22.50', 'description': 'Residential rate (₱/m³)'},
+                    {'name': 'commercial_rate_per_cubic', 'type': 'DECIMAL(10,2)', 'constraints': 'DEFAULT 25.00', 'description': 'Commercial rate (₱/m³)'},
+                    {'name': 'fixed_charge', 'type': 'DECIMAL(10,2)', 'constraints': 'DEFAULT 50.00', 'description': 'Fixed monthly charge'},
+                ]
+            },
+        ],
+    }
+
+    return render(request, 'consumers/database_documentation.html', context)

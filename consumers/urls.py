@@ -48,6 +48,9 @@ urlpatterns = [
 
     path('system-management/', views.system_management, name='system_management'),
 
+    # Database Documentation
+    path('database-documentation/', views.database_documentation, name='database_documentation'),
+
     # Payments
     path('payment/', views.inquire, name='inquire'),
     path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
