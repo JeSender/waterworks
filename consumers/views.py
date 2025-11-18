@@ -2517,9 +2517,32 @@ def database_documentation(request):
 
         # System Settings
         'system_settings': SystemSetting.objects.first(),
+    }
 
-        # Database schema information
-        'database_tables': [
+    # Calculate sample billing amounts for display
+    if context['system_settings']:
+        settings = context['system_settings']
+        # Residential example (15 m³)
+        residential_consumption = 15
+        residential_water_charge = settings.residential_rate_per_cubic * residential_consumption
+        residential_total = residential_water_charge + settings.fixed_charge
+
+        # Commercial example (30 m³)
+        commercial_consumption = 30
+        commercial_water_charge = settings.commercial_rate_per_cubic * commercial_consumption
+        commercial_total = commercial_water_charge + settings.fixed_charge
+
+        context.update({
+            'residential_consumption': residential_consumption,
+            'residential_water_charge': residential_water_charge,
+            'residential_total': residential_total,
+            'commercial_consumption': commercial_consumption,
+            'commercial_water_charge': commercial_water_charge,
+            'commercial_total': commercial_total,
+        })
+
+    # Database schema information
+    context['database_tables'] = [
             {
                 'name': 'Barangay',
                 'model': 'consumers_barangay',
@@ -2612,7 +2635,6 @@ def database_documentation(request):
                     {'name': 'fixed_charge', 'type': 'DECIMAL(10,2)', 'constraints': 'DEFAULT 50.00', 'description': 'Fixed monthly charge'},
                 ]
             },
-        ],
-    }
+        ]
 
     return render(request, 'consumers/database_documentation.html', context)

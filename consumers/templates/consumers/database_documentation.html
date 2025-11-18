@@ -701,23 +701,23 @@
                     <div class="col-md-6">
                         <h5 class="text-primary mb-3"><i class="bi bi-house-fill me-2"></i>Residential Example</h5>
                         <div class="bg-light p-3 rounded">
-                            <p class="mb-2"><strong>Consumption:</strong> 15 m³</p>
+                            <p class="mb-2"><strong>Consumption:</strong> {{ residential_consumption }} m³</p>
                             <p class="mb-2"><strong>Rate:</strong> ₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} / m³</p>
-                            <p class="mb-2"><strong>Water Charge:</strong> 15 × ₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} = ₱{{ system_settings.residential_rate_per_cubic|multiply:15|floatformat:2 }}</p>
+                            <p class="mb-2"><strong>Water Charge:</strong> {{ residential_consumption }} × ₱{{ system_settings.residential_rate_per_cubic|floatformat:2 }} = ₱{{ residential_water_charge|floatformat:2 }}</p>
                             <p class="mb-2"><strong>Fixed Charge:</strong> ₱{{ system_settings.fixed_charge|floatformat:2 }}</p>
                             <hr>
-                            <p class="mb-0"><strong class="text-success">Total Bill:</strong> <span class="h4 text-success">₱{{ system_settings.residential_rate_per_cubic|multiply:15|add:system_settings.fixed_charge|floatformat:2 }}</span></p>
+                            <p class="mb-0"><strong class="text-success">Total Bill:</strong> <span class="h4 text-success">₱{{ residential_total|floatformat:2 }}</span></p>
                         </div>
                     </div>
                     <div class="col-md-6">
                         <h5 class="text-info mb-3"><i class="bi bi-building me-2"></i>Commercial Example</h5>
                         <div class="bg-light p-3 rounded">
-                            <p class="mb-2"><strong>Consumption:</strong> 30 m³</p>
+                            <p class="mb-2"><strong>Consumption:</strong> {{ commercial_consumption }} m³</p>
                             <p class="mb-2"><strong>Rate:</strong> ₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} / m³</p>
-                            <p class="mb-2"><strong>Water Charge:</strong> 30 × ₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} = ₱{{ system_settings.commercial_rate_per_cubic|multiply:30|floatformat:2 }}</p>
+                            <p class="mb-2"><strong>Water Charge:</strong> {{ commercial_consumption }} × ₱{{ system_settings.commercial_rate_per_cubic|floatformat:2 }} = ₱{{ commercial_water_charge|floatformat:2 }}</p>
                             <p class="mb-2"><strong>Fixed Charge:</strong> ₱{{ system_settings.fixed_charge|floatformat:2 }}</p>
                             <hr>
-                            <p class="mb-0"><strong class="text-info">Total Bill:</strong> <span class="h4 text-info">₱{{ system_settings.commercial_rate_per_cubic|multiply:30|add:system_settings.fixed_charge|floatformat:2 }}</span></p>
+                            <p class="mb-0"><strong class="text-info">Total Bill:</strong> <span class="h4 text-info">₱{{ commercial_total|floatformat:2 }}</span></p>
                         </div>
                     </div>
                 </div>
