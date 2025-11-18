@@ -6,472 +6,577 @@
 {% block extra_css %}
 <style>
     /* ========================================
-       LAYOUT & BASE STYLES
+       FUTURISTIC DASHBOARD STYLES
        ======================================== */
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
     body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         overflow: hidden !important;
         height: 100vh;
     }
 
     .main-content {
-        height: calc(100vh - 60px);
-        overflow: hidden !important;
-        display: flex;
-        flex-direction: column;
+        background: transparent !important;
+        height: 100vh;
+        overflow-y: auto !important;
+        padding: 1.5rem !important;
     }
 
-    .dashboard-wrapper {
-        height: 100%;
-        overflow: hidden;
-        display: flex;
-        flex-direction: column;
+    /* Custom Scrollbar */
+    .main-content::-webkit-scrollbar {
+        width: 8px;
     }
 
-    /* ========================================
-       DASHBOARD HEADER
-       ======================================== */
-    .dashboard-header {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 0.75rem 1.25rem;
+    .main-content::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
         border-radius: 10px;
-        margin-bottom: 0.75rem;
-        box-shadow: 0 2px 15px rgba(102, 126, 234, 0.3);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        flex-shrink: 0;
     }
 
-    .dashboard-header h2 {
-        font-weight: 700;
-        font-size: 1.25rem;
-        margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
+    .main-content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
     }
 
-    .dashboard-header p {
-        opacity: 0.95;
-        font-size: 0.75rem;
-        margin: 0;
+    .main-content::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
     }
 
-    .dashboard-header small {
-        font-size: 0.8rem;
-        opacity: 0.95;
+    /* Dashboard Container */
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
     }
-
 
     /* ========================================
-       METRIC CARDS
+       MODERN HEADER
+       ======================================== */
+    .modern-header {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 1.5rem 2rem;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    }
+
+    .modern-header h1 {
+        color: white;
+        font-size: 2rem;
+        font-weight: 800;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .modern-header h1 i {
+        font-size: 2.5rem;
+        background: white;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.7; }
+    }
+
+    .modern-header .subtitle {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 1rem;
+        margin-top: 0.5rem;
+        font-weight: 500;
+    }
+
+    /* ========================================
+       GLASSMORPHISM METRIC CARDS
        ======================================== */
     .metric-card {
-        background: white;
-        border-radius: 10px;
-        padding: 0.75rem;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        transition: all 0.3s ease;
-        border-left: 3px solid;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 1.5rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         position: relative;
         overflow: hidden;
+        height: 100%;
     }
 
     .metric-card::before {
         content: '';
         position: absolute;
-        top: 0;
-        right: 0;
-        width: 70px;
-        height: 70px;
-        background: currentColor;
-        opacity: 0.05;
-        border-radius: 50%;
-        transform: translate(30%, -30%);
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: rotate 20s linear infinite;
+    }
+
+    @keyframes rotate {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
     }
 
     .metric-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
-    }
-
-    .metric-card.success {
-        border-left-color: #10b981;
-        color: #10b981;
-    }
-
-    .metric-card.warning {
-        border-left-color: #f59e0b;
-        color: #f59e0b;
-    }
-
-    .metric-card.danger {
-        border-left-color: #ef4444;
-        color: #ef4444;
-    }
-
-    .metric-card.primary {
-        border-left-color: #667eea;
-        color: #667eea;
+        transform: translateY(-10px) scale(1.02);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        background: rgba(255, 255, 255, 0.25);
+        border-color: rgba(255, 255, 255, 0.4);
     }
 
     .metric-icon {
-        font-size: 1.5rem;
-        margin-bottom: 0.25rem;
+        width: 70px;
+        height: 70px;
+        background: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
         position: relative;
         z-index: 1;
     }
 
     .metric-card.success .metric-icon {
-        color: #10b981;
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
     }
 
     .metric-card.danger .metric-icon {
-        color: #ef4444;
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
     }
 
     .metric-card.warning .metric-icon {
-        color: #f59e0b;
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
     }
 
     .metric-card.primary .metric-icon {
-        color: #667eea;
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
     }
 
-    .metric-card .value {
-        font-size: 1.5rem;
-        font-weight: 800;
-        color: #1e293b;
+    .metric-value {
+        font-size: 3rem;
+        font-weight: 900;
+        color: white;
         line-height: 1;
-        margin-bottom: 0.25rem;
+        margin-bottom: 0.5rem;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
         position: relative;
         z-index: 1;
+        animation: countUp 1s ease-out;
     }
 
-    .metric-card h6 {
-        font-size: 0.65rem;
-        color: #64748b;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
+    @keyframes countUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .metric-label {
+        font-size: 0.95rem;
+        color: rgba(255, 255, 255, 0.95);
         font-weight: 600;
-        margin-bottom: auto;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 1rem;
         position: relative;
         z-index: 1;
     }
 
     .metric-card .btn {
-        padding: 0.35rem 0.75rem;
-        font-size: 0.65rem;
-        font-weight: 600;
-        border-radius: 6px;
-        margin-top: 0.5rem;
+        background: white;
+        color: #667eea;
+        border: none;
+        padding: 0.6rem 1.2rem;
+        border-radius: 12px;
+        font-weight: 700;
+        font-size: 0.85rem;
         text-transform: uppercase;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
         position: relative;
         z-index: 1;
-        letter-spacing: 0.3px;
+    }
+
+    .metric-card .btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+        background: #f8f9fa;
+    }
+
+    .metric-card.success .btn {
+        color: #10b981;
+    }
+
+    .metric-card.danger .btn {
+        color: #ef4444;
+    }
+
+    .metric-card.warning .btn {
+        color: #f59e0b;
+    }
+
+    .metric-card.primary .btn {
+        color: #3b82f6;
     }
 
     /* ========================================
-       CHART CONTAINERS
+       CHART CONTAINER
        ======================================== */
-    .chart-container {
-        position: relative;
-        height: 100%;
-        background: white;
-        border-radius: 10px;
-        padding: 1rem;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        border: 1px solid #f0f0f0;
-        transition: all 0.3s ease;
+    .chart-section {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        height: 400px;
         display: flex;
         flex-direction: column;
     }
 
-    .chart-container:hover {
-        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
-        transform: translateY(-2px);
-    }
-
-    .chart-canvas-wrapper {
-        flex: 1;
-        position: relative;
-        min-height: 0;
-    }
-
-    .dark-mode .chart-container {
-        background-color: #2d2d2d !important;
-        border-color: #404040 !important;
+    .chart-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
     }
 
     .chart-title {
-        font-size: 0.8rem;
+        font-size: 1.25rem;
         font-weight: 700;
-        color: #1e293b;
-        margin-bottom: 0.75rem;
+        color: white;
         display: flex;
         align-items: center;
-        justify-content: center;
-        gap: 0.4rem;
-        text-transform: uppercase;
-        letter-spacing: 0.3px;
-        flex-shrink: 0;
+        gap: 0.75rem;
     }
 
     .chart-title i {
+        font-size: 1.5rem;
+    }
+
+    .chart-wrapper {
+        flex: 1;
+        position: relative;
+    }
+
+    /* ========================================
+       TABLE SECTION
+       ======================================== */
+    .table-section {
+        background: rgba(255, 255, 255, 0.15);
+        backdrop-filter: blur(20px);
+        border-radius: 20px;
+        padding: 2rem;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        height: 400px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .table-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1.5rem;
+    }
+
+    .table-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: white;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .table-wrapper {
+        flex: 1;
+        overflow-y: auto;
+        border-radius: 12px;
+    }
+
+    .table-wrapper::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-track {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 10px;
+    }
+
+    .modern-table {
+        width: 100%;
+        color: white;
         font-size: 0.9rem;
     }
 
-    /* ========================================
-       DARK MODE OVERRIDES
-       ======================================== */
-    .dark-mode .chart-title {
-        color: #ffffff;
+    .modern-table thead {
+        position: sticky;
+        top: 0;
+        background: rgba(255, 255, 255, 0.2);
+        backdrop-filter: blur(10px);
+        z-index: 10;
     }
 
-    .dark-mode .metric-card {
-        background-color: #2d2d2d !important;
-        color: #ffffff;
+    .modern-table th {
+        padding: 1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-size: 0.8rem;
+        border: none;
     }
 
-    .dark-mode .metric-card .value {
-        color: #ffffff;
+    .modern-table td {
+        padding: 1rem;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
 
-    .dark-mode .metric-card h6 {
-        color: #a0a0a0;
+    .modern-table tbody tr {
+        transition: all 0.3s ease;
     }
 
-    /* ========================================
-       BILLS TABLE
-       ======================================== */
-    .bills-table-container {
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-        overflow: hidden;
-        border: 1px solid #f0f0f0;
-        height: 100%;
-        display: flex;
-        flex-direction: column;
+    .modern-table tbody tr:hover {
+        background: rgba(255, 255, 255, 0.15);
     }
 
-    .bills-table-container .card-header {
-        padding: 0.6rem 1rem;
-        flex-shrink: 0;
-    }
-
-    .bills-table-container .card-header h5 {
-        font-size: 0.8rem !important;
-        margin: 0;
+    .badge-modern {
+        padding: 0.4rem 0.8rem;
+        border-radius: 8px;
         font-weight: 600;
-        display: flex;
-        align-items: center;
-        gap: 0.4rem;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 
-    .bills-table-container .table-responsive {
-        flex: 1;
-        overflow-y: auto;
-        min-height: 0;
+    .badge-pending {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
     }
 
-    .bills-table-container .table {
-        font-size: 0.7rem;
-        margin-bottom: 0;
-    }
-
-    .bills-table-container .table th,
-    .bills-table-container .table td {
-        padding: 0.3rem 0.4rem;
-        white-space: nowrap;
-    }
-
-    .bills-table-container .table th {
-        font-size: 0.65rem;
-    }
-
-    .bills-table-container .badge {
-        font-size: 0.6rem;
-        padding: 0.2rem 0.4rem;
+    .badge-paid {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
     }
 
     /* ========================================
-       CONTENT AREA
+       DARK MODE ADJUSTMENTS
        ======================================== */
-    .content-area {
-        flex: 1;
-        min-height: 0;
-        display: flex;
-        flex-direction: column;
+    .dark-mode {
+        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
+    }
+
+    .dark-mode .modern-header,
+    .dark-mode .metric-card,
+    .dark-mode .chart-section,
+    .dark-mode .table-section {
+        background: rgba(0, 0, 0, 0.3);
+        border-color: rgba(255, 255, 255, 0.1);
+    }
+
+    .dark-mode .modern-table thead {
+        background: rgba(0, 0, 0, 0.3);
     }
 
     /* ========================================
-       RESPONSIVE ADJUSTMENTS
+       RESPONSIVE DESIGN
        ======================================== */
     @media (max-width: 992px) {
-        .row.g-2 > [class*="col-"] {
-            margin-bottom: 0.5rem;
+        .modern-header h1 {
+            font-size: 1.5rem;
         }
 
-        .dashboard-header h2 {
-            font-size: 1.1rem;
+        .metric-value {
+            font-size: 2.5rem;
         }
 
-        .metric-card .value {
-            font-size: 1.3rem;
-        }
-
-        .metric-icon {
-            font-size: 1.3rem;
+        .chart-section,
+        .table-section {
+            height: 350px;
         }
     }
 
     @media (max-width: 768px) {
         .main-content {
-            height: auto;
-            overflow-y: auto !important;
+            padding: 1rem !important;
         }
 
-        body {
-            overflow-y: auto !important;
+        .modern-header {
+            padding: 1rem 1.5rem;
         }
 
-        .dashboard-wrapper {
-            height: auto;
+        .modern-header h1 {
+            font-size: 1.25rem;
         }
 
-        .metric-card .value {
-            font-size: 1.2rem;
+        .metric-value {
+            font-size: 2rem;
         }
 
-        .metric-icon {
-            font-size: 1.2rem;
-        }
-    }
-
-    @media (max-width: 576px) {
-        .dashboard-header {
-            flex-direction: column;
-            text-align: center;
-            gap: 0.5rem;
-        }
-
-        .dashboard-header h2 {
-            font-size: 1rem;
+        .chart-section,
+        .table-section {
+            height: 300px;
+            padding: 1.5rem;
         }
     }
 
-    /* Scrollbar Styling */
-    .table-responsive::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+    /* ========================================
+       ANIMATIONS
+       ======================================== */
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
-    .table-responsive::-webkit-scrollbar-track {
-        background: #f1f1f1;
-        border-radius: 10px;
+    .metric-card {
+        animation: fadeInUp 0.6s ease-out;
     }
 
-    .table-responsive::-webkit-scrollbar-thumb {
-        background: #888;
-        border-radius: 10px;
+    .metric-card:nth-child(1) { animation-delay: 0.1s; }
+    .metric-card:nth-child(2) { animation-delay: 0.2s; }
+    .metric-card:nth-child(3) { animation-delay: 0.3s; }
+    .metric-card:nth-child(4) { animation-delay: 0.4s; }
+
+    .chart-section {
+        animation: fadeInUp 0.8s ease-out 0.5s both;
     }
 
-    .table-responsive::-webkit-scrollbar-thumb:hover {
-        background: #555;
+    .table-section {
+        animation: fadeInUp 0.8s ease-out 0.6s both;
     }
 </style>
 {% endblock %}
 
 {% block main_content %}
-<div class="container-fluid px-2 py-2 dashboard-wrapper">
-    <!-- Dashboard Header -->
-    <div class="dashboard-header">
-        <div>
-            <h2><i class="bi bi-speedometer2 me-2"></i>Balilihan Waterworks Dashboard</h2>
-        </div>
-        <div class="text-end">
-            <small>{{ request.user.get_full_name|default:request.user.username }} | {{ selected_date|date:"F Y" }}</small>
+<div class="dashboard-container">
+    <!-- Modern Header -->
+    <div class="modern-header">
+        <h1>
+            <i class="bi bi-speedometer2"></i>
+            Balilihan Waterworks Dashboard
+        </h1>
+        <div class="subtitle">
+            Real-time monitoring & analytics • {{ request.user.get_full_name|default:request.user.username }}
         </div>
     </div>
 
-    <!-- Key Metrics Row with View Buttons -->
-    <div class="row g-2 mb-2" style="flex-shrink: 0;">
-        <div class="col-lg-3 col-md-6 col-sm-6">
+    <!-- Metric Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-3 col-md-6">
             <div class="metric-card success">
-                <div class="metric-icon"><i class="bi bi-droplet-fill"></i></div>
-                <div class="value">{{ connected_count }}</div>
-                <h6>Connected Consumers</h6>
-                <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-success w-100">
-                    <i class="bi bi-eye me-1"></i>View All
+                <div class="metric-icon">
+                    <i class="bi bi-droplet-fill"></i>
+                </div>
+                <div class="metric-value">{{ connected_count }}</div>
+                <div class="metric-label">Connected Consumers</div>
+                <a href="{% url 'consumers:connected_consumers' %}" class="btn w-100">
+                    <i class="bi bi-eye me-2"></i>View Details
                 </a>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+
+        <div class="col-lg-3 col-md-6">
             <div class="metric-card danger">
-                <div class="metric-icon"><i class="bi bi-x-circle-fill"></i></div>
-                <div class="value">{{ disconnected_count }}</div>
-                <h6>Disconnected Consumers</h6>
-                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-danger w-100">
-                    <i class="bi bi-eye me-1"></i>View All
+                <div class="metric-icon">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="metric-value">{{ disconnected_count }}</div>
+                <div class="metric-label">Disconnected</div>
+                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn w-100">
+                    <i class="bi bi-eye me-2"></i>View Details
                 </a>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+
+        <div class="col-lg-3 col-md-6">
             <div class="metric-card warning">
-                <div class="metric-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                <div class="value">{{ delinquent_count }}</div>
-                <h6>Delinquent Accounts</h6>
-                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-warning w-100">
-                    <i class="bi bi-eye me-1"></i>View All
+                <div class="metric-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div class="metric-value">{{ delinquent_count }}</div>
+                <div class="metric-label">Delinquent Accounts</div>
+                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn w-100">
+                    <i class="bi bi-eye me-2"></i>View Details
                 </a>
             </div>
         </div>
-        <div class="col-lg-3 col-md-6 col-sm-6">
+
+        <div class="col-lg-3 col-md-6">
             <div class="metric-card primary">
-                <div class="metric-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
-                <div class="value">{{ total_bills }}</div>
-                <h6>Total Bills Generated</h6>
-                <a href="{% url 'consumers:reports' %}" class="btn btn-primary w-100">
-                    <i class="bi bi-file-text me-1"></i>View Reports
+                <div class="metric-icon">
+                    <i class="bi bi-file-earmark-text-fill"></i>
+                </div>
+                <div class="metric-value">{{ total_bills }}</div>
+                <div class="metric-label">Total Bills</div>
+                <a href="{% url 'consumers:reports' %}" class="btn w-100">
+                    <i class="bi bi-file-text me-2"></i>Reports
                 </a>
             </div>
         </div>
     </div>
 
-    <!-- Bottom Section: Chart and Table Side by Side -->
-    <div class="row g-2" style="flex: 1; min-height: 0;">
+    <!-- Charts and Table Row -->
+    <div class="row g-4">
         <!-- Payment Status Chart -->
-        <div class="col-lg-5 col-md-12">
-            <div class="chart-container">
-                <div class="chart-title">
-                    <i class="bi bi-pie-chart-fill text-success"></i>
-                    Payment Status Distribution
+        <div class="col-lg-5">
+            <div class="chart-section">
+                <div class="chart-header">
+                    <div class="chart-title">
+                        <i class="bi bi-pie-chart-fill"></i>
+                        Payment Status
+                    </div>
                 </div>
-                <div class="chart-canvas-wrapper">
-                    <canvas id="paymentStatusChart"></canvas>
+                <div class="chart-wrapper">
+                    <canvas id="paymentChart"></canvas>
                 </div>
             </div>
         </div>
 
         <!-- Recent Delinquent Bills Table -->
-        <div class="col-lg-7 col-md-12">
-            <div class="bills-table-container card shadow-sm border-0 rounded-3">
-                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                    <h5 class="mb-0">
-                        <i class="bi bi-clock-history me-2"></i>
+        <div class="col-lg-7">
+            <div class="table-section">
+                <div class="table-header">
+                    <div class="table-title">
+                        <i class="bi bi-clock-history"></i>
                         Recent Delinquent Bills
-                    </h5>
+                    </div>
                 </div>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle mb-0">
-                        <thead class="table-light sticky-top">
+                <div class="table-wrapper">
+                    <table class="modern-table">
+                        <thead>
                             <tr>
-                                <th>Account No.</th>
+                                <th>Account</th>
                                 <th>Consumer</th>
                                 <th>Barangay</th>
                                 <th>Period</th>
@@ -483,21 +588,21 @@
                             {% for bill in delinquent_bills|slice:":15" %}
                             <tr>
                                 <td><strong>{{ bill.consumer.account_number }}</strong></td>
-                                <td>{{ bill.consumer.full_name }}</td>
+                                <td>{{ bill.consumer.first_name }} {{ bill.consumer.last_name }}</td>
                                 <td>{{ bill.consumer.barangay.name|default:"N/A" }}</td>
                                 <td>{{ bill.billing_period|date:"M Y" }}</td>
                                 <td class="text-end"><strong>₱{{ bill.total_amount|floatformat:2|intcomma }}</strong></td>
                                 <td class="text-center">
-                                    <span class="badge bg-warning text-dark">
+                                    <span class="badge-modern badge-pending">
                                         <i class="bi bi-clock-fill me-1"></i>Pending
                                     </span>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="text-center text-muted py-3">
-                                    <i class="bi bi-clipboard-check fs-4 d-block mb-1"></i>
-                                    No delinquent bills
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="bi bi-clipboard-check" style="font-size: 3rem; opacity: 0.5;"></i>
+                                    <div class="mt-2" style="opacity: 0.8;">No delinquent bills found</div>
                                 </td>
                             </tr>
                             {% endfor %}
@@ -513,27 +618,30 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    /* Chart.js Default Configuration */
-    Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
-    Chart.defaults.font.size = 9;
-    Chart.defaults.color = '#64748b';
+    // Chart.js Configuration
+    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    Chart.defaults.font.size = 12;
+    Chart.defaults.color = '#ffffff';
 
-    /* Check Dark Mode */
-    const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
-    const textColor = isDarkMode ? '#ffffff' : '#64748b';
+    // Payment Status Doughnut Chart
+    const ctx = document.getElementById('paymentChart').getContext('2d');
 
-    /* Payment Status Distribution Chart */
-    const paymentCtx = document.getElementById('paymentStatusChart').getContext('2d');
-    new Chart(paymentCtx, {
+    new Chart(ctx, {
         type: 'doughnut',
         data: {
             labels: ['Paid Bills', 'Pending Bills'],
             datasets: [{
                 data: [{{ paid_bills }}, {{ pending_bills }}],
-                backgroundColor: ['#10b981', '#f59e0b'],
+                backgroundColor: [
+                    'rgba(16, 185, 129, 0.9)',
+                    'rgba(245, 158, 11, 0.9)'
+                ],
+                borderColor: [
+                    'rgba(16, 185, 129, 1)',
+                    'rgba(245, 158, 11, 1)'
+                ],
                 borderWidth: 3,
-                borderColor: '#ffffff',
-                hoverOffset: 8
+                hoverOffset: 15
             }]
         },
         options: {
@@ -543,32 +651,73 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        color: textColor,
-                        padding: 12,
-                        font: { size: 10, weight: '600' },
+                        color: '#ffffff',
+                        padding: 20,
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
                         usePointStyle: true,
                         pointStyle: 'circle'
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
-                    titleFont: { size: 11, weight: 'bold' },
-                    bodyFont: { size: 10 },
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    padding: 15,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
+                    borderWidth: 1,
                     callbacks: {
                         label: function(context) {
                             const total = {{ paid_bills }} + {{ pending_bills }};
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
                             return context.label + ': ' + context.parsed + ' bills (' + percentage + '%)';
                         }
                     }
                 }
+            },
+            animation: {
+                animateRotate: true,
+                animateScale: true,
+                duration: 1500,
+                easing: 'easeInOutQuart'
             }
         }
     });
 
-    /* Success Notification */
-    showToast('success', 'Dashboard loaded successfully', 1500);
+    // Animated Counter Effect
+    function animateValue(element, start, end, duration) {
+        let startTimestamp = null;
+        const step = (timestamp) => {
+            if (!startTimestamp) startTimestamp = timestamp;
+            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+            element.textContent = Math.floor(progress * (end - start) + start);
+            if (progress < 1) {
+                window.requestAnimationFrame(step);
+            }
+        };
+        window.requestAnimationFrame(step);
+    }
+
+    // Animate metric values on load
+    document.querySelectorAll('.metric-value').forEach(el => {
+        const finalValue = parseInt(el.textContent);
+        el.textContent = '0';
+        setTimeout(() => {
+            animateValue(el, 0, finalValue, 1500);
+        }, 300);
+    });
+
+    // Success notification
+    setTimeout(() => {
+        showToast('success', '✨ Dashboard loaded successfully!', 2000);
+    }, 500);
 });
 </script>
 {% endblock %}

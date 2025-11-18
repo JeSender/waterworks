@@ -306,9 +306,6 @@
             <a href="{% url 'consumers:system_management' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
                 <i class="bi bi-gear-fill me-2"></i> System Management
             </a>
-            <a href="{% url 'consumers:database_documentation' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
-                <i class="bi bi-database-fill me-2"></i> Database Docs
-            </a>
 
             <!-- Secure User Management (Superuser Only) -->
             {% if user.is_superuser %}
@@ -325,46 +322,50 @@
                 Login History
             </a>
             {% endif %}
+
+            <!-- Database Documentation (Admin/Superuser Only) -->
+            {% if user.is_superuser %}
+            <a href="{% url 'consumers:database_documentation' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
+                <i class="bi bi-database-fill me-2"></i>
+                Database Docs
+            </a>
+            {% endif %}
         </nav>
 
         <!-- User Profile & Settings Section -->
-        <div class="mt-auto pt-3 border-top">
+        <div class="mt-auto pt-3 border-top" style="padding-bottom: 1rem;">
             <!-- User Profile Card -->
-            <div class="user-profile-card p-2 rounded mb-2" style="background: linear-gradient(135deg, #f8f9fa, #e9ecef);">
-                <div class="d-flex align-items-center mb-2">
-                    <div class="user-avatar me-2" style="width: 40px; height: 40px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
-                        {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
+            <div class="user-profile-card p-3 rounded mb-3" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
+                <div class="d-flex align-items-center">
+                    <div class="user-avatar me-3" style="width: 45px; height: 45px; background: white; border-radius: 50%; display: flex; align-items-center; justify-content: center; color: #667eea; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                        {% if user.first_name %}{{ user.first_name|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
                     </div>
                     <div class="flex-grow-1 text-truncate">
-                        <div class="fw-semibold text-dark" style="font-size: 0.9rem;">
-                            {{ request.user.get_full_name|default:request.user.username }}
+                        <div class="fw-bold text-white" style="font-size: 0.95rem;">
+                            {% if user.first_name and user.last_name %}{{ user.first_name }} {{ user.last_name }}{% elif user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
                         </div>
-                        <small class="text-muted" style="font-size: 0.75rem;">
-                            {{ request.user.email|default:"Staff Member" }}
+                        <small class="text-white" style="font-size: 0.75rem; opacity: 0.9;">
+                            {% if user.email %}{{ user.email }}{% else %}Staff Member{% endif %}
                         </small>
                     </div>
                 </div>
             </div>
 
             <!-- Action Buttons Grid -->
-            <div class="row g-2">
-                <div class="col-6">
-                    <button class="btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-1"
-                            onclick="toggleDarkMode()"
-                            id="dark-mode-toggle"
-                            style="font-size: 0.75rem; padding: 0.5rem;">
-                        <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
-                        <span id="dark-mode-text">Night</span>
-                    </button>
-                </div>
-                <div class="col-6">
-                    <a href="{% url 'consumers:staff_logout' %}"
-                       class="btn btn-sm btn-outline-danger w-100 d-flex align-items-center justify-content-center gap-1"
-                       style="font-size: 0.75rem; padding: 0.5rem;">
-                        <i class="bi bi-box-arrow-right"></i>
-                        <span>Logout</span>
-                    </a>
-                </div>
+            <div class="d-grid gap-2">
+                <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
+                        onclick="toggleDarkMode()"
+                        id="dark-mode-toggle"
+                        style="font-size: 0.85rem; padding: 0.6rem; border-width: 2px; font-weight: 600;">
+                    <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
+                    <span id="dark-mode-text">Dark Mode</span>
+                </button>
+                <a href="{% url 'consumers:staff_logout' %}"
+                   class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
+                   style="font-size: 0.85rem; padding: 0.6rem; font-weight: 600; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">
+                    <i class="bi bi-box-arrow-right"></i>
+                    <span>Logout</span>
+                </a>
             </div>
         </div>
     </div>
@@ -475,15 +476,15 @@
 
             if (body.classList.contains('dark-mode')) {
                 darkModeIcon.className = 'bi bi-sun-fill';
-                darkModeToggle.className = 'btn btn-sm btn-outline-warning w-100 d-flex align-items-center justify-content-center gap-1';
-                darkModeText.textContent = 'Day';
+                darkModeToggle.className = 'btn btn-outline-warning d-flex align-items-center justify-content-center gap-2';
+                darkModeText.textContent = 'Light Mode';
 
                 // Save preference to localStorage
                 localStorage.setItem('darkMode', 'enabled');
             } else {
                 darkModeIcon.className = 'bi bi-moon-fill';
-                darkModeToggle.className = 'btn btn-sm btn-outline-secondary w-100 d-flex align-items-center justify-content-center gap-1';
-                darkModeText.textContent = 'Night';
+                darkModeToggle.className = 'btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2';
+                darkModeText.textContent = 'Dark Mode';
 
                 // Remove preference from localStorage
                 localStorage.removeItem('darkMode');
