@@ -1,0 +1,41 @@
+{% extends "consumers/base.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block main_content %}
+<h2 class="mb-3">{{ title }}</h2>
+
+{% if selected_month and selected_year %}
+<p>Showing results for: {{ selected_month }}/{{ selected_year }}</p>
+{% endif %}
+
+<table class="table table-striped table-hover table-bordered align-middle">
+  <thead class="table-primary text-center">
+    <tr>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Barangay</th>
+      <th>Serial</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for consumer in consumers %}
+    <tr>
+      <td>{{ consumer.first_name }} {{ consumer.middle_name }} {{ consumer.last_name }}</td>
+      <td>{{ consumer.phone_number }}</td>
+      <td>{{ consumer.barangay.name|default:"-" }}</td>
+      <td>{{ consumer.serial_number }}</td>
+      <td class="text-center">
+        <a href="{% url 'consumers:consumer_detail' consumer.id %}" class="btn btn-info btn-sm">View</a>
+        <a href="{% url 'consumers:consumer_bill' consumer.id %}" class="btn btn-success btn-sm">Bills</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr>
+      <td colspan="5" class="text-center text-muted">No consumers found.</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

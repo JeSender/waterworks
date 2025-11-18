@@ -1,0 +1,446 @@
+<!-- consumers/templates/consumers/home.html -->
+{% extends "consumers/base.html" %}
+{% load humanize %}
+
+{% block title %}Staff Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* === Modern Typography & Base === */
+    body {
+        font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f8fafc;
+        color: #1e293b;
+    }
+
+    /* === Dashboard Header === */
+    .dashboard-header {
+        background: linear-gradient(120deg, #4f46e5, #7c3aed);
+        color: white;
+        padding: 1.8rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.8rem;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        position: relative;
+        overflow: hidden;
+    }
+    .dashboard-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        z-index: 0;
+    }
+    .dashboard-header > * {
+        position: relative;
+        z-index: 1;
+    }
+    .dashboard-header h2 {
+        font-weight: 700;
+        font-size: 1.8rem;
+        letter-spacing: -0.02em;
+        margin-bottom: 0.4rem;
+    }
+    .dashboard-header p {
+        opacity: 0.92;
+        font-size: 1.05rem;
+        max-width: 700px;
+    }
+
+    /* === Stat Cards === */
+    .stat-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
+        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        padding: 1.6rem;
+        text-align: center;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+        border: 1px solid #eef2f7;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+    .stat-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+        border-color: #dde5f0;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 6px;
+        height: 100%;
+        background: #4f46e5;
+    }
+    .stat-card.connected::before { background: #10b981; }
+    .stat-card.disconnected::before { background: #ef4444; }
+    .stat-card.delinquent::before { background: #f59e0b; }
+
+    .stat-icon {
+        font-size: 2.1rem;
+        margin-bottom: 0.8rem;
+        color: #6b7280;
+        transition: transform 0.2s ease;
+    }
+    .stat-card:hover .stat-icon {
+        transform: scale(1.1);
+    }
+    .stat-card.connected .stat-icon { color: #10b981; }
+    .stat-card.disconnected .stat-icon { color: #ef4444; }
+    .stat-card.delinquent .stat-icon { color: #f59e0b; }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 800;
+        line-height: 1.1;
+        color: #1e293b;
+        margin-bottom: 0.3rem;
+    }
+    .stat-label {
+        font-size: 0.95rem;
+        color: #64748b;
+        font-weight: 500;
+        margin-bottom: 1rem;
+    }
+
+    .stat-actions .btn {
+        padding: 0.45rem 1rem;
+        font-size: 0.85rem;
+        font-weight: 600;
+        border-radius: 8px;
+        transition: all 0.2s ease;
+    }
+    .stat-actions .btn:hover {
+        transform: translateY(-1px);
+    }
+
+    /* === Report Filter === */
+    .report-filter {
+        background: white;
+        border-radius: 14px;
+        padding: 1.8rem;
+        margin-bottom: 1.8rem;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        border: 1px solid #eef2f7;
+    }
+    .report-filter h6 {
+        font-weight: 600;
+        color: #334155;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+    }
+    .input-group-text {
+        background: #f1f5f9;
+        border-color: #cbd5e1;
+        color: #475569;
+    }
+    .form-control {
+        border-color: #cbd5e1;
+        padding: 0.65rem 1rem;
+    }
+    .form-control:focus {
+        border-color: #818cf8;
+        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+    }
+
+    /* === Table Card === */
+    .table-card {
+        background: white;
+        border-radius: 14px;
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        margin-bottom: 1.8rem;
+        border: 1px solid #eef2f7;
+        overflow: hidden;
+    }
+    .card-header {
+        padding: 1.2rem 1.8rem;
+        background: white;
+        border-bottom: 1px solid #edf2f7;
+    }
+    .card-header h6 {
+        font-weight: 600;
+        color: #1e293b;
+    }
+    .btn-group .btn {
+        padding: 0.45rem 1rem;
+        font-size: 0.875rem;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+
+    .table {
+        margin-bottom: 0;
+    }
+    .table th,
+    .table td {
+        vertical-align: middle;
+        padding: 0.9rem;
+        text-align: center;
+    }
+    .table th {
+        font-weight: 600;
+        color: #334155;
+        background: #f8fafc;
+    }
+    .table td {
+        color: #334155;
+    }
+    .table tbody tr:hover {
+        background-color: #f8fafc;
+    }
+    .badge {
+        font-weight: 600;
+        padding: 0.45em 0.75em;
+        font-size: 0.85em;
+    }
+
+    /* Table Footer */
+    .table tfoot td {
+        font-weight: bold;
+        background-color: #f1f5f9;
+        border-top: 2px solid #cbd5e1;
+    }
+
+    /* Empty State */
+    .empty-state {
+        text-align: center;
+        padding: 2.5rem 1rem;
+        color: #64748b;
+    }
+    .empty-state i {
+        font-size: 2rem;
+        margin-bottom: 0.75rem;
+        opacity: 0.7;
+    }
+
+    /* === Print Styles === */
+    @media print {
+        body {
+            background: white !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            color: black !important;
+        }
+        .no-print, .navbar, .sidebar, .btn, .card-header .btn-group,
+        .report-filter, .chart-placeholder, .stat-actions {
+            display: none !important;
+        }
+        .container-fluid {
+            max-width: 100% !important;
+            padding: 0 15mm !important;
+        }
+        .stat-card {
+            page-break-inside: avoid;
+            box-shadow: none;
+            border: 1px solid #000;
+            border-radius: 0;
+            padding: 15px;
+            margin: 10px 0;
+        }
+        .stat-card::before {
+            display: none;
+        }
+        .table {
+            font-size: 12px;
+            width: 100%;
+        }
+        th, td {
+            padding: 8px;
+            border: 1px solid #000 !important;
+            color: black !important;
+        }
+        .report-header {
+            text-align: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+        }
+    }
+
+    /* Responsive Tweaks */
+    @media (max-width: 768px) {
+        .dashboard-header h2 {
+            font-size: 1.5rem;
+        }
+        .stat-value {
+            font-size: 1.75rem;
+        }
+        .btn-group .btn {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+        .card-header .btn-group {
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+    }
+
+    /* === One-Page Layout with Scrollable Table === */
+    .main-content {
+        padding: 20px;
+        min-height: 100vh;
+        overflow-y: hidden;
+    }
+
+    .table-card .card-body {
+        max-height: 400px;
+        overflow-y: auto;
+    }
+
+    @media (min-height: 800px) {
+        .main-content {
+            overflow-y: hidden;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block main_content %}
+<div class="container-fluid">
+    <div class="dashboard-header">
+        <h2><i class="bi bi-speedometer2 me-2"></i> Staff Dashboard</h2>
+        <p>Welcome, {{ request.user.get_full_name|default:request.user.username }}! Here's an overview of your key metrics.</p>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4 mb-4">
+        <!-- Connected -->
+        <div class="col-md-4 col-12">
+            <div class="stat-card connected" 
+                 onclick="window.location.href='{% url 'consumers:connected_consumers' %}'">
+                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                <div class="stat-value">{{ connected_count }}</div>
+                <div class="stat-label">Connected Consumers</div>
+                <div class="stat-actions">
+                    <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-outline-success">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Disconnected -->
+        <div class="col-md-4 col-12">
+            <div class="stat-card disconnected" 
+                 onclick="window.location.href='{% url 'consumers:disconnected_consumers' %}'">
+                <div class="stat-icon"><i class="bi bi-person-x-fill"></i></div>
+                <div class="stat-value">{{ disconnected_count }}</div>
+                <div class="stat-label">Disconnected Consumers</div>
+                <div class="stat-actions">
+                    <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-outline-danger">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delinquent -->
+        <div class="col-md-4 col-12">
+            <div class="stat-card delinquent" 
+                 onclick="window.location.href='{% url 'consumers:delinquent_consumers' %}'">
+                <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div class="stat-value">{{ delinquent_count }}</div>
+                <div class="stat-label">Delinquent Bills</div>
+                <div class="stat-actions">
+                    <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-outline-warning">
+                        View All
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Report Filter -->
+    <div class="report-filter">
+        <h6><i class="bi bi-calendar-event"></i> Generate Delinquent Report</h6>
+        <form method="get" class="row g-3">
+            <div class="col-md-6">
+                <label for="month_year" class="form-label">Select Month & Year</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                    <input type="month" name="month_year" id="month_year" class="form-control"
+                           value="{{ selected_year }}-{{ selected_month|default:'01'|stringformat:'02d' }}">
+                </div>
+            </div>
+            <div class="col-md-3 d-flex align-items-end">
+                <button type="submit" class="btn btn-primary w-100">
+                    <i class="bi bi-search me-1"></i> Generate
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Delinquent Bills Table -->
+    <div class="table-card">
+        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <h6>Delinquent Bills for {{ selected_month|date:"F" }} {{ selected_year }}</h6>
+            <div class="btn-group">
+                <button onclick="window.print()" class="btn btn-outline-primary">
+                    <i class="bi bi-printer me-1"></i> Print
+                </button>
+                <a href="{% url 'consumers:reports' %}?report_type=delinquent" 
+                   class="btn btn-outline-info">
+                    <i class="bi bi-file-earmark-pdf me-1"></i> Full Report
+                </a>
+            </div>
+        </div>
+        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Consumer</th>
+                            <th>Billing Date</th>
+                            <th>Amount</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in delinquent_bills %}
+                        <tr>
+                            <td>{{ bill.consumer.first_name }} {{ bill.consumer.last_name }}</td>
+                            <td>{{ bill.billing_period|date:"F Y" }}</td>
+                            <td>₱{{ bill.total_amount|intcomma }}</td>
+                            <td>
+                                <span class="badge bg-warning text-dark">Pending</span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" class="empty-state">
+                                <i class="bi bi-clipboard-check"></i><br>
+                                No delinquent bills found for this period.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    {% if delinquent_bills %}
+                    <tfoot>
+                        <tr>
+                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
+                            <td><strong>₱{{ total_delinquent_amount|intcomma }}</strong></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                    {% endif %}
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Removed Charts and Visual Breakdown -->
+    <!-- Minimal layout - no unnecessary elements -->
+
+</div>
+{% endblock %}

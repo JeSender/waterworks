@@ -1,0 +1,44 @@
+{% extends "consumers/base.html" %}
+{% block title %}Consumer List{% endblock %}
+
+{% block main_content %}
+<h2>Consumers</h2>
+
+<!-- Search bar -->
+<form method="get" class="mb-3">
+  <input type="text" name="q" placeholder="Search by name" class="form-control" value="{{ request.GET.q }}">
+</form>
+
+<!-- Table -->
+<table class="table table-bordered table-striped">
+  <thead>
+    <tr>
+      <th>Name</th>
+      <th>Phone</th>
+      <th>Barangay</th>
+      <th>Purok</th>
+      <th>Meter Serial</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for consumer in consumers %}
+      <tr>
+        <td>{{ consumer.first_name }} {{ consumer.last_name }}</td>
+        <td>{{ consumer.phone_number }}</td>
+        <td>{{ consumer.barangay.name }}</td>
+        <td>{{ consumer.purok.name }}</td>
+        <td>{{ consumer.serial_number }}</td>
+        <td>
+          <a href="#" class="btn btn-sm btn-info">View</a>
+          <a href="{% url 'edit_consumer' consumer.id %}" class="btn btn-sm btn-warning">Edit</a>
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="6" class="text-center">No consumers found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<a href="{% url 'consumer_management' %}" class="btn btn-primary">Add Consumer</a>
+{% endblock %}

@@ -1,0 +1,79 @@
+<!-- consumers/templates/consumers/consumer_list_for_staff.html -->
+{% extends "consumers/base.html" %}
+{% block title %}Dashboard for {{ assigned_barangay.name }}{% endblock %}
+
+{% block main_content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="bi bi-person-badge"></i> Welcome, {{ user.username }}!</h2>
+        <a href="{% url 'consumers:logout' %}" class="btn btn-outline-danger btn-sm">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </a>
+    </div>
+
+    <!-- Staff Information Panel -->
+    <div class="card mb-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0">Your Assignment</h5>
+        </div>
+        <div class="card-body">
+            <p class="card-text">
+                <strong>Barangay:</strong> {{ assigned_barangay.name }}
+            </p>
+            <p class="card-text">
+                <strong>Login Time:</strong> 
+                {% if login_time %}
+                    {{ login_time }}
+                {% else %}
+                    Session Start
+                {% endif %}
+            </p>
+        </div>
+    </div>
+
+    <!-- Consumer List for Assigned Barangay -->
+    <div class="card mb-4 shadow-sm">
+        <div class="card-header">
+            <h5 class="mb-0">Consumers in {{ assigned_barangay.name }}</h5>
+        </div>
+        <div class="card-body">
+            {% if consumers %}
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Account Number</th>
+                                <th>Name</th>
+                                <th>Serial Number</th>
+                                <th>Status</th>
+                                <!-- Add other relevant columns -->
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for consumer in consumers %}
+                            <tr>
+                                <td>{{ consumer.account_number }}</td>
+                                <td>{{ consumer.first_name }} {{ consumer.last_name }}</td>
+                                <td>{{ consumer.serial_number }}</td>
+                                <td>
+                                    <span class="badge 
+                                        {% if consumer.status == 'active' %}bg-success
+                                        {% elif consumer.status == 'disconnected' %}bg-danger
+                                        {% else %}bg-secondary{% endif %}">
+                                        {{ consumer.get_status_display }}
+                                    </span>
+                                </td>
+                                <!-- Add other relevant fields -->
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="text-muted">No consumers found in {{ assigned_barangay.name }}.</p>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+{% endblock %}

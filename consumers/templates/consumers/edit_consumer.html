@@ -1,0 +1,84 @@
+{% extends "consumers/base.html" %}
+{% block title %}Edit Consumer{% endblock %}
+
+{% block main_content %}
+<h2>Edit Consumer</h2>
+
+<form method="POST">
+    {% csrf_token %}
+    <div class="row g-3">
+        <!-- Left Column: Personal Info -->
+        <div class="col-md-4">
+            <div class="mb-2">{{ form.first_name.label_tag }} {{ form.first_name }}</div>
+            <div class="mb-2">{{ form.middle_name.label_tag }} {{ form.middle_name }}</div>
+            <div class="mb-2">{{ form.last_name.label_tag }} {{ form.last_name }}</div>
+            <div class="mb-2">{{ form.birth_date.label_tag }} {{ form.birth_date }}</div>
+            <div class="mb-2">{{ form.gender.label_tag }} {{ form.gender }}</div>
+            <div class="mb-2">{{ form.phone_number.label_tag }} {{ form.phone_number }}</div>
+        </div>
+
+        <!-- Center Column: Household Info -->
+        <div class="col-md-4">
+            <div class="mb-2">{{ form.civil_status.label_tag }} {{ form.civil_status }}</div>
+            <div class="mb-2">{{ form.spouse_name.label_tag }} {{ form.spouse_name }}</div>
+            <div class="mb-2">{{ form.barangay.label_tag }} {{ form.barangay }}</div>
+            <div class="mb-2">{{ form.purok.label_tag }} {{ form.purok }}</div>
+            <div class="mb-2">{{ form.household_number.label_tag }} {{ form.household_number }}</div>
+        </div>
+
+        <!-- Right Column: Water Meter Info -->
+        <div class="col-md-4">
+            <div class="mb-2">{{ form.usage_type.label_tag }} {{ form.usage_type }}</div>
+            <div class="mb-2">{{ form.meter_brand.label_tag }} {{ form.meter_brand }}</div>
+            <div class="mb-2">{{ form.serial_number.label_tag }} {{ form.serial_number }}</div>
+            <div class="mb-2">{{ form.first_reading.label_tag }} {{ form.first_reading }}</div>
+            <div class="mb-2">{{ form.registration_date.label_tag }} {{ form.registration_date }}</div>
+        </div>
+    </div>
+
+    <br>
+    <button type="submit" class="btn btn-success">Update</button>
+    <!-- ✅ Fixed: include namespace 'consumers:' -->
+    <a href="{% url 'consumers:consumer_management' %}" class="btn btn-secondary">Cancel</a>
+</form>
+
+<!-- Same JS for dependent dropdown -->
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    const barangaySelect = document.getElementById('id_barangay');
+    const purokSelect = document.getElementById('id_purok');
+
+    barangaySelect.addEventListener('change', function() {
+        const barangayId = this.value;
+
+        fetch(`/ajax/load-puroks/?barangay_id=${barangayId}`)
+            .then(response => response.json())
+            .then(data => {
+                purokSelect.innerHTML = '';
+                const placeholder = document.createElement('option');
+                placeholder.textContent = 'Select Purok';
+                placeholder.value = '';
+                purokSelect.appendChild(placeholder);
+
+                data.forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p.id;
+                    option.textContent = p.name;
+                    purokSelect.appendChild(option);
+                });
+
+                // Keep old value if editing
+                if (purokSelect.dataset.selected) {
+                    purokSelect.value = purokSelect.dataset.selected;
+                }
+            });
+    });
+
+    // Trigger change once so purok loads when editing
+    if (barangaySelect.value) {
+        barangaySelect.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+
+{% endblock %}
