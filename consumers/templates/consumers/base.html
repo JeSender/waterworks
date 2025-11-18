@@ -322,14 +322,6 @@
                 Login History
             </a>
             {% endif %}
-
-            <!-- Database Documentation (Admin/Superuser Only) -->
-            {% if user.is_superuser %}
-            <a href="{% url 'consumers:database_documentation' %}" class="d-flex align-items-center text-dark text-decoration-none p-2 rounded mb-2">
-                <i class="bi bi-database-fill me-2"></i>
-                Database Docs
-            </a>
-            {% endif %}
         </nav>
 
         <!-- User Profile & Settings Section -->
@@ -337,14 +329,14 @@
             <!-- User Profile Card -->
             <div class="user-profile-card p-3 rounded mb-3" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
                 <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3" style="width: 45px; height: 45px; background: white; border-radius: 50%; display: flex; align-items-center; justify-content: center; color: #667eea; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
+                    <div class="user-avatar me-3" style="width: 50px; height: 50px; background: white; border-radius: 50%; display: flex; align-items-center; justify-content: center; color: #667eea; font-weight: bold; font-size: 1.4rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
                         {% if user.first_name %}{{ user.first_name|first|upper }}{% else %}{{ user.username|first|upper }}{% endif %}
                     </div>
                     <div class="flex-grow-1 text-truncate">
-                        <div class="fw-bold text-white" style="font-size: 0.95rem;">
+                        <div class="fw-bold text-white" style="font-size: 1.05rem; line-height: 1.3;">
                             {% if user.first_name and user.last_name %}{{ user.first_name }} {{ user.last_name }}{% elif user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
                         </div>
-                        <small class="text-white" style="font-size: 0.75rem; opacity: 0.9;">
+                        <small class="text-white" style="font-size: 0.8rem; opacity: 0.95; display: block; margin-top: 2px;">
                             {% if user.email %}{{ user.email }}{% else %}Staff Member{% endif %}
                         </small>
                     </div>
@@ -356,14 +348,14 @@
                 <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
                         onclick="toggleDarkMode()"
                         id="dark-mode-toggle"
-                        style="font-size: 0.85rem; padding: 0.6rem; border-width: 2px; font-weight: 600;">
-                    <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
+                        style="font-size: 0.95rem; padding: 0.7rem; border-width: 2px; font-weight: 600;">
+                    <i class="bi bi-moon-fill" id="dark-mode-icon" style="font-size: 1.1rem;"></i>
                     <span id="dark-mode-text">Dark Mode</span>
                 </button>
                 <a href="{% url 'consumers:staff_logout' %}"
                    class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
-                   style="font-size: 0.85rem; padding: 0.6rem; font-weight: 600; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">
-                    <i class="bi bi-box-arrow-right"></i>
+                   style="font-size: 0.95rem; padding: 0.7rem; font-weight: 700; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">
+                    <i class="bi bi-box-arrow-right" style="font-size: 1.1rem;"></i>
                     <span>Logout</span>
                 </a>
             </div>
