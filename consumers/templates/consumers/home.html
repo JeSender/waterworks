@@ -219,18 +219,18 @@
        ======================================== */
     .chart-container {
         position: relative;
-        height: 240px;
+        height: 280px;
         background: white;
-        border-radius: 10px;
-        padding: 1rem;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
         border: 1px solid #f0f0f0;
         transition: all 0.3s ease;
     }
 
     .chart-container:hover {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        transform: translateY(-2px);
+        box-shadow: 0 6px 28px rgba(0, 0, 0, 0.15);
+        transform: translateY(-4px);
     }
 
     .dark-mode .chart-container {
@@ -239,19 +239,20 @@
     }
 
     .chart-title {
-        font-size: 0.875rem;
+        font-size: 0.95rem;
         font-weight: 700;
         color: #1e293b;
-        margin-bottom: 0.75rem;
+        margin-bottom: 1rem;
         display: flex;
         align-items: center;
+        justify-content: center;
         gap: 0.5rem;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
     .chart-title i {
-        font-size: 1rem;
+        font-size: 1.1rem;
     }
 
     /* ========================================
@@ -431,19 +432,10 @@
         </div>
     </div>
 
-    <!-- Charts Row 1: Revenue & Payment Status -->
-    <div class="row g-3 mb-3">
-        <div class="col-lg-6 col-md-12">
-            <div class="chart-container">
-                <div class="chart-title">
-                    <i class="bi bi-bar-chart-fill text-primary"></i>
-                    <span id="revenueTrendTitle">Revenue Trend</span>
-                </div>
-                <canvas id="revenueChart"></canvas>
-            </div>
-        </div>
-        <div class="col-lg-6 col-md-12">
-            <div class="chart-container">
+    <!-- Payment Status Chart - Centered -->
+    <div class="row g-3 mb-3 justify-content-center">
+        <div class="col-lg-5 col-md-8 col-sm-12">
+            <div class="chart-container" style="height: 280px;">
                 <div class="chart-title">
                     <i class="bi bi-pie-chart-fill text-success"></i>
                     Payment Status Distribution
@@ -453,34 +445,12 @@
         </div>
     </div>
 
-    <!-- Charts Row 2: Consumption & Barangay Distribution -->
-    <div class="row g-3 mb-3">
-        <div class="col-lg-6 col-md-12">
-            <div class="chart-container">
-                <div class="chart-title">
-                    <i class="bi bi-droplet-fill text-info"></i>
-                    Water Consumption Analysis (m³)
-                </div>
-                <canvas id="consumptionChart"></canvas>
-            </div>
-        </div>
-        <div class="col-lg-6 col-md-12">
-            <div class="chart-container">
-                <div class="chart-title">
-                    <i class="bi bi-geo-alt-fill text-warning"></i>
-                    Top 10 Barangays by Consumers
-                </div>
-                <canvas id="barangayChart"></canvas>
-            </div>
-        </div>
-    </div>
-
     <!-- Recent Delinquent Bills Section - Compact -->
     <div class="bills-table-container card shadow-sm border-0 rounded-3">
         <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
             <h5 class="mb-0" style="font-size: 1rem;">
                 <i class="bi bi-clock-history me-2"></i>
-                Recent Delinquent Bills - {{ selected_month|date:"F" }} {{ selected_year }}
+                Recent Delinquent Bills - {{ selected_date|date:"F Y" }}
             </h5>
         </div>
         <div class="card-body p-0">
@@ -549,27 +519,6 @@ function updateCharts() {
     window.location.href = `?month_year=${selectedPeriod}&view_type=${viewType}`;
 }
 
-/* ========================================
-   UPDATE CHART TITLE DYNAMICALLY
-   ======================================== */
-function updateRevenueTrendTitle() {
-    const viewType = document.getElementById('viewType').value;
-    const selectedPeriod = document.getElementById('selectedPeriod').value;
-    const titleElement = document.getElementById('revenueTrendTitle');
-
-    if (selectedPeriod && titleElement) {
-        const [year, month] = selectedPeriod.split('-');
-        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                           'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const monthName = monthNames[parseInt(month) - 1];
-
-        if (viewType === 'yearly') {
-            titleElement.textContent = `Revenue Trend - ${year}`;
-        } else {
-            titleElement.textContent = `Revenue Trend - ${monthName} ${year}`;
-        }
-    }
-}
 
 /* ========================================
    MAIN INITIALIZATION
@@ -592,71 +541,8 @@ document.addEventListener('DOMContentLoaded', function() {
         document.getElementById('viewType').value = viewType;
     }
 
-    /* Update Revenue Chart Title */
-    updateRevenueTrendTitle();
-
     /* ========================================
-       CHART 1: Revenue Trend Chart (Bar Chart)
-       ======================================== */
-    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
-    new Chart(revenueCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ revenue_labels|safe }},
-            datasets: [{
-                label: 'Revenue (₱)',
-                data: {{ revenue_data|safe }},
-                backgroundColor: 'rgba(102, 126, 234, 0.8)',
-                borderColor: '#667eea',
-                borderWidth: 2,
-                borderRadius: 8,
-                hoverBackgroundColor: '#667eea',
-                barThickness: 'flex',
-                maxBarThickness: 60
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        color: textColor,
-                        padding: 8,
-                        font: { size: 9 }
-                    }
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            return 'Revenue: ₱' + context.parsed.y.toLocaleString('en-PH', {minimumFractionDigits: 2});
-                        }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '₱' + value.toLocaleString();
-                        },
-                        color: textColor
-                    },
-                    grid: { color: gridColor }
-                },
-                x: {
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
-                }
-            }
-        }
-    });
-
-    /* ========================================
-       CHART 2: Payment Status Pie Chart
+       Payment Status Distribution Chart
        ======================================== */
     const paymentCtx = document.getElementById('paymentStatusChart').getContext('2d');
     new Chart(paymentCtx, {
@@ -689,100 +575,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
                         }
                     }
-                }
-            }
-        }
-    });
-
-    /* ========================================
-       CHART 3: Water Consumption Trend Chart
-       ======================================== */
-    const consumptionCtx = document.getElementById('consumptionChart').getContext('2d');
-    new Chart(consumptionCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ consumption_labels|safe }},
-            datasets: [{
-                label: 'Total Consumption (m³)',
-                data: {{ consumption_data|safe }},
-                backgroundColor: 'rgba(6, 182, 212, 0.7)',
-                borderColor: '#06b6d4',
-                borderWidth: 2,
-                borderRadius: 6,
-                hoverBackgroundColor: '#06b6d4'
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: true,
-                    position: 'bottom',
-                    labels: {
-                        color: textColor,
-                        padding: 8,
-                        font: { size: 9 }
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return value.toLocaleString() + ' m³';
-                        },
-                        color: textColor
-                    },
-                    grid: { color: gridColor }
-                },
-                x: {
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
-                }
-            }
-        }
-    });
-
-    /* ========================================
-       CHART 4: Barangay Distribution Chart
-       ======================================== */
-    const barangayCtx = document.getElementById('barangayChart').getContext('2d');
-    new Chart(barangayCtx, {
-        type: 'bar',
-        data: {
-            labels: {{ barangay_labels|safe }},
-            datasets: [{
-                label: 'Consumers',
-                data: {{ barangay_counts|safe }},
-                backgroundColor: [
-                    '#f59e0b', '#ef4444', '#10b981', '#3b82f6', '#8b5cf6',
-                    '#ec4899', '#14b8a6', '#f97316', '#06b6d4', '#84cc16'
-                ],
-                borderWidth: 0,
-                borderRadius: 6
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: { color: textColor },
-                    grid: { color: gridColor }
-                },
-                y: {
-                    ticks: {
-                        color: textColor,
-                        font: { size: 10 }
-                    },
-                    grid: { display: false }
                 }
             }
         }

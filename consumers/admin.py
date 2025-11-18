@@ -47,10 +47,6 @@ admin.site.register(User, CustomUserAdmin)
 # ----------------------------
 # Core Area Models
 # ----------------------------
-from django.contrib import admin
-from .models import Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile # Ensure all models are imported
-
-# ... (other admin registrations like ConsumerAdmin, etc.) ...
 
 @admin.register(Barangay)
 class BarangayAdmin(admin.ModelAdmin):
@@ -63,14 +59,6 @@ class BarangayAdmin(admin.ModelAdmin):
         # This accesses all Consumer objects related to this Barangay object
         return obj.consumer_set.count()
     consumer_count.short_description = 'Consumers'
-
-# ... (other admin registrations) ...
-
-# ... (other imports) ...
-from django.contrib import admin
-from .models import Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile # Ensure all models are imported
-
-# ... (other admin registrations like BarangayAdmin, ConsumerAdmin, etc.) ...
 
 @admin.register(Purok)
 class PurokAdmin(admin.ModelAdmin):

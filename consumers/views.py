@@ -758,6 +758,10 @@ def home(request):
         consumption_labels.append(item['month'].strftime('%b %Y'))
         consumption_data.append(float(item['total_consumption'] or 0))
 
+    # Create a date object for proper month/year formatting in template
+    from datetime import date
+    selected_date = date(selected_year, selected_month, 1)
+
     context = {
         'connected_count': connected_count,
         'disconnected_count': disconnected_count,
@@ -766,6 +770,7 @@ def home(request):
         'total_delinquent_amount': total_delinquent_amount,
         'selected_month': selected_month,
         'selected_year': selected_year,
+        'selected_date': selected_date,  # For template date formatting
         # Chart data
         'revenue_labels': json.dumps(revenue_labels),
         'revenue_data': json.dumps(revenue_data),
