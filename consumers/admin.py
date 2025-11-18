@@ -6,8 +6,27 @@ from django.contrib.auth.admin import UserAdmin
 
 from .models import (
     Consumer, Barangay, Purok, MeterBrand, MeterReading, 
-    Bill, Payment, SystemSetting, StaffProfile
+    Bill, Payment, SystemSetting, StaffProfile, UserLoginEvent
 )
+
+# NEW: Admin for User Login Events
+@admin.register(UserLoginEvent)
+class UserLoginEventAdmin(admin.ModelAdmin):
+    list_display = ['user', 'login_timestamp'] # Columns to show in the list view
+    list_filter = ['login_timestamp', 'user']  # Filters on the right side
+    search_fields = ['user__username', 'user__first_name', 'user__last_name'] # Search bar
+    ordering = ['-login_timestamp']            # Order by most recent first
+    readonly_fields = ['user', 'login_timestamp'] # Make fields read-only to prevent editing
+
+    # Optional: Customize how the list view looks
+    def has_add_permission(self, request):
+        # Prevent adding events manually through the admin
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # Prevent changing events through the admin (they are read-only)
+        return False
+
 
 # ----------------------------
 # Staff Profile Integration
@@ -28,10 +47,6 @@ admin.site.register(User, CustomUserAdmin)
 # ----------------------------
 # Core Area Models
 # ----------------------------
-from django.contrib import admin
-from .models import Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile # Ensure all models are imported
-
-# ... (other admin registrations like ConsumerAdmin, etc.) ...
 
 @admin.register(Barangay)
 class BarangayAdmin(admin.ModelAdmin):
@@ -44,14 +59,6 @@ class BarangayAdmin(admin.ModelAdmin):
         # This accesses all Consumer objects related to this Barangay object
         return obj.consumer_set.count()
     consumer_count.short_description = 'Consumers'
-
-# ... (other admin registrations) ...
-
-# ... (other imports) ...
-from django.contrib import admin
-from .models import Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile # Ensure all models are imported
-
-# ... (other admin registrations like BarangayAdmin, ConsumerAdmin, etc.) ...
 
 @admin.register(Purok)
 class PurokAdmin(admin.ModelAdmin):
@@ -243,4 +250,10 @@ class PaymentAdmin(admin.ModelAdmin):
 # ----------------------------
 @admin.register(SystemSetting)
 class SystemSettingAdmin(admin.ModelAdmin):
-    list_display = ['id', 'rate_per_cubic']
+    # Update list_display to show the new fields
+    list_display = ['id', 'residential_rate_per_cubic', 'commercial_rate_per_cubic', 'updated_at']
+    # Optionally, customize the form fields shown when editing
+    # fields = ['residential_rate_per_cubic', 'commercial_rate_per_cubic'] # Show only these fields in the edit form
+
+# ... (register other models if needed) ...
+

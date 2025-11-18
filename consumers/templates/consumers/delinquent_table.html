@@ -1,0 +1,35 @@
+<!-- templates/consumers/delinquent_table.html -->
+<div class="table-responsive">
+    <table class="report-table">
+        <thead>
+            <tr>
+                <th>Account #</th>
+                <th>Consumer</th>
+                <th>Phone</th>
+                <th>Total Due</th>
+                <th>Overdue Months</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for consumer in delinquent_data %}
+            <tr>
+                <td>{{ consumer.account_number }}</td>
+                <td>{{ consumer.first_name }} {{ consumer.last_name }}</td>
+                <td>{{ consumer.phone_number }}</td>
+                <td>₱{{ consumer.total_due|floatformat:2 }}</td>
+                <td>{{ consumer.overdue_months }} months</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center">No delinquent accounts found.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="3" class="text-end"><strong>Total Delinquent Amount:</strong></td>
+                <td colspan="2"><strong>₱{{ total_delinquent_amount|floatformat:2 }}</strong></td>
+            </tr>
+        </tfoot>
+    </table>
+</div>

@@ -27,6 +27,13 @@
             width: 80px;
             height: auto;
         }
+        .logo--circle {
+            border-radius: 50%;
+            object-fit: cover;
+            width: 80px;
+            height: 80px;
+            display: block;
+        }
         .header { 
             text-align: center; 
             margin-bottom: 15px; 
@@ -81,7 +88,7 @@
         <!-- Logos -->
         <div class="logo-container">
             <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" class="logo">
-            <img src="{% static 'consumers/images/logo.jpg' %}" alt="Waterworks Logo" class="logo">
+            <img src="{% static 'consumers/images/logo.jpg' %}" alt="Waterworks Logo" class="logo logo--circle">
         </div>
 
         <!-- Header -->

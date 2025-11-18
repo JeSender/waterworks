@@ -6,6 +6,62 @@ from django.utils import timezone
 import uuid
 from django.contrib.auth.models import User
 
+
+
+# Enhanced Model to track user login events with security features
+class UserLoginEvent(models.Model):
+    """
+    Stores comprehensive information about user login attempts and sessions.
+    Includes security tracking features for audit and monitoring purposes.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, help_text="The user who logged in.")
+    login_timestamp = models.DateTimeField(default=timezone.now, help_text="The date and time the user logged in.", db_index=True)
+
+    # Security tracking fields
+    ip_address = models.GenericIPAddressField(null=True, blank=True, help_text="IP address of the login attempt")
+    user_agent = models.TextField(blank=True, help_text="Browser/device information")
+    login_method = models.CharField(max_length=20, default='web', choices=[
+        ('web', 'Web Portal'),
+        ('mobile', 'Mobile App'),
+        ('api', 'API')
+    ], help_text="Method used to login")
+    status = models.CharField(max_length=20, default='success', choices=[
+        ('success', 'Successful'),
+        ('failed', 'Failed'),
+        ('locked', 'Account Locked')
+    ], help_text="Login attempt status")
+
+    # Session tracking
+    session_key = models.CharField(max_length=40, blank=True, null=True, help_text="Django session key")
+    logout_timestamp = models.DateTimeField(null=True, blank=True, help_text="When the user logged out")
+
+    class Meta:
+        ordering = ['-login_timestamp']
+        indexes = [
+            models.Index(fields=['login_timestamp']),
+            models.Index(fields=['user', 'login_timestamp']),
+            models.Index(fields=['status']),
+        ]
+        verbose_name = "User Login Event"
+        verbose_name_plural = "User Login Events"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.status} - {self.login_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
+
+    @property
+    def session_duration(self):
+        """Calculate session duration if logged out"""
+        if self.logout_timestamp:
+            return self.logout_timestamp - self.login_timestamp
+        return None
+
+    @property
+    def is_active_session(self):
+        """Check if session is still active"""
+        return self.status == 'success' and self.logout_timestamp is None
+
+# ... (rest of your existing models) ...
+
 class StaffProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     assigned_barangay = models.ForeignKey('Barangay', on_delete=models.CASCADE)
@@ -101,44 +157,52 @@ class Consumer(models.Model):
     first_reading = models.IntegerField()
     registration_date = models.DateField()
 
-    # 🔑 UPDATED: Account Number (Auto-generated with 5-digit padding)
+    # 🔑 Auto-generated Account Number
     account_number = models.CharField(max_length=20, unique=True, blank=True)
 
-    # Status
+    # Status & Disconnection
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,
         default='active',
         help_text="Connected or Disconnected consumer"
     )
+    disconnect_reason = models.CharField(max_length=200, blank=True, null=True)
 
     # Timestamps
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    # ========================
+    # Properties
+    # ========================
+    @property
+    def full_name(self):
+        """Returns the full name with optional middle name."""
+        middle = f" {self.middle_name}" if self.middle_name else ""
+        return f"{self.first_name}{middle} {self.last_name}".strip()
+
+    # ========================
+    # Methods
+    # ========================
     def save(self, *args, **kwargs):
-        # --- AUTO-GENERATE GLOBAL account_number with 5-digit padding ---
+        # Auto-generate account_number if not set
         if not self.account_number:
-            # Find the highest existing number suffix
-            # This query gets the maximum integer value of the part after 'BW-'
             from django.db import connection
             with connection.cursor() as cursor:
                 cursor.execute("""
                     SELECT MAX(CAST(SUBSTR(account_number, 4) AS INTEGER))
                     FROM consumers_consumer
-                    WHERE account_number LIKE 'BW-_____' -- Ensures format BW- followed by exactly 5 characters
+                    WHERE account_number LIKE 'BW-_____'
                 """)
                 row = cursor.fetchone()
-                last_num = row[0] if row and row[0] is not None else -1 # Handle case where no records exist
-
+                last_num = row[0] if row and row[0] is not None else -1
             new_num = last_num + 1
-            # Format as BW-00000, BW-00001, ..., BW-00010, etc.
-            self.account_number = f'BW-{new_num:05d}' # Use :05d for 5-digit padding
-        # --- END AUTO-GENERATE account_number ---
+            self.account_number = f'BW-{new_num:05d}'
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.account_number} - {self.first_name} {self.last_name}"
+        return f"{self.account_number} - {self.full_name}"
 
     # ... (rest of your model, if any) ...
 
@@ -217,14 +281,69 @@ class Bill(models.Model):
 
 
 # ----------------------------
-# System Settings (Optional but Useful)
-# ----------------------------
+# consumers/models.py
+from django.db import models
+from decimal import Decimal # Import Decimal
+
+# ... (other imports remain the same) ...
+
 class SystemSetting(models.Model):
-    rate_per_cubic = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('22.50'))
+    """
+    Model to store system-wide settings.
+    This version includes separate rates for Residential and Commercial usage.
+    """
+    # --- NEW: Add fields for separate rates ---
+    residential_rate_per_cubic = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('22.50'), # Default residential rate
+        help_text="Rate applied to residential consumers (₱ / m³)"
+    )
+    commercial_rate_per_cubic = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('25.00'), # Default commercial rate
+        help_text="Rate applied to commercial consumers (₱ / m³)"
+    )
+    # --- END NEW ---
+
+    # Billing configuration
+    fixed_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('50.00'),
+        help_text="Fixed charge added to every bill (₱)"
+    )
+    billing_day_of_month = models.IntegerField(
+        default=1,
+        help_text="Day of month for billing period (1-28)"
+    )
+    due_day_of_month = models.IntegerField(
+        default=20,
+        help_text="Day of month for bill due date (1-28)"
+    )
+
+    # Optional: Keep a field to track when the settings were last updated
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Current Rate: ₱{self.rate_per_cubic}/m³"
+        return f"Rates: Res ₱{self.residential_rate_per_cubic}, Comm ₱{self.commercial_rate_per_cubic}"
+
+    # Optional: Override save to enforce singleton pattern (only one instance)
+    def save(self, *args, **kwargs):
+        # Ensure only one instance exists by deleting others before saving
+        self.__class__.objects.exclude(id=self.id).delete()
+        super().save(*args, **kwargs)
+
+    class Meta:
+        # Optional: Add constraints here if needed, e.g., to ensure only one row
+        # constraints = [
+        #     models.UniqueConstraint(fields=[], name='unique_system_setting_singleton')
+        # ]
+        # Or just ensure id=1 is always used implicitly as shown in the view
+        pass
+
+# ... (rest of your models like Consumer, Barangay, etc.) ...
     
     
 class Payment(models.Model):

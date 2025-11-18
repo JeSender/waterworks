@@ -1,0 +1,345 @@
+╔══════════════════════════════════════════════════════════════╗
+║   BALILIHAN WATERWORKS - RAILWAY DEPLOYMENT CHECKLIST       ║
+║   Print this and check off each step as you complete it     ║
+╚══════════════════════════════════════════════════════════════╝
+
+═══════════════════════════════════════════════════════════════
+PHASE 1: LOCAL PREPARATION
+═══════════════════════════════════════════════════════════════
+
+[ ] 1. Verify all files exist:
+    [ ] requirements.txt
+    [ ] Procfile
+    [ ] runtime.txt
+    [ ] railway.json
+    [ ] .gitignore
+    [ ] .env.example
+    [ ] migrate_to_postgres.py
+    [ ] RAILWAY_DEPLOYMENT_GUIDE.md
+
+[ ] 2. Export SQLite data:
+    Command: python migrate_to_postgres.py
+    [ ] Choose option 1 (Export)
+    [ ] Verify data_backup.json created
+    [ ] Check file size is reasonable
+
+[ ] 3. Test local application:
+    [ ] python manage.py runserver works
+    [ ] Can login to http://localhost:8000
+    [ ] Dashboard shows data
+    [ ] No critical errors
+
+[ ] 4. Initialize Git repository:
+    [ ] git init (if not done)
+    [ ] git add .
+    [ ] git commit -m "Initial commit for Railway"
+
+═══════════════════════════════════════════════════════════════
+PHASE 2: GITHUB SETUP
+═══════════════════════════════════════════════════════════════
+
+[ ] 5. Create GitHub repository:
+    [ ] Go to github.com
+    [ ] Create new repo: balilihan-waterworks
+    [ ] Set to Private
+    [ ] Don't initialize with README
+
+[ ] 6. Push to GitHub:
+    [ ] git remote add origin https://github.com/USERNAME/balilihan-waterworks.git
+    [ ] git branch -M main
+    [ ] git push -u origin main
+    [ ] Verify code appears on GitHub
+
+═══════════════════════════════════════════════════════════════
+PHASE 3: RAILWAY SETUP
+═══════════════════════════════════════════════════════════════
+
+[ ] 7. Create Railway account:
+    [ ] Go to railway.app
+    [ ] Sign up with GitHub
+    [ ] Verify email
+    [ ] Confirm $5 free credit
+
+[ ] 8. Create new Railway project:
+    [ ] Click "New Project"
+    [ ] Select "Deploy from GitHub repo"
+    [ ] Choose balilihan-waterworks repo
+    [ ] Wait for initial detection
+
+[ ] 9. Add PostgreSQL database:
+    [ ] Click "New" in project
+    [ ] Select "Database"
+    [ ] Choose "PostgreSQL"
+    [ ] Verify DATABASE_URL is set
+
+[ ] 10. Generate SECRET_KEY:
+    Method 1: python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())"
+    Method 2: https://djecrety.ir/
+
+    Your SECRET_KEY: ________________________________
+
+[ ] 11. Set environment variables in Railway:
+    Go to: Project → App → Variables tab
+
+    [ ] SECRET_KEY = (paste generated key)
+    [ ] DEBUG = False
+    [ ] ALLOWED_HOSTS = .railway.app,.up.railway.app
+    [ ] RAILWAY_ENVIRONMENT = production
+
+[ ] 12. Watch initial deployment:
+    [ ] Click "Deployments" tab
+    [ ] Watch build logs
+    [ ] Wait for "Deployment successful"
+    [ ] Note any errors
+
+═══════════════════════════════════════════════════════════════
+PHASE 4: GET PUBLIC URL
+═══════════════════════════════════════════════════════════════
+
+[ ] 13. Generate public domain:
+    [ ] Go to Settings → Networking
+    [ ] Click "Generate Domain"
+    [ ] Copy your URL: ________________________________
+    [ ] Test URL in browser (should see error or redirect)
+
+[ ] 14. Update environment variables with domain:
+    [ ] CORS_ALLOWED_ORIGINS = https://your-app-name.up.railway.app
+    [ ] CSRF_TRUSTED_ORIGINS = https://your-app-name.up.railway.app
+    [ ] Wait for auto-redeploy
+
+═══════════════════════════════════════════════════════════════
+PHASE 5: DATABASE MIGRATION
+═══════════════════════════════════════════════════════════════
+
+[ ] 15. Upload data_backup.json to Railway:
+    Method: Temporarily commit to git
+    [ ] git add data_backup.json
+    [ ] git commit -m "Add data backup for migration"
+    [ ] git push
+    [ ] Wait for Railway to redeploy
+
+[ ] 16. Install Railway CLI (optional but recommended):
+    Windows: iwr https://railway.app/install.ps1 | iex
+    [ ] railway login
+    [ ] railway link (select your project)
+
+[ ] 17. Access Railway shell:
+    Method 1: Railway CLI
+    [ ] railway shell
+
+    Method 2: Railway Dashboard
+    [ ] Click "..." menu → Shell
+
+[ ] 18. Run migration script:
+    [ ] python migrate_to_postgres.py
+    [ ] Choose option 4 (Full setup)
+    [ ] Wait for migrations
+    [ ] Wait for data import
+    [ ] Review verification output
+
+[ ] 19. Verify data imported:
+    Check these counts match your local data:
+    [ ] Users: _____
+    [ ] Barangays: _____
+    [ ] Consumers: _____
+    [ ] Bills: _____
+    [ ] Payments: _____
+    [ ] Meter Readings: _____
+
+═══════════════════════════════════════════════════════════════
+PHASE 6: TESTING
+═══════════════════════════════════════════════════════════════
+
+[ ] 20. Test web application:
+    URL: https://your-app-name.up.railway.app
+
+    [ ] Login page loads
+    [ ] Can login with superuser
+    [ ] Dashboard shows correct data
+    [ ] Consumer list appears
+    [ ] Meter readings display
+    [ ] Can create test reading
+    [ ] Can generate bill
+    [ ] Can process payment
+    [ ] Can export report to Excel
+
+[ ] 21. Test Django admin:
+    URL: https://your-app-name.up.railway.app/admin/
+
+    [ ] Admin login works
+    [ ] Can see all models
+    [ ] Data is correct
+
+[ ] 22. Test security features:
+    [ ] Login tracking records IP
+    [ ] Login history shows entries
+    [ ] Admin verification works
+    [ ] User management accessible (superuser)
+    [ ] Password strength validation works
+    [ ] Unauthorized access blocked (403)
+
+[ ] 23. Test API endpoints:
+    Use Postman or curl
+
+    [ ] POST /api/login/
+        Returns: user info, token, barangay
+
+    [ ] GET /api/consumers/
+        Returns: consumer list
+
+    [ ] POST /api/submit-reading/
+        Accepts: meter reading data
+
+    [ ] GET /api/rates/
+        Returns: current water rates
+
+═══════════════════════════════════════════════════════════════
+PHASE 7: ANDROID APP UPDATE
+═══════════════════════════════════════════════════════════════
+
+[ ] 24. Update Android app base URL:
+    File: LoginActivity.java (or similar)
+
+    OLD: String BASE_URL = "http://192.168.1.100:8000";
+    NEW: String BASE_URL = "https://your-app-name.up.railway.app";
+
+    [ ] Updated base URL
+    [ ] Changed HTTP to HTTPS
+    [ ] Updated all API endpoint URLs
+
+[ ] 25. Test Android app:
+    [ ] App can login
+    [ ] Consumer list loads
+    [ ] Can submit meter reading
+    [ ] No CORS errors
+    [ ] Data syncs correctly
+
+═══════════════════════════════════════════════════════════════
+PHASE 8: FINAL VERIFICATION
+═══════════════════════════════════════════════════════════════
+
+[ ] 26. Check Railway logs:
+    [ ] railway logs (or dashboard)
+    [ ] No critical errors
+    [ ] Requests are being logged
+    [ ] No security warnings
+
+[ ] 27. Performance check:
+    [ ] Pages load in < 3 seconds
+    [ ] No timeout errors
+    [ ] API responses are fast
+
+[ ] 28. Security verification:
+    [ ] HTTPS enforced (HTTP → HTTPS redirect)
+    [ ] Secure cookies enabled
+    [ ] CORS only allows your domains
+    [ ] Debug mode is OFF
+
+[ ] 29. Data integrity check:
+    [ ] User count matches local
+    [ ] Consumer relationships intact
+    [ ] Bills linked to correct readings
+    [ ] Payments linked to correct bills
+
+═══════════════════════════════════════════════════════════════
+PHASE 9: CLEANUP & DOCUMENTATION
+═══════════════════════════════════════════════════════════════
+
+[ ] 30. Remove data_backup.json from git:
+    [ ] git rm data_backup.json
+    [ ] git commit -m "Remove data backup after migration"
+    [ ] git push
+
+[ ] 31. Document your deployment:
+    Your Railway URL: ________________________________
+
+    Deployment Date: _________________
+
+    Database: PostgreSQL (Railway)
+
+    Environment Variables Set:
+    [ ] SECRET_KEY
+    [ ] DEBUG
+    [ ] ALLOWED_HOSTS
+    [ ] CORS_ALLOWED_ORIGINS
+    [ ] CSRF_TRUSTED_ORIGINS
+
+[ ] 32. Create test user account:
+    [ ] railway shell
+    [ ] python manage.py createsuperuser
+    Username: _________________
+    Password: _________________
+
+═══════════════════════════════════════════════════════════════
+PHASE 10: THESIS DEFENSE PREPARATION
+═══════════════════════════════════════════════════════════════
+
+[ ] 33. Prepare demo script:
+    [ ] Test full workflow (login to payment)
+    [ ] Practice explaining security features
+    [ ] Prepare API demonstration
+    [ ] Show mobile app connectivity
+
+[ ] 34. Create backup materials:
+    [ ] Take screenshots of all features
+    [ ] Record video demo (optional)
+    [ ] Print documentation
+    [ ] Prepare presentation slides
+
+[ ] 35. Final system check (day before defense):
+    [ ] Railway app is running
+    [ ] All features work
+    [ ] Data is up-to-date
+    [ ] Android app connects
+    [ ] No errors in logs
+
+═══════════════════════════════════════════════════════════════
+TROUBLESHOOTING CONTACTS
+═══════════════════════════════════════════════════════════════
+
+Railway Support: https://railway.app/help
+Django Docs: https://docs.djangoproject.com/
+Your Documentation: See RAILWAY_DEPLOYMENT_GUIDE.md
+
+═══════════════════════════════════════════════════════════════
+QUICK REFERENCE COMMANDS
+═══════════════════════════════════════════════════════════════
+
+View logs:
+  railway logs --tail
+
+Access shell:
+  railway shell
+
+Run migrations:
+  python manage.py migrate
+
+Collect static files:
+  python manage.py collectstatic --noinput
+
+Create superuser:
+  python manage.py createsuperuser
+
+Backup database:
+  python manage.py dumpdata --indent 2 > backup.json
+
+═══════════════════════════════════════════════════════════════
+
+COMPLETION STATUS:
+
+Total Steps: 35
+Completed: _____ / 35
+
+Date Started: _________________
+Date Completed: _________________
+
+Deployed URL: ________________________________
+
+Status: [ ] READY FOR PRODUCTION
+        [ ] THESIS DEFENSE READY
+
+═══════════════════════════════════════════════════════════════
+
+Good luck with your deployment and thesis defense! 🎓
+
+═══════════════════════════════════════════════════════════════

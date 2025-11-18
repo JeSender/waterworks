@@ -69,5 +69,66 @@
         🖨️ Print Water Bill
     </a>
     <a href="{% url 'consumers:consumer_bill' consumer.id %}" class="btn btn-success">View Bill</a>
+     
+    
+    <!-- Show Disconnect OR Reconnect based on status -->
+    {% if consumer.status == 'active' %}
+        <button onclick="confirmDisconnect('{{ consumer.id }}', '{{ consumer.full_name }}')" class="btn btn-danger">
+            <i class="bi bi-plug-fill me-1"></i>Disconnect Service
+        </button>
+    {% elif consumer.status == 'disconnected' %}
+        <button onclick="confirmReconnect('{{ consumer.id }}', '{{ consumer.full_name }}')" class="btn btn-success">
+            <i class="bi bi-plug-fill me-1"></i>Reconnect Service
+        </button>
+    {% endif %}
 </div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Disconnect confirmation
+async function confirmDisconnect(consumerId, consumerName) {
+    const result = await confirmAction(
+        'Disconnect Service?',
+        `Are you sure you want to disconnect service for ${consumerName}? This action can be reversed later.`,
+        'Yes, Disconnect',
+        'warning'
+    );
+
+    if (result.isConfirmed) {
+        showLoading('Disconnecting service...');
+        window.location.href = `/consumer/${consumerId}/disconnect/`;
+    }
+}
+
+// Reconnect confirmation
+async function confirmReconnect(consumerId, consumerName) {
+    const result = await confirmAction(
+        'Reconnect Service?',
+        `Are you sure you want to reconnect service for ${consumerName}?`,
+        'Yes, Reconnect',
+        'success'
+    );
+
+    if (result.isConfirmed) {
+        showLoading('Reconnecting service...');
+
+        // Create a form and submit
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/consumer/${consumerId}/reconnect/`;
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
 {% endblock %}

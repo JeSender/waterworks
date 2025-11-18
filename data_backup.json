@@ -1,0 +1,424 @@
+[
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$OSnhH6oLeUlaXvda44PLcD$2cWcpBt0AQVeITsXE5fPf2zsUoPrLOK5kCEiKlZyqo8=",
+    "last_login": "2025-10-26T14:10:16.072Z",
+    "is_superuser": true,
+    "username": "jest",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-13T06:41:54.577Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$E0Ty2xmlRn3HgBpwpiU6cA$m0qIqMQhhpZLglOWXcLnRRJvTKkm4Ah3JJ02zoigGxY=",
+    "last_login": "2025-10-27T00:58:35.566Z",
+    "is_superuser": false,
+    "username": "admin",
+    "first_name": "Jest",
+    "last_name": "Send",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-14T03:16:38Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$24KClBTuc32wULQ4FYSuEI$94R7SPZ9QxymCXGrLf9S+V57oAxbamPKrBI/txJf8TQ=",
+    "last_login": "2025-10-26T15:23:49.927Z",
+    "is_superuser": false,
+    "username": "kimoy",
+    "first_name": "kim",
+    "last_name": "bal",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-21T08:59:24Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "auth.user",
+  "fields": {
+    "password": "pbkdf2_sha256$1000000$tQK32VGMC8ltagJYMbI8cS$mpAzean+rgU69QaHQNdFW0V2hMv0Vr3PQVgWH0UgrN0=",
+    "last_login": "2025-10-27T00:59:54.293Z",
+    "is_superuser": false,
+    "username": "cla123",
+    "first_name": "",
+    "last_name": "",
+    "email": "",
+    "is_staff": true,
+    "is_active": true,
+    "date_joined": "2025-10-21T23:33:01Z",
+    "groups": [],
+    "user_permissions": []
+  }
+},
+{
+  "model": "consumers.barangay",
+  "pk": 1,
+  "fields": {
+    "name": "Datag Sur"
+  }
+},
+{
+  "model": "consumers.barangay",
+  "pk": 2,
+  "fields": {
+    "name": "Datag Norte"
+  }
+},
+{
+  "model": "consumers.barangay",
+  "pk": 3,
+  "fields": {
+    "name": "Cabad"
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 1,
+  "fields": {
+    "name": "purok 2",
+    "barangay": 1
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 2,
+  "fields": {
+    "name": "1",
+    "barangay": 1
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 3,
+  "fields": {
+    "name": "3",
+    "barangay": 1
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 4,
+  "fields": {
+    "name": "4",
+    "barangay": 2
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 5,
+  "fields": {
+    "name": "5",
+    "barangay": 2
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 6,
+  "fields": {
+    "name": "6",
+    "barangay": 2
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 7,
+  "fields": {
+    "name": "1",
+    "barangay": 3
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 8,
+  "fields": {
+    "name": "2",
+    "barangay": 3
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 9,
+  "fields": {
+    "name": "3",
+    "barangay": 3
+  }
+},
+{
+  "model": "consumers.purok",
+  "pk": 10,
+  "fields": {
+    "name": "4",
+    "barangay": 3
+  }
+},
+{
+  "model": "consumers.meterbrand",
+  "pk": 1,
+  "fields": {
+    "name": "Lg"
+  }
+},
+{
+  "model": "consumers.meterbrand",
+  "pk": 2,
+  "fields": {
+    "name": "aqua"
+  }
+},
+{
+  "model": "consumers.meterbrand",
+  "pk": 3,
+  "fields": {
+    "name": "quate"
+  }
+},
+{
+  "model": "consumers.systemsetting",
+  "pk": 1,
+  "fields": {
+    "residential_rate_per_cubic": "22.50",
+    "commercial_rate_per_cubic": "25.00",
+    "updated_at": "2025-10-24T17:32:26.481Z"
+  }
+},
+{
+  "model": "consumers.staffprofile",
+  "pk": 2,
+  "fields": {
+    "user": [
+      "kimoy"
+    ],
+    "assigned_barangay": 1,
+    "role": "field_staff"
+  }
+},
+{
+  "model": "consumers.staffprofile",
+  "pk": 4,
+  "fields": {
+    "user": [
+      "cla123"
+    ],
+    "assigned_barangay": 2,
+    "role": "field_staff"
+  }
+},
+{
+  "model": "consumers.consumer",
+  "pk": 6,
+  "fields": {
+    "first_name": "Kim",
+    "middle_name": "B",
+    "last_name": "Balani",
+    "birth_date": "2003-06-26",
+    "gender": "Male",
+    "phone_number": "09233244543",
+    "civil_status": "Single",
+    "spouse_name": "n\\a",
+    "barangay": 1,
+    "purok": 2,
+    "household_number": "10",
+    "usage_type": "Residential",
+    "meter_brand": 2,
+    "serial_number": "8377447",
+    "first_reading": 0,
+    "registration_date": "2025-10-26",
+    "account_number": "BW-00000",
+    "status": "active",
+    "disconnect_reason": null,
+    "created_at": "2025-10-26T14:13:50.549Z",
+    "updated_at": "2025-10-26T14:13:50.549Z"
+  }
+},
+{
+  "model": "consumers.consumer",
+  "pk": 7,
+  "fields": {
+    "first_name": "James",
+    "middle_name": "G",
+    "last_name": "Bunso",
+    "birth_date": "2006-02-26",
+    "gender": "Male",
+    "phone_number": "09233244541",
+    "civil_status": "Single",
+    "spouse_name": "n\\a",
+    "barangay": 2,
+    "purok": 6,
+    "household_number": "09",
+    "usage_type": "Residential",
+    "meter_brand": 3,
+    "serial_number": "8377442",
+    "first_reading": 0,
+    "registration_date": "2025-10-26",
+    "account_number": "BW-00001",
+    "status": "active",
+    "disconnect_reason": null,
+    "created_at": "2025-10-26T14:15:29.675Z",
+    "updated_at": "2025-10-26T14:15:29.675Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 32,
+  "fields": {
+    "consumer": 6,
+    "reading_date": "2025-10-26",
+    "reading_value": 12,
+    "source": "mobile_app",
+    "is_confirmed": true,
+    "created_at": "2025-10-26T15:24:37.879Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 33,
+  "fields": {
+    "consumer": 6,
+    "reading_date": "2025-09-26",
+    "reading_value": 11,
+    "source": "mobile_app",
+    "is_confirmed": false,
+    "created_at": "2025-10-26T15:34:03.936Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 34,
+  "fields": {
+    "consumer": 7,
+    "reading_date": "2025-09-26",
+    "reading_value": 5,
+    "source": "mobile_app",
+    "is_confirmed": false,
+    "created_at": "2025-10-26T15:44:32.035Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 35,
+  "fields": {
+    "consumer": 7,
+    "reading_date": "2025-10-26",
+    "reading_value": 9,
+    "source": "mobile_app",
+    "is_confirmed": true,
+    "created_at": "2025-10-26T15:45:21.339Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 36,
+  "fields": {
+    "consumer": 7,
+    "reading_date": "2025-11-26",
+    "reading_value": 13,
+    "source": "mobile_app",
+    "is_confirmed": false,
+    "created_at": "2025-10-26T15:51:29.814Z"
+  }
+},
+{
+  "model": "consumers.meterreading",
+  "pk": 37,
+  "fields": {
+    "consumer": 7,
+    "reading_date": "2025-10-27",
+    "reading_value": 4525378,
+    "source": "mobile_app",
+    "is_confirmed": true,
+    "created_at": "2025-10-27T00:57:15.262Z"
+  }
+},
+{
+  "model": "consumers.bill",
+  "pk": 17,
+  "fields": {
+    "consumer": 6,
+    "previous_reading": 33,
+    "current_reading": 32,
+    "billing_period": "2025-10-01",
+    "due_date": "2025-10-20",
+    "consumption": 1,
+    "rate_per_cubic": "20.00",
+    "fixed_charge": "50.00",
+    "total_amount": "70.00",
+    "status": "Paid",
+    "created_at": "2025-10-26T15:34:29.960Z"
+  }
+},
+{
+  "model": "consumers.bill",
+  "pk": 18,
+  "fields": {
+    "consumer": 7,
+    "previous_reading": 34,
+    "current_reading": 35,
+    "billing_period": "2025-10-01",
+    "due_date": "2025-10-20",
+    "consumption": 4,
+    "rate_per_cubic": "20.00",
+    "fixed_charge": "50.00",
+    "total_amount": "130.00",
+    "status": "Paid",
+    "created_at": "2025-10-26T15:45:30.312Z"
+  }
+},
+{
+  "model": "consumers.bill",
+  "pk": 19,
+  "fields": {
+    "consumer": 7,
+    "previous_reading": 35,
+    "current_reading": 37,
+    "billing_period": "2025-10-01",
+    "due_date": "2025-10-20",
+    "consumption": 4525369,
+    "rate_per_cubic": "20.00",
+    "fixed_charge": "50.00",
+    "total_amount": "90507430.00",
+    "status": "Pending",
+    "created_at": "2025-10-27T00:59:06.839Z"
+  }
+},
+{
+  "model": "consumers.payment",
+  "pk": 16,
+  "fields": {
+    "bill": 18,
+    "amount_paid": "130.00",
+    "received_amount": "200.00",
+    "change": "70.00",
+    "or_number": "OR-20251026-5E403E",
+    "payment_date": "2025-10-26T15:47:07.305Z"
+  }
+},
+{
+  "model": "consumers.payment",
+  "pk": 17,
+  "fields": {
+    "bill": 17,
+    "amount_paid": "70.00",
+    "received_amount": "100.00",
+    "change": "30.00",
+    "or_number": "OR-20251027-D37AAB",
+    "payment_date": "2025-10-27T01:07:06.246Z"
+  }
+}
+]

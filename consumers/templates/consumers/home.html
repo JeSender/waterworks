@@ -1,446 +1,574 @@
-<!-- consumers/templates/consumers/home.html -->
 {% extends "consumers/base.html" %}
 {% load humanize %}
 
-{% block title %}Staff Dashboard{% endblock %}
+{% block title %}Dashboard - Balilihan Waterworks{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* === Modern Typography & Base === */
+    /* ========================================
+       LAYOUT & BASE STYLES
+       ======================================== */
     body {
-        font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif;
-        background-color: #f8fafc;
-        color: #1e293b;
+        overflow: hidden !important;
+        height: 100vh;
     }
 
-    /* === Dashboard Header === */
-    .dashboard-header {
-        background: linear-gradient(120deg, #4f46e5, #7c3aed);
-        color: white;
-        padding: 1.8rem 2rem;
-        border-radius: 12px;
-        margin-bottom: 1.8rem;
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
-        position: relative;
-        overflow: hidden;
-    }
-    .dashboard-header::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        z-index: 0;
-    }
-    .dashboard-header > * {
-        position: relative;
-        z-index: 1;
-    }
-    .dashboard-header h2 {
-        font-weight: 700;
-        font-size: 1.8rem;
-        letter-spacing: -0.02em;
-        margin-bottom: 0.4rem;
-    }
-    .dashboard-header p {
-        opacity: 0.92;
-        font-size: 1.05rem;
-        max-width: 700px;
-    }
-
-    /* === Stat Cards === */
-    .stat-card {
-        background: white;
-        border-radius: 14px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.06);
-        transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-        padding: 1.6rem;
-        text-align: center;
-        cursor: pointer;
-        position: relative;
-        overflow: hidden;
-        border: 1px solid #eef2f7;
-        height: 100%;
+    .main-content {
+        height: calc(100vh - 60px);
+        overflow: hidden !important;
         display: flex;
         flex-direction: column;
-        justify-content: center;
     }
-    .stat-card:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
-        border-color: #dde5f0;
-    }
-    .stat-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 6px;
+
+    .dashboard-wrapper {
         height: 100%;
-        background: #4f46e5;
-    }
-    .stat-card.connected::before { background: #10b981; }
-    .stat-card.disconnected::before { background: #ef4444; }
-    .stat-card.delinquent::before { background: #f59e0b; }
-
-    .stat-icon {
-        font-size: 2.1rem;
-        margin-bottom: 0.8rem;
-        color: #6b7280;
-        transition: transform 0.2s ease;
-    }
-    .stat-card:hover .stat-icon {
-        transform: scale(1.1);
-    }
-    .stat-card.connected .stat-icon { color: #10b981; }
-    .stat-card.disconnected .stat-icon { color: #ef4444; }
-    .stat-card.delinquent .stat-icon { color: #f59e0b; }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 800;
-        line-height: 1.1;
-        color: #1e293b;
-        margin-bottom: 0.3rem;
-    }
-    .stat-label {
-        font-size: 0.95rem;
-        color: #64748b;
-        font-weight: 500;
-        margin-bottom: 1rem;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
     }
 
-    .stat-actions .btn {
-        padding: 0.45rem 1rem;
-        font-size: 0.85rem;
-        font-weight: 600;
-        border-radius: 8px;
-        transition: all 0.2s ease;
-    }
-    .stat-actions .btn:hover {
-        transform: translateY(-1px);
+    /* ========================================
+       DASHBOARD HEADER
+       ======================================== */
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 0.75rem 1.25rem;
+        border-radius: 10px;
+        margin-bottom: 0.75rem;
+        box-shadow: 0 2px 15px rgba(102, 126, 234, 0.3);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-shrink: 0;
     }
 
-    /* === Report Filter === */
-    .report-filter {
-        background: white;
-        border-radius: 14px;
-        padding: 1.8rem;
-        margin-bottom: 1.8rem;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        border: 1px solid #eef2f7;
-    }
-    .report-filter h6 {
-        font-weight: 600;
-        color: #334155;
+    .dashboard-header h2 {
+        font-weight: 700;
+        font-size: 1.25rem;
+        margin: 0;
         display: flex;
         align-items: center;
         gap: 0.5rem;
-        margin-bottom: 1rem;
-    }
-    .input-group-text {
-        background: #f1f5f9;
-        border-color: #cbd5e1;
-        color: #475569;
-    }
-    .form-control {
-        border-color: #cbd5e1;
-        padding: 0.65rem 1rem;
-    }
-    .form-control:focus {
-        border-color: #818cf8;
-        box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
     }
 
-    /* === Table Card === */
-    .table-card {
+    .dashboard-header p {
+        opacity: 0.95;
+        font-size: 0.75rem;
+        margin: 0;
+    }
+
+    .dashboard-header small {
+        font-size: 0.8rem;
+        opacity: 0.95;
+    }
+
+
+    /* ========================================
+       METRIC CARDS
+       ======================================== */
+    .metric-card {
         background: white;
-        border-radius: 14px;
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-        margin-bottom: 1.8rem;
-        border: 1px solid #eef2f7;
+        border-radius: 10px;
+        padding: 0.75rem;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        transition: all 0.3s ease;
+        border-left: 3px solid;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+        position: relative;
         overflow: hidden;
     }
-    .card-header {
-        padding: 1.2rem 1.8rem;
-        background: white;
-        border-bottom: 1px solid #edf2f7;
-    }
-    .card-header h6 {
-        font-weight: 600;
-        color: #1e293b;
-    }
-    .btn-group .btn {
-        padding: 0.45rem 1rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        border-radius: 8px;
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 70px;
+        height: 70px;
+        background: currentColor;
+        opacity: 0.05;
+        border-radius: 50%;
+        transform: translate(30%, -30%);
     }
 
-    .table {
+    .metric-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.12);
+    }
+
+    .metric-card.success {
+        border-left-color: #10b981;
+        color: #10b981;
+    }
+
+    .metric-card.warning {
+        border-left-color: #f59e0b;
+        color: #f59e0b;
+    }
+
+    .metric-card.danger {
+        border-left-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .metric-card.primary {
+        border-left-color: #667eea;
+        color: #667eea;
+    }
+
+    .metric-icon {
+        font-size: 1.5rem;
+        margin-bottom: 0.25rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .metric-card.success .metric-icon {
+        color: #10b981;
+    }
+
+    .metric-card.danger .metric-icon {
+        color: #ef4444;
+    }
+
+    .metric-card.warning .metric-icon {
+        color: #f59e0b;
+    }
+
+    .metric-card.primary .metric-icon {
+        color: #667eea;
+    }
+
+    .metric-card .value {
+        font-size: 1.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        line-height: 1;
+        margin-bottom: 0.25rem;
+        position: relative;
+        z-index: 1;
+    }
+
+    .metric-card h6 {
+        font-size: 0.65rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        font-weight: 600;
+        margin-bottom: auto;
+        position: relative;
+        z-index: 1;
+    }
+
+    .metric-card .btn {
+        padding: 0.35rem 0.75rem;
+        font-size: 0.65rem;
+        font-weight: 600;
+        border-radius: 6px;
+        margin-top: 0.5rem;
+        text-transform: uppercase;
+        position: relative;
+        z-index: 1;
+        letter-spacing: 0.3px;
+    }
+
+    /* ========================================
+       CHART CONTAINERS
+       ======================================== */
+    .chart-container {
+        position: relative;
+        height: 100%;
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .chart-container:hover {
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .chart-canvas-wrapper {
+        flex: 1;
+        position: relative;
+        min-height: 0;
+    }
+
+    .dark-mode .chart-container {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+    }
+
+    .chart-title {
+        font-size: 0.8rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 0.75rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.4rem;
+        text-transform: uppercase;
+        letter-spacing: 0.3px;
+        flex-shrink: 0;
+    }
+
+    .chart-title i {
+        font-size: 0.9rem;
+    }
+
+    /* ========================================
+       DARK MODE OVERRIDES
+       ======================================== */
+    .dark-mode .chart-title {
+        color: #ffffff;
+    }
+
+    .dark-mode .metric-card {
+        background-color: #2d2d2d !important;
+        color: #ffffff;
+    }
+
+    .dark-mode .metric-card .value {
+        color: #ffffff;
+    }
+
+    .dark-mode .metric-card h6 {
+        color: #a0a0a0;
+    }
+
+    /* ========================================
+       BILLS TABLE
+       ======================================== */
+    .bills-table-container {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+        overflow: hidden;
+        border: 1px solid #f0f0f0;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
+    }
+
+    .bills-table-container .card-header {
+        padding: 0.6rem 1rem;
+        flex-shrink: 0;
+    }
+
+    .bills-table-container .card-header h5 {
+        font-size: 0.8rem !important;
+        margin: 0;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.4rem;
+    }
+
+    .bills-table-container .table-responsive {
+        flex: 1;
+        overflow-y: auto;
+        min-height: 0;
+    }
+
+    .bills-table-container .table {
+        font-size: 0.7rem;
         margin-bottom: 0;
     }
-    .table th,
-    .table td {
-        vertical-align: middle;
-        padding: 0.9rem;
-        text-align: center;
-    }
-    .table th {
-        font-weight: 600;
-        color: #334155;
-        background: #f8fafc;
-    }
-    .table td {
-        color: #334155;
-    }
-    .table tbody tr:hover {
-        background-color: #f8fafc;
-    }
-    .badge {
-        font-weight: 600;
-        padding: 0.45em 0.75em;
-        font-size: 0.85em;
+
+    .bills-table-container .table th,
+    .bills-table-container .table td {
+        padding: 0.3rem 0.4rem;
+        white-space: nowrap;
     }
 
-    /* Table Footer */
-    .table tfoot td {
-        font-weight: bold;
-        background-color: #f1f5f9;
-        border-top: 2px solid #cbd5e1;
+    .bills-table-container .table th {
+        font-size: 0.65rem;
     }
 
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 2.5rem 1rem;
-        color: #64748b;
-    }
-    .empty-state i {
-        font-size: 2rem;
-        margin-bottom: 0.75rem;
-        opacity: 0.7;
+    .bills-table-container .badge {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
     }
 
-    /* === Print Styles === */
-    @media print {
-        body {
-            background: white !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            color: black !important;
-        }
-        .no-print, .navbar, .sidebar, .btn, .card-header .btn-group,
-        .report-filter, .chart-placeholder, .stat-actions {
-            display: none !important;
-        }
-        .container-fluid {
-            max-width: 100% !important;
-            padding: 0 15mm !important;
-        }
-        .stat-card {
-            page-break-inside: avoid;
-            box-shadow: none;
-            border: 1px solid #000;
-            border-radius: 0;
-            padding: 15px;
-            margin: 10px 0;
-        }
-        .stat-card::before {
-            display: none;
-        }
-        .table {
-            font-size: 12px;
-            width: 100%;
-        }
-        th, td {
-            padding: 8px;
-            border: 1px solid #000 !important;
-            color: black !important;
-        }
-        .report-header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 10px;
-        }
+    /* ========================================
+       CONTENT AREA
+       ======================================== */
+    .content-area {
+        flex: 1;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
     }
 
-    /* Responsive Tweaks */
-    @media (max-width: 768px) {
+    /* ========================================
+       RESPONSIVE ADJUSTMENTS
+       ======================================== */
+    @media (max-width: 992px) {
+        .row.g-2 > [class*="col-"] {
+            margin-bottom: 0.5rem;
+        }
+
         .dashboard-header h2 {
-            font-size: 1.5rem;
+            font-size: 1.1rem;
         }
-        .stat-value {
-            font-size: 1.75rem;
+
+        .metric-card .value {
+            font-size: 1.3rem;
         }
-        .btn-group .btn {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.8rem;
+
+        .metric-icon {
+            font-size: 1.3rem;
         }
-        .card-header .btn-group {
-            flex-wrap: wrap;
+    }
+
+    @media (max-width: 768px) {
+        .main-content {
+            height: auto;
+            overflow-y: auto !important;
+        }
+
+        body {
+            overflow-y: auto !important;
+        }
+
+        .dashboard-wrapper {
+            height: auto;
+        }
+
+        .metric-card .value {
+            font-size: 1.2rem;
+        }
+
+        .metric-icon {
+            font-size: 1.2rem;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .dashboard-header {
+            flex-direction: column;
+            text-align: center;
             gap: 0.5rem;
         }
-    }
 
-    /* === One-Page Layout with Scrollable Table === */
-    .main-content {
-        padding: 20px;
-        min-height: 100vh;
-        overflow-y: hidden;
-    }
-
-    .table-card .card-body {
-        max-height: 400px;
-        overflow-y: auto;
-    }
-
-    @media (min-height: 800px) {
-        .main-content {
-            overflow-y: hidden;
+        .dashboard-header h2 {
+            font-size: 1rem;
         }
+    }
+
+    /* Scrollbar Styling */
+    .table-responsive::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+
+    .table-responsive::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #888;
+        border-radius: 10px;
+    }
+
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #555;
     }
 </style>
 {% endblock %}
 
 {% block main_content %}
-<div class="container-fluid">
+<div class="container-fluid px-2 py-2 dashboard-wrapper">
+    <!-- Dashboard Header -->
     <div class="dashboard-header">
-        <h2><i class="bi bi-speedometer2 me-2"></i> Staff Dashboard</h2>
-        <p>Welcome, {{ request.user.get_full_name|default:request.user.username }}! Here's an overview of your key metrics.</p>
-    </div>
-
-    <!-- Stats Cards -->
-    <div class="row g-4 mb-4">
-        <!-- Connected -->
-        <div class="col-md-4 col-12">
-            <div class="stat-card connected" 
-                 onclick="window.location.href='{% url 'consumers:connected_consumers' %}'">
-                <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
-                <div class="stat-value">{{ connected_count }}</div>
-                <div class="stat-label">Connected Consumers</div>
-                <div class="stat-actions">
-                    <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-outline-success">
-                        View All
-                    </a>
-                </div>
-            </div>
+        <div>
+            <h2><i class="bi bi-speedometer2 me-2"></i>Balilihan Waterworks Dashboard</h2>
         </div>
-
-        <!-- Disconnected -->
-        <div class="col-md-4 col-12">
-            <div class="stat-card disconnected" 
-                 onclick="window.location.href='{% url 'consumers:disconnected_consumers' %}'">
-                <div class="stat-icon"><i class="bi bi-person-x-fill"></i></div>
-                <div class="stat-value">{{ disconnected_count }}</div>
-                <div class="stat-label">Disconnected Consumers</div>
-                <div class="stat-actions">
-                    <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-outline-danger">
-                        View All
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        <!-- Delinquent -->
-        <div class="col-md-4 col-12">
-            <div class="stat-card delinquent" 
-                 onclick="window.location.href='{% url 'consumers:delinquent_consumers' %}'">
-                <div class="stat-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
-                <div class="stat-value">{{ delinquent_count }}</div>
-                <div class="stat-label">Delinquent Bills</div>
-                <div class="stat-actions">
-                    <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-outline-warning">
-                        View All
-                    </a>
-                </div>
-            </div>
+        <div class="text-end">
+            <small>{{ request.user.get_full_name|default:request.user.username }} | {{ selected_date|date:"F Y" }}</small>
         </div>
     </div>
 
-    <!-- Report Filter -->
-    <div class="report-filter">
-        <h6><i class="bi bi-calendar-event"></i> Generate Delinquent Report</h6>
-        <form method="get" class="row g-3">
-            <div class="col-md-6">
-                <label for="month_year" class="form-label">Select Month & Year</label>
-                <div class="input-group">
-                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
-                    <input type="month" name="month_year" id="month_year" class="form-control"
-                           value="{{ selected_year }}-{{ selected_month|default:'01'|stringformat:'02d' }}">
-                </div>
-            </div>
-            <div class="col-md-3 d-flex align-items-end">
-                <button type="submit" class="btn btn-primary w-100">
-                    <i class="bi bi-search me-1"></i> Generate
-                </button>
-            </div>
-        </form>
-    </div>
-
-    <!-- Delinquent Bills Table -->
-    <div class="table-card">
-        <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <h6>Delinquent Bills for {{ selected_month|date:"F" }} {{ selected_year }}</h6>
-            <div class="btn-group">
-                <button onclick="window.print()" class="btn btn-outline-primary">
-                    <i class="bi bi-printer me-1"></i> Print
-                </button>
-                <a href="{% url 'consumers:reports' %}?report_type=delinquent" 
-                   class="btn btn-outline-info">
-                    <i class="bi bi-file-earmark-pdf me-1"></i> Full Report
+    <!-- Key Metrics Row with View Buttons -->
+    <div class="row g-2 mb-2" style="flex-shrink: 0;">
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="metric-card success">
+                <div class="metric-icon"><i class="bi bi-droplet-fill"></i></div>
+                <div class="value">{{ connected_count }}</div>
+                <h6>Connected Consumers</h6>
+                <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-success w-100">
+                    <i class="bi bi-eye me-1"></i>View All
                 </a>
             </div>
         </div>
-        <div class="card-body p-0" style="max-height: 400px; overflow-y: auto;">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Consumer</th>
-                            <th>Billing Date</th>
-                            <th>Amount</th>
-                            <th>Status</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for bill in delinquent_bills %}
-                        <tr>
-                            <td>{{ bill.consumer.first_name }} {{ bill.consumer.last_name }}</td>
-                            <td>{{ bill.billing_period|date:"F Y" }}</td>
-                            <td>₱{{ bill.total_amount|intcomma }}</td>
-                            <td>
-                                <span class="badge bg-warning text-dark">Pending</span>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" class="empty-state">
-                                <i class="bi bi-clipboard-check"></i><br>
-                                No delinquent bills found for this period.
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    {% if delinquent_bills %}
-                    <tfoot>
-                        <tr>
-                            <td colspan="2" class="text-end"><strong>Total:</strong></td>
-                            <td><strong>₱{{ total_delinquent_amount|intcomma }}</strong></td>
-                            <td></td>
-                        </tr>
-                    </tfoot>
-                    {% endif %}
-                </table>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="metric-card danger">
+                <div class="metric-icon"><i class="bi bi-x-circle-fill"></i></div>
+                <div class="value">{{ disconnected_count }}</div>
+                <h6>Disconnected Consumers</h6>
+                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-danger w-100">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="metric-card warning">
+                <div class="metric-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+                <div class="value">{{ delinquent_count }}</div>
+                <h6>Delinquent Accounts</h6>
+                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-warning w-100">
+                    <i class="bi bi-eye me-1"></i>View All
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 col-sm-6">
+            <div class="metric-card primary">
+                <div class="metric-icon"><i class="bi bi-file-earmark-text-fill"></i></div>
+                <div class="value">{{ total_bills }}</div>
+                <h6>Total Bills Generated</h6>
+                <a href="{% url 'consumers:reports' %}" class="btn btn-primary w-100">
+                    <i class="bi bi-file-text me-1"></i>View Reports
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Removed Charts and Visual Breakdown -->
-    <!-- Minimal layout - no unnecessary elements -->
+    <!-- Bottom Section: Chart and Table Side by Side -->
+    <div class="row g-2" style="flex: 1; min-height: 0;">
+        <!-- Payment Status Chart -->
+        <div class="col-lg-5 col-md-12">
+            <div class="chart-container">
+                <div class="chart-title">
+                    <i class="bi bi-pie-chart-fill text-success"></i>
+                    Payment Status Distribution
+                </div>
+                <div class="chart-canvas-wrapper">
+                    <canvas id="paymentStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
 
+        <!-- Recent Delinquent Bills Table -->
+        <div class="col-lg-7 col-md-12">
+            <div class="bills-table-container card shadow-sm border-0 rounded-3">
+                <div class="card-header bg-gradient text-white" style="background: linear-gradient(135deg, #667eea, #764ba2);">
+                    <h5 class="mb-0">
+                        <i class="bi bi-clock-history me-2"></i>
+                        Recent Delinquent Bills
+                    </h5>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light sticky-top">
+                            <tr>
+                                <th>Account No.</th>
+                                <th>Consumer</th>
+                                <th>Barangay</th>
+                                <th>Period</th>
+                                <th class="text-end">Amount</th>
+                                <th class="text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in delinquent_bills|slice:":15" %}
+                            <tr>
+                                <td><strong>{{ bill.consumer.account_number }}</strong></td>
+                                <td>{{ bill.consumer.full_name }}</td>
+                                <td>{{ bill.consumer.barangay.name|default:"N/A" }}</td>
+                                <td>{{ bill.billing_period|date:"M Y" }}</td>
+                                <td class="text-end"><strong>₱{{ bill.total_amount|floatformat:2|intcomma }}</strong></td>
+                                <td class="text-center">
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="bi bi-clock-fill me-1"></i>Pending
+                                    </span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center text-muted py-3">
+                                    <i class="bi bi-clipboard-check fs-4 d-block mb-1"></i>
+                                    No delinquent bills
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    /* Chart.js Default Configuration */
+    Chart.defaults.font.family = "'Segoe UI', system-ui, -apple-system, sans-serif";
+    Chart.defaults.font.size = 9;
+    Chart.defaults.color = '#64748b';
+
+    /* Check Dark Mode */
+    const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+    const textColor = isDarkMode ? '#ffffff' : '#64748b';
+
+    /* Payment Status Distribution Chart */
+    const paymentCtx = document.getElementById('paymentStatusChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Paid Bills', 'Pending Bills'],
+            datasets: [{
+                data: [{{ paid_bills }}, {{ pending_bills }}],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 3,
+                borderColor: '#ffffff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        color: textColor,
+                        padding: 12,
+                        font: { size: 10, weight: '600' },
+                        usePointStyle: true,
+                        pointStyle: 'circle'
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 11, weight: 'bold' },
+                    bodyFont: { size: 10 },
+                    callbacks: {
+                        label: function(context) {
+                            const total = {{ paid_bills }} + {{ pending_bills }};
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            return context.label + ': ' + context.parsed + ' bills (' + percentage + '%)';
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    /* Success Notification */
+    showToast('success', 'Dashboard loaded successfully', 1500);
+});
+</script>
 {% endblock %}

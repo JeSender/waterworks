@@ -1,10 +1,122 @@
 {% extends "consumers/base.html" %}
-{% load dict_extras %} 
-{% block title %}Inquire{% endblock %}
+{% load dict_extras %}
+{% block title %}Inquire - Balilihan Waterworks{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern Inquire Page Design */
+    .page-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.25);
+    }
+
+    .page-header h2 {
+        font-weight: 700;
+        font-size: 1.75rem;
+        margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+
+    .step-card {
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+        border: 1px solid #f0f0f0;
+        transition: all 0.3s ease;
+        overflow: hidden;
+    }
+
+    .step-card:hover {
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+        transform: translateY(-2px);
+    }
+
+    .step-card .card-header {
+        font-weight: 700;
+        font-size: 1.1rem;
+        padding: 1rem 1.5rem;
+        border: none;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .step-card .card-body {
+        padding: 1.5rem;
+    }
+
+    .dark-mode .step-card {
+        background-color: #2d2d2d !important;
+        border-color: #404040 !important;
+    }
+
+    .consumer-item {
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        border-left: 4px solid transparent;
+    }
+
+    .consumer-item:hover {
+        border-left-color: #667eea;
+        background-color: #f8f9ff !important;
+    }
+
+    .dark-mode .consumer-item:hover {
+        background-color: #3a3a3a !important;
+    }
+
+    .badge-amount {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+    }
+
+    .payment-form-card {
+        background: linear-gradient(to bottom, #ffffff, #f8f9ff);
+        border-radius: 12px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    }
+
+    .dark-mode .payment-form-card {
+        background: linear-gradient(to bottom, #2d2d2d, #252525) !important;
+    }
+
+    .bill-details-box {
+        background: linear-gradient(135deg, #e0e7ff, #ede9fe);
+        border-radius: 10px;
+        padding: 1.5rem;
+        border-left: 4px solid #667eea;
+    }
+
+    .dark-mode .bill-details-box {
+        background: linear-gradient(135deg, #3a3a5a, #4a3a5a) !important;
+    }
+
+    .amount-highlight {
+        font-size: 1.75rem;
+        font-weight: 800;
+        color: #667eea;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+</style>
+{% endblock %}
 
 {% block main_content %}
-<div class="container">
-    <h2 class="mb-4">Inquire</h2>
+<div class="container py-3">
+    <!-- Page Header -->
+    <div class="page-header">
+        <h2><i class="bi bi-cash-coin"></i>Bill Inquiry & Payment</h2>
+    </div>
 
     <!-- Messages -->
     {% if messages %}
@@ -16,16 +128,19 @@
       {% endfor %}
     {% endif %}
 
-    <!-- Barangay & Purok Filter -->
-    <div class="card mb-4 shadow-sm">
+    <!-- Step 1: Area Selection -->
+    <div class="step-card card mb-4">
         <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">1. Select Area</h5>
+            <i class="bi bi-geo-alt-fill"></i>
+            <span>Step 1: Select Area</span>
         </div>
         <div class="card-body">
             <form method="get" class="row g-3">
-                <div class="col-md-5">
-                    <label class="form-label">Barangay</label>
-                    <select name="barangay" class="form-select" onchange="this.form.submit()">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-map me-1"></i>Barangay
+                    </label>
+                    <select name="barangay" class="form-select form-select-lg" onchange="this.form.submit()">
                         <option value="">Select Barangay</option>
                         {% for b in barangays %}
                             <option value="{{ b.id }}" {% if selected_barangay == b.id|stringformat:"s" %}selected{% endif %}>
@@ -34,9 +149,11 @@
                         {% endfor %}
                     </select>
                 </div>
-                <div class="col-md-5">
-                    <label class="form-label">Purok (Optional)</label>
-                    <select name="purok" class="form-select" onchange="this.form.submit()">
+                <div class="col-md-6">
+                    <label class="form-label fw-semibold">
+                        <i class="bi bi-pin-map me-1"></i>Purok (Optional)
+                    </label>
+                    <select name="purok" class="form-select form-select-lg" onchange="this.form.submit()">
                         <option value="">All Puroks</option>
                         {% for p in puroks %}
                             <option value="{{ p.id }}" {% if selected_purok == p.id|stringformat:"s" %}selected{% endif %}>
@@ -49,39 +166,48 @@
         </div>
     </div>
 
-    <!-- Consumer List -->
+    <!-- Step 2: Consumer List -->
     {% if selected_barangay and not selected_consumer %}
-        <div class="card shadow-sm">
+        <div class="step-card card">
             <div class="card-header bg-success text-white">
-                <h5 class="mb-0">
-                    Consumers in 
+                <i class="bi bi-people-fill"></i>
+                <span>
+                    Step 2: Select Consumer -
                     {% for b in barangays %}
                         {% if b.id == selected_barangay|add:"0" %}{{ b.name }}{% endif %}
                     {% endfor %}
                     {% if selected_purok %}
-                        → 
+                        /
                         {% for p in puroks %}
                             {% if p.id == selected_purok|add:"0" %}{{ p.name }}{% endif %}
                         {% endfor %}
                     {% endif %}
-                </h5>
+                </span>
             </div>
             <div class="card-body">
                 {% if consumers %}
-                    <div class="list-group">
+                    <div class="list-group list-group-flush">
                         {% for consumer in consumers %}
-                            <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}&consumer={{ consumer.id }}" 
-                               class="list-group-item list-group-item-action">
-                                <div class="d-flex justify-content-between">
+                            <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}&consumer={{ consumer.id }}"
+                               class="list-group-item list-group-item-action consumer-item">
+                                <div class="d-flex justify-content-between align-items-center">
                                     <div>
-                                        <strong>{{ consumer.account_number }} - {{ consumer.first_name }} {{ consumer.last_name }}</strong><br>
-                                        <small>Barangay: {{ consumer.barangay.name|default:"—" }} | Purok: {{ consumer.purok.name|default:"—" }}</small>
+                                        <h6 class="mb-1 fw-bold">
+                                            <i class="bi bi-person-circle me-1"></i>
+                                            {{ consumer.account_number }} - {{ consumer.first_name }} {{ consumer.last_name }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="bi bi-geo-alt-fill me-1"></i>
+                                            {{ consumer.barangay.name|default:"—" }} | {{ consumer.purok.name|default:"—" }}
+                                        </small>
                                     </div>
                                     {% with bill=consumer_bills|get_item:consumer.id %}
                                         {% if bill %}
                                             <div class="text-end">
-                                                <span class="badge bg-warning text-dark">₱{{ bill.total_amount }}</span><br>
-                                                <small>{{ bill.billing_period|date:"M Y" }}</small>
+                                                <span class="badge badge-amount bg-warning text-dark">
+                                                    ₱{{ bill.total_amount|floatformat:2 }}
+                                                </span><br>
+                                                <small class="text-muted">{{ bill.billing_period|date:"M Y" }}</small>
                                             </div>
                                         {% else %}
                                             <div class="text-end">
@@ -94,63 +220,95 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <p class="text-muted">No consumers found in this area.</p>
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
+                        <p class="text-muted">No consumers found in this area.</p>
+                    </div>
                 {% endif %}
             </div>
         </div>
     {% endif %}
 
-    <!-- Payment Form (When consumer is selected) -->
+    <!-- Step 3: Payment Form -->
     {% if selected_consumer %}
-        <div class="card mt-4 shadow-sm">
+        <div class="step-card payment-form-card card">
             <div class="card-header bg-primary text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h5>Payment for {{ selected_consumer.first_name }} {{ selected_consumer.last_name }}</h5>
+                <div class="d-flex justify-content-between align-items-center w-100">
+                    <div class="d-flex align-items-center gap-2">
+                        <i class="bi bi-credit-card"></i>
+                        <span>Step 3: Payment for {{ selected_consumer.first_name }} {{ selected_consumer.last_name }}</span>
+                    </div>
                     <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}" class="btn btn-sm btn-light">
-                        ← Back to List
+                        <i class="bi bi-arrow-left me-1"></i>Back to List
                     </a>
                 </div>
             </div>
             <div class="card-body">
-                <p><strong>Account #:</strong> {{ selected_consumer.account_number }}</p>
-                <p><strong>Barangay:</strong> {{ selected_consumer.barangay.name|default:"—" }}</p>
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <p class="mb-2"><i class="bi bi-person-badge me-2"></i><strong>Account #:</strong> {{ selected_consumer.account_number }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p class="mb-2"><i class="bi bi-geo-alt me-2"></i><strong>Barangay:</strong> {{ selected_consumer.barangay.name|default:"—" }}</p>
+                    </div>
+                </div>
 
                 {% if latest_bill %}
-                    <div class="alert alert-info">
-                        <h6>Bill Details</h6>
-                        <p><strong>Billing Period:</strong> {{ latest_bill.billing_period|date:"F Y" }}</p>
-                        <p><strong>Amount Due:</strong> <strong>₱{{ latest_bill.total_amount }}</strong></p>
-                        <p><strong>Status:</strong> 
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        </p>
+                    <div class="bill-details-box mb-4">
+                        <h6 class="fw-bold mb-3">
+                            <i class="bi bi-receipt me-2"></i>Bill Details
+                        </h6>
+                        <div class="row">
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">Billing Period</small>
+                                <strong>{{ latest_bill.billing_period|date:"F Y" }}</strong>
+                            </div>
+                            <div class="col-md-6 mb-2">
+                                <small class="text-muted d-block">Status</small>
+                                <span class="badge bg-warning text-dark">
+                                    <i class="bi bi-clock-fill me-1"></i>Pending
+                                </span>
+                            </div>
+                            <div class="col-12 mt-3">
+                                <small class="text-muted d-block">Amount Due</small>
+                                <div class="amount-highlight">₱{{ latest_bill.total_amount|floatformat:2 }}</div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Payment Form -->
-                    <form method="post" class="mt-3">
+                    <form method="post" class="mt-4">
                         {% csrf_token %}
                         <input type="hidden" name="bill_id" value="{{ latest_bill.id }}">
-                        <div class="mb-3">
-                            <label class="form-label"><strong>Cash Received (₱)</strong></label>
-                            <input 
-                                type="number" 
-                                step="0.01" 
-                                name="received_amount" 
-                                class="form-control form-control-lg" 
-                                min="{{ latest_bill.total_amount }}" 
-                                placeholder="Enter amount received (e.g., 600.00)"
+                        <div class="mb-4">
+                            <label class="form-label fw-bold fs-5">
+                                <i class="bi bi-cash-stack me-2"></i>Cash Received (₱)
+                            </label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                name="received_amount"
+                                class="form-control form-control-lg"
+                                min="{{ latest_bill.total_amount }}"
+                                placeholder="Enter amount received (e.g., {{ latest_bill.total_amount|floatformat:2 }})"
                                 required
+                                style="font-size: 1.25rem; padding: 1rem;"
                             >
+                            <small class="text-muted">Minimum amount: ₱{{ latest_bill.total_amount|floatformat:2 }}</small>
                         </div>
-                        <button type="submit" class="btn btn-success btn-lg w-100">
-                            <i class="bi bi-cash-coin"></i> Process Payment
+                        <button type="submit" class="btn btn-success btn-lg w-100" style="padding: 1rem;">
+                            <i class="bi bi-check-circle me-2"></i>Process Payment
                         </button>
                     </form>
                 {% else %}
-                    <div class="alert alert-warning">
-                        <h6>No Pending Bill Found</h6>
-                        <p>This consumer has no pending bill. Please confirm meter readings first.</p>
+                    <div class="alert alert-warning border-0 shadow-sm">
+                        <div class="d-flex align-items-center mb-3">
+                            <i class="bi bi-exclamation-triangle-fill fs-2 me-3"></i>
+                            <h6 class="mb-0 fw-bold">No Pending Bill Found</h6>
+                        </div>
+                        <p class="mb-3">This consumer has no pending bill. Please confirm meter readings first.</p>
                         <a href="{% url 'consumers:meter_readings' %}" class="btn btn-primary">
-                            Go to Meter Readings
+                            <i class="bi bi-speedometer2 me-2"></i>Go to Meter Readings
                         </a>
                     </div>
                 {% endif %}
