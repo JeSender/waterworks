@@ -726,9 +726,13 @@ def home(request):
 
     revenue_labels = []
     revenue_data = []
+    revenue_list = []  # For template iteration
     for item in monthly_payments:
-        revenue_labels.append(item['month'].strftime('%b %Y'))
-        revenue_data.append(float(item['total'] or 0))
+        label = item['month'].strftime('%b %Y')
+        amount = float(item['total'] or 0)
+        revenue_labels.append(label)
+        revenue_data.append(amount)
+        revenue_list.append((label, amount))
 
     # Chart Data: Payment Status Distribution
     total_bills = Bill.objects.count()
@@ -774,6 +778,7 @@ def home(request):
         # Chart data
         'revenue_labels': json.dumps(revenue_labels),
         'revenue_data': json.dumps(revenue_data),
+        'revenue_list': revenue_list,  # For template iteration
         'paid_bills': paid_bills,
         'pending_bills': pending_bills,
         'barangay_labels': json.dumps(barangay_labels),
