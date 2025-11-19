@@ -93,28 +93,35 @@
         left: 0;
         right: 0;
         height: 4px;
-        background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+    }
+
+    .metric-card.connected::before {
+        background: linear-gradient(90deg, #10b981, #059669);
+    }
+
+    .metric-card.disconnected::before {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+    }
+
+    .metric-card.delinquent::before {
+        background: linear-gradient(90deg, #f59e0b, #d97706);
     }
 
     .metric-card:hover {
         transform: translateY(-8px);
         box-shadow: 0 12px 40px rgba(0,0,0,0.15);
-        border-color: var(--card-color-1);
     }
 
-    .metric-card.connected {
-        --card-color-1: #10b981;
-        --card-color-2: #059669;
+    .metric-card.connected:hover {
+        border-color: #10b981;
     }
 
-    .metric-card.disconnected {
-        --card-color-1: #ef4444;
-        --card-color-2: #dc2626;
+    .metric-card.disconnected:hover {
+        border-color: #ef4444;
     }
 
-    .metric-card.delinquent {
-        --card-color-1: #f59e0b;
-        --card-color-2: #d97706;
+    .metric-card.delinquent:hover {
+        border-color: #f59e0b;
     }
 
     .metric-header {
@@ -131,8 +138,19 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
         box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .metric-card.connected .metric-icon-wrapper {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .metric-card.disconnected .metric-icon-wrapper {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .metric-card.delinquent .metric-icon-wrapper {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
     }
 
     .metric-icon-wrapper i {
