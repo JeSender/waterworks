@@ -25,30 +25,75 @@
 
     .step-card {
         background: white;
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
-        border: 1px solid #f0f0f0;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+        border: 2px solid #f0f0f0;
         transition: all 0.3s ease;
         overflow: hidden;
     }
 
     .step-card:hover {
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
-        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(102, 126, 234, 0.15);
+        transform: translateY(-4px);
+        border-color: #667eea;
     }
 
     .step-card .card-header {
         font-weight: 700;
-        font-size: 1.1rem;
-        padding: 1rem 1.5rem;
+        font-size: 1.15rem;
+        padding: 1.25rem 1.75rem;
         border: none;
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
+        background: linear-gradient(135deg, #667eea, #764ba2) !important;
+        border-bottom: 3px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .step-card .card-header i {
+        font-size: 1.5rem;
     }
 
     .step-card .card-body {
-        padding: 1.5rem;
+        padding: 2rem;
+        background: linear-gradient(to bottom, #ffffff, #fafbff);
+    }
+
+    /* Modern Input Groups with Icons */
+    .input-icon-wrapper {
+        position: relative;
+    }
+
+    .input-icon-wrapper .input-icon {
+        position: absolute;
+        left: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #667eea;
+        font-size: 1.2rem;
+        z-index: 10;
+        pointer-events: none;
+    }
+
+    .input-icon-wrapper .form-select {
+        padding-left: 3rem;
+        border-radius: 12px;
+        border: 2px solid #e5e7eb;
+        font-weight: 500;
+        height: 52px;
+        transition: all 0.3s ease;
+        background-color: #fafbff;
+    }
+
+    .input-icon-wrapper .form-select:hover {
+        border-color: #667eea;
+        background-color: white;
+    }
+
+    .input-icon-wrapper .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+        background-color: white;
     }
 
     .dark-mode .step-card {
@@ -131,36 +176,42 @@
     <!-- Step 1: Area Selection -->
     <div class="step-card card mb-4">
         <div class="card-header bg-primary text-white">
-            <i class="bi bi-geo-alt-fill"></i>
+            <i class="bi bi-map-fill"></i>
             <span>Step 1: Select Area</span>
         </div>
         <div class="card-body">
-            <form method="get" class="row g-3">
+            <form method="get" class="row g-4">
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                        <i class="bi bi-map me-1"></i>Barangay
+                    <label class="form-label fw-semibold mb-3" style="color: #374151; font-size: 0.95rem;">
+                        <i class="bi bi-map me-2"></i>Barangay
                     </label>
-                    <select name="barangay" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">Select Barangay</option>
-                        {% for b in barangays %}
-                            <option value="{{ b.id }}" {% if selected_barangay == b.id|stringformat:"s" %}selected{% endif %}>
-                                {{ b.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <div class="input-icon-wrapper">
+                        <i class="bi bi-geo-alt-fill input-icon"></i>
+                        <select name="barangay" class="form-select" onchange="this.form.submit()">
+                            <option value="">Select Barangay</option>
+                            {% for b in barangays %}
+                                <option value="{{ b.id }}" {% if selected_barangay == b.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ b.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
                 <div class="col-md-6">
-                    <label class="form-label fw-semibold">
-                        <i class="bi bi-pin-map me-1"></i>Purok (Optional)
+                    <label class="form-label fw-semibold mb-3" style="color: #374151; font-size: 0.95rem;">
+                        <i class="bi bi-pin-map me-2"></i>Purok (Optional)
                     </label>
-                    <select name="purok" class="form-select form-select-lg" onchange="this.form.submit()">
-                        <option value="">All Puroks</option>
-                        {% for p in puroks %}
-                            <option value="{{ p.id }}" {% if selected_purok == p.id|stringformat:"s" %}selected{% endif %}>
-                                {{ p.name }}
-                            </option>
-                        {% endfor %}
-                    </select>
+                    <div class="input-icon-wrapper">
+                        <i class="bi bi-people-fill input-icon"></i>
+                        <select name="purok" class="form-select" onchange="this.form.submit()">
+                            <option value="">All Puroks</option>
+                            {% for p in puroks %}
+                                <option value="{{ p.id }}" {% if selected_purok == p.id|stringformat:"s" %}selected{% endif %}>
+                                    {{ p.name }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
             </form>
         </div>
@@ -170,7 +221,7 @@
     {% if selected_barangay and not selected_consumer %}
         <div class="step-card card">
             <div class="card-header bg-success text-white">
-                <i class="bi bi-people-fill"></i>
+                <i class="bi bi-person-check-fill"></i>
                 <span>
                     Step 2: Select Consumer -
                     {% for b in barangays %}
@@ -220,9 +271,17 @@
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div class="text-center py-5">
-                        <i class="bi bi-inbox fs-1 text-muted mb-3"></i>
-                        <p class="text-muted">No consumers found in this area.</p>
+                    <div class="empty-state text-center py-5">
+                        <div class="empty-state-icon mb-4" style="display: inline-flex; align-items: center; justify-content: center; width: 100px; height: 100px; background: linear-gradient(135deg, #f3f4f6, #e5e7eb); border-radius: 50%; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+                            <i class="bi bi-inbox fs-1" style="color: #9ca3af;"></i>
+                        </div>
+                        <h5 class="fw-bold mb-2" style="color: #374151;">No Consumers Found</h5>
+                        <p class="text-muted mb-4" style="max-width: 400px; margin: 0 auto;">
+                            There are no consumers registered in this area yet. Try selecting a different location or add new consumers to the system.
+                        </p>
+                        <a href="{% url 'consumers:consumer_management' %}" class="btn btn-primary btn-sm" style="padding: 0.6rem 1.5rem; border-radius: 8px;">
+                            <i class="bi bi-plus-circle me-2"></i>Add New Consumer
+                        </a>
                     </div>
                 {% endif %}
             </div>
