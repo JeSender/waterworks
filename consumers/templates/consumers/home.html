@@ -5,10 +5,6 @@
 
 {% block extra_css %}
 <style>
-    /* ========================================
-       FUTURISTIC DASHBOARD STYLES
-       ======================================== */
-
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
 
     * {
@@ -16,682 +12,353 @@
     }
 
     body {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        overflow: hidden !important;
-        height: 100vh;
+        background-color: #f8f9fa;
     }
 
     .main-content {
-        background: transparent !important;
-        height: 100vh;
-        overflow-y: auto !important;
-        padding: 1.5rem !important;
+        background-color: #f8f9fa !important;
+        padding: 3rem 2rem !important;
     }
 
-    /* Custom Scrollbar */
-    .main-content::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .main-content::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
-
-    .main-content::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-    }
-
-    .main-content::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.5);
+    .dark-mode .main-content {
+        background-color: #1a1a1a !important;
     }
 
     /* Dashboard Container */
     .dashboard-container {
-        max-width: 1400px;
+        max-width: 900px;
         margin: 0 auto;
     }
 
-    /* ========================================
-       MODERN HEADER
-       ======================================== */
-    .modern-header {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 1.5rem 2rem;
-        margin-bottom: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    /* Large Centered Header */
+    .main-title {
+        text-align: center;
+        margin-bottom: 3rem;
     }
 
-    .modern-header h1 {
-        color: white;
-        font-size: 2rem;
+    .main-title h1 {
+        font-size: 3.5rem;
         font-weight: 800;
+        color: #2d3748;
         margin: 0;
+        line-height: 1.2;
+    }
+
+    .main-title h2 {
+        font-size: 3rem;
+        font-weight: 400;
+        color: #718096;
+        margin: 0;
+        line-height: 1.2;
+    }
+
+    .dark-mode .main-title h1 {
+        color: #ffffff;
+    }
+
+    .dark-mode .main-title h2 {
+        color: #a0aec0;
+    }
+
+    /* Section Labels */
+    .section-label {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #2d3748;
+        margin-bottom: 1.5rem;
+        margin-top: 2.5rem;
+    }
+
+    .dark-mode .section-label {
+        color: #ffffff;
+    }
+
+    /* Statistics List */
+    .stats-list {
+        list-style: none;
+        padding: 0;
+        margin: 0 0 2rem 0;
+    }
+
+    .stat-item {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    }
-
-    .modern-header h1 i {
-        font-size: 2.5rem;
+        padding: 1.25rem 1.5rem;
+        margin-bottom: 1rem;
         background: white;
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        animation: pulse 2s ease-in-out infinite;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
     }
 
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.7; }
+    .stat-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        transform: translateX(5px);
     }
 
-    .modern-header .subtitle {
-        color: rgba(255, 255, 255, 0.9);
-        font-size: 1rem;
-        margin-top: 0.5rem;
-        font-weight: 500;
+    .dark-mode .stat-item {
+        background: #2d2d2d;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
     }
 
-    /* ========================================
-       GLASSMORPHISM METRIC CARDS
-       ======================================== */
-    .metric-card {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 1.5rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        position: relative;
-        overflow: hidden;
-        height: 100%;
+    .dark-mode .stat-item:hover {
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
     }
 
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: -50%;
-        right: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-        animation: rotate 20s linear infinite;
-    }
-
-    @keyframes rotate {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-    }
-
-    .metric-card:hover {
-        transform: translateY(-10px) scale(1.02);
-        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
-        background: rgba(255, 255, 255, 0.25);
-        border-color: rgba(255, 255, 255, 0.4);
-    }
-
-    .metric-icon {
-        width: 70px;
-        height: 70px;
-        background: white;
+    .stat-icon {
+        width: 50px;
+        height: 50px;
         border-radius: 50%;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 2rem;
-        margin-bottom: 1rem;
-        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
-        position: relative;
-        z-index: 1;
-    }
-
-    .metric-card.success .metric-icon {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
-    }
-
-    .metric-card.danger .metric-icon {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-        color: white;
-    }
-
-    .metric-card.warning .metric-icon {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
-    }
-
-    .metric-card.primary .metric-icon {
-        background: linear-gradient(135deg, #3b82f6, #2563eb);
-        color: white;
-    }
-
-    .metric-value {
-        font-size: 3rem;
-        font-weight: 900;
-        color: white;
-        line-height: 1;
-        margin-bottom: 0.5rem;
-        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-        position: relative;
-        z-index: 1;
-        animation: countUp 1s ease-out;
-    }
-
-    @keyframes countUp {
-        from { opacity: 0; transform: translateY(20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .metric-label {
-        font-size: 0.95rem;
-        color: rgba(255, 255, 255, 0.95);
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        margin-bottom: 1rem;
-        position: relative;
-        z-index: 1;
-    }
-
-    .metric-card .btn {
-        background: white;
-        color: #667eea;
-        border: none;
-        padding: 0.6rem 1.2rem;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
-        position: relative;
-        z-index: 1;
-    }
-
-    .metric-card .btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-        background: #f8f9fa;
-    }
-
-    .metric-card.success .btn {
-        color: #10b981;
-    }
-
-    .metric-card.danger .btn {
-        color: #ef4444;
-    }
-
-    .metric-card.warning .btn {
-        color: #f59e0b;
-    }
-
-    .metric-card.primary .btn {
-        color: #3b82f6;
-    }
-
-    /* ========================================
-       CHART CONTAINER
-       ======================================== */
-    .chart-section {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        height: 400px;
-        display: flex;
-        flex-direction: column;
-    }
-
-    .chart-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
-    }
-
-    .chart-title {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: white;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-    }
-
-    .chart-title i {
+        margin-right: 1.5rem;
         font-size: 1.5rem;
     }
 
-    .chart-wrapper {
+    .stat-icon.success {
+        background-color: #10b981;
+        color: white;
+    }
+
+    .stat-icon.danger {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .stat-icon.warning {
+        background-color: #ef4444;
+        color: white;
+    }
+
+    .stat-content {
         flex: 1;
-        position: relative;
     }
 
-    /* ========================================
-       TABLE SECTION
-       ======================================== */
-    .table-section {
-        background: rgba(255, 255, 255, 0.15);
-        backdrop-filter: blur(20px);
-        border-radius: 20px;
-        padding: 2rem;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        height: 400px;
-        display: flex;
-        flex-direction: column;
+    .stat-label {
+        font-size: 1rem;
+        color: #718096;
+        margin-bottom: 0.25rem;
     }
 
-    .table-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 1.5rem;
+    .dark-mode .stat-label {
+        color: #a0aec0;
     }
 
-    .table-title {
-        font-size: 1.25rem;
+    .stat-value {
+        font-size: 2rem;
         font-weight: 700;
-        color: white;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
+        color: #2d3748;
     }
 
-    .table-wrapper {
-        flex: 1;
-        overflow-y: auto;
+    .dark-mode .stat-value {
+        color: #ffffff;
+    }
+
+    /* Generate Button */
+    .generate-btn {
+        background-color: #F39C12;
+        color: white;
+        border: none;
+        padding: 1rem 2rem;
         border-radius: 12px;
-    }
-
-    .table-wrapper::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    .table-wrapper::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.1);
-        border-radius: 10px;
-    }
-
-    .table-wrapper::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.3);
-        border-radius: 10px;
-    }
-
-    .modern-table {
-        width: 100%;
-        color: white;
-        font-size: 0.9rem;
-    }
-
-    .modern-table thead {
-        position: sticky;
-        top: 0;
-        background: rgba(255, 255, 255, 0.2);
-        backdrop-filter: blur(10px);
-        z-index: 10;
-    }
-
-    .modern-table th {
-        padding: 1rem;
+        font-size: 1.1rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.5px;
-        font-size: 0.8rem;
-        border: none;
+        width: 100%;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
+        margin-bottom: 2rem;
     }
 
-    .modern-table td {
-        padding: 1rem;
-        border: none;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    .generate-btn:hover {
+        background-color: #E67E22;
+        box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
+        transform: translateY(-2px);
     }
 
-    .modern-table tbody tr {
+    .generate-btn:active {
+        transform: translateY(0);
+    }
+
+    /* Collections Display */
+    .collections-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .collection-item {
+        display: flex;
+        align-items: center;
+        padding: 1rem 1.5rem;
+        margin-bottom: 0.75rem;
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         transition: all 0.3s ease;
     }
 
-    .modern-table tbody tr:hover {
-        background: rgba(255, 255, 255, 0.15);
+    .collection-item:hover {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
+        transform: translateX(3px);
     }
 
-    .badge-modern {
-        padding: 0.4rem 0.8rem;
-        border-radius: 8px;
+    .dark-mode .collection-item {
+        background: #2d2d2d;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    }
+
+    .dark-mode .collection-item:hover {
+        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+    }
+
+    .collection-icon {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .collection-text {
+        font-size: 1.1rem;
+        color: #2d3748;
         font-weight: 600;
-        font-size: 0.75rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
     }
 
-    .badge-pending {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-        color: white;
+    .dark-mode .collection-text {
+        color: #ffffff;
     }
 
-    .badge-paid {
-        background: linear-gradient(135deg, #10b981, #059669);
-        color: white;
+    .collection-amount {
+        margin-left: auto;
+        font-size: 1.2rem;
+        font-weight: 700;
+        color: #10b981;
     }
 
-    /* ========================================
-       DARK MODE ADJUSTMENTS
-       ======================================== */
-    .dark-mode {
-        background: linear-gradient(135deg, #1e1b4b 0%, #312e81 100%) !important;
-    }
-
-    .dark-mode .modern-header,
-    .dark-mode .metric-card,
-    .dark-mode .chart-section,
-    .dark-mode .table-section {
-        background: rgba(0, 0, 0, 0.3);
-        border-color: rgba(255, 255, 255, 0.1);
-    }
-
-    .dark-mode .modern-table thead {
-        background: rgba(0, 0, 0, 0.3);
-    }
-
-    /* ========================================
-       RESPONSIVE DESIGN
-       ======================================== */
-    @media (max-width: 992px) {
-        .modern-header h1 {
-            font-size: 1.5rem;
-        }
-
-        .metric-value {
+    /* Responsive Design */
+    @media (max-width: 768px) {
+        .main-title h1 {
             font-size: 2.5rem;
         }
 
-        .chart-section,
-        .table-section {
-            height: 350px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 1rem !important;
-        }
-
-        .modern-header {
-            padding: 1rem 1.5rem;
-        }
-
-        .modern-header h1 {
-            font-size: 1.25rem;
-        }
-
-        .metric-value {
+        .main-title h2 {
             font-size: 2rem;
         }
 
-        .chart-section,
-        .table-section {
-            height: 300px;
-            padding: 1.5rem;
+        .section-label {
+            font-size: 1.25rem;
         }
-    }
 
-    /* ========================================
-       ANIMATIONS
-       ======================================== */
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
+        .stat-value {
+            font-size: 1.5rem;
         }
-        to {
-            opacity: 1;
-            transform: translateY(0);
+
+        .generate-btn {
+            font-size: 1rem;
+            padding: 0.875rem 1.5rem;
         }
-    }
 
-    .metric-card {
-        animation: fadeInUp 0.6s ease-out;
-    }
-
-    .metric-card:nth-child(1) { animation-delay: 0.1s; }
-    .metric-card:nth-child(2) { animation-delay: 0.2s; }
-    .metric-card:nth-child(3) { animation-delay: 0.3s; }
-    .metric-card:nth-child(4) { animation-delay: 0.4s; }
-
-    .chart-section {
-        animation: fadeInUp 0.8s ease-out 0.5s both;
-    }
-
-    .table-section {
-        animation: fadeInUp 0.8s ease-out 0.6s both;
+        .main-content {
+            padding: 2rem 1rem !important;
+        }
     }
 </style>
 {% endblock %}
 
 {% block main_content %}
 <div class="dashboard-container">
-    <!-- Modern Header -->
-    <div class="modern-header">
-        <h1>
-            <i class="bi bi-speedometer2"></i>
-            Balilihan Waterworks Dashboard
-        </h1>
-        <div class="subtitle">
-            Real-time monitoring & analytics • {{ request.user.get_full_name|default:request.user.username }}
-        </div>
+    <!-- Large Centered Title -->
+    <div class="main-title">
+        <h1>BALILIHAN</h1>
+        <h2>WATERWORKS</h2>
     </div>
 
-    <!-- Metric Cards -->
-    <div class="row g-4 mb-4">
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card success">
-                <div class="metric-icon">
-                    <i class="bi bi-droplet-fill"></i>
-                </div>
-                <div class="metric-value">{{ connected_count }}</div>
-                <div class="metric-label">Connected Consumers</div>
-                <a href="{% url 'consumers:connected_consumers' %}" class="btn w-100">
-                    <i class="bi bi-eye me-2"></i>View Details
-                </a>
+    <!-- Consumers Section -->
+    <h3 class="section-label">Consumers</h3>
+    <ul class="stats-list">
+        <li class="stat-item">
+            <div class="stat-icon success">
+                <i class="bi bi-check-circle-fill"></i>
             </div>
-        </div>
+            <div class="stat-content">
+                <div class="stat-label">Connected</div>
+                <div class="stat-value">{{ connected_count|default:"402" }}</div>
+            </div>
+        </li>
+        <li class="stat-item">
+            <div class="stat-icon danger">
+                <i class="bi bi-x-circle-fill"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Disconnected</div>
+                <div class="stat-value">{{ disconnected_count|default:"53" }}</div>
+            </div>
+        </li>
+        <li class="stat-item">
+            <div class="stat-icon warning">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+            </div>
+            <div class="stat-content">
+                <div class="stat-label">Delinquent</div>
+                <div class="stat-value">{{ delinquent_count|default:"3" }}</div>
+            </div>
+        </li>
+    </ul>
 
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card danger">
-                <div class="metric-icon">
-                    <i class="bi bi-x-circle-fill"></i>
-                </div>
-                <div class="metric-value">{{ disconnected_count }}</div>
-                <div class="metric-label">Disconnected</div>
-                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn w-100">
-                    <i class="bi bi-eye me-2"></i>View Details
-                </a>
-            </div>
-        </div>
+    <!-- Consumer Delinquent Section -->
+    <h3 class="section-label">Consumer Delinquent</h3>
+    <button class="generate-btn" onclick="window.location.href='{% url 'consumers:delinquent_consumers' %}'">
+        <i class="bi bi-file-earmark-text-fill me-2"></i>
+        GENERATE DELINQUENT LOGS 2023
+    </button>
 
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card warning">
-                <div class="metric-icon">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-                <div class="metric-value">{{ delinquent_count }}</div>
-                <div class="metric-label">Delinquent Accounts</div>
-                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn w-100">
-                    <i class="bi bi-eye me-2"></i>View Details
-                </a>
-            </div>
-        </div>
-
-        <div class="col-lg-3 col-md-6">
-            <div class="metric-card primary">
-                <div class="metric-icon">
-                    <i class="bi bi-file-earmark-text-fill"></i>
-                </div>
-                <div class="metric-value">{{ total_bills }}</div>
-                <div class="metric-label">Total Bills</div>
-                <a href="{% url 'consumers:reports' %}" class="btn w-100">
-                    <i class="bi bi-file-text me-2"></i>Reports
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Charts and Table Row -->
-    <div class="row g-4">
-        <!-- Payment Status Chart -->
-        <div class="col-lg-5">
-            <div class="chart-section">
-                <div class="chart-header">
-                    <div class="chart-title">
-                        <i class="bi bi-pie-chart-fill"></i>
-                        Payment Status
-                    </div>
-                </div>
-                <div class="chart-wrapper">
-                    <canvas id="paymentChart"></canvas>
-                </div>
-            </div>
-        </div>
-
-        <!-- Recent Delinquent Bills Table -->
-        <div class="col-lg-7">
-            <div class="table-section">
-                <div class="table-header">
-                    <div class="table-title">
-                        <i class="bi bi-clock-history"></i>
-                        Recent Delinquent Bills
-                    </div>
-                </div>
-                <div class="table-wrapper">
-                    <table class="modern-table">
-                        <thead>
-                            <tr>
-                                <th>Account</th>
-                                <th>Consumer</th>
-                                <th>Barangay</th>
-                                <th>Period</th>
-                                <th class="text-end">Amount</th>
-                                <th class="text-center">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for bill in delinquent_bills|slice:":15" %}
-                            <tr>
-                                <td><strong>{{ bill.consumer.account_number }}</strong></td>
-                                <td>{{ bill.consumer.first_name }} {{ bill.consumer.last_name }}</td>
-                                <td>{{ bill.consumer.barangay.name|default:"N/A" }}</td>
-                                <td>{{ bill.billing_period|date:"M Y" }}</td>
-                                <td class="text-end"><strong>₱{{ bill.total_amount|floatformat:2|intcomma }}</strong></td>
-                                <td class="text-center">
-                                    <span class="badge-modern badge-pending">
-                                        <i class="bi bi-clock-fill me-1"></i>Pending
-                                    </span>
-                                </td>
-                            </tr>
-                            {% empty %}
-                            <tr>
-                                <td colspan="6" class="text-center py-4">
-                                    <i class="bi bi-clipboard-check" style="font-size: 3rem; opacity: 0.5;"></i>
-                                    <div class="mt-2" style="opacity: 0.8;">No delinquent bills found</div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- Collections Section -->
+    <h3 class="section-label">Collections</h3>
+    <ul class="collections-list">
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">Jan 2023</span>
+            <span class="collection-amount">₱364.5</span>
+        </li>
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">Feb 2023</span>
+            <span class="collection-amount">₱412.3</span>
+        </li>
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">Mar 2023</span>
+            <span class="collection-amount">₱389.7</span>
+        </li>
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">Apr 2023</span>
+            <span class="collection-amount">₱401.2</span>
+        </li>
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">May 2023</span>
+            <span class="collection-amount">₱378.9</span>
+        </li>
+        <li class="collection-item">
+            <span class="collection-icon">📅</span>
+            <span class="collection-text">Jun 2023</span>
+            <span class="collection-amount">₱425.6</span>
+        </li>
+    </ul>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Chart.js Configuration
-    Chart.defaults.font.family = "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    Chart.defaults.font.size = 12;
-    Chart.defaults.color = '#ffffff';
+    // Success notification
+    setTimeout(() => {
+        showToast('success', '✨ Dashboard loaded successfully!', 2000);
+    }, 500);
 
-    // Payment Status Doughnut Chart
-    const ctx = document.getElementById('paymentChart').getContext('2d');
-
-    new Chart(ctx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Paid Bills', 'Pending Bills'],
-            datasets: [{
-                data: [{{ paid_bills }}, {{ pending_bills }}],
-                backgroundColor: [
-                    'rgba(16, 185, 129, 0.9)',
-                    'rgba(245, 158, 11, 0.9)'
-                ],
-                borderColor: [
-                    'rgba(16, 185, 129, 1)',
-                    'rgba(245, 158, 11, 1)'
-                ],
-                borderWidth: 3,
-                hoverOffset: 15
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        color: '#ffffff',
-                        padding: 20,
-                        font: {
-                            size: 13,
-                            weight: '600'
-                        },
-                        usePointStyle: true,
-                        pointStyle: 'circle'
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                    padding: 15,
-                    titleFont: {
-                        size: 14,
-                        weight: 'bold'
-                    },
-                    bodyFont: {
-                        size: 13
-                    },
-                    borderColor: 'rgba(255, 255, 255, 0.2)',
-                    borderWidth: 1,
-                    callbacks: {
-                        label: function(context) {
-                            const total = {{ paid_bills }} + {{ pending_bills }};
-                            const percentage = total > 0 ? ((context.parsed / total) * 100).toFixed(1) : 0;
-                            return context.label + ': ' + context.parsed + ' bills (' + percentage + '%)';
-                        }
-                    }
-                }
-            },
-            animation: {
-                animateRotate: true,
-                animateScale: true,
-                duration: 1500,
-                easing: 'easeInOutQuart'
-            }
-        }
-    });
-
-    // Animated Counter Effect
+    // Animated counter effect for statistics
     function animateValue(element, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
@@ -705,19 +372,14 @@ document.addEventListener('DOMContentLoaded', function() {
         window.requestAnimationFrame(step);
     }
 
-    // Animate metric values on load
-    document.querySelectorAll('.metric-value').forEach(el => {
+    // Animate stat values on load
+    document.querySelectorAll('.stat-value').forEach(el => {
         const finalValue = parseInt(el.textContent);
         el.textContent = '0';
         setTimeout(() => {
-            animateValue(el, 0, finalValue, 1500);
-        }, 300);
+            animateValue(el, 0, finalValue, 1200);
+        }, 200);
     });
-
-    // Success notification
-    setTimeout(() => {
-        showToast('success', '✨ Dashboard loaded successfully!', 2000);
-    }, 500);
 });
 </script>
 {% endblock %}
