@@ -2,33 +2,28 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value
+from django.db.models.functions import Concat, TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
-from datetime import datetime, timedelta
+from django.utils.decorators import method_decorator
 from django.urls import reverse
-from decimal import Decimal, InvalidOperation
 from django.core.paginator import Paginator
+from django.contrib.auth.models import User
+from datetime import datetime, timedelta, date
+from dateutil.relativedelta import relativedelta
+from decimal import Decimal, InvalidOperation
 import uuid
 import json
 import csv
-from datetime import datetime, date
-from .models import (
-    Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile, UserLoginEvent
-)
-from .forms import ConsumerForm
 import openpyxl
 from openpyxl.styles import Font, PatternFill
-from django.db.models import Count, Q, Max, OuterRef, Subquery, Value
-from django.db.models.functions import Concat
-from django.contrib.auth.models import User
-from django.views.decorators.csrf import csrf_exempt
-from django.utils.decorators import method_decorator
-import json
-from django.contrib.auth import authenticate, login
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from .models import (
+    Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment,
+    StaffProfile, UserLoginEvent, MeterBrand
+)
+from .forms import ConsumerForm
 
 
 # Helper function to get previous confirmed reading
@@ -45,8 +40,6 @@ def get_previous_reading(consumer):
 # Helper function to calculate water bill
 def calculate_water_bill(consumer, consumption):
     """Calculate water bill based on consumption and consumer type."""
-    from decimal import Decimal
-
     # Get system settings for rates
     settings = SystemSetting.objects.first()
 
@@ -309,10 +302,6 @@ def api_create_reading(request):
 
 # consumers/views.py (Update the api_consumers function)
 
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.http import JsonResponse
-from .models import Consumer, MeterReading, StaffProfile # Import MeterReading and StaffProfile
 
 # ... (other imports remain the same) ...
 
@@ -359,29 +348,10 @@ def api_consumers(request):
 
 
 
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.contrib.auth import authenticate, login
-from django.http import HttpResponseRedirect
-from django.urls import reverse
-from decimal import Decimal, InvalidOperation
-from .models import Consumer, SystemSetting, StaffProfile, Barangay # Import necessary models
-from django.utils import timezone # Import timezone for login time
 
 # consumers/views.py
 
 # ... (other imports remain the same) ...
-from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse # Make sure JsonResponse is imported
-from decimal import Decimal, InvalidOperation
-from django.utils import timezone
-from datetime import date
-from .models import ( # Import your models
-    Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment, StaffProfile
-)
 # ... (other imports remain the same) ...
 
 # ... (your existing functions like api_login, api_consumers, api_submit_reading, system_management, etc.) ...
@@ -416,12 +386,6 @@ def api_get_current_rates(request):
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 # ... (rest of your views) ...# consumers/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from decimal import Decimal, InvalidOperation
-from django.utils import timezone # Import timezone if needed for login time elsewhere
-from .models import SystemSetting, StaffProfile # Import SystemSetting and StaffProfile
 
 # ... (other imports remain the same) ...
 
@@ -514,7 +478,6 @@ def consumer_list_for_staff(request):
     return render(request, 'consumers/consumer_list_for_staff.html', context) # Create this template
 
 # Example logout view
-from django.contrib.auth import logout
 
 def user_logout(request):
     logout(request)
@@ -667,10 +630,6 @@ def staff_logout(request):
 @login_required
 def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
-    from django.db.models import Sum, Count, Q
-    from django.db.models.functions import TruncMonth
-    import json
-
     current_month = datetime.now().month
     current_year = datetime.now().year
 
@@ -711,7 +670,6 @@ def home(request):
     )['total'] or Decimal('0.00')
 
     # Chart Data: Monthly Revenue Trend (Last 6 months)
-    from dateutil.relativedelta import relativedelta
     end_date = datetime.now().date()
     start_date = end_date - relativedelta(months=5)
 
@@ -965,34 +923,12 @@ def consumer_detail(request, consumer_id):
     })
 # consumers/views.py
 
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from django.http import JsonResponse, HttpResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.utils import timezone
-from .models import Consumer, Bill, Payment # ... other models ...
-from django.db.models import Sum, Count # <-- Ensure this is present
-import json
-import csv
-from django.http import HttpResponse
-from datetime import datetime, timedelta
 # ... other imports ...
 
 # ... other view functions ...
-from django.template.loader import render_to_string
-from django.http import JsonResponse, HttpResponse
-import json
 
 # ... other imports ...
 
-from django.shortcuts import render
-from django.db.models import Sum, Count
-from .models import Payment, Bill
-from django.shortcuts import render
-from django.db.models import Sum, Count
-from .models import Payment, Bill
-from django.http import HttpResponse
 
 @login_required
 def reports(request):
@@ -1628,12 +1564,6 @@ def export_barangay_readings(request, barangay_id):
 # ───────────────────────────────────────
 
 # consumers/views.py
-from django.shortcuts import render
-from django.contrib.auth.decorators import login_required
-from django.db.models import Subquery, OuterRef, Max
-from django.utils import timezone
-from datetime import date
-from .models import MeterReading, Consumer
 
 @login_required
 def meter_readings(request):
@@ -1760,12 +1690,6 @@ def meter_readings(request):
 
 
 # consumers/views.py
-from django.shortcuts import render, get_object_or_404, redirect
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from datetime import date
-from decimal import Decimal, InvalidOperation
-from .models import MeterReading, Bill, Consumer, SystemSetting
 
 @login_required
 def confirm_reading(request, reading_id):

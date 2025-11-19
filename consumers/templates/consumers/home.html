@@ -12,235 +12,325 @@
     }
 
     .main-content {
-        background-color: #f5f7fa !important;
-        padding: 1.25rem !important;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 0 !important;
         overflow-y: auto !important;
-        min-height: calc(100vh - 80px);
+        min-height: calc(100vh - 60px);
     }
 
     .dark-mode .main-content {
-        background-color: #1a1a1a !important;
+        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
     }
 
-    .dashboard-wrapper {
-        max-width: 1400px;
+    /* Quick Stats Bar */
+    .quick-stats-bar {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 1rem 1.5rem;
+        box-shadow: 0 2px 20px rgba(0,0,0,0.1);
+    }
+
+    .dark-mode .quick-stats-bar {
+        background: rgba(30, 30, 30, 0.95);
+    }
+
+    .quick-stats-container {
+        max-width: 1600px;
         margin: 0 auto;
         display: flex;
-        flex-direction: column;
-        gap: 1.5rem;
-    }
-
-    /* Dashboard Title */
-    .dashboard-title {
-        text-align: center;
-        margin: 0;
-        padding: 1rem 0;
-    }
-
-    .dashboard-title h1 {
-        font-size: 2rem;
-        font-weight: 800;
-        color: #2c3e50;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .dashboard-title h2 {
-        font-size: 1rem;
-        font-weight: 400;
-        color: #7f8c8d;
-        margin: 0.25rem 0 0 0;
-        line-height: 1.2;
-    }
-
-    .dark-mode .dashboard-title h1 {
-        color: #ffffff;
-    }
-
-    .dark-mode .dashboard-title h2 {
-        color: #bdc3c7;
-    }
-
-    /* Main Grid Layout - Balanced 2-column */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
-        width: 100%;
-    }
-
-    /* Left Column - Metrics and Report */
-    .left-column {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    /* Right Column - Charts */
-    .right-column {
-        display: flex;
-        flex-direction: column;
-        gap: 1.25rem;
-    }
-
-    /* Metric Cards Container */
-    .metrics-container {
-        display: flex;
-        flex-direction: column;
-        gap: 1rem;
-    }
-
-    /* Metric Cards */
-    .metric-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
-        border-left: 4px solid;
-        display: flex;
-        align-items: center;
         justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
     }
 
-    .metric-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-        transform: translateY(-2px);
-    }
-
-    .dark-mode .metric-card {
-        background: #2d2d2d;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-
-    .metric-card.connected { border-left-color: #10b981; }
-    .metric-card.disconnected { border-left-color: #ef4444; }
-    .metric-card.delinquent { border-left-color: #f59e0b; }
-
-    .metric-content {
+    .quick-stat-item {
         display: flex;
         align-items: center;
-        gap: 1rem;
-        flex: 1;
+        gap: 0.75rem;
     }
 
-    .metric-icon {
-        width: 50px;
-        height: 50px;
+    .quick-stat-icon {
+        width: 40px;
+        height: 40px;
         border-radius: 10px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 1.5rem;
-        color: white;
-        flex-shrink: 0;
+        font-size: 1.25rem;
     }
 
-    .metric-card.connected .metric-icon { 
-        background: linear-gradient(135deg, #10b981, #059669); 
-    }
-    .metric-card.disconnected .metric-icon { 
-        background: linear-gradient(135deg, #ef4444, #dc2626); 
-    }
-    .metric-card.delinquent .metric-icon { 
-        background: linear-gradient(135deg, #f59e0b, #d97706); 
-    }
+    .quick-stat-icon.total { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .quick-stat-icon.active { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .quick-stat-icon.pending { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
 
-    .metric-info {
-        flex: 1;
-    }
-
-    .metric-info h3 {
-        font-size: 0.875rem;
+    .quick-stat-info h4 {
+        font-size: 0.75rem;
         color: #64748b;
-        margin: 0 0 0.25rem 0;
+        margin: 0;
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    .dark-mode .metric-info h3 { 
-        color: #94a3b8; 
+    .dark-mode .quick-stat-info h4 {
+        color: #94a3b8;
     }
 
-    .metric-value {
-        font-size: 2.25rem;
+    .quick-stat-info p {
+        font-size: 1.5rem;
         font-weight: 800;
         color: #1e293b;
         margin: 0;
         line-height: 1;
     }
 
-    .dark-mode .metric-value { 
-        color: #ffffff; 
+    .dark-mode .quick-stat-info p {
+        color: #ffffff;
     }
 
-    .metric-card .btn-view {
-        padding: 0.625rem 1.25rem;
+    /* Dashboard Wrapper */
+    .dashboard-wrapper {
+        max-width: 1600px;
+        margin: 0 auto;
+        padding: 1.5rem;
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Main Grid - Row-based Layout */
+    .dashboard-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    /* Metric Cards - Horizontal Compact */
+    .metrics-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+    }
+
+    /* Content Rows */
+    .content-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .content-row-full {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
+    }
+
+    .content-row-split {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 1.5rem;
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border: 2px solid transparent;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .metric-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(90deg, var(--card-color-1), var(--card-color-2));
+    }
+
+    .metric-card.connected {
+        --card-color-1: #10b981;
+        --card-color-2: #059669;
+    }
+
+    .metric-card.disconnected {
+        --card-color-1: #ef4444;
+        --card-color-2: #dc2626;
+    }
+
+    .metric-card.delinquent {
+        --card-color-1: #f59e0b;
+        --card-color-2: #d97706;
+    }
+
+    .metric-card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+        transform: translateY(-4px);
+        border-color: var(--card-color-1);
+    }
+
+    .dark-mode .metric-card {
+        background: #2d2d2d;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    }
+
+    .metric-card-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .metric-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    .metric-icon {
+        width: 56px;
+        height: 56px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.75rem;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+        color: white;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+
+    .metric-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin: 0;
+    }
+
+    .dark-mode .metric-label {
+        color: #94a3b8;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        margin: 0.5rem 0;
+        line-height: 1;
+    }
+
+    .metric-footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding-top: 1rem;
+        border-top: 1px solid #e2e8f0;
+    }
+
+    .dark-mode .metric-footer {
+        border-top-color: #3a3a3a;
+    }
+
+    .metric-change {
+        font-size: 0.875rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .metric-change.positive { color: #10b981; }
+    .metric-change.negative { color: #ef4444; }
+
+    .btn-view {
+        padding: 0.5rem 1rem;
         border-radius: 8px;
         font-weight: 600;
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         border: none;
-        transition: all 0.2s ease;
-        white-space: nowrap;
+        background: linear-gradient(135deg, var(--card-color-1), var(--card-color-2));
+        color: white;
         text-decoration: none;
+        transition: all 0.2s ease;
         display: inline-flex;
         align-items: center;
         gap: 0.375rem;
     }
 
-    .metric-card.connected .btn-view { 
-        background: #10b981; 
-        color: white; 
-    }
-    .metric-card.connected .btn-view:hover { 
-        background: #059669; 
-    }
-    .metric-card.disconnected .btn-view { 
-        background: #ef4444; 
-        color: white; 
-    }
-    .metric-card.disconnected .btn-view:hover { 
-        background: #dc2626; 
-    }
-    .metric-card.delinquent .btn-view { 
-        background: #f59e0b; 
-        color: white; 
-    }
-    .metric-card.delinquent .btn-view:hover { 
-        background: #d97706; 
+    .btn-view:hover {
+        transform: scale(1.05);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        color: white;
     }
 
-    /* Report Section */
-    .report-card {
+    /* Card Sections */
+    .card {
         background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 16px;
+        padding: 1.75rem;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        height: 100%;
+        display: flex;
+        flex-direction: column;
     }
 
-    .dark-mode .report-card {
+    .card:hover {
+        box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    }
+
+    .dark-mode .card {
         background: #2d2d2d;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.4);
     }
 
-    .report-card h3 {
+    .card-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #f1f5f9;
+    }
+
+    .dark-mode .card-header {
+        border-bottom-color: #3a3a3a;
+    }
+
+    .card-icon {
+        width: 44px;
+        height: 44px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.25rem;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .card-title {
         font-size: 1.125rem;
         font-weight: 700;
         color: #1e293b;
-        margin: 0 0 1.25rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.625rem;
+        margin: 0;
     }
 
-    .dark-mode .report-card h3 { 
-        color: #ffffff; 
+    .dark-mode .card-title {
+        color: #ffffff;
     }
 
-    .report-card h3 i {
-        font-size: 1.25rem;
-        color: #f59e0b;
+    /* Report Card */
+    .report-card {
+        width: 100%;
     }
 
     .form-row {
@@ -250,31 +340,27 @@
         margin-bottom: 1rem;
     }
 
-    .form-group {
-        margin-bottom: 0;
-    }
-
     .form-group label {
         display: block;
-        font-size: 0.875rem;
+        font-size: 0.8125rem;
         font-weight: 600;
         color: #475569;
         margin-bottom: 0.5rem;
     }
 
-    .dark-mode .form-group label { 
-        color: #cbd5e1; 
+    .dark-mode .form-group label {
+        color: #cbd5e1;
     }
 
     .form-group select {
         width: 100%;
-        padding: 0.625rem 0.875rem;
+        padding: 0.75rem 1rem;
         border: 2px solid #e2e8f0;
-        border-radius: 8px;
+        border-radius: 10px;
         font-size: 0.9375rem;
         background: white;
         color: #1e293b;
-        transition: border-color 0.2s;
+        transition: all 0.2s;
         cursor: pointer;
     }
 
@@ -286,15 +372,16 @@
 
     .form-group select:focus {
         outline: none;
-        border-color: #f59e0b;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
     }
 
     .btn-generate {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
+        background: linear-gradient(135deg, #667eea, #764ba2);
         color: white;
         border: none;
-        padding: 0.875rem 1.5rem;
-        border-radius: 8px;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
         font-size: 0.9375rem;
         font-weight: 700;
         cursor: pointer;
@@ -307,94 +394,31 @@
     }
 
     .btn-generate:hover {
-        background: linear-gradient(135deg, #d97706, #b45309);
         transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+        box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
     }
 
-    .btn-generate i {
-        font-size: 1.125rem;
-    }
-
-    /* Chart Cards */
+    /* Chart Card */
     .chart-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        display: flex;
-        flex-direction: column;
-        height: 100%;
-    }
-
-    .dark-mode .chart-card {
-        background: #2d2d2d;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-
-    .chart-card h4 {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 1.25rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.625rem;
-    }
-
-    .dark-mode .chart-card h4 { 
-        color: #ffffff; 
-    }
-
-    .chart-card h4 i {
-        font-size: 1.25rem;
-        color: #3b82f6;
+        width: 100%;
     }
 
     .chart-wrapper {
         flex: 1;
         position: relative;
-        min-height: 250px;
-        max-height: 300px;
+        min-height: 300px;
     }
 
     /* Collections Card */
     .collections-card {
-        background: white;
-        border-radius: 12px;
-        padding: 1.5rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    .dark-mode .collections-card {
-        background: #2d2d2d;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-    }
-
-    .collections-card h4 {
-        font-size: 1.125rem;
-        font-weight: 700;
-        color: #1e293b;
-        margin: 0 0 1.25rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.625rem;
-    }
-
-    .dark-mode .collections-card h4 { 
-        color: #ffffff; 
-    }
-
-    .collections-card h4 i {
-        font-size: 1.25rem;
-        color: #10b981;
+        width: 100%;
     }
 
     .collections-list {
         list-style: none;
         padding: 0;
         margin: 0;
-        max-height: 350px;
+        max-height: 400px;
         overflow-y: auto;
     }
 
@@ -412,178 +436,296 @@
     }
 
     .collections-list::-webkit-scrollbar-thumb {
-        background: #cbd5e1;
+        background: linear-gradient(135deg, #667eea, #764ba2);
         border-radius: 10px;
-    }
-
-    .dark-mode .collections-list::-webkit-scrollbar-thumb {
-        background: #4a4a4a;
     }
 
     .collection-item {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        padding: 0.875rem 1rem;
-        margin-bottom: 0.5rem;
-        background: #f8fafc;
-        border-radius: 8px;
-        transition: all 0.2s;
+        padding: 1rem 1.25rem;
+        margin-bottom: 0.75rem;
+        background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+        border-radius: 12px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        border-left: 4px solid transparent;
     }
 
-    .dark-mode .collection-item { 
-        background: #1a1a1a; 
+    .dark-mode .collection-item {
+        background: linear-gradient(135deg, #2a2a2a 0%, #1f1f1f 100%);
     }
-    
-    .collection-item:hover { 
-        background: #e0f2fe; 
-        transform: translateX(4px);
+
+    .collection-item:hover {
+        background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
+        transform: translateX(8px);
+        border-left-color: #667eea;
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
     }
-    
-    .dark-mode .collection-item:hover { 
-        background: #333333; 
+
+    .dark-mode .collection-item:hover {
+        background: linear-gradient(135deg, #3a3a4a 0%, #2a2a3a 100%);
     }
 
     .collection-date {
         display: flex;
         align-items: center;
-        gap: 0.5rem;
+        gap: 0.75rem;
         font-weight: 600;
         color: #475569;
         font-size: 0.9375rem;
     }
 
-    .dark-mode .collection-date { 
-        color: #cbd5e1; 
+    .dark-mode .collection-date {
+        color: #cbd5e1;
     }
 
     .collection-date i {
-        color: #3b82f6;
-        font-size: 1rem;
+        color: #667eea;
+        font-size: 1.125rem;
     }
 
     .collection-amount {
-        font-weight: 700;
-        font-size: 1.125rem;
-        color: #10b981;
+        font-weight: 800;
+        font-size: 1.25rem;
+        background: linear-gradient(135deg, #10b981, #059669);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    /* Activity Feed Card */
+    .activity-card {
+        width: 100%;
+    }
+
+    .activity-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .activity-item {
+        display: flex;
+        gap: 1rem;
+        padding: 1rem 0;
+        border-bottom: 1px solid #f1f5f9;
+    }
+
+    .dark-mode .activity-item {
+        border-bottom-color: #3a3a3a;
+    }
+
+    .activity-item:last-child {
+        border-bottom: none;
+    }
+
+    .activity-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        flex-shrink: 0;
+    }
+
+    .activity-content h5 {
+        font-size: 0.9375rem;
+        font-weight: 600;
+        color: #1e293b;
+        margin: 0 0 0.25rem 0;
+    }
+
+    .dark-mode .activity-content h5 {
+        color: #ffffff;
+    }
+
+    .activity-content p {
+        font-size: 0.8125rem;
+        color: #64748b;
+        margin: 0;
+    }
+
+    .dark-mode .activity-content p {
+        color: #94a3b8;
     }
 
     /* Responsive Design */
     @media (max-width: 1200px) {
-        .dashboard-grid {
+        .content-row-split {
+            grid-template-columns: 1fr;
+        }
+
+        .content-row {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 968px) {
+        .quick-stats-container {
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .metrics-row {
+            grid-template-columns: 1fr;
+        }
+
+        .content-row,
+        .content-row-split {
             grid-template-columns: 1fr;
         }
 
         .chart-wrapper {
-            min-height: 200px;
-            max-height: 250px;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .dashboard-title h1 {
-            font-size: 1.5rem;
-        }
-
-        .dashboard-title h2 {
-            font-size: 0.875rem;
-        }
-
-        .metric-card {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 1rem;
-        }
-
-        .metric-content {
-            width: 100%;
-        }
-
-        .metric-card .btn-view {
-            width: 100%;
-            justify-content: center;
-        }
-
-        .form-row {
-            grid-template-columns: 1fr;
+            min-height: 250px;
         }
 
         .metric-value {
-            font-size: 1.75rem;
+            font-size: 2rem;
         }
     }
+
+    /* Smooth animations */
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .metric-card,
+    .card {
+        animation: slideInUp 0.6s ease-out backwards;
+    }
+
+    .metric-card:nth-child(1) { animation-delay: 0.1s; }
+    .metric-card:nth-child(2) { animation-delay: 0.2s; }
+    .metric-card:nth-child(3) { animation-delay: 0.3s; }
+    .card:nth-child(1) { animation-delay: 0.4s; }
+    .card:nth-child(2) { animation-delay: 0.5s; }
+    .card:nth-child(3) { animation-delay: 0.6s; }
 </style>
 {% endblock %}
 
 {% block main_content %}
-<div class="dashboard-wrapper">
-    <!-- Dashboard Title -->
-    <div class="dashboard-title">
-        <h1>BALILIHAN WATERWORKS</h1>
-        <h2>Management Dashboard</h2>
+<!-- Quick Stats Bar -->
+<div class="quick-stats-bar">
+    <div class="quick-stats-container">
+        <div class="quick-stat-item">
+            <div class="quick-stat-icon total">
+                <i class="bi bi-people-fill"></i>
+            </div>
+            <div class="quick-stat-info">
+                <h4>Total Consumers</h4>
+                <p>{{ connected_count|add:disconnected_count|default:"0" }}</p>
+            </div>
+        </div>
+        <div class="quick-stat-item">
+            <div class="quick-stat-icon active">
+                <i class="bi bi-droplet-fill"></i>
+            </div>
+            <div class="quick-stat-info">
+                <h4>Active Today</h4>
+                <p>{{ connected_count|default:"0" }}</p>
+            </div>
+        </div>
+        <div class="quick-stat-item">
+            <div class="quick-stat-icon pending">
+                <i class="bi bi-exclamation-circle-fill"></i>
+            </div>
+            <div class="quick-stat-info">
+                <h4>Pending Actions</h4>
+                <p>{{ delinquent_count|default:"0" }}</p>
+            </div>
+        </div>
     </div>
+</div>
 
-    <!-- Main Dashboard Grid - Balanced 2-column layout -->
-    <div class="dashboard-grid">
-        <!-- LEFT COLUMN -->
-        <div class="left-column">
-            <!-- Metrics Container -->
-            <div class="metrics-container">
-                <!-- Connected Consumers Card -->
-                <div class="metric-card connected">
-                    <div class="metric-content">
-                        <div class="metric-icon">
-                            <i class="bi bi-check-circle-fill"></i>
-                        </div>
-                        <div class="metric-info">
-                            <h3>Connected</h3>
-                            <div class="metric-value">{{ connected_count|default:"0" }}</div>
-                        </div>
+<div class="dashboard-wrapper">
+    <!-- Metric Cards Row -->
+    <div class="metrics-row">
+        <!-- Connected Consumers -->
+        <div class="metric-card connected">
+            <div class="metric-card-content">
+                <div class="metric-header">
+                    <div class="metric-icon">
+                        <i class="bi bi-check-circle-fill"></i>
                     </div>
-                    <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-view">
-                        <i class="bi bi-eye"></i> View Details
-                    </a>
                 </div>
-
-                <!-- Disconnected Consumers Card -->
-                <div class="metric-card disconnected">
-                    <div class="metric-content">
-                        <div class="metric-icon">
-                            <i class="bi bi-x-circle-fill"></i>
-                        </div>
-                        <div class="metric-info">
-                            <h3>Disconnected</h3>
-                            <div class="metric-value">{{ disconnected_count|default:"0" }}</div>
-                        </div>
-                    </div>
-                    <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-view">
-                        <i class="bi bi-eye"></i> View Details
-                    </a>
-                </div>
-
-                <!-- Delinquent Accounts Card -->
-                <div class="metric-card delinquent">
-                    <div class="metric-content">
-                        <div class="metric-icon">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                        </div>
-                        <div class="metric-info">
-                            <h3>Delinquent</h3>
-                            <div class="metric-value">{{ delinquent_count|default:"0" }}</div>
-                        </div>
-                    </div>
-                    <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-view">
-                        <i class="bi bi-eye"></i> View Details
+                <p class="metric-label">Connected Consumers</p>
+                <div class="metric-value">{{ connected_count|default:"0" }}</div>
+                <div class="metric-footer">
+                    <span class="metric-change positive">
+                        <i class="bi bi-arrow-up"></i> Active
+                    </span>
+                    <a href="{% url 'consumers:connected_consumers' %}" class="btn-view">
+                        <i class="bi bi-eye"></i> View
                     </a>
                 </div>
             </div>
+        </div>
 
-            <!-- Report Generation Card -->
-            <div class="report-card">
-                <h3>
-                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-                    Generate Report
-                </h3>
+        <!-- Disconnected Consumers -->
+        <div class="metric-card disconnected">
+            <div class="metric-card-content">
+                <div class="metric-header">
+                    <div class="metric-icon">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                </div>
+                <p class="metric-label">Disconnected</p>
+                <div class="metric-value">{{ disconnected_count|default:"0" }}</div>
+                <div class="metric-footer">
+                    <span class="metric-change negative">
+                        <i class="bi bi-arrow-down"></i> Inactive
+                    </span>
+                    <a href="{% url 'consumers:disconnected_consumers' %}" class="btn-view">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Delinquent Accounts -->
+        <div class="metric-card delinquent">
+            <div class="metric-card-content">
+                <div class="metric-header">
+                    <div class="metric-icon">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                </div>
+                <p class="metric-label">Delinquent Accounts</p>
+                <div class="metric-value">{{ delinquent_count|default:"0" }}</div>
+                <div class="metric-footer">
+                    <span class="metric-change">
+                        <i class="bi bi-clock"></i> Overdue
+                    </span>
+                    <a href="{% url 'consumers:delinquent_consumers' %}" class="btn-view">
+                        <i class="bi bi-eye"></i> View
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Grid - Row-based Layout -->
+    <div class="dashboard-grid">
+        <!-- Row 1: Report Generation (Full Width) -->
+        <div class="content-row-full">
+            <div class="card report-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+                    </div>
+                    <h3 class="card-title">Generate Report</h3>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label for="reportMonth">Month</label>
@@ -619,109 +761,135 @@
             </div>
         </div>
 
-        <!-- RIGHT COLUMN -->
-        <div class="right-column">
-            <!-- Payment Status Chart Card -->
-            <div class="chart-card">
-                <h4>
-                    <i class="bi bi-pie-chart-fill"></i>
-                    Payment Status
-                </h4>
+        <!-- Row 2: Payment Chart & Activity Feed -->
+        <div class="content-row-split">
+            <!-- Payment Status Chart -->
+            <div class="card chart-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-pie-chart-fill"></i>
+                    </div>
+                    <h3 class="card-title">Payment Status Overview</h3>
+                </div>
                 <div class="chart-wrapper">
                     <canvas id="paymentChart"></canvas>
                 </div>
             </div>
 
-            <!-- Collections Card -->
-            <div class="collections-card">
-                <h4>
-                    <i class="bi bi-cash-stack"></i>
-                    Monthly Collections
-                </h4>
+            <!-- Activity Feed Card -->
+            <div class="card activity-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-activity"></i>
+                    </div>
+                    <h3 class="card-title">Recent Activity</h3>
+                </div>
+                <ul class="activity-list">
+                    <li class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-person-plus"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h5>New Consumer Added</h5>
+                            <p>Juan Dela Cruz - BW-00123</p>
+                        </div>
+                    </li>
+                    <li class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-cash-coin"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h5>Payment Received</h5>
+                            <p>₱450.00 - Account BW-00089</p>
+                        </div>
+                    </li>
+                    <li class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-file-earmark-text"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h5>Bill Generated</h5>
+                            <p>150 bills for November 2025</p>
+                        </div>
+                    </li>
+                    <li class="activity-item">
+                        <div class="activity-icon">
+                            <i class="bi bi-speedometer2"></i>
+                        </div>
+                        <div class="activity-content">
+                            <h5>Meter Reading Submitted</h5>
+                            <p>45 readings from Barangay Poblacion</p>
+                        </div>
+                    </li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Row 3: Collections (Full Width) -->
+        <div class="content-row-full">
+            <div class="card collections-card">
+                <div class="card-header">
+                    <div class="card-icon">
+                        <i class="bi bi-cash-stack"></i>
+                    </div>
+                    <h3 class="card-title">Monthly Collections</h3>
+                </div>
                 <ul class="collections-list">
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            January 2023
+                            January 2025
                         </span>
                         <span class="collection-amount">₱364,500</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            February 2023
+                            February 2025
                         </span>
                         <span class="collection-amount">₱412,300</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            March 2023
+                            March 2025
                         </span>
                         <span class="collection-amount">₱389,700</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            April 2023
+                            April 2025
                         </span>
                         <span class="collection-amount">₱401,200</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            May 2023
+                            May 2025
                         </span>
                         <span class="collection-amount">₱378,900</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            June 2023
+                            June 2025
                         </span>
                         <span class="collection-amount">₱425,600</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            July 2023
+                            July 2025
                         </span>
                         <span class="collection-amount">₱398,400</span>
                     </li>
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
-                            August 2023
+                            August 2025
                         </span>
                         <span class="collection-amount">₱410,800</span>
-                    </li>
-                    <li class="collection-item">
-                        <span class="collection-date">
-                            <i class="bi bi-calendar3"></i>
-                            September 2023
-                        </span>
-                        <span class="collection-amount">₱395,200</span>
-                    </li>
-                    <li class="collection-item">
-                        <span class="collection-date">
-                            <i class="bi bi-calendar3"></i>
-                            October 2023
-                        </span>
-                        <span class="collection-amount">₱418,900</span>
-                    </li>
-                    <li class="collection-item">
-                        <span class="collection-date">
-                            <i class="bi bi-calendar3"></i>
-                            November 2023
-                        </span>
-                        <span class="collection-amount">₱403,700</span>
-                    </li>
-                    <li class="collection-item">
-                        <span class="collection-date">
-                            <i class="bi bi-calendar3"></i>
-                            December 2023
-                        </span>
-                        <span class="collection-amount">₱431,500</span>
                     </li>
                 </ul>
             </div>
@@ -738,7 +906,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reportMonth').value = now.getMonth() + 1;
     document.getElementById('reportYear').value = now.getFullYear();
 
-    // Payment Status Chart with better styling
+    // Payment Status Chart
     const ctx = document.getElementById('paymentChart').getContext('2d');
     new Chart(ctx, {
         type: 'doughnut',
@@ -751,7 +919,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     '#f59e0b'
                 ],
                 borderWidth: 0,
-                hoverOffset: 10
+                hoverOffset: 15
             }]
         },
         options: {
@@ -761,9 +929,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 15,
-                        font: { 
-                            size: 12, 
+                        padding: 20,
+                        font: {
+                            size: 13,
                             weight: '600',
                             family: 'Inter'
                         },
@@ -772,19 +940,20 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 12,
+                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                    padding: 16,
                     titleFont: {
-                        size: 14,
-                        weight: '600'
+                        size: 15,
+                        weight: '700'
                     },
                     bodyFont: {
-                        size: 13
+                        size: 14
                     },
-                    cornerRadius: 8
+                    cornerRadius: 10,
+                    displayColors: false
                 }
             },
-            cutout: '65%'
+            cutout: '70%'
         }
     });
 
@@ -806,20 +975,22 @@ document.addEventListener('DOMContentLoaded', function() {
     document.querySelectorAll('.metric-value').forEach(el => {
         const finalValue = parseInt(el.textContent) || 0;
         el.textContent = '0';
-        setTimeout(() => animateValue(el, 0, finalValue, 1200), 300);
+        setTimeout(() => animateValue(el, 0, finalValue, 1500), 400);
     });
 
-    // Show welcome toast
-    setTimeout(() => {
-        showToast('success', 'Welcome to Balilihan Waterworks Dashboard!', 3000);
-    }, 500);
+    // Animate quick stats
+    document.querySelectorAll('.quick-stat-info p').forEach(el => {
+        const finalValue = parseInt(el.textContent) || 0;
+        el.textContent = '0';
+        setTimeout(() => animateValue(el, 0, finalValue, 1200), 200);
+    });
 });
 
 // Generate Excel Report Function
 function generateExcelReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
-    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 
+    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December'];
 
     showLoading(`Generating ${monthNames[month]} ${year} delinquent report...`);
