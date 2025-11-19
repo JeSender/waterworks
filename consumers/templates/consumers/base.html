@@ -358,7 +358,7 @@
                     <li>
                         <div class="dropdown-item-text">
                             <div class="fw-bold text-dark">
-                                {% if user.first_name and user.last_name %}{{ user.first_name }} {{ user.last_name }}{% elif user.first_name %}{{ user.first_name %}{% else %}{{ user.username }}{% endif %}
+                                {% if user.first_name and user.last_name %}{{ user.first_name }} {{ user.last_name }}{% elif user.first_name %}{{ user.first_name }}{% else %}{{ user.username }}{% endif %}
                             </div>
                             <small class="text-muted">
                                 {% if user.email %}{{ user.email }}{% else %}Staff Member{% endif %}
