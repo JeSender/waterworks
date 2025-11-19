@@ -5,360 +5,577 @@
 
 {% block extra_css %}
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
     * {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
     }
 
-    body {
-        background-color: #f8f9fa;
-    }
-
     .main-content {
-        background-color: #f8f9fa !important;
-        padding: 3rem 2rem !important;
+        background-color: #f5f7fa !important;
+        padding: 2rem !important;
+        overflow-y: auto !important;
     }
 
     .dark-mode .main-content {
         background-color: #1a1a1a !important;
     }
 
-    /* Dashboard Container */
-    .dashboard-container {
-        max-width: 900px;
-        margin: 0 auto;
-    }
-
-    /* Large Centered Header */
-    .main-title {
+    .dashboard-title {
         text-align: center;
-        margin-bottom: 3rem;
-    }
-
-    .main-title h1 {
-        font-size: 3.5rem;
-        font-weight: 800;
-        color: #2d3748;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .main-title h2 {
-        font-size: 3rem;
-        font-weight: 400;
-        color: #718096;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .dark-mode .main-title h1 {
-        color: #ffffff;
-    }
-
-    .dark-mode .main-title h2 {
-        color: #a0aec0;
-    }
-
-    /* Section Labels */
-    .section-label {
-        font-size: 1.5rem;
-        font-weight: 700;
-        color: #2d3748;
-        margin-bottom: 1.5rem;
-        margin-top: 2.5rem;
-    }
-
-    .dark-mode .section-label {
-        color: #ffffff;
-    }
-
-    /* Statistics List */
-    .stats-list {
-        list-style: none;
-        padding: 0;
-        margin: 0 0 2rem 0;
-    }
-
-    .stat-item {
-        display: flex;
-        align-items: center;
-        padding: 1.25rem 1.5rem;
-        margin-bottom: 1rem;
-        background: white;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .stat-item:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        transform: translateX(5px);
-    }
-
-    .dark-mode .stat-item {
-        background: #2d2d2d;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
-    }
-
-    .dark-mode .stat-item:hover {
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-    }
-
-    .stat-icon {
-        width: 50px;
-        height: 50px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        margin-right: 1.5rem;
-        font-size: 1.5rem;
-    }
-
-    .stat-icon.success {
-        background-color: #10b981;
-        color: white;
-    }
-
-    .stat-icon.danger {
-        background-color: #ef4444;
-        color: white;
-    }
-
-    .stat-icon.warning {
-        background-color: #ef4444;
-        color: white;
-    }
-
-    .stat-content {
-        flex: 1;
-    }
-
-    .stat-label {
-        font-size: 1rem;
-        color: #718096;
-        margin-bottom: 0.25rem;
-    }
-
-    .dark-mode .stat-label {
-        color: #a0aec0;
-    }
-
-    .stat-value {
-        font-size: 2rem;
-        font-weight: 700;
-        color: #2d3748;
-    }
-
-    .dark-mode .stat-value {
-        color: #ffffff;
-    }
-
-    /* Generate Button */
-    .generate-btn {
-        background-color: #F39C12;
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 12px;
-        font-size: 1.1rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-        width: 100%;
-        transition: all 0.3s ease;
-        box-shadow: 0 4px 12px rgba(243, 156, 18, 0.3);
         margin-bottom: 2rem;
     }
 
-    .generate-btn:hover {
-        background-color: #E67E22;
-        box-shadow: 0 6px 16px rgba(243, 156, 18, 0.4);
+    .dashboard-title h1 {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #2c3e50;
+        margin: 0;
+    }
+
+    .dashboard-title h2 {
+        font-size: 1.8rem;
+        font-weight: 400;
+        color: #7f8c8d;
+        margin: 0;
+    }
+
+    .dark-mode .dashboard-title h1 {
+        color: #ffffff;
+    }
+
+    .dark-mode .dashboard-title h2 {
+        color: #bdc3c7;
+    }
+
+    /* Metric Cards Row */
+    .metrics-row {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .metric-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid;
+    }
+
+    .metric-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
         transform: translateY(-2px);
     }
 
-    .generate-btn:active {
+    .dark-mode .metric-card {
+        background: #2d2d2d;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .metric-card.connected {
+        border-left-color: #10b981;
+    }
+
+    .metric-card.disconnected {
+        border-left-color: #ef4444;
+    }
+
+    .metric-card.delinquent {
+        border-left-color: #f59e0b;
+    }
+
+    .metric-header {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: white;
+    }
+
+    .metric-card.connected .metric-icon {
+        background: linear-gradient(135deg, #10b981, #059669);
+    }
+
+    .metric-card.disconnected .metric-icon {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+    }
+
+    .metric-card.delinquent .metric-icon {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+    }
+
+    .metric-info h3 {
+        font-size: 0.875rem;
+        color: #64748b;
+        margin: 0;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .dark-mode .metric-info h3 {
+        color: #94a3b8;
+    }
+
+    .metric-value {
+        font-size: 2.5rem;
+        font-weight: 800;
+        color: #1e293b;
+        margin: 0.5rem 0 1rem 0;
+    }
+
+    .dark-mode .metric-value {
+        color: #ffffff;
+    }
+
+    .metric-card .btn-view {
+        width: 100%;
+        padding: 0.625rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        border: none;
+        transition: all 0.2s ease;
+    }
+
+    .metric-card.connected .btn-view {
+        background: #10b981;
+        color: white;
+    }
+
+    .metric-card.connected .btn-view:hover {
+        background: #059669;
+    }
+
+    .metric-card.disconnected .btn-view {
+        background: #ef4444;
+        color: white;
+    }
+
+    .metric-card.disconnected .btn-view:hover {
+        background: #dc2626;
+    }
+
+    .metric-card.delinquent .btn-view {
+        background: #f59e0b;
+        color: white;
+    }
+
+    .metric-card.delinquent .btn-view:hover {
+        background: #d97706;
+    }
+
+    /* Report Generation Section */
+    .report-section {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+
+    .dark-mode .report-section {
+        background: #2d2d2d;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .report-section h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1.5rem;
+    }
+
+    .dark-mode .report-section h3 {
+        color: #ffffff;
+    }
+
+    .report-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr 2fr;
+        gap: 1rem;
+        align-items: end;
+    }
+
+    .form-group label {
+        display: block;
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: #475569;
+        margin-bottom: 0.5rem;
+    }
+
+    .dark-mode .form-group label {
+        color: #cbd5e1;
+    }
+
+    .form-group select {
+        width: 100%;
+        padding: 0.625rem;
+        border: 2px solid #e2e8f0;
+        border-radius: 8px;
+        font-size: 0.9375rem;
+        background: white;
+        color: #1e293b;
+        transition: border-color 0.2s;
+    }
+
+    .dark-mode .form-group select {
+        background: #3a3a3a;
+        border-color: #4a4a4a;
+        color: #ffffff;
+    }
+
+    .form-group select:focus {
+        outline: none;
+        border-color: #3b82f6;
+    }
+
+    .btn-generate {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-size: 1rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+
+    .btn-generate:hover {
+        background: linear-gradient(135deg, #d97706, #b45309);
+        box-shadow: 0 6px 16px rgba(245, 158, 11, 0.4);
+        transform: translateY(-2px);
+    }
+
+    .btn-generate:active {
         transform: translateY(0);
     }
 
-    /* Collections Display */
+    /* Collections Chart Row */
+    .charts-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .dark-mode .chart-card {
+        background: #2d2d2d;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    }
+
+    .chart-card h4 {
+        font-size: 1.125rem;
+        font-weight: 700;
+        color: #1e293b;
+        margin-bottom: 1rem;
+    }
+
+    .dark-mode .chart-card h4 {
+        color: #ffffff;
+    }
+
+    .chart-wrapper {
+        height: 300px;
+        position: relative;
+    }
+
     .collections-list {
         list-style: none;
         padding: 0;
         margin: 0;
+        max-height: 300px;
+        overflow-y: auto;
     }
 
     .collection-item {
         display: flex;
+        justify-content: space-between;
         align-items: center;
-        padding: 1rem 1.5rem;
-        margin-bottom: 0.75rem;
-        background: white;
-        border-radius: 10px;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .collection-item:hover {
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15);
-        transform: translateX(3px);
+        padding: 0.75rem;
+        margin-bottom: 0.5rem;
+        background: #f8fafc;
+        border-radius: 8px;
+        transition: background 0.2s;
     }
 
     .dark-mode .collection-item {
-        background: #2d2d2d;
-        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+        background: #1a1a1a;
+    }
+
+    .collection-item:hover {
+        background: #f1f5f9;
     }
 
     .dark-mode .collection-item:hover {
-        box-shadow: 0 3px 8px rgba(0, 0, 0, 0.5);
+        background: #333333;
     }
 
-    .collection-icon {
-        font-size: 1.5rem;
-        margin-right: 1rem;
-    }
-
-    .collection-text {
-        font-size: 1.1rem;
-        color: #2d3748;
+    .collection-date {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
         font-weight: 600;
+        color: #475569;
     }
 
-    .dark-mode .collection-text {
-        color: #ffffff;
+    .dark-mode .collection-date {
+        color: #cbd5e1;
     }
 
     .collection-amount {
-        margin-left: auto;
-        font-size: 1.2rem;
         font-weight: 700;
+        font-size: 1.125rem;
         color: #10b981;
     }
 
-    /* Responsive Design */
-    @media (max-width: 768px) {
-        .main-title h1 {
-            font-size: 2.5rem;
+    /* Responsive */
+    @media (max-width: 1024px) {
+        .metrics-row {
+            grid-template-columns: 1fr;
         }
 
-        .main-title h2 {
+        .report-controls {
+            grid-template-columns: 1fr;
+        }
+
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+
+        .dashboard-title h1 {
             font-size: 2rem;
         }
 
-        .section-label {
-            font-size: 1.25rem;
-        }
-
-        .stat-value {
+        .dashboard-title h2 {
             font-size: 1.5rem;
-        }
-
-        .generate-btn {
-            font-size: 1rem;
-            padding: 0.875rem 1.5rem;
-        }
-
-        .main-content {
-            padding: 2rem 1rem !important;
         }
     }
 </style>
 {% endblock %}
 
 {% block main_content %}
-<div class="dashboard-container">
-    <!-- Large Centered Title -->
-    <div class="main-title">
+<div class="container-fluid">
+    <!-- Dashboard Title -->
+    <div class="dashboard-title">
         <h1>BALILIHAN</h1>
-        <h2>WATERWORKS</h2>
+        <h2>WATERWORKS MANAGEMENT</h2>
     </div>
 
-    <!-- Consumers Section -->
-    <h3 class="section-label">Consumers</h3>
-    <ul class="stats-list">
-        <li class="stat-item">
-            <div class="stat-icon success">
-                <i class="bi bi-check-circle-fill"></i>
+    <!-- Metrics Row -->
+    <div class="metrics-row">
+        <!-- Connected Consumers -->
+        <div class="metric-card connected">
+            <div class="metric-header">
+                <div class="metric-icon">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Connected</h3>
+                </div>
             </div>
-            <div class="stat-content">
-                <div class="stat-label">Connected</div>
-                <div class="stat-value">{{ connected_count|default:"402" }}</div>
-            </div>
-        </li>
-        <li class="stat-item">
-            <div class="stat-icon danger">
-                <i class="bi bi-x-circle-fill"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Disconnected</div>
-                <div class="stat-value">{{ disconnected_count|default:"53" }}</div>
-            </div>
-        </li>
-        <li class="stat-item">
-            <div class="stat-icon warning">
-                <i class="bi bi-exclamation-triangle-fill"></i>
-            </div>
-            <div class="stat-content">
-                <div class="stat-label">Delinquent</div>
-                <div class="stat-value">{{ delinquent_count|default:"3" }}</div>
-            </div>
-        </li>
-    </ul>
+            <div class="metric-value">{{ connected_count|default:"0" }}</div>
+            <a href="{% url 'consumers:connected_consumers' %}" class="btn btn-view">
+                <i class="bi bi-eye me-1"></i> View Details
+            </a>
+        </div>
 
-    <!-- Consumer Delinquent Section -->
-    <h3 class="section-label">Consumer Delinquent</h3>
-    <button class="generate-btn" onclick="window.location.href='{% url 'consumers:delinquent_consumers' %}'">
-        <i class="bi bi-file-earmark-text-fill me-2"></i>
-        GENERATE DELINQUENT LOGS 2023
-    </button>
+        <!-- Disconnected Consumers -->
+        <div class="metric-card disconnected">
+            <div class="metric-header">
+                <div class="metric-icon">
+                    <i class="bi bi-x-circle-fill"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Disconnected</h3>
+                </div>
+            </div>
+            <div class="metric-value">{{ disconnected_count|default:"0" }}</div>
+            <a href="{% url 'consumers:disconnected_consumers' %}" class="btn btn-view">
+                <i class="bi bi-eye me-1"></i> View Details
+            </a>
+        </div>
 
-    <!-- Collections Section -->
-    <h3 class="section-label">Collections</h3>
-    <ul class="collections-list">
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">Jan 2023</span>
-            <span class="collection-amount">₱364.5</span>
-        </li>
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">Feb 2023</span>
-            <span class="collection-amount">₱412.3</span>
-        </li>
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">Mar 2023</span>
-            <span class="collection-amount">₱389.7</span>
-        </li>
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">Apr 2023</span>
-            <span class="collection-amount">₱401.2</span>
-        </li>
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">May 2023</span>
-            <span class="collection-amount">₱378.9</span>
-        </li>
-        <li class="collection-item">
-            <span class="collection-icon">📅</span>
-            <span class="collection-text">Jun 2023</span>
-            <span class="collection-amount">₱425.6</span>
-        </li>
-    </ul>
+        <!-- Delinquent Accounts -->
+        <div class="metric-card delinquent">
+            <div class="metric-header">
+                <div class="metric-icon">
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+                </div>
+                <div class="metric-info">
+                    <h3>Delinquent</h3>
+                </div>
+            </div>
+            <div class="metric-value">{{ delinquent_count|default:"0" }}</div>
+            <a href="{% url 'consumers:delinquent_consumers' %}" class="btn btn-view">
+                <i class="bi bi-eye me-1"></i> View Details
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Generation Section -->
+    <div class="report-section">
+        <h3><i class="bi bi-file-earmark-spreadsheet me-2"></i>Generate Monthly Report</h3>
+        <form id="reportForm" method="GET" action="{% url 'consumers:reports' %}">
+            <div class="report-controls">
+                <div class="form-group">
+                    <label for="reportMonth">Select Month</label>
+                    <select id="reportMonth" name="month" class="form-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="reportYear">Select Year</label>
+                    <select id="reportYear" name="year" class="form-select">
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023" selected>2023</option>
+                        <option value="2022">2022</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>&nbsp;</label>
+                    <button type="button" class="btn-generate" onclick="generateExcelReport()">
+                        <i class="bi bi-download me-2"></i>Generate & Download Excel
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- Payment Status Chart -->
+        <div class="chart-card">
+            <h4><i class="bi bi-pie-chart-fill me-2"></i>Payment Status</h4>
+            <div class="chart-wrapper">
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+
+        <!-- Recent Collections -->
+        <div class="chart-card">
+            <h4><i class="bi bi-cash-stack me-2"></i>Recent Collections (2023)</h4>
+            <ul class="collections-list">
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        January 2023
+                    </span>
+                    <span class="collection-amount">₱364,500.00</span>
+                </li>
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        February 2023
+                    </span>
+                    <span class="collection-amount">₱412,300.00</span>
+                </li>
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        March 2023
+                    </span>
+                    <span class="collection-amount">₱389,700.00</span>
+                </li>
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        April 2023
+                    </span>
+                    <span class="collection-amount">₱401,200.00</span>
+                </li>
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        May 2023
+                    </span>
+                    <span class="collection-amount">₱378,900.00</span>
+                </li>
+                <li class="collection-item">
+                    <span class="collection-date">
+                        <i class="bi bi-calendar3"></i>
+                        June 2023
+                    </span>
+                    <span class="collection-amount">₱425,600.00</span>
+                </li>
+            </ul>
+        </div>
+    </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Success notification
-    setTimeout(() => {
-        showToast('success', '✨ Dashboard loaded successfully!', 2000);
-    }, 500);
+    // Set current month and year
+    const now = new Date();
+    document.getElementById('reportMonth').value = now.getMonth() + 1;
+    document.getElementById('reportYear').value = now.getFullYear();
 
-    // Animated counter effect for statistics
+    // Payment Status Chart
+    const ctx = document.getElementById('paymentChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Paid Bills', 'Pending Bills'],
+            datasets: [{
+                data: [{{ paid_bills|default:"0" }}, {{ pending_bills|default:"0" }}],
+                backgroundColor: ['#10b981', '#f59e0b'],
+                borderWidth: 0
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        padding: 15,
+                        font: { size: 13, weight: '600' },
+                        usePointStyle: true
+                    }
+                }
+            }
+        }
+    });
+
+    // Animate counter
     function animateValue(element, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
@@ -372,14 +589,30 @@ document.addEventListener('DOMContentLoaded', function() {
         window.requestAnimationFrame(step);
     }
 
-    // Animate stat values on load
-    document.querySelectorAll('.stat-value').forEach(el => {
-        const finalValue = parseInt(el.textContent);
+    document.querySelectorAll('.metric-value').forEach(el => {
+        const finalValue = parseInt(el.textContent) || 0;
         el.textContent = '0';
-        setTimeout(() => {
-            animateValue(el, 0, finalValue, 1200);
-        }, 200);
+        setTimeout(() => animateValue(el, 0, finalValue, 1000), 200);
     });
+
+    showToast('success', 'Dashboard loaded successfully!', 2000);
 });
+
+// Generate Excel Report Function
+function generateExcelReport() {
+    const month = document.getElementById('reportMonth').value;
+    const year = document.getElementById('reportYear').value;
+    const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
+                        'July', 'August', 'September', 'October', 'November', 'December'];
+
+    showLoading(`Generating ${monthNames[month]} ${year} report...`);
+
+    // Redirect to reports page with parameters for Excel export
+    setTimeout(() => {
+        window.location.href = `/reports/?month=${month}&year=${year}&export=excel`;
+        hideLoading();
+        showToast('success', `Report for ${monthNames[month]} ${year} is being generated!`, 3000);
+    }, 1000);
+}
 </script>
 {% endblock %}
