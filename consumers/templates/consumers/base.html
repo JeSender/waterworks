@@ -18,187 +18,146 @@
     <link rel="stylesheet" href="{% static 'consumers/style.css' %}">
 
     <style>
-        /* Dark Mode Styles */
-        .dark-mode {
             background-color: #1a1a1a !important;
             color: #ffffff;
         }
 
-        .dark-mode .sidebar {
             background-color: #2d2d2d !important;
             color: #ffffff;
         }
 
-        .dark-mode .sidebar a {
             color: #e0e0e0 !important;
         }
 
-        .dark-mode .sidebar a:hover {
             background-color: #404040 !important;
             color: #ffffff !important;
         }
 
-        .dark-mode .main-content {
             background-color: #1a1a1a !important;
             color: #ffffff;
         }
 
-        .dark-mode .card {
             background-color: #2d2d2d !important;
             color: #ffffff;
             border: 1px solid #404040 !important;
         }
 
-        /* User Profile Card Dark Mode */
-        .dark-mode .user-profile-card {
             background: linear-gradient(135deg, #3a3a3a, #2d2d2d) !important;
         }
 
-        .dark-mode .user-profile-card .fw-semibold {
             color: #ffffff !important;
         }
 
-        .dark-mode .user-profile-card .text-muted {
             color: #a0a0a0 !important;
         }
         
-        .dark-mode .table {
             color: #ffffff !important;
         }
         
-        .dark-mode .table th {
             background-color: #3a3a3a !important;
             color: #ffffff !important;
             border-color: #404040 !important;
         }
         
-        .dark-mode .table td {
             border-color: #404040 !important;
         }
         
-        .dark-mode .table-hover tbody tr:hover {
             background-color: #3a3a3a !important;
         }
         
-        .dark-mode .btn-outline-info {
             color: #0ea5e9 !important;
             border-color: #0ea5e9 !important;
         }
         
-        .dark-mode .btn-outline-info:hover {
             background-color: #0ea5e9 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .text-dark {
             color: #ffffff !important;
         }
         
-        .dark-mode .text-muted {
             color: #a0a0a0 !important;
         }
         
-        .dark-mode .border-top {
             border-color: #404040 !important;
         }
         
-        .dark-mode .border-secondary {
             border-color: #404040 !important;
         }
         
-        .dark-mode .input-group-text {
             background-color: #3a3a3a !important;
             border-color: #404040 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .form-control {
             background-color: #3a3a3a !important;
             border-color: #404040 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .form-control:focus {
             background-color: #3a3a3a !important;
             border-color: #818cf8 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .btn-primary {
             background-color: #4f46e5 !important;
             border-color: #4f46e5 !important;
         }
         
-        .dark-mode .btn-primary:hover {
             background-color: #4338ca !important;
             border-color: #4338ca !important;
         }
         
-        .dark-mode .btn-outline-primary {
             color: #4f46e5 !important;
             border-color: #4f46e5 !important;
         }
         
-        .dark-mode .btn-outline-primary:hover {
             background-color: #4f46e5 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .btn-outline-success {
             color: #10b981 !important;
             border-color: #10b981 !important;
         }
         
-        .dark-mode .btn-outline-success:hover {
             background-color: #10b981 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .btn-outline-info {
             color: #0ea5e9 !important;
             border-color: #0ea5e9 !important;
         }
         
-        .dark-mode .btn-outline-info:hover {
             background-color: #0ea5e9 !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .report-section {
             background-color: #2d2d2d !important;
             border: 1px solid #404040 !important;
             color: #ffffff;
         }
         
-        .dark-mode .modal-content {
             background-color: #2d2d2d !important;
             color: #ffffff;
             border: 1px solid #404040 !important;
         }
         
-        .dark-mode .modal-header,
-        .dark-mode .modal-footer {
             border-color: #404040 !important;
         }
         
-        .dark-mode .close {
             color: #ffffff !important;
         }
         
-        .dark-mode .close:hover {
             color: #e0e0e0 !important;
         }
         
-        .dark-mode .report-table th {
             background-color: #3a3a3a !important;
             color: #ffffff !important;
         }
         
-        .dark-mode .report-table td {
             color: #ffffff !important;
         }
         
-        .dark-mode .dashboard-header {
             background: linear-gradient(120deg, #4f46e5, #7c3aed) !important;
         }
 
@@ -241,6 +200,31 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
+        /* === User Dropdown Styling === */
+        .dropdown-menu {
+            animation: slideDown 0.2s ease;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .dropdown-item:hover {
+            background-color: #f3f4f6 !important;
+            color: #dc2626 !important;
+        }
+
+        .dropdown-item:active {
+            background-color: #e5e7eb !important;
+        }
+
         /* === Modern Navigation Links === */
         .nav-link-modern {
             transition: all 0.2s ease;
@@ -264,12 +248,10 @@
             color: #667eea;
         }
 
-        .dark-mode .nav-link-modern:hover {
             background-color: #404040 !important;
             color: #818cf8 !important;
         }
 
-        .dark-mode .nav-link-modern.active {
             background: linear-gradient(135deg, #667eea25, #764ba225);
             color: #818cf8 !important;
             border-left: 3px solid #818cf8;
@@ -300,25 +282,50 @@
 </head>
 <body class="bg-white" id="main-body">
 
-    <!-- Professional Header Bar -->
-    <div class="header-bar bg-white position-fixed top-0 start-0 end-0 d-flex align-items-center justify-content-between px-4 shadow-sm" style="height: 65px; z-index: 1030; border-bottom: 1px solid #e5e7eb;">
-        <div class="d-flex align-items-center">
-            <img src="{% static 'consumers/images/water_icon.png' %}" alt="Logo" class="rounded-circle me-3" style="width: 42px; height: 42px; border: 2px solid #667eea;">
-            <div>
-                <h1 class="mb-0 fs-5 fw-bold text-dark">Balilihan Waterworks</h1>
-                <small class="text-muted" style="font-size: 0.75rem;">Management System</small>
-            </div>
+    <!-- Minimal Header Bar -->
+    <div class="header-bar bg-white position-fixed top-0 start-0 end-0 d-flex align-items-center justify-content-between px-3 shadow-sm" style="height: 50px; z-index: 1030; border-bottom: 1px solid #e5e7eb;">
+        <div class="d-flex align-items-center gap-2">
+            <img src="{% static 'consumers/images/water_icon.png' %}" alt="Logo" class="rounded-circle" style="width: 32px; height: 32px; border: 2px solid #667eea;">
+            <h1 class="mb-0 fw-bold text-dark" style="font-size: 1rem;">Balilihan Waterworks</h1>
         </div>
-        <div class="d-flex align-items-center gap-3">
-            <span class="text-muted small">{{ request.user.get_full_name|default:request.user.username }}</span>
-            <div class="user-avatar d-flex align-items-center justify-content-center" style="width: 38px; height: 38px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; color: white; font-weight: bold; font-size: 0.9rem;">
-                {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
-            </div>
+
+        <!-- User Profile Dropdown -->
+        <div class="dropdown">
+            <button class="btn btn-link text-decoration-none p-0 d-flex align-items-center gap-2"
+                    type="button"
+                    id="userDropdown"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    style="border: none; background: none;">
+                <span class="text-dark small fw-medium d-none d-md-inline">{{ request.user.get_full_name|default:request.user.username }}</span>
+                <div class="user-avatar d-flex align-items-center justify-content-center"
+                     style="width: 34px; height: 34px; background: linear-gradient(135deg, #667eea, #764ba2); border-radius: 50%; color: white; font-weight: bold; font-size: 0.85rem;">
+                    {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
+                </div>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end shadow-lg"
+                aria-labelledby="userDropdown"
+                style="min-width: 220px; border-radius: 12px; border: 1px solid #e5e7eb; padding: 0.5rem;">
+                <li class="px-3 py-2 border-bottom" style="border-color: #e5e7eb !important;">
+                    <div class="small text-muted">Signed in as</div>
+                    <div class="fw-bold">{{ request.user.get_full_name|default:request.user.username }}</div>
+                    <div class="small text-muted">{{ request.user.email|default:"Staff Member" }}</div>
+                </li>
+                <li><hr class="dropdown-divider" style="margin: 0.5rem 0;"></li>
+                <li>
+                    <a class="dropdown-item rounded-2 d-flex align-items-center gap-2 py-2"
+                       href="{% url 'consumers:staff_logout' %}"
+                       style="transition: all 0.2s;">
+                        <i class="bi bi-box-arrow-right text-danger"></i>
+                        <span>Logout</span>
+                    </a>
+                </li>
+            </ul>
         </div>
     </div>
 
     <!-- Modern Sidebar with Hierarchy -->
-    <div class="sidebar bg-white text-dark position-fixed start-0 bottom-0 d-flex flex-column p-3" style="width: 260px; top: 65px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05); border-right: 1px solid #e5e7eb;" id="sidebar">
+    <div class="sidebar bg-white text-dark position-fixed start-0 bottom-0 d-flex flex-column p-3" style="width: 260px; top: 50px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05); border-right: 1px solid #e5e7eb;" id="sidebar">
         <nav class="flex-grow-1" style="overflow-y: auto;">
             <!-- Main Section -->
             <div class="nav-section mb-3">
@@ -375,46 +382,10 @@
             {% endif %}
         </nav>
 
-        <!-- User Profile & Settings Section -->
-        <div class="mt-auto pt-3 border-top" style="padding-bottom: 1rem;">
-            <!-- User Profile Card -->
-            <div class="user-profile-card p-3 rounded mb-3" style="background: linear-gradient(135deg, #667eea, #764ba2); box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);">
-                <div class="d-flex align-items-center">
-                    <div class="user-avatar me-3" style="width: 45px; height: 45px; background: white; border-radius: 50%; display: flex; align-items-center; justify-content: center; color: #667eea; font-weight: bold; font-size: 1.2rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);">
-                        {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
-                    </div>
-                    <div class="flex-grow-1 text-truncate">
-                        <div class="fw-bold text-white" style="font-size: 0.95rem;">
-                            {{ request.user.get_full_name|default:request.user.username }}
-                        </div>
-                        <small class="text-white" style="font-size: 0.75rem; opacity: 0.9;">
-                            {{ request.user.email|default:"Staff Member" }}
-                        </small>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Action Buttons Grid -->
-            <div class="d-grid gap-2">
-                <button class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2"
-                        onclick="toggleDarkMode()"
-                        id="dark-mode-toggle"
-                        style="font-size: 0.85rem; padding: 0.6rem; border-width: 2px; font-weight: 600;">
-                    <i class="bi bi-moon-fill" id="dark-mode-icon"></i>
-                    <span id="dark-mode-text">Dark Mode</span>
-                </button>
-                <a href="{% url 'consumers:staff_logout' %}"
-                   class="btn btn-danger d-flex align-items-center justify-content-center gap-2"
-                   style="font-size: 0.85rem; padding: 0.6rem; font-weight: 600; background: linear-gradient(135deg, #ef4444, #dc2626); border: none; box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3);">
-                    <i class="bi bi-box-arrow-right"></i>
-                    <span>Logout</span>
-                </a>
-            </div>
-        </div>
     </div>
 
     <!-- Main Content -->
-    <div class="main-content" style="margin-left: 260px; margin-top: 65px; padding: 20px; min-height: calc(100vh - 65px); overflow-y: auto;" id="main-content">
+    <div class="main-content" style="margin-left: 260px; margin-top: 50px; padding: 20px; min-height: calc(100vh - 50px); overflow-y: auto;" id="main-content">
         {% block main_content %}
         <div class="card p-4 mt-3">
             <h3 class="mb-3">Welcome, {{ request.user.username }}</h3>
@@ -499,46 +470,6 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             setActiveNavLink();
-        });
-    </script>
-
-    <!-- Dark Mode Toggle Script -->
-    <script>
-        // Dark mode toggle functionality
-        function toggleDarkMode() {
-            const body = document.getElementById('main-body');
-            const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('main-content');
-            const darkModeIcon = document.getElementById('dark-mode-icon');
-            const darkModeToggle = document.getElementById('dark-mode-toggle');
-            const darkModeText = document.getElementById('dark-mode-text');
-
-            body.classList.toggle('dark-mode');
-            sidebar.classList.toggle('dark-mode');
-            mainContent.classList.toggle('dark-mode');
-
-            if (body.classList.contains('dark-mode')) {
-                darkModeIcon.className = 'bi bi-sun-fill';
-                darkModeToggle.className = 'btn btn-outline-warning d-flex align-items-center justify-content-center gap-2';
-                darkModeText.textContent = 'Light Mode';
-
-                // Save preference to localStorage
-                localStorage.setItem('darkMode', 'enabled');
-            } else {
-                darkModeIcon.className = 'bi bi-moon-fill';
-                darkModeToggle.className = 'btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2';
-                darkModeText.textContent = 'Dark Mode';
-
-                // Remove preference from localStorage
-                localStorage.removeItem('darkMode');
-            }
-        }
-        
-        // Check for saved dark mode preference
-        document.addEventListener('DOMContentLoaded', function() {
-            if (localStorage.getItem('darkMode') === 'enabled') {
-                toggleDarkMode();
-            }
         });
     </script>
 

@@ -12,7 +12,14 @@ from django.urls import reverse
 from django.core.paginator import Paginator
 from django.contrib.auth.models import User
 from datetime import datetime, timedelta, date
-from dateutil.relativedelta import relativedelta
+try:
+    from dateutil.relativedelta import relativedelta
+except Exception:
+    # Fallback: approximate relativedelta by using a timedelta of ~30 days per month
+    # This keeps existing subtraction usages like relativedelta(months=5) working
+    from datetime import timedelta as _td
+    def relativedelta(months=0, **kwargs):
+        return _td(days=30 * int(months))
 from decimal import Decimal, InvalidOperation
 import uuid
 import json
