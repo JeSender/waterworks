@@ -639,15 +639,6 @@
                     Monthly Collections
                 </h4>
                 <ul class="collections-list">
-                    {% for label, amount in revenue_list %}
-                    <li class="collection-item">
-                        <span class="collection-date">
-                            <i class="bi bi-calendar3"></i>
-                            {{ label }}
-                        </span>
-                        <span class="collection-amount">₱{{ amount|floatformat:0|intcomma }}</span>
-                    </li>
-                    {% empty %}
                     <li class="collection-item">
                         <span class="collection-date">
                             <i class="bi bi-calendar3"></i>
@@ -732,7 +723,6 @@
                         </span>
                         <span class="collection-amount">₱431,500</span>
                     </li>
-                    {% endfor %}
                 </ul>
             </div>
         </div>
