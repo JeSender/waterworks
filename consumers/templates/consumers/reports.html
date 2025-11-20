@@ -4,20 +4,16 @@
 {% block title %}System Reports{% endblock %}
 
 {% block main_content %}
-<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+<div class="max-w-7xl mx-auto p-6">
 
-    <!-- Main Header - Spans Full Width -->
-    <div class="mb-6 max-w-7xl mx-auto">
-        <div class="flex items-center gap-3 mb-2">
-            <i class="bi bi-graph-up-arrow text-4xl text-blue-600"></i>
-            <h1 class="text-3xl font-extrabold text-gray-800">System Reports</h1>
-        </div>
-        <p class="text-sm text-gray-500 ml-14">Operations and Billing Reports for Balilihan Waterworks</p>
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-dark-900">System Reports</h2>
+        <p class="text-dark-500 text-sm mt-1">Operations and Billing Reports for Balilihan Waterworks</p>
     </div>
 
     <!-- Two-Column Layout Container -->
-    <div class="max-w-7xl mx-auto">
-        <div class="flex flex-col lg:flex-row gap-6">
+    <div class="flex flex-col lg:flex-row gap-6">
 
             <!-- LEFT COLUMN: Report Generation Form -->
             <div class="w-full lg:w-1/3 lg:max-w-md">
@@ -56,7 +52,7 @@
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="space-y-3 mb-4">
+                        <div class="mb-4">
                             <!-- Generate Report Button -->
                             <button
                                 type="submit"
@@ -66,14 +62,6 @@
                                 <span id="btnText">Generate Report</span>
                                 <i class="bi bi-arrow-clockwise animate-spin ms-2 hidden" id="btnSpinner"></i>
                             </button>
-
-                            <!-- Download Excel Button -->
-                            {% if report_data is not None %}
-                            <a href="{% url 'consumers:export_report_excel' %}?report_type={{ report_type }}&month_year={{ month_year_value }}"
-                               class="w-full inline-flex items-center justify-center px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 transition-all">
-                                <i class="bi bi-file-earmark-excel-fill me-2"></i>Download Excel
-                            </a>
-                            {% endif %}
                         </div>
 
                         <!-- Generated On Timestamp -->
@@ -300,7 +288,6 @@
             </div>
 
         </div>
-    </div>
 
     <!-- Loading Overlay -->
     <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
