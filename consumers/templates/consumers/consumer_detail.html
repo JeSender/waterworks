@@ -1,125 +1,275 @@
 {% extends "consumers/base.html" %}
+{% load static %}
+
 {% block title %}Consumer Details{% endblock %}
 
 {% block main_content %}
-<h2 class="mb-4">Consumer Details</h2>
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header with Actions -->
+    <div class="mb-5 flex items-start justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-dark-900">Consumer Profile</h2>
+            <p class="text-dark-500 text-xs mt-1">Account: {{ consumer.account_number }}</p>
+        </div>
+        <a href="{% url 'consumers:consumer_management' %}"
+           class="px-4 py-1.5 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
+            <i class="bi bi-arrow-left mr-1"></i>Back to List
+        </a>
+    </div>
 
-<div class="card shadow-lg border-0 rounded-3 p-4">
-    <div class="row">
-        <!-- Left Column -->
-        <div class="col-md-6">
-            <h5 class="text-primary mb-3">Personal Information</h5>
-            <p><strong>Name:</strong> {{ consumer.first_name }} {% if consumer.middle_name %}{{ consumer.middle_name }}{% endif %} {{ consumer.last_name }}</p>
-            <p><strong>Contact:</strong> {{ consumer.phone_number }}</p>
-            <p><strong>Household #:</strong> {{ consumer.household_number }}</p>
+    <!-- Status Badge -->
+    <div class="mb-4">
+        {% if consumer.status == 'active' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-success-100 text-success-800">
+            <i class="bi bi-check-circle-fill mr-1.5"></i>Active Service
+        </span>
+        {% elif consumer.status == 'disconnected' %}
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-danger-100 text-danger-800">
+            <i class="bi bi-x-circle-fill mr-1.5"></i>Disconnected
+            {% if consumer.disconnect_reason %}
+            <span class="ml-1.5 text-danger-700">— {{ consumer.disconnect_reason }}</span>
+            {% endif %}
+        </span>
+        {% endif %}
+    </div>
+
+    <!-- Consumer Information Cards -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">
+        <!-- Personal Information Card -->
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm">
+            <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+                <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                    <i class="bi bi-person-circle text-primary-600"></i>
+                    Personal Information
+                </h3>
+            </div>
+            <div class="px-5 py-4 space-y-3">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Full Name</span>
+                    <span class="text-sm text-dark-900 font-medium text-right">
+                        {{ consumer.first_name }}
+                        {% if consumer.middle_name %}{{ consumer.middle_name }}{% endif %}
+                        {{ consumer.last_name }}
+                    </span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Birth Date</span>
+                    <span class="text-sm text-dark-900">{{ consumer.birth_date|date:"M d, Y"|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Gender</span>
+                    <span class="text-sm text-dark-900">{{ consumer.get_gender_display|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Phone Number</span>
+                    <span class="text-sm text-dark-900">{{ consumer.phone_number|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Civil Status</span>
+                    <span class="text-sm text-dark-900">{{ consumer.get_civil_status_display|default:"—" }}</span>
+                </div>
+                {% if consumer.spouse_name %}
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Spouse Name</span>
+                    <span class="text-sm text-dark-900">{{ consumer.spouse_name }}</span>
+                </div>
+                {% endif %}
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Household Number</span>
+                    <span class="text-sm text-dark-900">{{ consumer.household_number|default:"—" }}</span>
+                </div>
+            </div>
         </div>
 
-        <!-- Right Column -->
-        <div class="col-md-6">
-            <h5 class="text-primary mb-3">Address & Meter</h5>
-            <p><strong>Barangay:</strong> {{ consumer.barangay.name|default:"-" }}</p>
-            <p><strong>Purok:</strong> {{ consumer.purok.name|default:"-" }}</p>
-            <p><strong>Meter Brand:</strong> {{ consumer.meter_brand }}</p>
-            <p><strong>Serial Number:</strong> {{ consumer.serial_number }}</p>
-            <p><strong>First Reading:</strong> {{ consumer.first_reading }}</p>
+        <!-- Address & Meter Information Card -->
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm">
+            <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+                <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                    <i class="bi bi-geo-alt text-secondary-600"></i>
+                    Address & Meter Details
+                </h3>
+            </div>
+            <div class="px-5 py-4 space-y-3">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Barangay</span>
+                    <span class="text-sm text-dark-900">{{ consumer.barangay.name|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Purok</span>
+                    <span class="text-sm text-dark-900">{{ consumer.purok.name|default:"—" }}</span>
+                </div>
+                <div class="h-px bg-light-200 my-3"></div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Usage Type</span>
+                    <span class="text-sm text-dark-900">{{ consumer.get_usage_type_display|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Meter Brand</span>
+                    <span class="text-sm text-dark-900">{{ consumer.meter_brand.name|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Serial Number</span>
+                    <span class="text-sm text-dark-900 font-mono">{{ consumer.serial_number|default:"—" }}</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">First Reading</span>
+                    <span class="text-sm text-dark-900">{{ consumer.first_reading|default:"—" }} m³</span>
+                </div>
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-medium text-dark-600">Registration Date</span>
+                    <span class="text-sm text-dark-900">{{ consumer.registration_date|date:"M d, Y"|default:"—" }}</span>
+                </div>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- Optional: Latest Bill Table -->
-{% if latest_bills %}
-<div class="mt-4">
-    <h5 class="text-primary mb-3">Latest Bills</h5>
-    <div class="table-responsive">
-        <table class="table table-bordered table-striped text-center">
-            <thead class="table-light">
-                <tr>
-                    <th>Month/Year</th>
-                    <th>Cu.M</th>
-                    <th>Amount</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for bill in latest_bills %}
-                <tr>
-                    <td>{{ bill.month }}/{{ bill.year }}</td>
-                    <td>{{ bill.cubic_meter }}</td>
-                    <td>{{ bill.amount|floatformat:2 }}</td>
-                </tr>
-                {% endfor %}
-                <tr class="table-primary">
-                    <td colspan="2"><strong>Total Amount</strong></td>
-                    <td><strong>{{ total_amount|floatformat:2 }}</strong></td>
-                </tr>
-            </tbody>
-        </table>
+    <!-- Latest Bills Section -->
+    {% if latest_bills %}
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm mb-5">
+        <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+            <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                <i class="bi bi-file-earmark-text text-success-600"></i>
+                Latest Pending Bills
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-light-50 border-b border-light-200">
+                    <tr>
+                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-dark-700">Billing Period</th>
+                        <th class="px-4 py-2.5 text-right text-xs font-semibold text-dark-700">Previous Reading</th>
+                        <th class="px-4 py-2.5 text-right text-xs font-semibold text-dark-700">Current Reading</th>
+                        <th class="px-4 py-2.5 text-right text-xs font-semibold text-dark-700">Consumption</th>
+                        <th class="px-4 py-2.5 text-right text-xs font-semibold text-dark-700">Amount Due</th>
+                        <th class="px-4 py-2.5 text-center text-xs font-semibold text-dark-700">Status</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-light-200">
+                    {% for bill in latest_bills %}
+                    <tr class="hover:bg-light-50">
+                        <td class="px-4 py-2.5 text-dark-900">{{ bill.billing_period|date:"F Y" }}</td>
+                        <td class="px-4 py-2.5 text-right text-dark-700">{{ bill.previous_reading.reading_value|floatformat:0 }} m³</td>
+                        <td class="px-4 py-2.5 text-right text-dark-700">{{ bill.current_reading.reading_value|floatformat:0 }} m³</td>
+                        <td class="px-4 py-2.5 text-right font-medium text-dark-900">{{ bill.consumption|floatformat:0 }} m³</td>
+                        <td class="px-4 py-2.5 text-right font-semibold text-success-700">₱{{ bill.total_amount|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-center">
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning-100 text-warning-800">
+                                {{ bill.status }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
-</div>
-{% endif %}
-
-<!-- Action Buttons -->
-<div class="mt-4 d-flex gap-2">
-    <a href="{% url 'consumers:consumer_management' %}" class="btn btn-secondary">
-        ← Back to List
-    </a>
-    <a href="{% url 'consumers:edit_consumer' consumer.id %}" class="btn btn-warning">
-        ✏️ Edit
-    </a>
-    <a href="{% url 'consumers:consumer_bill' consumer.id %}" target="_blank" class="btn btn-success">
-        🖨️ Print Water Bill
-    </a>
-    <a href="{% url 'consumers:consumer_bill' consumer.id %}" class="btn btn-success">View Bill</a>
-     
-    
-    <!-- Show Disconnect OR Reconnect based on status -->
-    {% if consumer.status == 'active' %}
-        <button onclick="confirmDisconnect('{{ consumer.id }}', '{{ consumer.full_name }}')" class="btn btn-danger">
-            <i class="bi bi-plug-fill me-1"></i>Disconnect Service
-        </button>
-    {% elif consumer.status == 'disconnected' %}
-        <button onclick="confirmReconnect('{{ consumer.id }}', '{{ consumer.full_name }}')" class="btn btn-success">
-            <i class="bi bi-plug-fill me-1"></i>Reconnect Service
-        </button>
+    {% else %}
+    <div class="bg-info-50 border border-info-200 rounded-lg p-4 mb-5">
+        <div class="flex items-start gap-2 text-sm text-info-800">
+            <i class="bi bi-info-circle-fill text-base mt-0.5"></i>
+            <div>
+                <strong class="font-semibold">No pending bills</strong>
+                <p class="text-xs mt-1">This consumer has no pending bills at the moment.</p>
+            </div>
+        </div>
+    </div>
     {% endif %}
+
+    <!-- Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2">
+        <a href="{% url 'consumers:edit_consumer' consumer.id %}"
+           class="px-4 py-2 bg-warning-500 text-white text-sm font-medium rounded hover:bg-warning-600 transition-colors shadow-sm">
+            <i class="bi bi-pencil-square mr-1"></i>Edit Consumer
+        </a>
+        <a href="{% url 'consumers:consumer_bill' consumer.id %}"
+           class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
+            <i class="bi bi-file-earmark-text mr-1"></i>View Bills
+        </a>
+        <a href="{% url 'consumers:consumer_bill' consumer.id %}" target="_blank"
+           class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm">
+            <i class="bi bi-printer mr-1"></i>Print Water Bill
+        </a>
+
+        <!-- Disconnect/Reconnect Button -->
+        {% if consumer.status == 'active' %}
+        <button onclick="confirmDisconnect('{{ consumer.id }}', '{{ consumer.first_name }} {{ consumer.last_name }}')"
+                class="px-4 py-2 bg-danger-600 text-white text-sm font-medium rounded hover:bg-danger-700 transition-colors shadow-sm ml-auto">
+            <i class="bi bi-plug-fill mr-1"></i>Disconnect Service
+        </button>
+        {% elif consumer.status == 'disconnected' %}
+        <button onclick="confirmReconnect('{{ consumer.id }}', '{{ consumer.first_name }} {{ consumer.last_name }}')"
+                class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm ml-auto">
+            <i class="bi bi-plug-fill mr-1"></i>Reconnect Service
+        </button>
+        {% endif %}
+    </div>
 </div>
 
+<!-- Hidden CSRF Token for JavaScript -->
+{% csrf_token %}
 {% endblock %}
 
 {% block extra_js %}
 <script>
 // Disconnect confirmation
 async function confirmDisconnect(consumerId, consumerName) {
-    const result = await confirmAction(
-        'Disconnect Service?',
-        `Are you sure you want to disconnect service for ${consumerName}? This action can be reversed later.`,
-        'Yes, Disconnect',
-        'warning'
-    );
+    const result = await Swal.fire({
+        title: 'Disconnect Service?',
+        html: `Are you sure you want to disconnect service for <strong>${consumerName}</strong>?<br><small class="text-muted">This action can be reversed later.</small>`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-plug-fill"></i> Yes, Disconnect',
+        cancelButtonText: 'Cancel'
+    });
 
     if (result.isConfirmed) {
-        showLoading('Disconnecting service...');
+        // Show loading
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Disconnecting service...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        // Navigate to disconnect URL
         window.location.href = `/consumer/${consumerId}/disconnect/`;
     }
 }
 
 // Reconnect confirmation
 async function confirmReconnect(consumerId, consumerName) {
-    const result = await confirmAction(
-        'Reconnect Service?',
-        `Are you sure you want to reconnect service for ${consumerName}?`,
-        'Yes, Reconnect',
-        'success'
-    );
+    const result = await Swal.fire({
+        title: 'Reconnect Service?',
+        html: `Are you sure you want to reconnect service for <strong>${consumerName}</strong>?`,
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-plug-fill"></i> Yes, Reconnect',
+        cancelButtonText: 'Cancel'
+    });
 
     if (result.isConfirmed) {
-        showLoading('Reconnecting service...');
+        // Show loading
+        Swal.fire({
+            title: 'Processing...',
+            text: 'Reconnecting service...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
 
         // Create a form and submit
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/consumer/${consumerId}/reconnect/`;
 
-        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || '{{ csrf_token }}';
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const csrfInput = document.createElement('input');
         csrfInput.type = 'hidden';
         csrfInput.name = 'csrfmiddlewaretoken';

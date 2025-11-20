@@ -1,21 +1,22 @@
 {% extends "consumers/base.html" %}
 {% load humanize %}
+{% load static %}
 
 {% block title %}Dashboard - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
-    <!-- Page Header - Simple and Minimal -->
+    <!-- Page Header -->
     <div class="mb-6">
         <h2 class="text-2xl font-bold text-dark-900">Dashboard</h2>
-        <p class="text-dark-500 text-sm">Overview of system metrics and recent activity</p>
+        <p class="text-dark-500 text-sm mt-1">Overview of system metrics and recent activity</p>
     </div>
 
-    <!-- Quick Stats - Compact 3-Column Grid -->
+    <!-- Quick Stats - 3-Column Grid -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
         <!-- Connected Consumers -->
-        <div class="card p-4 border-l-4 border-success-500 hover:shadow-lg transition-shadow duration-200">
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 border-l-4 border-l-success-500 hover:shadow-md transition-all duration-200">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
@@ -25,14 +26,14 @@
             <div class="flex items-baseline justify-between">
                 <span class="text-3xl font-bold text-dark-900 metric-value">{{ connected_count|default:"0" }}</span>
                 <a href="{% url 'consumers:connected_consumers' %}"
-                   class="text-xs text-success-600 hover:text-success-700 font-medium">
+                   class="text-xs text-success-600 hover:text-success-700 font-medium transition-colors">
                     View →
                 </a>
             </div>
         </div>
 
         <!-- Disconnected Consumers -->
-        <div class="card p-4 border-l-4 border-danger-500 hover:shadow-lg transition-shadow duration-200">
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 border-l-4 border-l-danger-500 hover:shadow-md transition-all duration-200">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <i class="bi bi-x-circle-fill text-danger-600 text-xl"></i>
@@ -42,14 +43,14 @@
             <div class="flex items-baseline justify-between">
                 <span class="text-3xl font-bold text-dark-900 metric-value">{{ disconnected_count|default:"0" }}</span>
                 <a href="{% url 'consumers:disconnected_consumers' %}"
-                   class="text-xs text-danger-600 hover:text-danger-700 font-medium">
+                   class="text-xs text-danger-600 hover:text-danger-700 font-medium transition-colors">
                     View →
                 </a>
             </div>
         </div>
 
         <!-- Delinquent Accounts -->
-        <div class="card p-4 border-l-4 border-warning-500 hover:shadow-lg transition-shadow duration-200">
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 border-l-4 border-l-warning-500 hover:shadow-md transition-all duration-200">
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center gap-2">
                     <i class="bi bi-exclamation-triangle-fill text-warning-600 text-xl"></i>
@@ -59,7 +60,7 @@
             <div class="flex items-baseline justify-between">
                 <span class="text-3xl font-bold text-dark-900 metric-value">{{ delinquent_count|default:"0" }}</span>
                 <a href="{% url 'consumers:delinquent_consumers' %}"
-                   class="text-xs text-warning-600 hover:text-warning-700 font-medium">
+                   class="text-xs text-warning-600 hover:text-warning-700 font-medium transition-colors">
                     View →
                 </a>
             </div>
@@ -70,16 +71,16 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
 
         <!-- Report Generation Card -->
-        <div class="card p-6">
-            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-6">
+            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b border-light-200 flex items-center gap-2">
                 <i class="bi bi-file-earmark-spreadsheet text-primary-600"></i>
                 Generate Report
             </h3>
 
             <div class="grid grid-cols-2 gap-4 mb-4">
                 <div>
-                    <label for="reportMonth" class="form-label">Month</label>
-                    <select id="reportMonth" name="month" class="form-select">
+                    <label for="reportMonth" class="block text-xs font-medium text-dark-700 mb-1">Month</label>
+                    <select id="reportMonth" name="month" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                         <option value="1">January</option>
                         <option value="2">February</option>
                         <option value="3">March</option>
@@ -95,8 +96,8 @@
                     </select>
                 </div>
                 <div>
-                    <label for="reportYear" class="form-label">Year</label>
-                    <select id="reportYear" name="year" class="form-select">
+                    <label for="reportYear" class="block text-xs font-medium text-dark-700 mb-1">Year</label>
+                    <select id="reportYear" name="year" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
                         <option value="2025">2025</option>
                         <option value="2024">2024</option>
                         <option value="2023">2023</option>
@@ -105,14 +106,17 @@
                 </div>
             </div>
 
-            <button type="button" class="btn-primary w-full" onclick="generateExcelReport()">
-                <i class="bi bi-download mr-2"></i>Download Excel Report
+            <button type="button"
+                    class="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm flex items-center justify-center gap-2"
+                    onclick="generateExcelReport()">
+                <i class="bi bi-download"></i>
+                Download Excel Report
             </button>
         </div>
 
         <!-- Payment Status Chart -->
-        <div class="card p-6">
-            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-6">
+            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b border-light-200 flex items-center gap-2">
                 <i class="bi bi-pie-chart-fill text-primary-600"></i>
                 Payment Status
             </h3>
@@ -123,29 +127,29 @@
     </div>
 
     <!-- Recent Collections -->
-    <div class="card p-6">
-        <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm p-6">
+        <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b border-light-200 flex items-center gap-2">
             <i class="bi bi-cash-coin text-success-600"></i>
             Recent Collections
         </h3>
 
         {% if recent_collections %}
         <div class="overflow-x-auto">
-            <table class="table">
-                <thead class="table-header">
+            <table class="w-full text-sm">
+                <thead class="bg-light-50 border-b border-light-200">
                     <tr>
-                        <th class="table-cell">Date</th>
-                        <th class="table-cell text-right">Amount</th>
+                        <th class="px-4 py-2.5 text-left text-xs font-semibold text-dark-700">Date</th>
+                        <th class="px-4 py-2.5 text-right text-xs font-semibold text-dark-700">Amount Collected</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-light-200">
                     {% for collection in recent_collections %}
-                    <tr class="table-row">
-                        <td class="table-cell">
+                    <tr class="hover:bg-light-50">
+                        <td class="px-4 py-2.5 text-dark-900">
                             <i class="bi bi-calendar-check text-primary-600 mr-2"></i>
                             {{ collection.date|date:"M d, Y" }}
                         </td>
-                        <td class="table-cell text-right font-semibold text-success-600">
+                        <td class="px-4 py-2.5 text-right font-semibold text-success-600">
                             ₱{{ collection.amount|floatformat:2|intcomma }}
                         </td>
                     </tr>
@@ -172,7 +176,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reportMonth').value = now.getMonth() + 1;
     document.getElementById('reportYear').value = now.getFullYear();
 
-    // Payment Status Chart - Minimal Style
+    // Payment Status Chart - Modern Doughnut Chart
     const ctx = document.getElementById('paymentChart').getContext('2d');
 
     new Chart(ctx, {
@@ -218,7 +222,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Simple counter animation
+    // Counter animation for metrics
     function animateValue(element, start, end, duration) {
         const range = end - start;
         const increment = range / (duration / 16);
@@ -235,7 +239,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 16);
     }
 
-    // Animate metric values
+    // Animate metric values on page load
     document.querySelectorAll('.metric-value').forEach((el, index) => {
         const finalValue = parseInt(el.textContent) || 0;
         el.textContent = '0';
@@ -245,7 +249,7 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Generate Excel Report
+// Generate Excel Report Function
 function generateExcelReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
@@ -255,24 +259,35 @@ function generateExcelReport() {
     const btn = event.target;
     const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split animate-spin mr-2"></i>Generating...';
+    btn.classList.add('opacity-70', 'cursor-not-allowed');
+    btn.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> Generating...';
 
-    if (typeof showLoading === 'function') {
-        showLoading(`Generating ${monthNames[month]} ${year} report...`);
-    }
+    // Show SweetAlert loading
+    Swal.fire({
+        title: 'Generating Report',
+        html: `Creating ${monthNames[month]} ${year} delinquency report...`,
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
 
     setTimeout(() => {
+        // Trigger download
         window.location.href = `/reports/delinquent/?month=${month}&year=${year}&export=excel`;
 
-        if (typeof hideLoading === 'function') {
-            hideLoading();
-        }
+        // Show success message
+        Swal.fire({
+            icon: 'success',
+            title: 'Report Generated!',
+            text: `${monthNames[month]} ${year} report is downloading...`,
+            timer: 2000,
+            showConfirmButton: false
+        });
 
-        if (typeof showToast === 'function') {
-            showToast('success', `${monthNames[month]} ${year} report downloaded!`, 3000);
-        }
-
+        // Reset button
         btn.disabled = false;
+        btn.classList.remove('opacity-70', 'cursor-not-allowed');
         btn.innerHTML = originalText;
     }, 1500);
 }
