@@ -1,151 +1,322 @@
 <!-- consumers/templates/consumers/barangay_meter_readings.html -->
 {% extends "consumers/base.html" %}
+{% load static %}
 
 {% block title %}{{ barangay.name }} Readings{% endblock %}
 
 {% block main_content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-    <h2>{{ barangay.name }} – Meter Readings</h2>
-    <div>
-        <a href="{% url 'consumers:export_barangay_readings' barangay.id %}" class="btn btn-outline-success btn-sm me-2">
-            📊 Export Excel
-        </a>
-        <a href="{% url 'consumers:meter_readings' %}" class="btn btn-outline-secondary btn-sm">← Back</a>
-    </div>
+<!-- Header: Centered Title with Back Button -->
+<div class="mb-6 flex items-center justify-between">
+    <!-- Back Button: Left Side -->
+    <a href="{% url 'consumers:meter_readings' %}"
+       class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
+        <i class="bi bi-arrow-left mr-2"></i>Back
+    </a>
+
+    <!-- Centered Title -->
+    <h1 class="text-2xl font-bold text-gray-800 absolute left-1/2 transform -translate-x-1/2">
+        {{ barangay.name }} – Meter Readings
+    </h1>
+
+    <!-- Spacer for Balance (Hidden) -->
+    <div class="w-24"></div>
 </div>
 
-<!-- Bulk Action Form -->
-<form id="bulk-confirm-form" method="post" action="{% url 'consumers:confirm_selected_readings' barangay.id %}" class="mb-3">
+<!-- Messages -->
+{% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for message in messages %}
+            <div class="flex items-center justify-between p-4 rounded-lg border {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
+                <span class="text-sm font-medium">{{ message }}</span>
+                <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+        {% endfor %}
+    </div>
+{% endif %}
+
+<!-- Bulk Confirmation Workflow -->
+<form id="bulk-confirm-form" method="post" action="{% url 'consumers:confirm_selected_readings' barangay.id %}" class="mb-6">
     {% csrf_token %}
-    <div class="d-flex gap-2 align-items-center">
-        <input type="checkbox" id="select-all" onclick="toggleAllCheckboxes(this)">
-        <label for="select-all" class="me-3">Select All</label>
-        <button type="submit" class="btn btn-warning btn-sm"
-                onclick="return confirm('⚠️ Confirm selected readings? This will bill all checked readings without individual review.')">
-            ✅ Confirm Selected
-        </button>
+    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
+        <div class="flex items-center gap-4">
+            <!-- Select All Checkbox -->
+            <div class="flex items-center gap-2">
+                <input type="checkbox"
+                       id="select-all"
+                       onclick="toggleAllCheckboxes(this)"
+                       class="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer">
+                <label for="select-all" class="text-sm font-medium text-gray-700 cursor-pointer select-none">
+                    Select All Pending
+                </label>
+            </div>
+
+            <!-- Confirm Selected Button -->
+            <button type="submit"
+                    onclick="return confirm('⚠️ Confirm selected readings? This will generate bills for all checked readings.')"
+                    class="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 text-sm inline-flex items-center">
+                <i class="bi bi-check-circle-fill mr-2"></i>Confirm Selected
+            </button>
+
+            <!-- Counter Display -->
+            <span id="selected-count" class="text-sm text-gray-600 ml-auto">
+                <span class="font-semibold" id="count-number">0</span> selected
+            </span>
+        </div>
     </div>
 </form>
 
-{% if messages %}
-    {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    {% endfor %}
-{% endif %}
-
-<div class="table-responsive">
-    <table class="table table-striped table-bordered shadow-sm">
-        <thead class="table-primary text-center">
-            <tr>
-                <!-- ❌ Removed checkbox from header -->
-                <th></th> <!-- Empty header cell -->
-                <th>ID Number</th>
-                <th>Consumer Name</th>
-                <th>Current</th>
-                <th>Previous</th>
-                <th>Consumption (m³)</th>
-                <th>Date</th>
-                <th>Status</th>
-                <th>Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in readings %}
-                <tr class="{% if item.consumption and item.consumption > 100 %}table-danger{% endif %}">
-                    <td>
-                        <!-- Checkbox only enabled if reading exists and is NOT confirmed -->
-                        {% if item.reading and not item.reading.is_confirmed %}
-                            <input type="checkbox" name="reading_ids" value="{{ item.reading.id }}" class="row-checkbox">
-                        {% else %}
-                            <!-- Disabled checkbox - not clickable -->
-                            <input type="checkbox" disabled class="row-checkbox">
-                        {% endif %}
-                    </td>
-                    <td><strong>{{ item.display_id }}</strong></td>
-                    <td>{{ item.consumer.first_name }} {{ item.consumer.last_name }}</td>
-                    <td>
-                        {% if item.reading %}
-                            {{ item.reading.reading_value }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.prev_reading %}
-                            {{ item.prev_reading.reading_value }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.consumption is not none %}
-                            {{ item.consumption }}
-                            {% if item.consumption > 100 %}
-                                <span class="badge bg-danger ms-1">High</span>
-                            {% endif %}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.reading %}
-                            {{ item.reading.reading_date|date:"Y-m-d" }}
-                        {% else %}
-                            —
-                        {% endif %}
-                    </td>
-                    <td>
-                        {% if item.reading and item.reading.is_confirmed %}
-                            <span class="badge bg-success">Confirmed</span>
-                        {% elif item.reading %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        {% else %}
-                            <span class="text-muted">—</span>
-                        {% endif %}
-                    </td>
-                    <td class="text-center">
-                        {% if item.reading and not item.reading.is_confirmed %}
-                            <a href="{% url 'consumers:confirm_reading' item.reading.id %}"
-                               class="btn btn-success btn-sm"
-                               onclick="return confirm('Confirm billing for {{ item.display_id }} - {{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}?')">
-                                Mark & Bill
-                            </a>
-                        {% elif item.reading %}
-                            <span class="text-muted">Confirmed</span>
-                        {% else %}
-                            <span class="text-muted">No Reading</span>
-                        {% endif %}
-                    </td>
-                </tr>
-            {% empty %}
+<!-- Data Table: High-Density Professional Layout -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="overflow-x-auto">
+        <table class="w-full">
+            <thead class="bg-gray-100 border-b border-gray-200">
                 <tr>
-                    <td colspan="9" class="text-center text-muted">No consumers found in this barangay.</td>
+                    <!-- Checkbox Column -->
+                    <th class="px-3 py-3 w-12"></th>
+                    <!-- Data Columns -->
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        ID Number
+                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Consumer Name
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Current
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Previous
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Consumption (m³)
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Date
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                        Status
+                    </th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                        Actions
+                    </th>
                 </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for item in readings %}
+                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.consumption and item.consumption > 100 %}bg-red-50{% endif %}">
+                        <!-- Checkbox Column -->
+                        <td class="px-3 py-2 text-center">
+                            {% if item.reading and not item.reading.is_confirmed %}
+                                <input type="checkbox"
+                                       name="reading_ids"
+                                       value="{{ item.reading.id }}"
+                                       class="row-checkbox w-4 h-4 text-orange-600 bg-white border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer">
+                            {% else %}
+                                <input type="checkbox"
+                                       disabled
+                                       class="w-4 h-4 bg-gray-100 border-gray-300 rounded cursor-not-allowed opacity-50">
+                            {% endif %}
+                        </td>
+
+                        <!-- ID Number -->
+                        <td class="px-4 py-2">
+                            <span class="text-sm font-semibold text-gray-800">{{ item.display_id }}</span>
+                        </td>
+
+                        <!-- Consumer Name -->
+                        <td class="px-4 py-2">
+                            <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
+                        </td>
+
+                        <!-- Current Reading -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.reading %}
+                                <span class="text-sm font-medium text-gray-800">{{ item.reading.reading_value }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Previous Reading -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.prev_reading %}
+                                <span class="text-sm text-gray-600">{{ item.prev_reading.reading_value }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Consumption -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.consumption is not none %}
+                                <span class="text-sm font-medium text-gray-800">{{ item.consumption }}</span>
+                                {% if item.consumption > 100 %}
+                                    <span class="ml-1 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
+                                        High
+                                    </span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Date -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.reading %}
+                                <span class="text-sm text-gray-600">{{ item.reading.reading_date|date:"Y-m-d" }}</span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Status -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.reading and item.reading.is_confirmed %}
+                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                                    Confirmed
+                                </span>
+                            {% elif item.reading %}
+                                <span class="inline-flex items-center px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                    Pending
+                                </span>
+                            {% else %}
+                                <span class="text-sm text-gray-400">—</span>
+                            {% endif %}
+                        </td>
+
+                        <!-- Actions: Icon-Only Buttons with Tooltips -->
+                        <td class="px-4 py-2 text-center">
+                            {% if item.reading and not item.reading.is_confirmed %}
+                                <a href="{% url 'consumers:confirm_reading' item.reading.id %}"
+                                   onclick="return confirm('Confirm billing for {{ item.display_id }}?\n\nConsumer: {{ item.consumer.first_name }} {{ item.consumer.last_name }}\nConsumption: {{ item.consumption|default:"N/A" }} m³')"
+                                   class="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-150"
+                                   title="Confirm & Generate Bill">
+                                    <i class="bi bi-check-circle-fill text-lg"></i>
+                                </a>
+                            {% elif item.reading %}
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-400" title="Already Confirmed">
+                                    <i class="bi bi-check-circle text-lg"></i>
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-300" title="No Reading Available">
+                                    <i class="bi bi-dash-circle text-lg"></i>
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="9" class="px-4 py-8 text-center text-gray-500 text-sm">
+                            <i class="bi bi-inbox text-3xl mb-2 block text-gray-400"></i>
+                            No consumers found in this barangay.
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Table Footer: Summary Statistics -->
+    {% if readings %}
+    <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
+        <div class="flex flex-wrap gap-6 text-xs text-gray-600">
+            <div>
+                <span class="font-semibold text-gray-700">Total Consumers:</span>
+                <span class="ml-1">{{ readings|length }}</span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Pending Confirmations:</span>
+                <span class="ml-1 text-yellow-700 font-semibold" id="pending-count">
+                    {% for item in readings %}{% if item.reading and not item.reading.is_confirmed %}1{% endif %}{% endfor %}
+                </span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">Already Confirmed:</span>
+                <span class="ml-1 text-green-700 font-semibold">
+                    {% for item in readings %}{% if item.reading.is_confirmed %}1{% endif %}{% endfor %}
+                </span>
+            </div>
+            <div>
+                <span class="font-semibold text-gray-700">No Readings:</span>
+                <span class="ml-1 text-gray-500">
+                    {% for item in readings %}{% if not item.reading %}1{% endif %}{% endfor %}
+                </span>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
 
+<!-- JavaScript: Enhanced Functionality -->
 <script>
+/**
+ * Toggle all checkboxes (only enabled ones)
+ */
 function toggleAllCheckboxes(source) {
     const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
     checkboxes.forEach(cb => cb.checked = source.checked);
+    updateSelectedCount();
 }
 
-// Optional: Auto-select "Select All" when all enabled checkboxes are checked
+/**
+ * Update selected count display
+ */
+function updateSelectedCount() {
+    const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled]):checked');
+    const count = checkboxes.length;
+    document.getElementById('count-number').textContent = count;
+
+    // Update "Select All" checkbox state
+    const allCheckboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
+    const selectAllCheckbox = document.getElementById('select-all');
+    if (allCheckboxes.length > 0) {
+        selectAllCheckbox.checked = count === allCheckboxes.length;
+        selectAllCheckbox.indeterminate = count > 0 && count < allCheckboxes.length;
+    }
+}
+
+/**
+ * Initialize on page load
+ */
 document.addEventListener('DOMContentLoaded', function() {
     const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
-    const selectAllCheckbox = document.getElementById('select-all');
 
+    // Add change listener to each checkbox
     checkboxes.forEach(cb => {
-        cb.addEventListener('change', function() {
-            const allChecked = Array.from(checkboxes).every(cb => cb.checked);
-            selectAllCheckbox.checked = allChecked;
-        });
+        cb.addEventListener('change', updateSelectedCount);
+    });
+
+    // Initial count
+    updateSelectedCount();
+
+    // Form submission validation
+    document.getElementById('bulk-confirm-form').addEventListener('submit', function(e) {
+        const checkedCount = document.querySelectorAll('.row-checkbox:not([disabled]):checked').length;
+        if (checkedCount === 0) {
+            e.preventDefault();
+            alert('⚠️ Please select at least one reading to confirm.');
+            return false;
+        }
     });
 });
+
+/**
+ * Helper function to get CSRF token
+ */
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
 </script>
 {% endblock %}
