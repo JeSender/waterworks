@@ -227,67 +227,67 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar bg-white text-dark-900 fixed left-0 bottom-0 flex flex-col p-3 border-r border-light-300"
-         style="width: 260px; top: 50px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
+    <div class="sidebar bg-white text-dark-900 fixed left-0 bottom-0 flex flex-col py-2 px-2 border-r border-light-300"
+         style="width: 220px; top: 50px; z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
          id="sidebar">
         <nav class="flex-grow overflow-y-auto scrollbar-thin">
             <!-- Main Section -->
-            <div class="nav-section mb-3">
-                <div class="text-dark-500 uppercase font-semibold mb-2 text-xxs tracking-wider pl-2">Main</div>
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Main</div>
                 <a href="{% url 'consumers:home' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-house-door-fill me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-house-door-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Dashboard</span>
                 </a>
             </div>
 
             <!-- Consumer Operations -->
-            <div class="nav-section mb-3">
-                <div class="text-dark-500 uppercase font-semibold mb-2 text-xxs tracking-wider pl-2">Consumer Operations</div>
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Consumer Ops</div>
                 <a href="{% url 'consumers:consumer_management' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-people-fill me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-people-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Consumers</span>
                 </a>
                 <a href="{% url 'consumers:inquire' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <span class="me-3 text-lg font-bold" style="width: 24px; text-align: center;">₱</span>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <span class="me-2.5 text-base font-bold" style="width: 20px; text-align: center;">₱</span>
                     <span class="font-medium">Bill Inquiry</span>
                 </a>
                 <a href="{% url 'consumers:meter_readings' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-speedometer2 me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-speedometer2 me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Meter Readings</span>
                 </a>
             </div>
 
             <!-- Reports & System -->
-            <div class="nav-section mb-3">
-                <div class="text-dark-500 uppercase font-semibold mb-2 text-xxs tracking-wider pl-2">Reports & System</div>
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Reports & System</div>
                 <a href="{% url 'consumers:reports' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-file-earmark-text-fill me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-file-earmark-text-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Reports</span>
                 </a>
                 <a href="{% url 'consumers:system_management' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-gear-fill me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-gear-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">System Settings</span>
                 </a>
             </div>
 
             <!-- Administration (Superuser Only) -->
             {% if user.is_superuser %}
-            <div class="nav-section mb-3">
-                <div class="text-dark-500 uppercase font-semibold mb-2 text-xxs tracking-wider pl-2">Administration</div>
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Administration</div>
                 <a href="{% url 'consumers:admin_verification' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-shield-lock-fill me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-shield-lock-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">User Management</span>
                 </a>
                 <a href="{% url 'consumers:user_login_history' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline p-3 rounded-lg mb-1 transition-all duration-200 hover:bg-light-100 hover:text-primary-600">
-                    <i class="bi bi-clock-history me-3 text-lg" style="width: 24px;"></i>
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-clock-history me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Login History</span>
                 </a>
             </div>
@@ -296,7 +296,7 @@
     </div>
 
     <!-- Main Content -->
-    <div class="main-content min-h-screen p-5" style="margin-left: 260px; margin-top: 50px; overflow-y: auto;" id="main-content">
+    <div class="main-content min-h-screen p-5" style="margin-left: 220px; margin-top: 50px; overflow-y: auto;" id="main-content">
         {% block main_content %}
         <div class="card p-4 mt-3">
             <h3 class="mb-3 text-2xl font-bold">Welcome, {{ request.user.username }}</h3>
