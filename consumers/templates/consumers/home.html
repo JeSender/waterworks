@@ -4,199 +4,161 @@
 {% block title %}Dashboard - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
-<!-- Dashboard Wrapper with Gradient Background -->
-<div class="min-h-screen bg-gradient-to-br from-primary-500 via-purple-500 to-secondary-500 -m-5 p-8">
-    <div class="max-w-7xl mx-auto space-y-8">
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header - Simple and Minimal -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-dark-900">Dashboard</h2>
+        <p class="text-dark-500 text-sm">Overview of system metrics and recent activity</p>
+    </div>
 
-        <!-- Dashboard Header Card -->
-        <div class="glass bg-white/95 backdrop-blur-md rounded-2xl p-8 shadow-2xl text-center transform hover:scale-[1.02] transition-all duration-300">
-            <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                🌊 Balilihan Waterworks
-            </h1>
-            <p class="text-dark-500 font-medium text-base md:text-lg">
-                Real-time Management Dashboard - Monitor, Manage, Excel
-            </p>
-        </div>
+    <!-- Quick Stats - Compact 3-Column Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
-        <!-- Main Dashboard Grid - 3 Metric Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-
-            <!-- Connected Consumers Card -->
-            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-success-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
-                <!-- Header -->
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <i class="bi bi-check-circle-fill"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Connected</h3>
-                    </div>
-                </div>
-
-                <!-- Metric Value -->
-                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
-                    {{ connected_count|default:"0" }}
-                </div>
-
-                <!-- Footer Button -->
-                <div class="mt-6">
-                    <a href="{% url 'consumers:connected_consumers' %}"
-                       class="block w-full py-3 px-6 bg-gradient-to-r from-success-500 to-success-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
-                        <i class="bi bi-eye mr-2"></i>View All Details
-                    </a>
+        <!-- Connected Consumers -->
+        <div class="card p-4 border-l-4 border-success-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
+                    <h3 class="text-xs font-semibold text-dark-600 uppercase tracking-wide">Connected</h3>
                 </div>
             </div>
-
-            <!-- Disconnected Consumers Card -->
-            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-danger-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
-                <!-- Header -->
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 bg-gradient-to-br from-danger-500 to-danger-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <i class="bi bi-x-circle-fill"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Disconnected</h3>
-                    </div>
-                </div>
-
-                <!-- Metric Value -->
-                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
-                    {{ disconnected_count|default:"0" }}
-                </div>
-
-                <!-- Footer Button -->
-                <div class="mt-6">
-                    <a href="{% url 'consumers:disconnected_consumers' %}"
-                       class="block w-full py-3 px-6 bg-gradient-to-r from-danger-500 to-danger-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
-                        <i class="bi bi-eye mr-2"></i>View All Details
-                    </a>
-                </div>
-            </div>
-
-            <!-- Delinquent Accounts Card -->
-            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-warning-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
-                <!-- Header -->
-                <div class="flex items-center gap-4 mb-6">
-                    <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
-                        <i class="bi bi-exclamation-triangle-fill"></i>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Delinquent</h3>
-                    </div>
-                </div>
-
-                <!-- Metric Value -->
-                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
-                    {{ delinquent_count|default:"0" }}
-                </div>
-
-                <!-- Footer Button -->
-                <div class="mt-6">
-                    <a href="{% url 'consumers:delinquent_consumers' %}"
-                       class="block w-full py-3 px-6 bg-gradient-to-r from-warning-500 to-warning-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
-                        <i class="bi bi-eye mr-2"></i>View All Details
-                    </a>
-                </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-bold text-dark-900 metric-value">{{ connected_count|default:"0" }}</span>
+                <a href="{% url 'consumers:connected_consumers' %}"
+                   class="text-xs text-success-600 hover:text-success-700 font-medium">
+                    View →
+                </a>
             </div>
         </div>
 
-        <!-- Report Generation & Chart Section - 2 Column Grid -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-
-            <!-- Report Generation Card -->
-            <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h3 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
-                    <i class="bi bi-file-earmark-spreadsheet-fill text-2xl text-primary-600"></i>
-                    Generate Monthly Report
-                </h3>
-
-                <!-- Form Grid -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label for="reportMonth" class="block text-xs font-bold text-dark-700 uppercase tracking-wide mb-2">
-                            📅 Select Month
-                        </label>
-                        <select id="reportMonth" name="month" class="form-select w-full">
-                            <option value="1">January</option>
-                            <option value="2">February</option>
-                            <option value="3">March</option>
-                            <option value="4">April</option>
-                            <option value="5">May</option>
-                            <option value="6">June</option>
-                            <option value="7">July</option>
-                            <option value="8">August</option>
-                            <option value="9">September</option>
-                            <option value="10">October</option>
-                            <option value="11">November</option>
-                            <option value="12">December</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="reportYear" class="block text-xs font-bold text-dark-700 uppercase tracking-wide mb-2">
-                            📆 Select Year
-                        </label>
-                        <select id="reportYear" name="year" class="form-select w-full">
-                            <option value="2025">2025</option>
-                            <option value="2024">2024</option>
-                            <option value="2023">2023</option>
-                            <option value="2022">2022</option>
-                        </select>
-                    </div>
+        <!-- Disconnected Consumers -->
+        <div class="card p-4 border-l-4 border-danger-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-x-circle-fill text-danger-600 text-xl"></i>
+                    <h3 class="text-xs font-semibold text-dark-600 uppercase tracking-wide">Disconnected</h3>
                 </div>
-
-                <!-- Generate Button -->
-                <button type="button"
-                        class="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-purple-600 text-white font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
-                        onclick="generateExcelReport()">
-                    <i class="bi bi-download mr-2 text-lg"></i>
-                    Download Excel Report
-                </button>
             </div>
-
-            <!-- Payment Status Chart Card -->
-            <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <h4 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
-                    <i class="bi bi-pie-chart-fill text-2xl text-primary-600"></i>
-                    Payment Status Overview
-                </h4>
-
-                <!-- Chart Container -->
-                <div class="relative h-80 flex items-center justify-center">
-                    <canvas id="paymentChart"></canvas>
-                </div>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-bold text-dark-900 metric-value">{{ disconnected_count|default:"0" }}</span>
+                <a href="{% url 'consumers:disconnected_consumers' %}"
+                   class="text-xs text-danger-600 hover:text-danger-700 font-medium">
+                    View →
+                </a>
             </div>
         </div>
 
-        <!-- Recent Collections Card - Full Width -->
-        <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
-            <h4 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
-                <i class="bi bi-cash-coin text-2xl text-success-600"></i>
-                Recent Collections
-            </h4>
-
-            {% if recent_collections %}
-            <!-- Collections Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto scrollbar-thin pr-2">
-                {% for collection in recent_collections %}
-                <div class="bg-gradient-to-br from-light-50 to-light-200 p-5 rounded-xl hover:-translate-y-1 hover:shadow-lg hover:border-primary-500 border-2 border-transparent transition-all duration-300">
-                    <div class="flex items-center gap-2 text-dark-700 font-bold text-sm mb-3">
-                        <i class="bi bi-calendar-check text-primary-600 text-lg"></i>
-                        {{ collection.date|date:"M d, Y" }}
-                    </div>
-                    <div class="text-2xl font-black bg-gradient-to-r from-success-600 to-success-500 bg-clip-text text-transparent">
-                        ₱{{ collection.amount|floatformat:2|intcomma }}
-                    </div>
+        <!-- Delinquent Accounts -->
+        <div class="card p-4 border-l-4 border-warning-500 hover:shadow-lg transition-shadow duration-200">
+            <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                    <i class="bi bi-exclamation-triangle-fill text-warning-600 text-xl"></i>
+                    <h3 class="text-xs font-semibold text-dark-600 uppercase tracking-wide">Delinquent</h3>
                 </div>
-                {% endfor %}
             </div>
-            {% else %}
-            <!-- Empty State -->
-            <div class="text-center py-12">
-                <i class="bi bi-inbox text-6xl text-dark-300 opacity-30 mb-4"></i>
-                <p class="text-lg font-semibold text-dark-400">No recent collections to display</p>
+            <div class="flex items-baseline justify-between">
+                <span class="text-3xl font-bold text-dark-900 metric-value">{{ delinquent_count|default:"0" }}</span>
+                <a href="{% url 'consumers:delinquent_consumers' %}"
+                   class="text-xs text-warning-600 hover:text-warning-700 font-medium">
+                    View →
+                </a>
             </div>
-            {% endif %}
         </div>
+    </div>
+
+    <!-- Report Generation & Chart - 2 Column Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+
+        <!-- Report Generation Card -->
+        <div class="card p-6">
+            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+                <i class="bi bi-file-earmark-spreadsheet text-primary-600"></i>
+                Generate Report
+            </h3>
+
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                    <label for="reportMonth" class="form-label">Month</label>
+                    <select id="reportMonth" name="month" class="form-select">
+                        <option value="1">January</option>
+                        <option value="2">February</option>
+                        <option value="3">March</option>
+                        <option value="4">April</option>
+                        <option value="5">May</option>
+                        <option value="6">June</option>
+                        <option value="7">July</option>
+                        <option value="8">August</option>
+                        <option value="9">September</option>
+                        <option value="10">October</option>
+                        <option value="11">November</option>
+                        <option value="12">December</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="reportYear" class="form-label">Year</label>
+                    <select id="reportYear" name="year" class="form-select">
+                        <option value="2025">2025</option>
+                        <option value="2024">2024</option>
+                        <option value="2023">2023</option>
+                        <option value="2022">2022</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="button" class="btn-primary w-full" onclick="generateExcelReport()">
+                <i class="bi bi-download mr-2"></i>Download Excel Report
+            </button>
+        </div>
+
+        <!-- Payment Status Chart -->
+        <div class="card p-6">
+            <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+                <i class="bi bi-pie-chart-fill text-primary-600"></i>
+                Payment Status
+            </h3>
+            <div class="relative h-64 flex items-center justify-center">
+                <canvas id="paymentChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Collections -->
+    <div class="card p-6">
+        <h3 class="text-lg font-bold text-dark-900 mb-4 pb-3 border-b flex items-center gap-2">
+            <i class="bi bi-cash-coin text-success-600"></i>
+            Recent Collections
+        </h3>
+
+        {% if recent_collections %}
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead class="table-header">
+                    <tr>
+                        <th class="table-cell">Date</th>
+                        <th class="table-cell text-right">Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for collection in recent_collections %}
+                    <tr class="table-row">
+                        <td class="table-cell">
+                            <i class="bi bi-calendar-check text-primary-600 mr-2"></i>
+                            {{ collection.date|date:"M d, Y" }}
+                        </td>
+                        <td class="table-cell text-right font-semibold text-success-600">
+                            ₱{{ collection.amount|floatformat:2|intcomma }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-8 text-dark-400">
+            <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>
+            <p class="text-sm font-medium">No recent collections</p>
+        </div>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
@@ -210,7 +172,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reportMonth').value = now.getMonth() + 1;
     document.getElementById('reportYear').value = now.getFullYear();
 
-    // Payment Status Chart
+    // Payment Status Chart - Minimal Style
     const ctx = document.getElementById('paymentChart').getContext('2d');
 
     new Chart(ctx, {
@@ -220,10 +182,9 @@ document.addEventListener('DOMContentLoaded', function() {
             datasets: [{
                 data: [{{ paid_bills|default:"0" }}, {{ pending_bills|default:"0" }}],
                 backgroundColor: ['#10b981', '#f59e0b'],
-                borderWidth: 4,
+                borderWidth: 2,
                 borderColor: '#ffffff',
-                hoverOffset: 15,
-                hoverBorderWidth: 6
+                hoverOffset: 8
             }]
         },
         options: {
@@ -233,20 +194,19 @@ document.addEventListener('DOMContentLoaded', function() {
                 legend: {
                     position: 'bottom',
                     labels: {
-                        padding: 20,
-                        font: { size: 14, weight: '700', family: 'Inter' },
-                        color: '#1e293b',
+                        padding: 15,
+                        font: { size: 12, weight: '600' },
+                        color: '#374151',
                         usePointStyle: true,
                         pointStyle: 'circle'
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.9)',
-                    padding: 16,
-                    titleFont: { size: 16, weight: '700' },
-                    bodyFont: { size: 14, weight: '600' },
-                    cornerRadius: 12,
-                    displayColors: true,
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: { size: 13, weight: '600' },
+                    bodyFont: { size: 12 },
+                    cornerRadius: 8,
                     callbacks: {
                         label: function(context) {
                             return context.label + ': ' + context.parsed + ' bills';
@@ -254,61 +214,38 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             },
-            cutout: '70%',
-            animation: {
-                animateRotate: true,
-                animateScale: true,
-                duration: 2000,
-                easing: 'easeInOutQuart'
-            }
+            cutout: '65%'
         }
     });
 
-    // Animate counter numbers
+    // Simple counter animation
     function animateValue(element, start, end, duration) {
-        let startTimestamp = null;
-        const step = (timestamp) => {
-            if (!startTimestamp) startTimestamp = timestamp;
-            const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-            const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-            element.textContent = Math.floor(easeOutQuart * (end - start) + start);
-            if (progress < 1) {
-                window.requestAnimationFrame(step);
+        const range = end - start;
+        const increment = range / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+            current += increment;
+            if (current >= end) {
+                element.textContent = end;
+                clearInterval(timer);
+            } else {
+                element.textContent = Math.floor(current);
             }
-        };
-        window.requestAnimationFrame(step);
+        }, 16);
     }
 
-    // Animate all metric values with stagger
+    // Animate metric values
     document.querySelectorAll('.metric-value').forEach((el, index) => {
         const finalValue = parseInt(el.textContent) || 0;
         el.textContent = '0';
         setTimeout(() => {
-            animateValue(el, 0, finalValue, 1500);
-        }, 200 + (index * 150));
-    });
-
-    // Fade in cards with stagger
-    const allCards = document.querySelectorAll('.metric-card, .bg-white\\/95');
-    allCards.forEach((card, index) => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        setTimeout(() => {
-            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
-            card.style.opacity = '1';
-            card.style.transform = 'translateY(0)';
+            animateValue(el, 0, finalValue, 1000);
         }, 100 + (index * 100));
     });
-
-    // Welcome notification
-    setTimeout(() => {
-        if (typeof showToast === 'function') {
-            showToast('success', '🎉 Welcome to your Dashboard! All systems operational.', 4000);
-        }
-    }, 800);
 });
 
-// Generate Excel Report Function
+// Generate Excel Report
 function generateExcelReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
@@ -316,11 +253,12 @@ function generateExcelReport() {
                        'July', 'August', 'September', 'October', 'November', 'December'];
 
     const btn = event.target;
+    const originalText = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> Generating Report...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split animate-spin mr-2"></i>Generating...';
 
     if (typeof showLoading === 'function') {
-        showLoading(`📊 Generating ${monthNames[month]} ${year} delinquent report...`);
+        showLoading(`Generating ${monthNames[month]} ${year} report...`);
     }
 
     setTimeout(() => {
@@ -331,12 +269,12 @@ function generateExcelReport() {
         }
 
         if (typeof showToast === 'function') {
-            showToast('success', `✅ ${monthNames[month]} ${year} report downloaded successfully!`, 4000);
+            showToast('success', `${monthNames[month]} ${year} report downloaded!`, 3000);
         }
 
         btn.disabled = false;
-        btn.innerHTML = '<i class="bi bi-download"></i> Download Excel Report';
-    }, 2000);
+        btn.innerHTML = originalText;
+    }, 1500);
 }
 </script>
 {% endblock %}
