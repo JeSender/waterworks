@@ -706,23 +706,36 @@ def edit_profile(request):
         return redirect('consumers:home')
 
     if request.method == 'POST':
+        updated = False
+
         # Update user information
         first_name = request.POST.get('first_name', '').strip()
         last_name = request.POST.get('last_name', '').strip()
         email = request.POST.get('email', '').strip()
 
-        if first_name:
+        if first_name and first_name != request.user.first_name:
             request.user.first_name = first_name
-        if last_name:
+            updated = True
+        if last_name and last_name != request.user.last_name:
             request.user.last_name = last_name
-        if email:
+            updated = True
+        if email and email != request.user.email:
             request.user.email = email
+            updated = True
 
-        request.user.save()
+        if updated:
+            request.user.save()
 
         # Handle profile photo upload
         if 'profile_photo' in request.FILES:
-            profile.profile_photo = request.FILES['profile_photo']
+            photo = request.FILES['profile_photo']
+
+            # Delete old photo if exists
+            if profile.profile_photo:
+                profile.profile_photo.delete(save=False)
+
+            # Save new photo
+            profile.profile_photo = photo
             profile.save()
 
             # Log activity
@@ -735,7 +748,14 @@ def edit_profile(request):
                 target_user=request.user
             )
 
-        messages.success(request, "Profile updated successfully!")
+            messages.success(request, "Profile photo updated successfully!")
+            updated = True
+
+        if updated:
+            messages.success(request, "Profile updated successfully!")
+        else:
+            messages.info(request, "No changes were made.")
+
         return redirect('consumers:edit_profile')
 
     return render(request, 'consumers/edit_profile.html', {

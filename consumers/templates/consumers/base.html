@@ -173,6 +173,7 @@
                     type="button"
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown')">
+                <!-- Profile Icon or Photo -->
                 {% if request.user.staffprofile.profile_photo and request.user.staffprofile.role == 'admin' %}
                     <!-- Admin with Profile Photo -->
                     <img src="{{ request.user.staffprofile.profile_photo.url }}"
@@ -185,6 +186,10 @@
                         {{ request.user.staffprofile.role_display|upper }}
                     </div>
                 {% endif %}
+                <!-- Role Text beside icon -->
+                <span class="text-dark-900 text-sm font-semibold hidden md:inline">
+                    {{ request.user.staffprofile.role_display }}
+                </span>
             </button>
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
