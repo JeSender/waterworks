@@ -421,7 +421,7 @@ document.addEventListener('DOMContentLoaded', function() {
             purokSelect.innerHTML = '<option value="">Loading...</option>';
 
             if (barangayId) {
-                fetch(`/api/puroks/?barangay=${barangayId}`)
+                fetch(`/ajax/load-puroks/?barangay_id=${barangayId}`)
                     .then(response => response.json())
                     .then(data => {
                         purokSelect.innerHTML = '<option value="">Select Purok</option>';
