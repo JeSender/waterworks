@@ -38,6 +38,7 @@ urlpatterns = [
      path('reconnect/<int:consumer_id>/', views.reconnect_consumer, name='reconnect_consumer'),
     path('delinquent-consumers/', views.delinquent_consumers, name='delinquent_consumers'),
     path('delinquent-consumers/export/', views.export_delinquent_consumers, name='export_delinquent_consumers'),
+    path('delinquent-report/print/', views.delinquent_report_printable, name='delinquent_report_print'),
 
     # AJAX
     path('ajax/load-puroks/', views.load_puroks, name='ajax_load_puroks'),

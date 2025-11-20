@@ -880,6 +880,50 @@ def delinquent_consumers(request):
     })
 
 
+@login_required
+def delinquent_report_printable(request):
+    """Printable delinquent report with receipt-style header"""
+    from calendar import month_name
+
+    month = request.GET.get('month')
+    year = request.GET.get('year')
+
+    if not month or not year:
+        messages.error(request, 'Month and year are required')
+        return redirect('consumers:home')
+
+    # Get all pending bills for the specified month/year
+    bills = Bill.objects.filter(
+        status='Pending',
+        billing_period__month=month,
+        billing_period__year=year
+    ).select_related(
+        'consumer__barangay',
+        'consumer__purok',
+        'previous_reading',
+        'current_reading'
+    ).order_by('consumer__account_number')
+
+    # Calculate totals
+    total_amount = sum(bill.total_amount for bill in bills)
+    total_consumers = bills.count()
+
+    # Format month display
+    month_display = f"{month_name[int(month)]} {year}"
+
+    context = {
+        'bills': bills,
+        'total_amount': total_amount,
+        'total_consumers': total_consumers,
+        'month_display': month_display,
+        'month': month,
+        'year': year,
+        'generated_date': timezone.now()
+    }
+
+    return render(request, 'consumers/delinquent_report_print.html', context)
+
+
 # ======================
 # CONSUMER MANAGEMENT
 # ======================

@@ -108,9 +108,9 @@
 
             <button type="button"
                     class="w-full px-4 py-2.5 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm flex items-center justify-center gap-2"
-                    onclick="generateExcelReport()">
-                <i class="bi bi-download"></i>
-                Download Excel Report
+                    onclick="generateReport()">
+                <i class="bi bi-printer"></i>
+                Generate Printable Report
             </button>
         </div>
 
@@ -249,8 +249,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-// Generate Excel Report Function
-function generateExcelReport() {
+// Generate Printable Report Function
+function generateReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
     const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
@@ -273,14 +273,15 @@ function generateExcelReport() {
     });
 
     setTimeout(() => {
-        // Trigger download
-        window.location.href = `/reports/delinquent/?month=${month}&year=${year}&export=excel`;
+        // Open printable report in new window
+        const reportUrl = `/delinquent-report/print/?month=${month}&year=${year}`;
+        window.open(reportUrl, '_blank');
 
         // Show success message
         Swal.fire({
             icon: 'success',
             title: 'Report Generated!',
-            text: `${monthNames[month]} ${year} report is downloading...`,
+            text: `${monthNames[month]} ${year} report is ready to print`,
             timer: 2000,
             showConfirmButton: false
         });
@@ -289,7 +290,7 @@ function generateExcelReport() {
         btn.disabled = false;
         btn.classList.remove('opacity-70', 'cursor-not-allowed');
         btn.innerHTML = originalText;
-    }, 1500);
+    }, 1000);
 }
 </script>
 {% endblock %}
