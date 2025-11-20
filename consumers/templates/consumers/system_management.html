@@ -1,56 +1,340 @@
-<!-- consumers/templates/consumers/system_management.html -->
-{% extends "consumers/base.html" %} <!-- Or your base template name -->
-{% load static %} <!-- Load static files if needed -->
+{% extends "consumers/base.html" %}
+{% load static %}
+{% load humanize %}
 
-{% block title %}System Management{% endblock %}
+{% block title %}System Management - Water Rates{% endblock %}
 
 {% block main_content %}
-<h2 class="mb-4">System Management</h2>
-
-<!-- Messages -->
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-dark-900">System Management</h2>
+        <p class="text-dark-500 text-sm mt-1">Configure water rates and billing settings</p>
     </div>
-  {% endfor %}
-{% endif %}
 
-<!-- Rate Management Card -->
-<div class="card shadow-sm">
-    <div class="card-header bg-primary text-white">
-        <h5 class="mb-0">Update Water Rates</h5>
+    <!-- Success/Error Messages -->
+    {% if messages %}
+    <div class="mb-6">
+        {% for message in messages %}
+        <div class="px-4 py-3 rounded-lg border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %} mb-3">
+            <div class="flex items-start gap-2">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% else %}bi-info-circle-fill{% endif %} text-lg"></i>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+        </div>
+        {% endfor %}
     </div>
-    <div class="card-body">
-        <form method="post">
-            {% csrf_token %}
+    {% endif %}
 
-            <div class="mb-3">
-                <label for="residential_rate_per_cubic" class="form-label fw-bold">Residential Rate (₱ / m³)</label>
-                <input type="number" step="0.01" min="0.01"
-                       name="residential_rate_per_cubic" id="residential_rate_per_cubic"
-                       class="form-control form-control-lg"
-                       value="{{ setting.residential_rate_per_cubic }}"
-                       required>
-                <div class="form-text">Rate applied to residential consumers.</div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- LEFT COLUMN: Rate Configuration Form -->
+        <div class="lg:col-span-2">
+            <form method="POST" id="ratesForm">
+                {% csrf_token %}
+
+                <div class="bg-white rounded-lg border border-light-300 shadow-sm mb-6">
+                    <!-- Card Header -->
+                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                            <i class="bi bi-droplet-fill text-primary-600"></i>
+                            Water Consumption Rates
+                        </h3>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="px-5 py-5 space-y-5">
+                        <!-- Residential Rate -->
+                        <div>
+                            <label for="residential_rate_per_cubic" class="block text-xs font-medium text-dark-700 mb-1">
+                                Residential Rate (₱ per m³)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    name="residential_rate_per_cubic"
+                                    id="residential_rate_per_cubic"
+                                    value="{{ setting.residential_rate_per_cubic }}"
+                                    class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
+                            </div>
+                            <p class="mt-1 text-xs text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Rate charged per cubic meter for residential consumers
+                            </p>
+                        </div>
+
+                        <!-- Commercial Rate -->
+                        <div>
+                            <label for="commercial_rate_per_cubic" class="block text-xs font-medium text-dark-700 mb-1">
+                                Commercial Rate (₱ per m³)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    name="commercial_rate_per_cubic"
+                                    id="commercial_rate_per_cubic"
+                                    value="{{ setting.commercial_rate_per_cubic }}"
+                                    class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
+                            </div>
+                            <p class="mt-1 text-xs text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Rate charged per cubic meter for commercial consumers
+                            </p>
+                        </div>
+
+                        <!-- Fixed Charge -->
+                        <div>
+                            <label for="fixed_charge" class="block text-xs font-medium text-dark-700 mb-1">
+                                Fixed Monthly Charge (₱)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="fixed_charge"
+                                    id="fixed_charge"
+                                    value="{{ setting.fixed_charge }}"
+                                    class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
+                            </div>
+                            <p class="mt-1 text-xs text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Fixed charge added to every bill regardless of consumption
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Billing Configuration Card -->
+                <div class="bg-white rounded-lg border border-light-300 shadow-sm mb-6">
+                    <!-- Card Header -->
+                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                            <i class="bi bi-calendar-event text-secondary-600"></i>
+                            Billing Schedule Configuration
+                        </h3>
+                    </div>
+
+                    <!-- Card Body -->
+                    <div class="px-5 py-5 space-y-5">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                            <!-- Billing Day -->
+                            <div>
+                                <label for="billing_day_of_month" class="block text-xs font-medium text-dark-700 mb-1">
+                                    Billing Day of Month
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="billing_day_of_month"
+                                    id="billing_day_of_month"
+                                    value="{{ setting.billing_day_of_month }}"
+                                    class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required>
+                                <p class="mt-1 text-xs text-dark-500">
+                                    <i class="bi bi-info-circle mr-1"></i>
+                                    Day when billing period starts (1-28)
+                                </p>
+                            </div>
+
+                            <!-- Due Day -->
+                            <div>
+                                <label for="due_day_of_month" class="block text-xs font-medium text-dark-700 mb-1">
+                                    Due Day of Month
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="due_day_of_month"
+                                    id="due_day_of_month"
+                                    value="{{ setting.due_day_of_month }}"
+                                    class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required>
+                                <p class="mt-1 text-xs text-dark-500">
+                                    <i class="bi bi-info-circle mr-1"></i>
+                                    Day when payment is due (1-28)
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-warning-50 border-l-4 border-warning-500 rounded">
+                            <p class="text-xs text-warning-800">
+                                <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                                <strong>Note:</strong> Days are limited to 1-28 to ensure consistency across all months
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Save Button -->
+                <div class="flex items-center justify-end gap-3">
+                    <button
+                        type="button"
+                        onclick="resetForm()"
+                        class="px-4 py-2 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
+                        <i class="bi bi-arrow-counterclockwise mr-1"></i>Reset
+                    </button>
+                    <button
+                        type="submit"
+                        class="px-6 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm"
+                        onclick="return confirmSave()">
+                        <i class="bi bi-save mr-1"></i>Save Settings
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- RIGHT COLUMN: Preview & Info -->
+        <div class="lg:col-span-1">
+            <!-- Bill Calculation Preview -->
+            <div class="bg-white rounded-lg border border-light-300 shadow-sm mb-6 sticky top-6">
+                <div class="px-5 py-3 border-b border-light-200 bg-light-50">
+                    <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                        <i class="bi bi-calculator text-success-600"></i>
+                        Bill Calculation Preview
+                    </h3>
+                </div>
+                <div class="px-5 py-4 space-y-4">
+                    <p class="text-xs text-dark-600 mb-3">Sample bill for 10 m³ consumption:</p>
+
+                    <!-- Residential Example -->
+                    <div class="p-3 bg-light-50 rounded border border-light-200">
+                        <p class="text-xs font-semibold text-dark-900 mb-2">Residential Consumer</p>
+                        <div class="space-y-1 text-xs text-dark-700">
+                            <div class="flex justify-between">
+                                <span>Consumption:</span>
+                                <span class="font-mono">10 m³</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Rate:</span>
+                                <span class="font-mono" id="preview-res-rate">₱{{ setting.residential_rate_per_cubic }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span class="font-mono" id="preview-res-subtotal">₱{{ setting.residential_rate_per_cubic|floatformat:2 }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Fixed Charge:</span>
+                                <span class="font-mono" id="preview-fixed">₱{{ setting.fixed_charge }}</span>
+                            </div>
+                            <div class="flex justify-between pt-2 border-t border-light-300 font-semibold text-success-700">
+                                <span>Total:</span>
+                                <span class="font-mono" id="preview-res-total">₱0.00</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Commercial Example -->
+                    <div class="p-3 bg-light-50 rounded border border-light-200">
+                        <p class="text-xs font-semibold text-dark-900 mb-2">Commercial Consumer</p>
+                        <div class="space-y-1 text-xs text-dark-700">
+                            <div class="flex justify-between">
+                                <span>Consumption:</span>
+                                <span class="font-mono">10 m³</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Rate:</span>
+                                <span class="font-mono" id="preview-comm-rate">₱{{ setting.commercial_rate_per_cubic }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Subtotal:</span>
+                                <span class="font-mono" id="preview-comm-subtotal">₱{{ setting.commercial_rate_per_cubic|floatformat:2 }}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Fixed Charge:</span>
+                                <span class="font-mono" id="preview-fixed-comm">₱{{ setting.fixed_charge }}</span>
+                            </div>
+                            <div class="flex justify-between pt-2 border-t border-light-300 font-semibold text-success-700">
+                                <span>Total:</span>
+                                <span class="font-mono" id="preview-comm-total">₱0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="mb-4">
-                <label for="commercial_rate_per_cubic" class="form-label fw-bold">Commercial Rate (₱ / m³)</label>
-                <input type="number" step="0.01" min="0.01"
-                       name="commercial_rate_per_cubic" id="commercial_rate_per_cubic"
-                       class="form-control form-control-lg"
-                       value="{{ setting.commercial_rate_per_cubic }}"
-                       required>
-                <div class="form-text">Rate applied to commercial consumers.</div>
+            <!-- Current Settings Info -->
+            <div class="bg-info-50 border border-info-200 rounded-lg p-4">
+                <div class="flex items-start gap-2 text-sm text-info-800">
+                    <i class="bi bi-info-circle-fill text-base mt-0.5"></i>
+                    <div>
+                        <strong class="font-semibold">Last Updated</strong>
+                        <p class="text-xs mt-1">{{ setting.updated_at|date:"F d, Y g:i A"|default:"Never" }}</p>
+                    </div>
+                </div>
             </div>
-
-            <button type="submit" class="btn btn-primary btn-lg w-100">
-                <i class="bi bi-save"></i> Save Rates
-            </button>
-        </form>
+        </div>
     </div>
 </div>
+{% endblock %}
 
+{% block extra_js %}
+<script>
+// Update preview calculations in real-time
+function updatePreview() {
+    const resRate = parseFloat(document.getElementById('residential_rate_per_cubic').value) || 0;
+    const commRate = parseFloat(document.getElementById('commercial_rate_per_cubic').value) || 0;
+    const fixedCharge = parseFloat(document.getElementById('fixed_charge').value) || 0;
+    const consumption = 10; // Sample consumption
+
+    // Residential calculations
+    const resSubtotal = resRate * consumption;
+    const resTotal = resSubtotal + fixedCharge;
+
+    // Commercial calculations
+    const commSubtotal = commRate * consumption;
+    const commTotal = commSubtotal + fixedCharge;
+
+    // Update preview display
+    document.getElementById('preview-res-rate').textContent = '₱' + resRate.toFixed(2);
+    document.getElementById('preview-res-subtotal').textContent = '₱' + resSubtotal.toFixed(2);
+    document.getElementById('preview-fixed').textContent = '₱' + fixedCharge.toFixed(2);
+    document.getElementById('preview-res-total').textContent = '₱' + resTotal.toFixed(2);
+
+    document.getElementById('preview-comm-rate').textContent = '₱' + commRate.toFixed(2);
+    document.getElementById('preview-comm-subtotal').textContent = '₱' + commSubtotal.toFixed(2);
+    document.getElementById('preview-fixed-comm').textContent = '₱' + fixedCharge.toFixed(2);
+    document.getElementById('preview-comm-total').textContent = '₱' + commTotal.toFixed(2);
+}
+
+// Reset form to original values
+function resetForm() {
+    document.getElementById('ratesForm').reset();
+    updatePreview();
+}
+
+// Confirm before saving
+function confirmSave() {
+    const resRate = document.getElementById('residential_rate_per_cubic').value;
+    const commRate = document.getElementById('commercial_rate_per_cubic').value;
+    const fixedCharge = document.getElementById('fixed_charge').value;
+
+    return confirm(
+        `Are you sure you want to update the water rates?\n\n` +
+        `Residential: ₱${resRate}/m³\n` +
+        `Commercial: ₱${commRate}/m³\n` +
+        `Fixed Charge: ₱${fixedCharge}\n\n` +
+        `This will affect all future bills.`
+    );
+}
+
+// Initialize preview on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updatePreview();
+});
+</script>
 {% endblock %}
