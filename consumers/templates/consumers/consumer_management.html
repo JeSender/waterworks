@@ -190,194 +190,196 @@
 </div>
 
 <!-- Add Consumer Modal - Minimal & Flat -->
-<div id="addConsumerModal" class="fixed inset-0 bg-dark-900/40 backdrop-blur-sm hidden z-50" onclick="closeModalOnOutsideClick(event, 'addConsumerModal')">
-    <div class="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl bg-white rounded-lg shadow-xl overflow-hidden" onclick="event.stopPropagation()">
-        <form method="POST" action="{% url 'consumers:add_consumer' %}">
-            {% csrf_token %}
+<div id="addConsumerModal" class="fixed inset-0 bg-dark-900/40 backdrop-blur-sm hidden z-50 overflow-y-auto" onclick="closeModalOnOutsideClick(event, 'addConsumerModal')">
+    <div class="min-h-screen px-4 py-8 flex items-center justify-center">
+        <div class="relative w-full max-w-6xl bg-white rounded-lg shadow-xl my-8" onclick="event.stopPropagation()">
+            <form method="POST" action="{% url 'consumers:add_consumer' %}">
+                {% csrf_token %}
 
-            <!-- Modal Header - Subtle -->
-            <div class="px-5 py-3 border-b border-light-200 flex items-center justify-between bg-light-50">
-                <h5 class="text-base font-semibold text-dark-900">Add New Consumer</h5>
-                <button type="button"
-                        onclick="closeModal('addConsumerModal')"
-                        class="text-dark-400 hover:text-dark-900 transition-colors p-1">
-                    <i class="bi bi-x text-xl"></i>
-                </button>
-            </div>
-
-            <!-- Modal Body - Compact -->
-            <div class="px-5 py-4 max-h-[calc(100vh-12rem)] md:max-h-[70vh] overflow-y-auto">
-                <!-- Form Errors -->
-                {% if form.errors %}
-                <div class="bg-danger-50 border border-danger-200 rounded px-3 py-2 mb-4">
-                    <p class="text-xs font-semibold text-danger-800 mb-1">Please correct the errors below:</p>
-                    <ul class="text-xs text-danger-700 ml-4 list-disc space-y-0.5">
-                        {% for field in form %}
-                            {% if field.errors %}
-                            <li>{{ field.label }}: {{ field.errors|first }}</li>
-                            {% endif %}
-                        {% endfor %}
-                        {% for error in form.non_field_errors %}
-                        <li>{{ error }}</li>
-                        {% endfor %}
-                    </ul>
+                <!-- Modal Header - Subtle -->
+                <div class="px-6 py-4 border-b border-light-200 flex items-center justify-between bg-light-50 sticky top-0 z-10 rounded-t-lg">
+                    <h5 class="text-base font-semibold text-dark-900">Add New Consumer</h5>
+                    <button type="button"
+                            onclick="closeModal('addConsumerModal')"
+                            class="text-dark-400 hover:text-dark-900 transition-colors p-1 hover:bg-light-200 rounded">
+                        <i class="bi bi-x text-xl"></i>
+                    </button>
                 </div>
-                {% endif %}
 
-                <!-- Form Grid - Balanced 3 Columns -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Modal Body - Scrollable with adequate padding -->
+                <div class="px-6 py-5 max-h-[calc(100vh-16rem)] overflow-y-auto">
+                    <!-- Form Errors -->
+                    {% if form.errors %}
+                    <div class="bg-danger-50 border border-danger-200 rounded-lg px-4 py-3 mb-5">
+                        <p class="text-xs font-semibold text-danger-800 mb-2">Please correct the errors below:</p>
+                        <ul class="text-xs text-danger-700 ml-4 list-disc space-y-1">
+                            {% for field in form %}
+                                {% if field.errors %}
+                                <li>{{ field.label }}: {{ field.errors|first }}</li>
+                                {% endif %}
+                            {% endfor %}
+                            {% for error in form.non_field_errors %}
+                            <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+
+                    <!-- Form Grid - Responsive: 1 col mobile, 2 col tablet, 3 col desktop -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
 
                     <!-- Column 1: Personal Info -->
-                    <div class="space-y-3">
-                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Personal Information</h6>
+                    <div class="space-y-4">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-2 border-b-2 border-primary-200">Personal Information</h6>
 
                         <div>
-                            <label for="{{ form.first_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_name.label }}</label>
-                            <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.first_name.label }}</label>
+                            <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_name.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_name.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.first_name.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.middle_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.middle_name.label }}</label>
-                            <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}" value="{{ form.middle_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.middle_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.middle_name.label }}</label>
+                            <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}" value="{{ form.middle_name.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
 
                         <div>
-                            <label for="{{ form.last_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.last_name.label }}</label>
-                            <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.last_name.label }}</label>
+                            <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.last_name.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.last_name.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.last_name.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.birth_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.birth_date.label }}</label>
+                            <label for="{{ form.birth_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.birth_date.label }}</label>
                             {{ form.birth_date }}
                             {% if form.birth_date.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.birth_date.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.birth_date.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.gender.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.gender.label }}</label>
+                            <label for="{{ form.gender.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.gender.label }}</label>
                             {{ form.gender }}
                             {% if form.gender.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.gender.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.gender.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.phone_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.phone_number.label }}</label>
-                            <input type="text" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}" value="{{ form.phone_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.phone_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.phone_number.label }}</label>
+                            <input type="text" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}" value="{{ form.phone_number.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.phone_number.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.phone_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.phone_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Column 2: Address & Household -->
-                    <div class="space-y-3">
-                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Address & Household</h6>
+                    <div class="space-y-4">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-2 border-b-2 border-secondary-200">Address & Household</h6>
 
                         <div>
-                            <label for="{{ form.civil_status.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.civil_status.label }}</label>
+                            <label for="{{ form.civil_status.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.civil_status.label }}</label>
                             {{ form.civil_status }}
                             {% if form.civil_status.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.civil_status.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.civil_status.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.spouse_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.spouse_name.label }}</label>
-                            <input type="text" name="{{ form.spouse_name.name }}" id="{{ form.spouse_name.id_for_label }}" value="{{ form.spouse_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.spouse_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.spouse_name.label }}</label>
+                            <input type="text" name="{{ form.spouse_name.name }}" id="{{ form.spouse_name.id_for_label }}" value="{{ form.spouse_name.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
 
                         <div>
-                            <label for="{{ form.barangay.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.barangay.label }}</label>
+                            <label for="{{ form.barangay.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.barangay.label }}</label>
                             {{ form.barangay }}
                             {% if form.barangay.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.barangay.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.barangay.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.purok.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.purok.label }}</label>
+                            <label for="{{ form.purok.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.purok.label }}</label>
                             {{ form.purok }}
                             {% if form.purok.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.purok.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.purok.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.household_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.household_number.label }}</label>
-                            <input type="text" name="{{ form.household_number.name }}" id="{{ form.household_number.id_for_label }}" value="{{ form.household_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.household_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.household_number.label }}</label>
+                            <input type="text" name="{{ form.household_number.name }}" id="{{ form.household_number.id_for_label }}" value="{{ form.household_number.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.household_number.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.household_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.household_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Column 3: Meter Info -->
-                    <div class="space-y-3">
-                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Meter Information</h6>
+                    <div class="space-y-4">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-2 border-b-2 border-success-200">Meter Information</h6>
 
                         <div>
-                            <label for="{{ form.usage_type.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.usage_type.label }}</label>
+                            <label for="{{ form.usage_type.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.usage_type.label }}</label>
                             {{ form.usage_type }}
                             {% if form.usage_type.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.usage_type.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.usage_type.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.meter_brand.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.meter_brand.label }}</label>
+                            <label for="{{ form.meter_brand.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.meter_brand.label }}</label>
                             {{ form.meter_brand }}
                             {% if form.meter_brand.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.meter_brand.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.meter_brand.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.serial_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.serial_number.label }}</label>
-                            <input type="text" name="{{ form.serial_number.name }}" id="{{ form.serial_number.id_for_label }}" value="{{ form.serial_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.serial_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.serial_number.label }}</label>
+                            <input type="text" name="{{ form.serial_number.name }}" id="{{ form.serial_number.id_for_label }}" value="{{ form.serial_number.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.serial_number.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.serial_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.serial_number.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.first_reading.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_reading.label }}</label>
-                            <input type="number" name="{{ form.first_reading.name }}" id="{{ form.first_reading.id_for_label }}" value="{{ form.first_reading.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
+                            <label for="{{ form.first_reading.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.first_reading.label }}</label>
+                            <input type="number" name="{{ form.first_reading.name }}" id="{{ form.first_reading.id_for_label }}" value="{{ form.first_reading.value|default:'' }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_reading.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_reading.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.first_reading.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.registration_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.registration_date.label }}</label>
+                            <label for="{{ form.registration_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1.5">{{ form.registration_date.label }}</label>
                             {{ form.registration_date }}
                             {% if form.registration_date.errors %}
-                            <p class="text-xs text-danger-600 mt-0.5">{{ form.registration_date.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-1">{{ form.registration_date.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Modal Footer - Minimal Buttons -->
-            <div class="px-5 py-3 border-t border-light-200 flex items-center justify-end gap-2 bg-light-50">
+            <!-- Modal Footer - Sticky buttons always visible -->
+            <div class="px-6 py-4 border-t border-light-200 flex items-center justify-end gap-3 bg-light-50 sticky bottom-0 rounded-b-lg">
                 <button type="button"
                         onclick="closeModal('addConsumerModal')"
-                        class="px-4 py-1.5 border border-light-300 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
-                    Cancel
+                        class="px-5 py-2 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 hover:border-dark-400 transition-colors">
+                    <i class="bi bi-x-circle mr-1.5"></i>Cancel
                 </button>
-                <button type="submit" class="px-4 py-1.5 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
-                    <i class="bi bi-check-circle mr-1"></i>Submit
+                <button type="submit" class="px-5 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-md">
+                    <i class="bi bi-check-circle mr-1.5"></i>Submit
                 </button>
             </div>
         </form>
+        </div>
     </div>
 </div>
 
@@ -448,7 +450,7 @@ document.addEventListener('DOMContentLoaded', function() {
     // Add Tailwind classes to Django form widgets
     const formInputs = document.querySelectorAll('#addConsumerModal select, #addConsumerModal input[type="date"]');
     formInputs.forEach(input => {
-        input.classList.add('w-full', 'px-2.5', 'py-1.5', 'text-sm', 'border', 'border-light-300', 'rounded', 'focus:outline-none', 'focus:ring-1', 'focus:ring-primary-500', 'focus:border-transparent');
+        input.classList.add('w-full', 'px-3', 'py-2', 'text-sm', 'border', 'border-light-300', 'rounded', 'focus:outline-none', 'focus:ring-1', 'focus:ring-primary-500', 'focus:border-transparent');
     });
 });
 
