@@ -922,7 +922,7 @@ def consumer_management(request):
 
 @login_required
 def add_consumer(request):
-    """Handle adding a new consumer via modal form"""
+    """Handle adding a new consumer via full page form"""
     if request.method == "POST":
         form = ConsumerForm(request.POST)
         if form.is_valid():
@@ -930,25 +930,11 @@ def add_consumer(request):
             messages.success(request, "✅ Consumer added successfully!")
             return redirect('consumers:consumer_management')
         else:
-            # Re-render the management page WITH the invalid form
             messages.error(request, "❌ Please correct the errors below.")
-            search_query = ''
-            barangay_filter = ''
-            consumers = Consumer.objects.all()
-            paginator = Paginator(consumers, 10)
-            page_obj = paginator.get_page(1)
+    else:
+        form = ConsumerForm()
 
-            context = {
-                'consumers': page_obj,
-                'form': form,  # Pass the invalid form to show errors in modal
-                'search_query': search_query,
-                'barangays': Barangay.objects.all(),
-                'barangay_filter': barangay_filter,
-            }
-            return render(request, 'consumers/consumer_management.html', context)
-    
-    # If not POST, redirect to list
-    return redirect('consumers:consumer_management')
+    return render(request, 'consumers/add_consumer.html', {'form': form})
 
 
 @login_required
