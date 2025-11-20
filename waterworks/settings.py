@@ -192,30 +192,41 @@ if not DEBUG:
     CSRF_COOKIE_SECURE = True
     SESSION_COOKIE_SECURE = True
 
-    # Logging configuration for production
+    # Logging configuration for production - Reduced to prevent rate limiting
     LOGGING = {
         'version': 1,
         'disable_existing_loggers': False,
         'formatters': {
-            'verbose': {
-                'format': '{levelname} {asctime} {module} {message}',
+            'simple': {
+                'format': '{levelname} {message}',
                 'style': '{',
             },
         },
         'handlers': {
             'console': {
                 'class': 'logging.StreamHandler',
-                'formatter': 'verbose',
+                'formatter': 'simple',
+                'level': 'WARNING',
             },
         },
         'root': {
             'handlers': ['console'],
-            'level': 'INFO',
+            'level': 'WARNING',
         },
         'loggers': {
             'django': {
                 'handlers': ['console'],
-                'level': 'INFO',
+                'level': 'ERROR',
+                'propagate': False,
+            },
+            'django.server': {
+                'handlers': ['console'],
+                'level': 'ERROR',
+                'propagate': False,
+            },
+            'django.request': {
+                'handlers': ['console'],
+                'level': 'ERROR',
                 'propagate': False,
             },
         },
