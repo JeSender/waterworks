@@ -39,6 +39,9 @@ INSTALLED_APPS = [
     'django.contrib.humanize',
     'django.contrib.staticfiles',
     'corsheaders',  # For Android app API
+    'tailwind',  # Tailwind CSS integration
+    'django_browser_reload',  # Auto-reload during development
+    'theme',  # Tailwind theme app
     'consumers',
 ]
 
@@ -52,6 +55,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'django_browser_reload.middleware.BrowserReloadMiddleware',  # Auto-reload (dev only)
 ]
 
 ROOT_URLCONF = 'waterworks.urls'
@@ -220,3 +224,15 @@ if not DEBUG:
             },
         },
     }
+
+# Tailwind CSS Configuration
+TAILWIND_APP_NAME = 'theme'
+
+# NPM Binary Path (for Windows compatibility)
+NPM_BIN_PATH = config('NPM_BIN_PATH', default='npm')
+
+# Internal IPs for django-browser-reload (development only)
+INTERNAL_IPS = [
+    '127.0.0.1',
+    'localhost',
+]

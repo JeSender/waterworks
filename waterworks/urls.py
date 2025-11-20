@@ -4,6 +4,7 @@ from django.urls import path, include
 from django.shortcuts import redirect, render
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.conf import settings
 
 @csrf_exempt
 def healthcheck(request):
@@ -26,6 +27,12 @@ urlpatterns = [
     # Include all consumer app URLs under root namespace
     path('', include('consumers.urls')),
 ]
+
+# Add browser reload URL in development
+if settings.DEBUG:
+    urlpatterns += [
+        path('__reload__/', include('django_browser_reload.urls')),
+    ]
 
 # Custom error handlers
 handler404 = custom_404_view

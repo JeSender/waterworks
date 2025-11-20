@@ -16,6 +16,9 @@ et-xmlfile==2.0.0
 # CORS Headers (for Android app API)
 django-cors-headers==4.3.1
 
+# Tailwind CSS Integration
+django-tailwind[reload]==3.8.0
+
 # Environment Variables
 python-decouple==3.8
 
