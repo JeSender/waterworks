@@ -1552,9 +1552,20 @@ def confirm_all_readings(request, barangay_id):
             if reading.reading_value < prev.reading_value:
                 continue
 
+            # Get system settings and determine rate based on usage type
             setting = SystemSetting.objects.first()
-            rate = setting.rate_per_cubic if setting else Decimal('22.50')
-            fixed = Decimal('50.00')
+            if setting:
+                # Use appropriate rate based on consumer's usage type
+                if reading.consumer.usage_type == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:  # residential or default
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
+            else:
+                # Fallback to defaults if no settings exist
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
+
             cons = reading.reading_value - prev.reading_value
             total = (Decimal(cons) * rate) + fixed
 
