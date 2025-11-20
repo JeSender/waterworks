@@ -1424,9 +1424,19 @@ def meter_reading_overview(request):
             'total_consumers': b.total_consumers,
         })
 
+    # Calculate summary statistics for the overview page
+    total_barangays = len(barangay_data)
+    total_consumers_sum = sum(item['total_consumers'] for item in barangay_data)
+    total_ready_sum = sum(item['ready_to_confirm'] for item in barangay_data)
+    total_pending_sum = sum(item['not_yet_updated'] for item in barangay_data)
+
     return render(request, 'consumers/meter_reading_overview.html', {
         'barangay_data': barangay_data,
         'current_month': current_month,
+        'total_barangays': total_barangays,
+        'total_consumers_sum': total_consumers_sum,
+        'total_ready_sum': total_ready_sum,
+        'total_pending_sum': total_pending_sum,
     })
 
 # ───────────────────────────────────────
