@@ -1,199 +1,256 @@
-<!-- consumers/templates/consumers/add_consumer.html -->
 {% extends "consumers/base.html" %}
+{% load static %}
 
 {% block title %}Add Consumer{% endblock %}
 
 {% block main_content %}
-<div class="container">
-    <h2 class="mb-4">Add New Consumer</h2>
+<div class="max-w-6xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-5 flex items-center justify-between">
+        <div>
+            <h2 class="text-xl font-bold text-dark-900">Add New Consumer</h2>
+            <p class="text-dark-500 text-xs mt-1">Register a new water consumer</p>
+        </div>
+        <a href="{% url 'consumers:consumer_management' %}"
+           class="px-4 py-1.5 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
+            <i class="bi bi-arrow-left mr-1"></i>Back to List
+        </a>
+    </div>
 
-    <div class="card shadow-sm">
-        <div class="card-body">
-            <form method="post">
-                {% csrf_token %}
-                
+    <!-- Messages/Alerts -->
+    {% if messages %}
+    <div class="mb-4 space-y-2">
+        {% for message in messages %}
+        <div class="alert-{{ message.tags }} flex items-center justify-between rounded text-sm py-2 px-3">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="text-current hover:opacity-75">
+                <i class="bi bi-x text-lg"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Add Form -->
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm">
+        <form method="POST">
+            {% csrf_token %}
+
+            <!-- Form Body -->
+            <div class="px-5 py-4">
+                <!-- Form Errors -->
                 {% if form.errors %}
-                <div class="alert alert-danger alert-dismissible fade show">
-                    <strong>Please correct the following errors:</strong>
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    <ul class="mb-0 mt-2">
+                <div class="bg-danger-50 border border-danger-200 rounded px-3 py-2 mb-4">
+                    <p class="text-xs font-semibold text-danger-800 mb-1.5">Please correct the errors below:</p>
+                    <ul class="text-xs text-danger-700 ml-4 list-disc space-y-0.5">
                         {% for field in form %}
-                            {% for error in field.errors %}
-                                <li>{{ field.label }}: {{ error }}</li>
-                            {% endfor %}
+                            {% if field.errors %}
+                            <li>{{ field.label }}: {{ field.errors|first }}</li>
+                            {% endif %}
                         {% endfor %}
                         {% for error in form.non_field_errors %}
-                            <li>{{ error }}</li>
+                        <li>{{ error }}</li>
                         {% endfor %}
                     </ul>
                 </div>
                 {% endif %}
 
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            {{ form.first_name.label_tag }}
-                            {{ form.first_name }}
+                <!-- Form Grid - Responsive: 1 col mobile, 2 col tablet, 3 col desktop -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+
+                    <!-- Column 1: Personal Info -->
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-primary-200">Personal Information</h6>
+
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_name.label }}</label>
+                            <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_name.errors %}
-                                <div class="text-danger small mt-1">{{ form.first_name.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_name.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.middle_name.label_tag }}
-                            {{ form.middle_name }}
+
+                        <div>
+                            <label for="{{ form.middle_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.middle_name.label }}</label>
+                            <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}" value="{{ form.middle_name.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
-                        <div class="mb-3">
-                            {{ form.last_name.label_tag }}
-                            {{ form.last_name }}
+
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.last_name.label }}</label>
+                            <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.last_name.errors %}
-                                <div class="text-danger small mt-1">{{ form.last_name.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.last_name.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.birth_date.label_tag }}
+
+                        <div>
+                            <label for="{{ form.birth_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.birth_date.label }}</label>
                             {{ form.birth_date }}
                             {% if form.birth_date.errors %}
-                                <div class="text-danger small mt-1">{{ form.birth_date.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.birth_date.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.gender.label_tag }}
+
+                        <div>
+                            <label for="{{ form.gender.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.gender.label }}</label>
                             {{ form.gender }}
                             {% if form.gender.errors %}
-                                <div class="text-danger small mt-1">{{ form.gender.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.gender.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.phone_number.label_tag }}
-                            {{ form.phone_number }}
+
+                        <div>
+                            <label for="{{ form.phone_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.phone_number.label }}</label>
+                            <input type="text" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}" value="{{ form.phone_number.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.phone_number.errors %}
-                                <div class="text-danger small mt-1">{{ form.phone_number.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.phone_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            {{ form.civil_status.label_tag }}
+
+                    <!-- Column 2: Address & Household -->
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-secondary-200">Address & Household</h6>
+
+                        <div>
+                            <label for="{{ form.civil_status.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.civil_status.label }}</label>
                             {{ form.civil_status }}
                             {% if form.civil_status.errors %}
-                                <div class="text-danger small mt-1">{{ form.civil_status.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.civil_status.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.spouse_name.label_tag }}
-                            {{ form.spouse_name }}
+
+                        <div>
+                            <label for="{{ form.spouse_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.spouse_name.label }}</label>
+                            <input type="text" name="{{ form.spouse_name.name }}" id="{{ form.spouse_name.id_for_label }}" value="{{ form.spouse_name.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
-                        <div class="mb-3">
-                            {{ form.barangay.label_tag }}
+
+                        <div>
+                            <label for="{{ form.barangay.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.barangay.label }}</label>
                             {{ form.barangay }}
                             {% if form.barangay.errors %}
-                                <div class="text-danger small mt-1">{{ form.barangay.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.barangay.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.purok.label_tag }}
+
+                        <div>
+                            <label for="{{ form.purok.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.purok.label }}</label>
                             {{ form.purok }}
                             {% if form.purok.errors %}
-                                <div class="text-danger small mt-1">{{ form.purok.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.purok.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.household_number.label_tag }}
-                            {{ form.household_number }}
+
+                        <div>
+                            <label for="{{ form.household_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.household_number.label }}</label>
+                            <input type="text" name="{{ form.household_number.name }}" id="{{ form.household_number.id_for_label }}" value="{{ form.household_number.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.household_number.errors %}
-                                <div class="text-danger small mt-1">{{ form.household_number.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.household_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
-                    <div class="col-md-4">
-                        <div class="mb-3">
-                            {{ form.usage_type.label_tag }}
+
+                    <!-- Column 3: Meter Info -->
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-success-200">Meter Information</h6>
+
+                        <div>
+                            <label for="{{ form.usage_type.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.usage_type.label }}</label>
                             {{ form.usage_type }}
                             {% if form.usage_type.errors %}
-                                <div class="text-danger small mt-1">{{ form.usage_type.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.usage_type.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.meter_brand.label_tag }}
+
+                        <div>
+                            <label for="{{ form.meter_brand.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.meter_brand.label }}</label>
                             {{ form.meter_brand }}
                             {% if form.meter_brand.errors %}
-                                <div class="text-danger small mt-1">{{ form.meter_brand.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.meter_brand.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.serial_number.label_tag }}
-                            {{ form.serial_number }}
+
+                        <div>
+                            <label for="{{ form.serial_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.serial_number.label }}</label>
+                            <input type="text" name="{{ form.serial_number.name }}" id="{{ form.serial_number.id_for_label }}" value="{{ form.serial_number.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.serial_number.errors %}
-                                <div class="text-danger small mt-1">{{ form.serial_number.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.serial_number.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.first_reading.label_tag }}
-                            {{ form.first_reading }}
+
+                        <div>
+                            <label for="{{ form.first_reading.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_reading.label }}</label>
+                            <input type="number" name="{{ form.first_reading.name }}" id="{{ form.first_reading.id_for_label }}" value="{{ form.first_reading.value|default:'' }}" class="w-full px-3 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_reading.errors %}
-                                <div class="text-danger small mt-1">{{ form.first_reading.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_reading.errors|first }}</p>
                             {% endif %}
                         </div>
-                        <div class="mb-3">
-                            {{ form.registration_date.label_tag }}
+
+                        <div>
+                            <label for="{{ form.registration_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.registration_date.label }}</label>
                             {{ form.registration_date }}
                             {% if form.registration_date.errors %}
-                                <div class="text-danger small mt-1">{{ form.registration_date.errors|first }}</div>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.registration_date.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <div class="mt-4">
-                    <button type="submit" class="btn btn-success">
-                        <i class="bi bi-check2-circle"></i> Submit
-                    </button>
-                    <a href="{% url 'consumers:consumer_management' %}" class="btn btn-secondary">
-                        Cancel
-                    </a>
-                </div>
-            </form>
-        </div>
+            <!-- Form Footer -->
+            <div class="px-5 py-3 border-t border-light-200 flex items-center justify-end gap-2 bg-light-50">
+                <a href="{% url 'consumers:consumer_management' %}"
+                   class="px-4 py-1.5 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 hover:border-dark-400 transition-colors">
+                    <i class="bi bi-x-circle mr-1"></i>Cancel
+                </a>
+                <button type="submit" class="px-4 py-1.5 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
+                    <i class="bi bi-check-circle mr-1"></i>Add Consumer
+                </button>
+            </div>
+        </form>
     </div>
 </div>
+{% endblock %}
 
-<!-- Same JS for dependent dropdown -->
+{% block extra_js %}
 <script>
-document.addEventListener("DOMContentLoaded", function() {
-    const barangaySelect = document.getElementById('id_barangay');
-    const purokSelect = document.getElementById('id_purok');
+// Dependent Dropdown: Barangay → Purok
+document.addEventListener('DOMContentLoaded', function() {
+    const barangaySelect = document.getElementById('{{ form.barangay.id_for_label }}');
+    const purokSelect = document.getElementById('{{ form.purok.id_for_label }}');
 
-    barangaySelect.addEventListener('change', function() {
-        const barangayId = this.value;
+    if (barangaySelect && purokSelect) {
+        barangaySelect.addEventListener('change', function() {
+            const barangayId = this.value;
+            purokSelect.innerHTML = '<option value="">Loading...</option>';
 
-        fetch(`/ajax/load-puroks/?barangay_id=${barangayId}`)
-            .then(response => response.json())
-            .then(data => {
-                purokSelect.innerHTML = '';
-                const placeholder = document.createElement('option');
-                placeholder.textContent = 'Select Purok';
-                placeholder.value = '';
-                purokSelect.appendChild(placeholder);
-
-                data.forEach(p => {
-                    const option = document.createElement('option');
-                    option.value = p.id;
-                    option.textContent = p.name;
-                    purokSelect.appendChild(option);
-                });
-
-                // Keep old value if editing
-                if (purokSelect.dataset.selected) {
-                    purokSelect.value = purokSelect.dataset.selected;
-                }
-            });
-    });
-
-    // Trigger change once so purok loads when editing
-    if (barangaySelect.value) {
-        barangaySelect.dispatchEvent(new Event('change'));
+            if (barangayId) {
+                fetch(`/ajax/load-puroks/?barangay_id=${barangayId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        purokSelect.innerHTML = '<option value="">Select Purok</option>';
+                        data.forEach(purok => {
+                            const option = document.createElement('option');
+                            option.value = purok.id;
+                            option.textContent = purok.name;
+                            purokSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching puroks:', error);
+                        purokSelect.innerHTML = '<option value="">Error loading puroks</option>';
+                    });
+            } else {
+                purokSelect.innerHTML = '<option value="">Select Barangay First</option>';
+            }
+        });
     }
+
+    // Add Tailwind classes to Django form widgets
+    const formInputs = document.querySelectorAll('select, input[type="date"]');
+    formInputs.forEach(input => {
+        input.classList.add('w-full', 'px-3', 'py-1.5', 'text-sm', 'border', 'border-light-300', 'rounded', 'focus:outline-none', 'focus:ring-1', 'focus:ring-primary-500', 'focus:border-transparent');
+    });
 });
 </script>
-
 {% endblock %}
