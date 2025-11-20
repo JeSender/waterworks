@@ -1,134 +1,74 @@
 {% extends "consumers/base.html" %}
+{% load static %}
 
 {% block title %}Admin Verification{% endblock %}
 
-{% block extra_css %}
-<style>
-    .verification-container {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-height: 70vh;
-    }
-    .verification-card {
-        background: white;
-        border-radius: 16px;
-        padding: 3rem;
-        box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
-        max-width: 500px;
-        width: 100%;
-        border-top: 5px solid #dc3545;
-    }
-    .verification-icon {
-        font-size: 4rem;
-        color: #dc3545;
-        margin-bottom: 1.5rem;
-        animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.05); }
-    }
-    .verification-title {
-        font-size: 1.75rem;
-        font-weight: 800;
-        color: #1e293b;
-        margin-bottom: 1rem;
-    }
-    .verification-subtitle {
-        color: #64748b;
-        margin-bottom: 2rem;
-    }
-    .security-badge {
-        background: linear-gradient(135deg, #dc3545, #c82333);
-        color: white;
-        padding: 0.5rem 1rem;
-        border-radius: 50px;
-        font-weight: 600;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        margin-bottom: 1.5rem;
-    }
-    .password-input-group {
-        position: relative;
-    }
-    .password-input-group input {
-        padding-right: 45px;
-    }
-    .toggle-password {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        cursor: pointer;
-        color: #6c757d;
-    }
-</style>
-{% endblock %}
-
 {% block main_content %}
-<div class="verification-container">
-    <div class="verification-card text-center">
-        <div class="verification-icon">
-            <i class="bi bi-shield-lock-fill"></i>
+<div class="min-h-[70vh] flex items-center justify-center">
+    <div class="bg-white rounded-xl shadow-2xl max-w-md w-full mx-4 border-t-4 border-danger-600">
+        <!-- Icon and Title -->
+        <div class="px-8 pt-8 pb-6 text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-danger-100 rounded-full mb-4 animate-pulse">
+                <i class="bi bi-shield-lock-fill text-4xl text-danger-600"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-dark-900 mb-2">Admin Verification Required</h2>
+            <div class="inline-flex items-center gap-2 px-4 py-1.5 bg-danger-600 text-white rounded-full text-sm font-semibold mb-3">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span>High Security Area</span>
+            </div>
+            <p class="text-sm text-dark-600 leading-relaxed">
+                You are attempting to access a restricted area. Please re-enter your password to verify your identity.
+            </p>
         </div>
-        <h2 class="verification-title">Admin Verification Required</h2>
-        <div class="security-badge">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <span>High Security Area</span>
-        </div>
-        <p class="verification-subtitle">
-            You are attempting to access a restricted area. Please re-enter your password to verify your identity.
-        </p>
 
         <!-- Verification Form -->
-        <form method="POST" id="verificationForm">
+        <form method="POST" id="verificationForm" class="px-8 pb-8">
             {% csrf_token %}
             <input type="hidden" name="destination" value="user_management">
 
+            <!-- Username Display -->
             <div class="mb-4">
-                <label class="form-label text-start d-block fw-semibold">
-                    <i class="bi bi-person-badge me-1"></i>Username
+                <label class="block text-xs font-medium text-dark-700 mb-1 flex items-center gap-1">
+                    <i class="bi bi-person-badge"></i>
+                    <span>Username</span>
                 </label>
-                <input type="text" class="form-control form-control-lg" value="{{ request.user.username }}" disabled>
+                <input type="text" value="{{ request.user.username }}" disabled class="w-full px-3 py-2.5 text-sm border border-light-300 rounded bg-light-50 text-dark-600 font-medium">
             </div>
 
-            <div class="mb-4">
-                <label class="form-label text-start d-block fw-semibold">
-                    <i class="bi bi-key-fill me-1"></i>Password
+            <!-- Password Input -->
+            <div class="mb-6">
+                <label class="block text-xs font-medium text-dark-700 mb-1 flex items-center gap-1">
+                    <i class="bi bi-key-fill"></i>
+                    <span>Password</span>
                 </label>
-                <div class="password-input-group">
-                    <input type="password"
-                           name="password"
-                           id="password"
-                           class="form-control form-control-lg"
-                           placeholder="Enter your password"
-                           required
-                           autofocus>
-                    <i class="bi bi-eye-fill toggle-password" id="togglePassword"></i>
+                <div class="relative">
+                    <input type="password" name="password" id="password" required autofocus placeholder="Enter your password" class="w-full px-3 py-2.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-transparent pr-10">
+                    <button type="button" onclick="togglePassword()" class="absolute right-3 top-1/2 -translate-y-1/2 text-dark-400 hover:text-dark-700 transition-colors">
+                        <i class="bi bi-eye-fill" id="toggleIcon"></i>
+                    </button>
                 </div>
             </div>
 
-            <div class="d-grid gap-2 mb-3">
-                <button type="submit" class="btn btn-danger btn-lg">
-                    <i class="bi bi-shield-check me-2"></i>Verify & Continue
+            <!-- Action Buttons -->
+            <div class="space-y-2">
+                <button type="submit" class="w-full px-4 py-2.5 bg-danger-600 text-white text-sm font-medium rounded hover:bg-danger-700 transition-colors shadow-sm flex items-center justify-center gap-2">
+                    <i class="bi bi-shield-check"></i>
+                    <span>Verify & Continue</span>
                 </button>
-            </div>
-
-            <div class="text-center">
-                <a href="{% url 'consumers:home' %}" class="btn btn-link text-muted">
-                    <i class="bi bi-arrow-left me-1"></i>Cancel and Go Back
+                <a href="{% url 'consumers:home' %}" class="block w-full text-center px-4 py-2 text-sm text-dark-600 hover:text-dark-900 transition-colors">
+                    <i class="bi bi-arrow-left mr-1"></i>Cancel and Go Back
                 </a>
             </div>
         </form>
 
         <!-- Security Info -->
-        <div class="alert alert-info mt-4 text-start">
-            <small>
-                <i class="bi bi-info-circle-fill me-1"></i>
-                <strong>Security Notice:</strong> This verification is required for accessing sensitive system functions. Your activity is being logged for security purposes.
-            </small>
+        <div class="px-8 pb-8">
+            <div class="p-3 bg-info-50 border-l-4 border-info-500 rounded">
+                <p class="text-xs text-info-800">
+                    <i class="bi bi-info-circle-fill mr-1"></i>
+                    <strong>Security Notice:</strong> This verification is required for accessing sensitive system functions. Your activity is being logged for security purposes.
+                </p>
+            </div>
         </div>
     </div>
 </div>
@@ -137,9 +77,9 @@
 {% block extra_js %}
 <script>
 // Toggle password visibility
-document.getElementById('togglePassword')?.addEventListener('click', function() {
+function togglePassword() {
     const passwordInput = document.getElementById('password');
-    const icon = this;
+    const icon = document.getElementById('toggleIcon');
 
     if (passwordInput.type === 'password') {
         passwordInput.type = 'text';
@@ -150,11 +90,18 @@ document.getElementById('togglePassword')?.addEventListener('click', function() 
         icon.classList.remove('bi-eye-slash-fill');
         icon.classList.add('bi-eye-fill');
     }
-});
+}
 
 // Auto-focus on password field
 document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('password')?.focus();
+});
+
+// Submit form on Enter key
+document.getElementById('password')?.addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('verificationForm').submit();
+    }
 });
 </script>
 {% endblock %}
