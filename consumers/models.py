@@ -132,9 +132,19 @@ class StaffProfile(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
     assigned_barangay = models.ForeignKey('Barangay', on_delete=models.CASCADE)
     role = models.CharField(max_length=20, default='field_staff')  # field_staff, admin
+    profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, help_text="Profile photo for admin users")
 
     def __str__(self):
         return f"{self.user.username} - {self.assigned_barangay.name}"
+
+    @property
+    def role_display(self):
+        """Return a short display name for the role"""
+        role_map = {
+            'admin': 'Admin',
+            'field_staff': 'Staff',
+        }
+        return role_map.get(self.role, 'Staff')
 
 # ----------------------------
 # Choice Fields

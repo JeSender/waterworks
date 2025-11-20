@@ -9,6 +9,9 @@ urlpatterns = [
     path('login/', views.staff_login, name='staff_login'),
     path('logout/', views.staff_logout, name='staff_logout'),
 
+    # Profile Management
+    path('profile/edit/', views.edit_profile, name='edit_profile'),
+
     # Password Recovery
     path('forgot-password/', views.forgot_password_request, name='forgot_password'),
     path('reset-password/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),

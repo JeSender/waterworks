@@ -173,19 +173,46 @@
                     type="button"
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown')">
-                <span class="text-dark-900 text-sm font-medium hidden md:inline">{{ request.user.get_full_name|default:request.user.username }}</span>
-                <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-sm"
-                     style="background: linear-gradient(135deg, #667eea, #764ba2);">
-                    {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
-                </div>
+                {% if request.user.staffprofile.profile_photo and request.user.staffprofile.role == 'admin' %}
+                    <!-- Admin with Profile Photo -->
+                    <img src="{{ request.user.staffprofile.profile_photo.url }}"
+                         alt="Profile"
+                         class="w-9 h-9 rounded-full border-2 border-primary-500 object-cover">
+                {% else %}
+                    <!-- Role Badge for all users -->
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-xs"
+                         style="background: {% if request.user.staffprofile.role == 'admin' %}linear-gradient(135deg, #dc2626, #991b1b){% else %}linear-gradient(135deg, #2563eb, #1d4ed8){% endif %};">
+                        {{ request.user.staffprofile.role_display|upper }}
+                    </div>
+                {% endif %}
             </button>
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
-                    <div class="text-xs text-dark-500">Signed in as</div>
-                    <div class="font-bold text-dark-900">{{ request.user.get_full_name|default:request.user.username }}</div>
-                    <div class="text-xs text-dark-500">{{ request.user.email|default:"Staff Member" }}</div>
+                    <div class="flex items-center gap-3 mb-2">
+                        {% if request.user.staffprofile.profile_photo and request.user.staffprofile.role == 'admin' %}
+                            <img src="{{ request.user.staffprofile.profile_photo.url }}"
+                                 alt="Profile"
+                                 class="w-12 h-12 rounded-full border-2 border-primary-500 object-cover">
+                        {% else %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-sm"
+                                 style="background: {% if request.user.staffprofile.role == 'admin' %}linear-gradient(135deg, #dc2626, #991b1b){% else %}linear-gradient(135deg, #2563eb, #1d4ed8){% endif %};">
+                                {{ request.user.get_full_name.0|default:request.user.username.0|upper }}
+                            </div>
+                        {% endif %}
+                        <div class="flex-1">
+                            <div class="font-bold text-dark-900">{{ request.user.get_full_name|default:request.user.username }}</div>
+                            <div class="text-xs text-dark-500">{{ request.user.staffprofile.role_display }}</div>
+                        </div>
+                    </div>
+                    <div class="text-xs text-dark-500">{{ request.user.email|default:"No email" }}</div>
                 </div>
+                {% if request.user.staffprofile.role == 'admin' %}
+                <a class="dropdown-item" href="{% url 'consumers:edit_profile' %}">
+                    <i class="bi bi-person-circle text-primary-600"></i>
+                    <span>Edit Profile</span>
+                </a>
                 <div class="dropdown-divider"></div>
+                {% endif %}
                 <a class="dropdown-item" href="{% url 'consumers:staff_logout' %}">
                     <i class="bi bi-box-arrow-right text-danger-600"></i>
                     <span>Logout</span>

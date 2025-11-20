@@ -684,6 +684,66 @@ def staff_logout(request):
 
 
 # ======================
+# PROFILE MANAGEMENT
+# ======================
+
+@login_required
+def edit_profile(request):
+    """
+    Allow admin users to edit their profile and upload photo.
+    """
+    from .decorators import get_client_ip, get_user_agent
+
+    try:
+        profile = request.user.staffprofile
+    except StaffProfile.DoesNotExist:
+        messages.error(request, "Profile not found.")
+        return redirect('consumers:home')
+
+    # Only allow admin to edit profile
+    if profile.role != 'admin':
+        messages.error(request, "Only administrators can edit their profile.")
+        return redirect('consumers:home')
+
+    if request.method == 'POST':
+        # Update user information
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+        email = request.POST.get('email', '').strip()
+
+        if first_name:
+            request.user.first_name = first_name
+        if last_name:
+            request.user.last_name = last_name
+        if email:
+            request.user.email = email
+
+        request.user.save()
+
+        # Handle profile photo upload
+        if 'profile_photo' in request.FILES:
+            profile.profile_photo = request.FILES['profile_photo']
+            profile.save()
+
+            # Log activity
+            UserActivity.objects.create(
+                user=request.user,
+                action='user_updated',
+                description=f'{request.user.username} updated profile photo',
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                target_user=request.user
+            )
+
+        messages.success(request, "Profile updated successfully!")
+        return redirect('consumers:edit_profile')
+
+    return render(request, 'consumers/edit_profile.html', {
+        'profile': profile
+    })
+
+
+# ======================
 # PASSWORD RECOVERY
 # ======================
 
