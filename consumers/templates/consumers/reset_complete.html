@@ -1,0 +1,125 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Password Reset Complete - Balilihan Waterworks</title>
+    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="{% static 'css/styles.css' %}">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: url("{% static 'consumers/images/background.jpg' %}") no-repeat center center fixed;
+            background-size: cover;
+            font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .complete-container {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            backdrop-filter: blur(3px);
+        }
+        .success-icon {
+            animation: scaleIn 0.5s ease-out;
+        }
+        @keyframes scaleIn {
+            from {
+                transform: scale(0);
+                opacity: 0;
+            }
+            to {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        .countdown {
+            font-weight: bold;
+            color: #4f46e5;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div class="complete-container">
+        <div class="bg-white/90 backdrop-blur-sm p-10 rounded-2xl w-full max-w-md shadow-2xl text-center">
+            <!-- Success Icon -->
+            <div class="success-icon mb-6">
+                <div class="inline-flex items-center justify-center w-24 h-24 bg-success-100 rounded-full mb-4">
+                    <i class="bi bi-check-circle-fill text-success-600 text-6xl"></i>
+                </div>
+            </div>
+
+            <!-- Success Message -->
+            <h2 class="text-2xl font-bold text-dark-900 mb-3">
+                Password Reset Successful!
+            </h2>
+
+            <p class="text-dark-600 mb-6 text-sm">
+                Your password has been successfully updated. You can now login with your new password.
+            </p>
+
+            <!-- Security Info -->
+            <div class="bg-info-50 border border-info-200 rounded-lg p-4 mb-6 text-left">
+                <p class="text-xs text-info-700 font-semibold mb-2">
+                    <i class="bi bi-shield-check mr-1"></i>Security Tips:
+                </p>
+                <ul class="text-xs text-info-700 space-y-1 list-disc list-inside">
+                    <li>Keep your password confidential</li>
+                    <li>Don't share your password with anyone</li>
+                    <li>Use a unique password for this account</li>
+                    <li>Change your password periodically</li>
+                </ul>
+            </div>
+
+            <!-- Auto-redirect Notice -->
+            <div class="bg-light-50 border border-light-200 rounded-lg p-3 mb-6">
+                <p class="text-xs text-dark-600">
+                    <i class="bi bi-info-circle mr-1"></i>
+                    Redirecting to login page in <span class="countdown" id="countdown">5</span> seconds...
+                </p>
+            </div>
+
+            <!-- Login Button -->
+            <a href="{% url 'consumers:staff_login' %}"
+               class="block w-full btn-primary py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg">
+                <i class="bi bi-box-arrow-in-right mr-2"></i>
+                Go to Login Page
+            </a>
+
+            <!-- Logo -->
+            <div class="mt-6 pt-6 border-t border-light-200">
+                <img src="{% static 'consumers/images/logo.jpg' %}"
+                     alt="Logo"
+                     class="w-16 h-16 rounded-full object-cover mx-auto opacity-80">
+                <p class="text-xs text-dark-500 mt-2">Balilihan Waterworks</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-redirect countdown
+        let countdown = 5;
+        const countdownElement = document.getElementById('countdown');
+
+        const timer = setInterval(() => {
+            countdown--;
+            countdownElement.textContent = countdown;
+
+            if (countdown <= 0) {
+                clearInterval(timer);
+                window.location.href = "{% url 'consumers:staff_login' %}";
+            }
+        }, 1000);
+
+        // Optional: Allow user to click anywhere to redirect immediately
+        document.addEventListener('click', function(e) {
+            if (!e.target.closest('a')) {
+                clearInterval(timer);
+                window.location.href = "{% url 'consumers:staff_login' %}";
+            }
+        });
+    </script>
+</body>
+</html>

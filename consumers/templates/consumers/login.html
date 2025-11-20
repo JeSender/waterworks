@@ -86,6 +86,13 @@
                         class="w-full btn-primary py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg">
                     Login
                 </button>
+
+                <!-- Forgot Password Link -->
+                <div class="text-center mt-3">
+                    <a href="{% url 'consumers:forgot_password' %}" class="text-sm text-dark-900 hover:text-primary-700 font-medium transition-colors bg-white/60 px-4 py-2 rounded-lg inline-block hover:bg-white/80">
+                        <i class="bi bi-key mr-1"></i>Forgot Password?
+                    </a>
+                </div>
             </form>
 
             <!-- Error Messages -->

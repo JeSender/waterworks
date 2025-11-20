@@ -5,26 +5,68 @@ from django.contrib.auth.models import User
 from django.contrib.auth.admin import UserAdmin
 
 from .models import (
-    Consumer, Barangay, Purok, MeterBrand, MeterReading, 
-    Bill, Payment, SystemSetting, StaffProfile, UserLoginEvent
+    Consumer, Barangay, Purok, MeterBrand, MeterReading,
+    Bill, Payment, SystemSetting, StaffProfile, UserLoginEvent,
+    PasswordResetToken, UserActivity
 )
 
 # NEW: Admin for User Login Events
 @admin.register(UserLoginEvent)
 class UserLoginEventAdmin(admin.ModelAdmin):
-    list_display = ['user', 'login_timestamp'] # Columns to show in the list view
-    list_filter = ['login_timestamp', 'user']  # Filters on the right side
-    search_fields = ['user__username', 'user__first_name', 'user__last_name'] # Search bar
-    ordering = ['-login_timestamp']            # Order by most recent first
-    readonly_fields = ['user', 'login_timestamp'] # Make fields read-only to prevent editing
+    list_display = ['user', 'login_timestamp', 'status', 'ip_address', 'login_method']
+    list_filter = ['login_timestamp', 'user', 'status', 'login_method']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'ip_address']
+    ordering = ['-login_timestamp']
+    readonly_fields = ['user', 'login_timestamp', 'ip_address', 'user_agent', 'login_method', 'status', 'session_key', 'logout_timestamp']
 
-    # Optional: Customize how the list view looks
     def has_add_permission(self, request):
         # Prevent adding events manually through the admin
         return False
 
     def has_change_permission(self, request, obj=None):
         # Prevent changing events through the admin (they are read-only)
+        return False
+
+
+# Admin for Password Reset Tokens
+@admin.register(PasswordResetToken)
+class PasswordResetTokenAdmin(admin.ModelAdmin):
+    list_display = ['user', 'created_at', 'expires_at', 'is_used', 'is_valid_status']
+    list_filter = ['created_at', 'is_used', 'expires_at']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'token']
+    ordering = ['-created_at']
+    readonly_fields = ['user', 'token', 'created_at', 'expires_at', 'is_used', 'ip_address']
+
+    def is_valid_status(self, obj):
+        if obj.is_valid():
+            return format_html('<span class="badge bg-success">Valid</span>')
+        elif obj.is_used:
+            return format_html('<span class="badge bg-secondary">Used</span>')
+        else:
+            return format_html('<span class="badge bg-danger">Expired</span>')
+    is_valid_status.short_description = 'Status'
+
+    def has_add_permission(self, request):
+        # Prevent adding tokens manually through the admin
+        return False
+
+
+# Admin for User Activity
+@admin.register(UserActivity)
+class UserActivityAdmin(admin.ModelAdmin):
+    list_display = ['user', 'action', 'created_at', 'ip_address', 'target_user']
+    list_filter = ['action', 'created_at', 'user']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'description', 'ip_address']
+    ordering = ['-created_at']
+    readonly_fields = ['user', 'action', 'description', 'ip_address', 'user_agent', 'created_at', 'target_user']
+    date_hierarchy = 'created_at'
+
+    def has_add_permission(self, request):
+        # Prevent adding activities manually through the admin
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        # Prevent changing activities through the admin (they are read-only)
         return False
 
 

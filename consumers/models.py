@@ -60,6 +60,72 @@ class UserLoginEvent(models.Model):
         """Check if session is still active"""
         return self.status == 'success' and self.logout_timestamp is None
 
+
+class PasswordResetToken(models.Model):
+    """
+    Stores password reset tokens for secure password recovery.
+    Tokens expire after 24 hours for security.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    token = models.CharField(max_length=100, unique=True, db_index=True)
+    created_at = models.DateTimeField(default=timezone.now)
+    expires_at = models.DateTimeField()
+    is_used = models.BooleanField(default=False)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Password Reset Token"
+        verbose_name_plural = "Password Reset Tokens"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.token[:10]}... - {'Used' if self.is_used else 'Active'}"
+
+    def is_valid(self):
+        """Check if token is still valid (not expired and not used)"""
+        return not self.is_used and timezone.now() < self.expires_at
+
+    def save(self, *args, **kwargs):
+        if not self.pk:  # Only set expires_at on creation
+            self.expires_at = timezone.now() + timezone.timedelta(hours=24)
+        if not self.token:
+            self.token = uuid.uuid4().hex
+        super().save(*args, **kwargs)
+
+
+class UserActivity(models.Model):
+    """
+    Tracks important user activities for audit and security purposes.
+    """
+    ACTION_CHOICES = [
+        ('password_reset_requested', 'Password Reset Requested'),
+        ('password_reset_completed', 'Password Reset Completed'),
+        ('password_changed', 'Password Changed'),
+        ('user_created', 'User Created'),
+        ('user_updated', 'User Updated'),
+        ('user_deleted', 'User Deleted'),
+        ('bill_created', 'Bill Created'),
+        ('payment_processed', 'Payment Processed'),
+        ('meter_reading_confirmed', 'Meter Reading Confirmed'),
+    ]
+
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activities')
+    action = models.CharField(max_length=50, choices=ACTION_CHOICES)
+    description = models.TextField(blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(blank=True)
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='targeted_activities')
+
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "User Activity"
+        verbose_name_plural = "User Activities"
+
+    def __str__(self):
+        return f"{self.user.username if self.user else 'System'} - {self.get_action_display()} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+
 # ... (rest of your existing models) ...
 
 class StaffProfile(models.Model):

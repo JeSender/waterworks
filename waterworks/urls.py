@@ -28,12 +28,6 @@ urlpatterns = [
     path('', include('consumers.urls')),
 ]
 
-# Add browser reload URL in development
-if settings.DEBUG:
-    urlpatterns += [
-        path('__reload__/', include('django_browser_reload.urls')),
-    ]
-
 # Custom error handlers
 handler404 = custom_404_view
 handler500 = custom_500_view

@@ -28,7 +28,7 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill
 from .models import (
     Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment,
-    StaffProfile, UserLoginEvent, MeterBrand
+    StaffProfile, UserLoginEvent, MeterBrand, PasswordResetToken, UserActivity
 )
 from .forms import ConsumerForm
 
@@ -684,6 +684,153 @@ def staff_logout(request):
 
 
 # ======================
+# PASSWORD RECOVERY
+# ======================
+
+def forgot_password_request(request):
+    """
+    Password reset request page for superuser/admin accounts.
+    Staff accounts are managed directly by admin through user management.
+    """
+    from .decorators import get_client_ip, get_user_agent
+
+    if request.method == "POST":
+        username = request.POST.get('username')
+
+        try:
+            user = User.objects.get(username=username)
+
+            # Only allow password reset for superuser and admin staff
+            if not (user.is_superuser or (user.is_staff and user.groups.filter(name='Admin').exists())):
+                messages.error(request, "Password reset is only available for administrators. Please contact your administrator for password assistance.")
+                return redirect('consumers:forgot_password')
+
+            # Check if user already has a valid token
+            existing_token = PasswordResetToken.objects.filter(
+                user=user,
+                is_used=False,
+                expires_at__gt=timezone.now()
+            ).first()
+
+            if existing_token:
+                # Use existing valid token
+                token = existing_token
+            else:
+                # Create new password reset token
+                token = PasswordResetToken.objects.create(
+                    user=user,
+                    ip_address=get_client_ip(request)
+                )
+
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                action='password_reset_requested',
+                description=f'Password reset requested for {user.username}',
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request)
+            )
+
+            # For thesis project: Display the reset link directly instead of sending email
+            reset_url = request.build_absolute_uri(
+                reverse('consumers:password_reset_confirm', kwargs={'token': token.token})
+            )
+
+            # Store reset URL in session to display on next page
+            request.session['reset_url'] = reset_url
+            request.session['reset_username'] = user.username
+
+            messages.success(request, "Password reset link generated successfully!")
+            return redirect('consumers:forgot_password')
+
+        except User.DoesNotExist:
+            messages.error(request, "No account found with that username.")
+            return redirect('consumers:forgot_password')
+
+    # Get reset URL from session if available
+    reset_url = request.session.pop('reset_url', None)
+    reset_username = request.session.pop('reset_username', None)
+
+    return render(request, 'consumers/forgot_password.html', {
+        'reset_url': reset_url,
+        'reset_username': reset_username
+    })
+
+
+def password_reset_confirm(request, token):
+    """
+    Confirm password reset with token and set new password.
+    """
+    from .decorators import get_client_ip, get_user_agent
+
+    try:
+        reset_token = PasswordResetToken.objects.get(token=token)
+
+        # Check if token is valid
+        if not reset_token.is_valid():
+            messages.error(request, "This password reset link has expired or has already been used.")
+            return redirect('consumers:staff_login')
+
+        if request.method == "POST":
+            new_password = request.POST.get('new_password')
+            confirm_password = request.POST.get('confirm_password')
+
+            # Validate passwords match
+            if new_password != confirm_password:
+                messages.error(request, "Passwords do not match.")
+                return render(request, 'consumers/reset_password.html', {
+                    'token': token,
+                    'username': reset_token.user.username
+                })
+
+            # Validate password strength
+            if len(new_password) < 8:
+                messages.error(request, "Password must be at least 8 characters long.")
+                return render(request, 'consumers/reset_password.html', {
+                    'token': token,
+                    'username': reset_token.user.username
+                })
+
+            # Set new password
+            user = reset_token.user
+            user.set_password(new_password)
+            user.save()
+
+            # Mark token as used
+            reset_token.is_used = True
+            reset_token.save()
+
+            # Log the activity
+            UserActivity.objects.create(
+                user=user,
+                action='password_reset_completed',
+                description=f'Password reset completed for {user.username}',
+                ip_address=get_client_ip(request),
+                user_agent=get_user_agent(request),
+                target_user=user
+            )
+
+            messages.success(request, "Your password has been reset successfully! You can now login with your new password.")
+            return redirect('consumers:password_reset_complete')
+
+        return render(request, 'consumers/reset_password.html', {
+            'token': token,
+            'username': reset_token.user.username
+        })
+
+    except PasswordResetToken.DoesNotExist:
+        messages.error(request, "Invalid password reset link.")
+        return redirect('consumers:staff_login')
+
+
+def password_reset_complete(request):
+    """
+    Password reset success confirmation page.
+    """
+    return render(request, 'consumers/reset_complete.html')
+
+
+# ======================
 # DASHBOARD
 # ======================
 
@@ -998,15 +1145,60 @@ def edit_consumer(request, consumer_id):
     return render(request, 'consumers/edit_consumer.html', {'form': form, 'consumer': consumer})
 
 
-# Keep these (they're fine)
+@login_required
 def consumer_list(request):
-    consumers = Consumer.objects.select_related('barangay', 'purok').all()
+    """
+    Enhanced consumer list view with filtering and statistics.
+    """
+    from datetime import datetime
+    from django.db.models import Count
+
+    # Base queryset with optimized queries
+    consumers = Consumer.objects.select_related('barangay', 'purok', 'meter_brand').all()
+
+    # Get all barangays for filter dropdown
+    barangays = Barangay.objects.all().order_by('name')
+
+    # Apply filters
     query = request.GET.get('q')
+    barangay_filter = request.GET.get('barangay')
+    status_filter = request.GET.get('status')
+
     if query:
         consumers = consumers.filter(
-            Q(first_name__icontains=query) | Q(last_name__icontains=query)
+            Q(first_name__icontains=query) |
+            Q(last_name__icontains=query) |
+            Q(account_number__icontains=query) |
+            Q(phone_number__icontains=query)
         )
-    return render(request, 'consumers/consumer_list.html', {'consumers': consumers})
+
+    if barangay_filter:
+        consumers = consumers.filter(barangay_id=barangay_filter)
+
+    if status_filter:
+        consumers = consumers.filter(status=status_filter)
+
+    # Calculate statistics
+    total_consumers = Consumer.objects.count()
+    connected_count = Consumer.objects.filter(status='active').count()
+    disconnected_count = Consumer.objects.filter(status='disconnected').count()
+
+    # Consumers registered this month
+    current_month = datetime.now().month
+    current_year = datetime.now().year
+    this_month_count = Consumer.objects.filter(
+        registration_date__month=current_month,
+        registration_date__year=current_year
+    ).count()
+
+    return render(request, 'consumers/consumer_list.html', {
+        'consumers': consumers,
+        'barangays': barangays,
+        'total_consumers': total_consumers,
+        'connected_count': connected_count,
+        'disconnected_count': disconnected_count,
+        'this_month_count': this_month_count,
+    })
 
 
 def consumer_detail(request, consumer_id):
@@ -2161,18 +2353,29 @@ def user_login_history(request):
 @login_required
 def consumer_bill(request, consumer_id):
     """
-    Display all bills for a specific consumer.
+    Display all bills for a specific consumer with summary statistics.
     Optimized with select_related to reduce database queries.
     """
+    from django.db.models import Sum
+    from datetime import datetime
+
     consumer = get_object_or_404(Consumer, id=consumer_id)
     bills = consumer.bills.select_related(
         'current_reading__consumer',
         'previous_reading__consumer'
     ).order_by('-billing_period')
 
+    # Calculate summary statistics
+    total_billed = bills.aggregate(total=Sum('total_amount'))['total'] or 0
+    outstanding_balance = bills.filter(status='Pending').aggregate(total=Sum('total_amount'))['total'] or 0
+    outstanding_balance += bills.filter(status='Overdue').aggregate(total=Sum('total_amount'))['total'] or 0
+
     return render(request, 'consumers/consumer_bill.html', {
         'consumer': consumer,
-        'bills': bills
+        'bills': bills,
+        'total_billed': total_billed,
+        'outstanding_balance': outstanding_balance,
+        'today': datetime.now(),
     })
 
 
