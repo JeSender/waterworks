@@ -5,44 +5,44 @@
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
-    <!-- Page Header -->
-    <div class="mb-6">
-        <h2 class="text-3xl font-bold text-dark-900 mb-2">Consumer Management</h2>
-        <p class="text-dark-500 text-base">Manage, search, and filter all consumers</p>
+    <!-- Page Header - Minimal -->
+    <div class="mb-5">
+        <h2 class="text-xl font-bold text-dark-900">Consumer Management</h2>
+        <p class="text-dark-500 text-xs mt-1">Manage, search, and filter all consumers</p>
     </div>
 
     <!-- Messages/Alerts -->
     {% if messages %}
-    <div class="mb-6 space-y-3">
+    <div class="mb-4 space-y-2">
         {% for message in messages %}
-        <div class="alert-{{ message.tags }} flex items-center justify-between rounded-lg">
+        <div class="alert-{{ message.tags }} flex items-center justify-between rounded text-sm py-2 px-3">
             <span>{{ message }}</span>
             <button onclick="this.parentElement.remove()" class="text-current hover:opacity-75">
-                <i class="bi bi-x-lg"></i>
+                <i class="bi bi-x text-lg"></i>
             </button>
         </div>
         {% endfor %}
     </div>
     {% endif %}
 
-    <!-- Search + Filter Form -->
-    <form method="get" class="card p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+    <!-- Search + Filter Form - Compact -->
+    <form method="get" class="bg-white rounded-lg border border-light-300 p-4 mb-4 shadow-sm">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
             <!-- Search Input -->
             <div class="lg:col-span-2">
-                <label for="search" class="form-label">Search</label>
+                <label for="search" class="block text-xs font-medium text-dark-600 mb-1">Search</label>
                 <input type="text"
                        id="search"
                        name="search"
-                       placeholder="Search by name or meter serial"
-                       class="form-input"
+                       placeholder="Name or meter serial..."
+                       class="w-full px-3 py-1.5 text-sm border border-light-400 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent"
                        value="{{ search_query }}">
             </div>
 
             <!-- Barangay Filter -->
             <div>
-                <label for="barangay" class="form-label">Barangay</label>
-                <select name="barangay" id="barangay" class="form-select">
+                <label for="barangay" class="block text-xs font-medium text-dark-600 mb-1">Barangay</label>
+                <select name="barangay" id="barangay" class="w-full px-3 py-1.5 text-sm border border-light-400 rounded focus:outline-none focus:ring-1 focus:ring-primary-500">
                     <option value="">All Barangays</option>
                     {% for brgy in barangays %}
                     <option value="{{ brgy.id }}" {% if barangay_filter == brgy.id|stringformat:"s" %}selected{% endif %}>
@@ -52,75 +52,77 @@
                 </select>
             </div>
 
-            <!-- Action Buttons -->
+            <!-- Action Buttons - Compact -->
             <div class="flex items-end gap-2">
-                <button type="submit" class="btn-primary flex-1">
-                    <i class="bi bi-filter mr-2"></i>Search
+                <button type="submit" class="flex-1 px-3 py-1.5 bg-primary-600 text-white text-xs font-medium rounded hover:bg-primary-700 transition-colors">
+                    <i class="bi bi-search mr-1"></i>Search
                 </button>
-                <a href="{% url 'consumers:consumer_management' %}" class="btn-secondary flex-1">
-                    <i class="bi bi-arrow-clockwise mr-2"></i>Reset
+                <a href="{% url 'consumers:consumer_management' %}" class="flex-1 px-3 py-1.5 bg-light-200 text-dark-700 text-xs font-medium rounded hover:bg-light-300 transition-colors text-center">
+                    <i class="bi bi-arrow-clockwise mr-1"></i>Reset
                 </a>
             </div>
         </div>
     </form>
 
-    <!-- Add Consumer Button -->
-    <div class="mb-6">
+    <!-- Add Consumer Button - Minimal -->
+    <div class="mb-4">
         <button type="button"
                 onclick="openModal('addConsumerModal')"
-                class="btn-success">
-            <i class="bi bi-person-plus mr-2"></i>Add Consumer
+                class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
+            <i class="bi bi-plus-circle mr-1.5"></i>Add Consumer
         </button>
     </div>
 
-    <!-- Consumer Table -->
-    <div class="card overflow-hidden">
+    <!-- Consumer Table - Compact & Modern -->
+    <div class="bg-white rounded-lg border border-light-300 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
-            <table class="table">
-                <thead class="table-header">
+            <table class="w-full text-sm">
+                <thead class="bg-light-100 border-b border-light-300">
                     <tr>
-                        <th class="table-cell text-center">ID Number</th>
-                        <th class="table-cell">Name</th>
-                        <th class="table-cell">Phone</th>
-                        <th class="table-cell">Barangay</th>
-                        <th class="table-cell">Purok</th>
-                        <th class="table-cell">Serial</th>
-                        <th class="table-cell text-center" style="width: 200px;">Actions</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-center uppercase tracking-wider">ID</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Name</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Phone</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Barangay</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Purok</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Serial</th>
+                        <th class="px-4 py-2 text-xs font-semibold text-dark-700 text-center uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody>
+                <tbody class="divide-y divide-light-200">
                     {% for consumer in consumers.object_list %}
-                    <tr class="table-row">
-                        <td class="table-cell text-center font-semibold text-primary-600">
+                    <tr class="hover:bg-light-50 transition-colors">
+                        <td class="px-4 py-2.5 text-center text-xs font-semibold text-primary-600">
                             {{ consumer.account_number }}
                         </td>
-                        <td class="table-cell font-medium">
+                        <td class="px-4 py-2.5 text-xs font-medium text-dark-900">
                             {{ consumer.first_name }}
-                            {% if consumer.middle_name %}{{ consumer.middle_name }} {% endif %}
+                            {% if consumer.middle_name %}{{ consumer.middle_name|slice:":1" }}. {% endif %}
                             {{ consumer.last_name }}
                         </td>
-                        <td class="table-cell">{{ consumer.phone_number|default:"—" }}</td>
-                        <td class="table-cell">{{ consumer.barangay.name|default:"—" }}</td>
-                        <td class="table-cell">{{ consumer.purok.name|default:"—" }}</td>
-                        <td class="table-cell">{{ consumer.serial_number|default:"—" }}</td>
-                        <td class="table-cell text-center">
-                            <div class="flex items-center justify-center gap-2">
+                        <td class="px-4 py-2.5 text-xs text-dark-600">{{ consumer.phone_number|default:"—" }}</td>
+                        <td class="px-4 py-2.5 text-xs text-dark-600">{{ consumer.barangay.name|default:"—" }}</td>
+                        <td class="px-4 py-2.5 text-xs text-dark-600">{{ consumer.purok.name|default:"—" }}</td>
+                        <td class="px-4 py-2.5 text-xs text-dark-600">{{ consumer.serial_number|default:"—" }}</td>
+                        <td class="px-4 py-2.5 text-center">
+                            <div class="flex items-center justify-center gap-1.5">
                                 <a href="{% url 'consumers:consumer_detail' consumer.id %}"
-                                   class="btn-info btn-sm">
-                                    <i class="bi bi-eye"></i> View
+                                   class="p-1.5 text-info-600 hover:bg-info-50 rounded transition-colors"
+                                   title="View Details">
+                                    <i class="bi bi-eye text-sm"></i>
                                 </a>
                                 <a href="{% url 'consumers:edit_consumer' consumer.pk %}"
-                                   class="btn-warning btn-sm">
-                                    <i class="bi bi-pencil-square"></i> Edit
+                                   class="p-1.5 text-warning-600 hover:bg-warning-50 rounded transition-colors"
+                                   title="Edit Consumer">
+                                    <i class="bi bi-pencil text-sm"></i>
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="table-cell text-center text-dark-400 py-12">
-                            <i class="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
-                            <p class="text-lg font-semibold">No consumers found</p>
+                        <td colspan="7" class="px-4 py-10 text-center text-dark-400">
+                            <i class="bi bi-inbox text-3xl block mb-2 opacity-20"></i>
+                            <p class="text-xs font-medium">No consumers found</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -129,22 +131,22 @@
         </div>
     </div>
 
-    <!-- Pagination -->
+    <!-- Pagination - Minimal -->
     {% if consumers.has_other_pages %}
-    <nav aria-label="Consumer pagination" class="mt-6">
-        <ul class="pagination">
-            <!-- Previous Button -->
+    <nav aria-label="Consumer pagination" class="mt-4">
+        <ul class="flex items-center justify-center gap-1">
+            <!-- Previous -->
             {% if consumers.has_previous %}
             <li>
-                <a class="pagination-link"
+                <a class="px-3 py-1.5 text-xs border border-light-300 rounded hover:bg-light-100 transition-colors"
                    href="?page={{ consumers.previous_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
-                    <i class="bi bi-chevron-left"></i> Prev
+                    <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
             {% else %}
             <li>
-                <span class="pagination-link opacity-50 cursor-not-allowed">
-                    <i class="bi bi-chevron-left"></i> Prev
+                <span class="px-3 py-1.5 text-xs border border-light-300 rounded opacity-40 cursor-not-allowed">
+                    <i class="bi bi-chevron-left"></i>
                 </span>
             </li>
             {% endif %}
@@ -153,11 +155,13 @@
             {% for num in consumers.paginator.page_range %}
                 {% if consumers.number == num %}
                 <li>
-                    <span class="pagination-link-active">{{ num }}</span>
+                    <span class="px-3 py-1.5 text-xs font-semibold bg-primary-600 text-white border border-primary-600 rounded">
+                        {{ num }}
+                    </span>
                 </li>
                 {% elif num >= consumers.number|add:-2 and num <= consumers.number|add:2 %}
                 <li>
-                    <a class="pagination-link"
+                    <a class="px-3 py-1.5 text-xs border border-light-300 rounded hover:bg-light-100 transition-colors"
                        href="?page={{ num }}&search={{ search_query }}&barangay={{ barangay_filter }}">
                         {{ num }}
                     </a>
@@ -165,18 +169,18 @@
                 {% endif %}
             {% endfor %}
 
-            <!-- Next Button -->
+            <!-- Next -->
             {% if consumers.has_next %}
             <li>
-                <a class="pagination-link"
+                <a class="px-3 py-1.5 text-xs border border-light-300 rounded hover:bg-light-100 transition-colors"
                    href="?page={{ consumers.next_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
-                    Next <i class="bi bi-chevron-right"></i>
+                    <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
             {% else %}
             <li>
-                <span class="pagination-link opacity-50 cursor-not-allowed">
-                    Next <i class="bi bi-chevron-right"></i>
+                <span class="px-3 py-1.5 text-xs border border-light-300 rounded opacity-40 cursor-not-allowed">
+                    <i class="bi bi-chevron-right"></i>
                 </span>
             </li>
             {% endif %}
@@ -185,29 +189,29 @@
     {% endif %}
 </div>
 
-<!-- Add Consumer Modal -->
-<div id="addConsumerModal" class="modal-overlay hidden" onclick="closeModalOnOutsideClick(event, 'addConsumerModal')">
-    <div class="modal-content max-w-5xl" onclick="event.stopPropagation()">
+<!-- Add Consumer Modal - Minimal & Flat -->
+<div id="addConsumerModal" class="fixed inset-0 bg-dark-900/40 backdrop-blur-sm hidden z-50" onclick="closeModalOnOutsideClick(event, 'addConsumerModal')">
+    <div class="fixed inset-4 md:inset-auto md:top-1/2 md:left-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:w-full md:max-w-4xl bg-white rounded-lg shadow-xl overflow-hidden" onclick="event.stopPropagation()">
         <form method="POST" action="{% url 'consumers:add_consumer' %}">
             {% csrf_token %}
 
-            <!-- Modal Header -->
-            <div class="px-6 py-4 border-b border-light-300 flex items-center justify-between">
-                <h5 class="text-xl font-bold text-dark-900">Add New Consumer</h5>
+            <!-- Modal Header - Subtle -->
+            <div class="px-5 py-3 border-b border-light-200 flex items-center justify-between bg-light-50">
+                <h5 class="text-base font-semibold text-dark-900">Add New Consumer</h5>
                 <button type="button"
                         onclick="closeModal('addConsumerModal')"
-                        class="text-dark-400 hover:text-dark-900 transition-colors">
-                    <i class="bi bi-x-lg text-2xl"></i>
+                        class="text-dark-400 hover:text-dark-900 transition-colors p-1">
+                    <i class="bi bi-x text-xl"></i>
                 </button>
             </div>
 
-            <!-- Modal Body -->
-            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+            <!-- Modal Body - Compact -->
+            <div class="px-5 py-4 max-h-[calc(100vh-12rem)] md:max-h-[70vh] overflow-y-auto">
                 <!-- Form Errors -->
                 {% if form.errors %}
-                <div class="alert-danger mb-6">
-                    <strong class="font-bold">Please correct the errors below:</strong>
-                    <ul class="mt-2 ml-5 list-disc">
+                <div class="bg-danger-50 border border-danger-200 rounded px-3 py-2 mb-4">
+                    <p class="text-xs font-semibold text-danger-800 mb-1">Please correct the errors below:</p>
+                    <ul class="text-xs text-danger-700 ml-4 list-disc space-y-0.5">
                         {% for field in form %}
                             {% if field.errors %}
                             <li>{{ field.label }}: {{ field.errors|first }}</li>
@@ -220,157 +224,157 @@
                 </div>
                 {% endif %}
 
-                <!-- Form Grid - 3 Columns -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <!-- Form Grid - Balanced 3 Columns -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
 
                     <!-- Column 1: Personal Info -->
-                    <div class="space-y-4">
-                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Personal Information</h6>
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Personal Information</h6>
 
                         <div>
-                            <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
-                            {{ form.first_name }}
+                            <label for="{{ form.first_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_name.label }}</label>
+                            <input type="text" name="{{ form.first_name.name }}" id="{{ form.first_name.id_for_label }}" value="{{ form.first_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_name.errors %}
-                            <p class="form-error">{{ form.first_name.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_name.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.middle_name.id_for_label }}" class="form-label">{{ form.middle_name.label }}</label>
-                            {{ form.middle_name }}
+                            <label for="{{ form.middle_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.middle_name.label }}</label>
+                            <input type="text" name="{{ form.middle_name.name }}" id="{{ form.middle_name.id_for_label }}" value="{{ form.middle_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
 
                         <div>
-                            <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
-                            {{ form.last_name }}
+                            <label for="{{ form.last_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.last_name.label }}</label>
+                            <input type="text" name="{{ form.last_name.name }}" id="{{ form.last_name.id_for_label }}" value="{{ form.last_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.last_name.errors %}
-                            <p class="form-error">{{ form.last_name.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.last_name.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.birth_date.id_for_label }}" class="form-label">{{ form.birth_date.label }}</label>
+                            <label for="{{ form.birth_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.birth_date.label }}</label>
                             {{ form.birth_date }}
                             {% if form.birth_date.errors %}
-                            <p class="form-error">{{ form.birth_date.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.birth_date.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }}</label>
+                            <label for="{{ form.gender.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.gender.label }}</label>
                             {{ form.gender }}
                             {% if form.gender.errors %}
-                            <p class="form-error">{{ form.gender.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.gender.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }}</label>
-                            {{ form.phone_number }}
+                            <label for="{{ form.phone_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.phone_number.label }}</label>
+                            <input type="text" name="{{ form.phone_number.name }}" id="{{ form.phone_number.id_for_label }}" value="{{ form.phone_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.phone_number.errors %}
-                            <p class="form-error">{{ form.phone_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.phone_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Column 2: Address & Household -->
-                    <div class="space-y-4">
-                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Address & Household</h6>
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Address & Household</h6>
 
                         <div>
-                            <label for="{{ form.civil_status.id_for_label }}" class="form-label">{{ form.civil_status.label }}</label>
+                            <label for="{{ form.civil_status.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.civil_status.label }}</label>
                             {{ form.civil_status }}
                             {% if form.civil_status.errors %}
-                            <p class="form-error">{{ form.civil_status.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.civil_status.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.spouse_name.id_for_label }}" class="form-label">{{ form.spouse_name.label }}</label>
-                            {{ form.spouse_name }}
+                            <label for="{{ form.spouse_name.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.spouse_name.label }}</label>
+                            <input type="text" name="{{ form.spouse_name.name }}" id="{{ form.spouse_name.id_for_label }}" value="{{ form.spouse_name.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                         </div>
 
                         <div>
-                            <label for="{{ form.barangay.id_for_label }}" class="form-label">{{ form.barangay.label }}</label>
+                            <label for="{{ form.barangay.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.barangay.label }}</label>
                             {{ form.barangay }}
                             {% if form.barangay.errors %}
-                            <p class="form-error">{{ form.barangay.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.barangay.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.purok.id_for_label }}" class="form-label">{{ form.purok.label }}</label>
+                            <label for="{{ form.purok.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.purok.label }}</label>
                             {{ form.purok }}
                             {% if form.purok.errors %}
-                            <p class="form-error">{{ form.purok.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.purok.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.household_number.id_for_label }}" class="form-label">{{ form.household_number.label }}</label>
-                            {{ form.household_number }}
+                            <label for="{{ form.household_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.household_number.label }}</label>
+                            <input type="text" name="{{ form.household_number.name }}" id="{{ form.household_number.id_for_label }}" value="{{ form.household_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.household_number.errors %}
-                            <p class="form-error">{{ form.household_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.household_number.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
 
                     <!-- Column 3: Meter Info -->
-                    <div class="space-y-4">
-                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Meter Information</h6>
+                    <div class="space-y-3">
+                        <h6 class="text-xs font-semibold text-dark-600 uppercase tracking-wide pb-1.5 border-b border-light-300">Meter Information</h6>
 
                         <div>
-                            <label for="{{ form.usage_type.id_for_label }}" class="form-label">{{ form.usage_type.label }}</label>
+                            <label for="{{ form.usage_type.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.usage_type.label }}</label>
                             {{ form.usage_type }}
                             {% if form.usage_type.errors %}
-                            <p class="form-error">{{ form.usage_type.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.usage_type.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.meter_brand.id_for_label }}" class="form-label">{{ form.meter_brand.label }}</label>
+                            <label for="{{ form.meter_brand.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.meter_brand.label }}</label>
                             {{ form.meter_brand }}
                             {% if form.meter_brand.errors %}
-                            <p class="form-error">{{ form.meter_brand.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.meter_brand.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.serial_number.id_for_label }}" class="form-label">{{ form.serial_number.label }}</label>
-                            {{ form.serial_number }}
+                            <label for="{{ form.serial_number.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.serial_number.label }}</label>
+                            <input type="text" name="{{ form.serial_number.name }}" id="{{ form.serial_number.id_for_label }}" value="{{ form.serial_number.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.serial_number.errors %}
-                            <p class="form-error">{{ form.serial_number.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.serial_number.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.first_reading.id_for_label }}" class="form-label">{{ form.first_reading.label }}</label>
-                            {{ form.first_reading }}
+                            <label for="{{ form.first_reading.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.first_reading.label }}</label>
+                            <input type="number" name="{{ form.first_reading.name }}" id="{{ form.first_reading.id_for_label }}" value="{{ form.first_reading.value|default:'' }}" class="w-full px-2.5 py-1.5 text-sm border border-light-300 rounded focus:outline-none focus:ring-1 focus:ring-primary-500 focus:border-transparent">
                             {% if form.first_reading.errors %}
-                            <p class="form-error">{{ form.first_reading.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.first_reading.errors|first }}</p>
                             {% endif %}
                         </div>
 
                         <div>
-                            <label for="{{ form.registration_date.id_for_label }}" class="form-label">{{ form.registration_date.label }}</label>
+                            <label for="{{ form.registration_date.id_for_label }}" class="block text-xs font-medium text-dark-700 mb-1">{{ form.registration_date.label }}</label>
                             {{ form.registration_date }}
                             {% if form.registration_date.errors %}
-                            <p class="form-error">{{ form.registration_date.errors|first }}</p>
+                            <p class="text-xs text-danger-600 mt-0.5">{{ form.registration_date.errors|first }}</p>
                             {% endif %}
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Modal Footer -->
-            <div class="px-6 py-4 border-t border-light-300 flex items-center justify-end gap-3">
+            <!-- Modal Footer - Minimal Buttons -->
+            <div class="px-5 py-3 border-t border-light-200 flex items-center justify-end gap-2 bg-light-50">
                 <button type="button"
                         onclick="closeModal('addConsumerModal')"
-                        class="btn-secondary">
+                        class="px-4 py-1.5 border border-light-300 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
                     Cancel
                 </button>
-                <button type="submit" class="btn-success">
-                    <i class="bi bi-check2-circle mr-2"></i>Submit
+                <button type="submit" class="px-4 py-1.5 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
+                    <i class="bi bi-check-circle mr-1"></i>Submit
                 </button>
             </div>
         </form>
@@ -387,21 +391,14 @@ function openModal(modalId) {
     if (modal) {
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
-        // Add animation
-        setTimeout(() => {
-            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
-        }, 10);
     }
 }
 
 function closeModal(modalId) {
     const modal = document.getElementById(modalId);
     if (modal) {
-        modal.style.backgroundColor = 'rgba(0, 0, 0, 0)';
-        setTimeout(() => {
-            modal.classList.add('hidden');
-            document.body.style.overflow = '';
-        }, 200);
+        modal.classList.add('hidden');
+        document.body.style.overflow = '';
     }
 }
 
@@ -447,6 +444,12 @@ document.addEventListener('DOMContentLoaded', function() {
     {% if form.errors %}
     openModal('addConsumerModal');
     {% endif %}
+
+    // Add Tailwind classes to Django form widgets
+    const formInputs = document.querySelectorAll('#addConsumerModal select, #addConsumerModal input[type="date"]');
+    formInputs.forEach(input => {
+        input.classList.add('w-full', 'px-2.5', 'py-1.5', 'text-sm', 'border', 'border-light-300', 'rounded', 'focus:outline-none', 'focus:ring-1', 'focus:ring-primary-500', 'focus:border-transparent');
+    });
 });
 
 // Close modal on ESC key
