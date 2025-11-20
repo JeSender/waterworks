@@ -67,6 +67,29 @@
     </div>
 </form>
 
+<!-- Search Filter -->
+<div class="mb-4 flex items-center gap-3">
+    <div class="flex-1 relative">
+        <input
+            type="text"
+            id="search-consumer"
+            placeholder="Search by consumer name or ID..."
+            class="w-full px-4 py-2.5 pl-10 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+        >
+        <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+    </div>
+    <button
+        onclick="clearSearch()"
+        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center"
+        title="Clear search"
+    >
+        <i class="bi bi-x-circle mr-2"></i>Clear
+    </button>
+    <span id="search-results" class="text-sm text-gray-600 min-w-32 text-right">
+        <span class="font-semibold" id="visible-count">{{ readings|length }}</span> of {{ readings|length }}
+    </span>
+</div>
+
 <!-- Data Table: High-Density Professional Layout -->
 <div class="bg-white rounded-lg shadow-md overflow-hidden">
     <div class="overflow-x-auto">
@@ -104,7 +127,9 @@
             </thead>
             <tbody class="divide-y divide-gray-200">
                 {% for item in readings %}
-                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.consumption and item.consumption > 100 %}bg-red-50{% endif %}">
+                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.consumption and item.consumption > 100 %}bg-red-50{% endif %}"
+                        data-consumer-name="{{ item.consumer.first_name|lower }} {{ item.consumer.last_name|lower }}"
+                        data-consumer-id="{{ item.display_id|lower }}">
                         <!-- Checkbox Column -->
                         <td class="px-3 py-2 text-center">
                             {% if item.reading and not item.reading.is_confirmed %}
@@ -251,10 +276,11 @@
 <!-- JavaScript: Enhanced Functionality -->
 <script>
 /**
- * Toggle all checkboxes (only enabled ones)
+ * Toggle all checkboxes (only enabled and visible ones)
  */
 function toggleAllCheckboxes(source) {
-    const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
+    const checkboxes = Array.from(document.querySelectorAll('.row-checkbox:not([disabled])'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
     checkboxes.forEach(cb => cb.checked = source.checked);
     updateSelectedCount();
 }
@@ -299,7 +325,115 @@ document.addEventListener('DOMContentLoaded', function() {
             return false;
         }
     });
+
+    // Search functionality
+    const searchInput = document.getElementById('search-consumer');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(filterConsumers, 300));
+        searchInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                filterConsumers();
+            }
+        });
+    }
 });
+
+/**
+ * Filter consumers by name or ID
+ */
+function filterConsumers() {
+    const searchInput = document.getElementById('search-consumer');
+    const filter = searchInput.value.toLowerCase().trim();
+    const rows = document.querySelectorAll('tbody tr[data-consumer-name]');
+
+    let visibleCount = 0;
+    let visiblePendingCount = 0;
+
+    rows.forEach(row => {
+        const consumerName = row.getAttribute('data-consumer-name');
+        const consumerId = row.getAttribute('data-consumer-id');
+
+        if (consumerName.includes(filter) || consumerId.includes(filter)) {
+            row.style.display = '';
+            visibleCount++;
+
+            // Count visible pending checkboxes
+            const checkbox = row.querySelector('.row-checkbox:not([disabled])');
+            if (checkbox) {
+                visiblePendingCount++;
+            }
+        } else {
+            row.style.display = 'none';
+        }
+    });
+
+    // Update visible count display
+    updateVisibleCount(visibleCount, rows.length);
+
+    // Update "Select All" to only select visible rows
+    updateSelectAllForVisibleRows();
+}
+
+/**
+ * Clear search and show all rows
+ */
+function clearSearch() {
+    document.getElementById('search-consumer').value = '';
+    filterConsumers();
+}
+
+/**
+ * Update visible count display
+ */
+function updateVisibleCount(visible, total) {
+    document.getElementById('visible-count').textContent = visible;
+
+    // Show/hide "no results" message
+    const tbody = document.querySelector('tbody');
+    const emptyRow = tbody.querySelector('tr:not([data-consumer-name])');
+
+    if (visible === 0 && emptyRow) {
+        emptyRow.style.display = '';
+    } else if (emptyRow) {
+        emptyRow.style.display = 'none';
+    }
+}
+
+/**
+ * Update "Select All" to work with filtered results
+ */
+function updateSelectAllForVisibleRows() {
+    const selectAllCheckbox = document.getElementById('select-all');
+    const visibleCheckboxes = Array.from(document.querySelectorAll('.row-checkbox:not([disabled])'))
+        .filter(cb => cb.closest('tr').style.display !== 'none');
+
+    if (visibleCheckboxes.length > 0) {
+        const allChecked = visibleCheckboxes.every(cb => cb.checked);
+        const someChecked = visibleCheckboxes.some(cb => cb.checked);
+
+        selectAllCheckbox.checked = allChecked;
+        selectAllCheckbox.indeterminate = someChecked && !allChecked;
+    } else {
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+    }
+}
+
+/**
+ * Debounce function for search input
+ */
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
 
 /**
  * Helper function to get CSRF token
