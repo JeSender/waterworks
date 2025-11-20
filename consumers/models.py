@@ -188,15 +188,27 @@ class Consumer(models.Model):
     def save(self, *args, **kwargs):
         # Auto-generate account_number if not set
         if not self.account_number:
-            from django.db import connection
-            with connection.cursor() as cursor:
-                cursor.execute("""
-                    SELECT MAX(CAST(SUBSTR(account_number, 4) AS INTEGER))
-                    FROM consumers_consumer
-                    WHERE account_number LIKE 'BW-_____'
-                """)
-                row = cursor.fetchone()
-                last_num = row[0] if row and row[0] is not None else -1
+            # Use Django ORM instead of raw SQL to prevent SQL injection
+            # Get all existing account numbers that match the pattern
+            existing_accounts = Consumer.objects.filter(
+                account_number__startswith='BW-'
+            ).exclude(
+                pk=self.pk  # Exclude self if updating
+            ).values_list('account_number', flat=True)
+
+            # Extract numeric parts and find max
+            numbers = []
+            for acc in existing_accounts:
+                try:
+                    # Extract number after 'BW-'
+                    num_part = acc.split('-')[1]
+                    if num_part.isdigit() and len(num_part) == 5:
+                        numbers.append(int(num_part))
+                except (IndexError, ValueError):
+                    continue
+
+            # Get next number
+            last_num = max(numbers) if numbers else 0
             new_num = last_num + 1
             self.account_number = f'BW-{new_num:05d}'
         super().save(*args, **kwargs)

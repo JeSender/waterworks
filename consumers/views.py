@@ -304,8 +304,16 @@ def api_create_reading(request):
             source='field_app'
         )
         return JsonResponse({'status': 'success'})
+    except StaffProfile.DoesNotExist:
+        return JsonResponse({'error': 'Staff profile not found'}, status=403)
+    except Consumer.DoesNotExist:
+        return JsonResponse({'error': 'Consumer not found or not in assigned barangay'}, status=404)
     except Exception as e:
-        return JsonResponse({'error': str(e)}, status=400)
+        # Log error but don't expose details
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"API create reading error: {e}", exc_info=True)
+        return JsonResponse({'error': 'Failed to create reading'}, status=400)
 
 # consumers/views.py (Update the api_consumers function)
 
@@ -316,8 +324,8 @@ def api_create_reading(request):
 def api_consumers(request):
     """Get consumers for the staff's assigned barangay, including the latest confirmed reading value."""
     try:
-        profile = StaffProfile.objects.get(user=request.user)
-        consumers = Consumer.objects.filter(barangay=profile.assigned_barangay)
+        profile = StaffProfile.objects.select_related('assigned_barangay').get(user=request.user)
+        consumers = Consumer.objects.filter(barangay=profile.assigned_barangay).select_related('barangay')
 
         data = []
         for consumer in consumers:
@@ -539,20 +547,66 @@ def export_delinquent_consumers(request):
 
 @csrf_exempt
 def smart_meter_webhook(request):
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            consumer = get_object_or_404(Consumer, id=data['consumer_id'])
-            MeterReading.objects.create(
-                consumer=consumer,
-                reading_value=data['reading'],
-                reading_date=data['date'],
-                source='smart_meter'
-            )
-            return JsonResponse({'status': 'success'})
-        except Exception as e:
-            return JsonResponse({'error': str(e)}, status=400)
-    return JsonResponse({'error': 'Invalid method'}, status=405)
+    """
+    Webhook endpoint for IoT smart meters to submit readings.
+    Requires API key authentication via X-API-Key header.
+    Set SMART_METER_API_KEY in .env file.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Invalid method'}, status=405)
+
+    # Authenticate using API key from header
+    from decouple import config
+    expected_api_key = config('SMART_METER_API_KEY', default='')
+    provided_api_key = request.META.get('HTTP_X_API_KEY', '')
+
+    if not expected_api_key:
+        # API key not configured - reject all requests for security
+        return JsonResponse({'error': 'Webhook not configured'}, status=503)
+
+    if provided_api_key != expected_api_key:
+        # Invalid or missing API key
+        return JsonResponse({'error': 'Unauthorized'}, status=401)
+
+    # Process the webhook data
+    try:
+        data = json.loads(request.body)
+
+        # Validate required fields
+        required_fields = ['consumer_id', 'reading', 'date']
+        if not all(field in data for field in required_fields):
+            return JsonResponse({
+                'error': 'Missing required fields',
+                'required': required_fields
+            }, status=400)
+
+        # Get consumer
+        consumer = get_object_or_404(Consumer, id=data['consumer_id'])
+
+        # Validate reading value
+        reading_value = int(data['reading'])
+        if reading_value < 0:
+            return JsonResponse({'error': 'Reading value cannot be negative'}, status=400)
+
+        # Create meter reading
+        MeterReading.objects.create(
+            consumer=consumer,
+            reading_value=reading_value,
+            reading_date=data['date'],
+            source='smart_meter'
+        )
+        return JsonResponse({'status': 'success', 'message': 'Reading recorded'})
+
+    except Consumer.DoesNotExist:
+        return JsonResponse({'error': 'Consumer not found'}, status=404)
+    except (ValueError, TypeError) as e:
+        return JsonResponse({'error': 'Invalid data format'}, status=400)
+    except Exception as e:
+        # Log error but don't expose details
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Smart meter webhook error: {e}", exc_info=True)
+        return JsonResponse({'error': 'Processing failed'}, status=500)
 
 
 # ======================
@@ -763,7 +817,8 @@ def home(request):
 
 @login_required
 def connected_consumers(request):
-    consumers = Consumer.objects.filter(status='active')
+    # Optimize query with select_related
+    consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok')
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Connected Consumers',
         'consumers': consumers
@@ -773,7 +828,8 @@ def connected_consumers(request):
 # 1. LIST VIEW: Show all disconnected consumers (no ID needed)
 @login_required
 def disconnected_consumers_list(request):
-    consumers = Consumer.objects.filter(status='disconnected')
+    # Optimize query with select_related
+    consumers = Consumer.objects.filter(status='disconnected').select_related('barangay', 'purok')
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Disconnected Consumers',
         'consumers': consumers
@@ -813,8 +869,9 @@ def delinquent_consumers(request):
     if month and year:
         bills = bills.filter(billing_period__month=month, billing_period__year=year)
 
-    consumers = Consumer.objects.filter(bills__in=bills).distinct()
-    
+    # Optimize query with select_related
+    consumers = Consumer.objects.filter(bills__in=bills).select_related('barangay', 'purok').distinct()
+
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Delinquent Consumers',
         'consumers': consumers,
@@ -834,7 +891,8 @@ def consumer_management(request):
     search_query = request.GET.get('search', '').strip()
     barangay_filter = request.GET.get('barangay', '').strip()
 
-    consumers = Consumer.objects.all()
+    # Optimize query with select_related to avoid N+1 queries
+    consumers = Consumer.objects.select_related('barangay', 'purok', 'meter_brand').all()
     if search_query:
         consumers = consumers.filter(
             Q(first_name__icontains=search_query) |
