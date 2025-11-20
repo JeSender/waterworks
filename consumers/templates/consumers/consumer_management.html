@@ -1,301 +1,459 @@
-<!-- consumers/templates/consumers/consumer_management.html (Relevant part updated) -->
 {% extends "consumers/base.html" %}
 {% load static %}
 
 {% block title %}Consumer Management{% endblock %}
 
 {% block main_content %}
-<h2 class="mb-3">Consumer Management</h2>
-<p class="text-muted">Here you can manage, search, and filter all consumers.</p>
-
-<!-- Messages -->
-{% if messages %}
-  {% for message in messages %}
-    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-      {{ message }}
-      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <h2 class="text-3xl font-bold text-dark-900 mb-2">Consumer Management</h2>
+        <p class="text-dark-500 text-base">Manage, search, and filter all consumers</p>
     </div>
-  {% endfor %}
-{% endif %}
 
-<!-- Search + Filter -->
-<form method="get" class="row mb-4 g-2 align-items-center">
-  <div class="col-md-4">
-    <input type="text" name="search" placeholder="Search by name or meter serial"
-           class="form-control" value="{{ search_query }}">
-  </div>
-  <div class="col-md-4">
-    <select name="barangay" class="form-select">
-      <option value="">All Barangays</option>
-      {% for brgy in barangays %}
-        <option value="{{ brgy.id }}" {% if barangay_filter == brgy.id|stringformat:"s" %}selected{% endif %}>
-          {{ brgy.name }}
-        </option>
-      {% endfor %}
-    </select>
-  </div>
-  <div class="col-md-2 d-grid">
-    <button type="submit" class="btn btn-primary">
-      <i class="bi bi-filter"></i> Search
-    </button>
-  </div>
-  <div class="col-md-2 d-grid">
-    <a href="{% url 'consumers:consumer_management' %}" class="btn btn-secondary">
-      <i class="bi bi-arrow-clockwise"></i> Reset
-    </a>
-  </div>
-</form>
-
-<!-- Add Consumer Button -->
-<div class="mb-3">
-  <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#addConsumerModal">
-    <i class="bi bi-person-plus"></i> Add Consumer
-  </button>
-</div>
-
-<!-- Consumer Table -->
-<div class="table-responsive">
-  <table class="table table-striped table-hover table-bordered align-middle shadow-sm">
-    <thead class="table-primary text-center">
-      <tr>
-        <!-- ADDED: Account Number Column Header -->
-        <th>ID Number</th>
-        <th>Name</th>
-        <th>Phone</th>
-        <th>Barangay</th>
-        <th>Purok</th>
-        <th>Serial</th>
-        <th style="width: 150px;">Actions</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for consumer in consumers.object_list %}
-      <tr>
-        <!-- ADDED: Account Number Cell -->
-        <td class="text-center">{{ consumer.account_number }}</td>
-        <td>{{ consumer.first_name }} {% if consumer.middle_name %}{{ consumer.middle_name }}{% endif %} {{ consumer.last_name }}</td>
-        <td>{{ consumer.phone_number|default:"-" }}</td>
-        <td>{{ consumer.barangay.name|default:"-" }}</td>
-        <td>{{ consumer.purok.name|default:"-" }}</td>
-        <td>{{ consumer.serial_number|default:"-" }}</td>
-        <td class="text-center">
-          <a href="{% url 'consumers:consumer_detail' consumer.id %}" class="btn btn-info btn-sm me-1">
-            <i class="bi bi-eye"></i> View
-          </a>
-          <a href="{% url 'consumers:edit_consumer' consumer.pk %}" class="btn btn-warning btn-sm">
-            <i class="bi bi-pencil-square"></i> Edit
-          </a>
-        </td>
-      </tr>
-      {% empty %}
-      <!-- UPDATED: colspan to 7 to account for the new ID Number column -->
-      <tr>
-        <td colspan="7" class="text-center text-muted">No consumers found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
-</div>
-
-<!-- Pagination (No changes needed here) -->
-{% if consumers.has_other_pages %}
-<nav aria-label="Consumer pagination">
-  <ul class="pagination justify-content-center mt-3">
-    {% if consumers.has_previous %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ consumers.previous_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
-          &laquo; Prev
-        </a>
-      </li>
-    {% else %}
-      <li class="page-item disabled"><span class="page-link">&laquo; Prev</span></li>
+    <!-- Messages/Alerts -->
+    {% if messages %}
+    <div class="mb-6 space-y-3">
+        {% for message in messages %}
+        <div class="alert-{{ message.tags }} flex items-center justify-between rounded-lg">
+            <span>{{ message }}</span>
+            <button onclick="this.parentElement.remove()" class="text-current hover:opacity-75">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
     {% endif %}
 
-    {% for num in consumers.paginator.page_range %}
-      {% if consumers.number == num %}
-        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
-      {% elif num >= consumers.number|add:-2 and num <= consumers.number|add:2 %}
-        <li class="page-item">
-          <a class="page-link" href="?page={{ num }}&search={{ search_query }}&barangay={{ barangay_filter }}">{{ num }}</a>
-        </li>
-      {% endif %}
-    {% endfor %}
+    <!-- Search + Filter Form -->
+    <form method="get" class="card p-6 mb-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Search Input -->
+            <div class="lg:col-span-2">
+                <label for="search" class="form-label">Search</label>
+                <input type="text"
+                       id="search"
+                       name="search"
+                       placeholder="Search by name or meter serial"
+                       class="form-input"
+                       value="{{ search_query }}">
+            </div>
 
-    {% if consumers.has_next %}
-      <li class="page-item">
-        <a class="page-link" href="?page={{ consumers.next_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
-          Next &raquo;
-        </a>
-      </li>
-    {% else %}
-      <li class="page-item disabled"><span class="page-link">Next &raquo;</span></li>
-    {% endif %}
-  </ul>
-</nav>
-{% endif %}
+            <!-- Barangay Filter -->
+            <div>
+                <label for="barangay" class="form-label">Barangay</label>
+                <select name="barangay" id="barangay" class="form-select">
+                    <option value="">All Barangays</option>
+                    {% for brgy in barangays %}
+                    <option value="{{ brgy.id }}" {% if barangay_filter == brgy.id|stringformat:"s" %}selected{% endif %}>
+                        {{ brgy.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-<!-- Modal and JS (No changes needed for the core logic, but the form part is below) -->
-<!-- ✅ ADD CONSUMER MODAL (Partial update for potential field changes) -->
-<div class="modal fade" id="addConsumerModal" tabindex="-1" aria-labelledby="addConsumerModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <form method="POST" action="{% url 'consumers:add_consumer' %}">
-        {% csrf_token %}
-        <div class="modal-header">
-          <h5 class="modal-title" id="addConsumerModalLabel">Add New Consumer</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <!-- Action Buttons -->
+            <div class="flex items-end gap-2">
+                <button type="submit" class="btn-primary flex-1">
+                    <i class="bi bi-filter mr-2"></i>Search
+                </button>
+                <a href="{% url 'consumers:consumer_management' %}" class="btn-secondary flex-1">
+                    <i class="bi bi-arrow-clockwise mr-2"></i>Reset
+                </a>
+            </div>
         </div>
-        <div class="modal-body">
-          <!-- ✅ Use `form` (not `add_consumer_form`) -->
-          {% if form.errors %}
-            <div class="alert alert-danger">
-              <strong>Please correct the errors below:</strong>
-              <ul class="mb-0">
-                {% for field in form %}
-                  {% if field.errors %}
-                    <li>{{ field.label }}: {{ field.errors|first }}</li>
-                  {% endif %}
-                {% endfor %}
-                {% for error in form.non_field_errors %}
-                  <li>{{ error }}</li>
-                {% endfor %}
-              </ul>
-            </div>
-          {% endif %}
+    </form>
 
-          <div class="row g-3">
-            <!-- Personal Info -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                {{ form.first_name.label_tag }}
-                {{ form.first_name }}
-                {% if form.first_name.errors %}
-                  <div class="text-danger small mt-1">{{ form.first_name.errors|first }}} first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.middle_name.label_tag }}
-                {{ form.middle_name }}
-              </div>
-              <div class="mb-3">
-                {{ form.last_name.label_tag }}
-                {{ form.last_name }}
-                {% if form.last_name.errors %}
-                  <div class="text-danger small mt-1">{{ form.last_name.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.birth_date.label_tag }}
-                {{ form.birth_date }}
-                {% if form.birth_date.errors %}
-                  <div class="text-danger small mt-1">{{ form.birth_date.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.gender.label_tag }}
-                {{ form.gender }}
-                {% if form.gender.errors %}
-                  <div class="text-danger small mt-1">{{ form.gender.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.phone_number.label_tag }}
-                {{ form.phone_number }}
-                {% if form.phone_number.errors %}
-                  <div class="text-danger small mt-1">{{ form.phone_number.errors|first }}</div>
-                {% endif %}
-              </div>
-            </div>
-
-            <!-- Address & Household -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                {{ form.civil_status.label_tag }}
-                {{ form.civil_status }}
-                {% if form.civil_status.errors %}
-                  <div class="text-danger small mt-1">{{ form.civil_status.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.spouse_name.label_tag }}
-                {{ form.spouse_name }}
-              </div>
-              <div class="mb-3">
-                {{ form.barangay.label_tag }}
-                {{ form.barangay }}
-                {% if form.barangay.errors %}
-                  <div class="text-danger small mt-1">{{ form.barangay.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.purok.label_tag }}
-                {{ form.purok }}
-                {% if form.purok.errors %}
-                  <div class="text-danger small mt-1">{{ form.purok.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.household_number.label_tag }}
-                {{ form.household_number }}
-                {% if form.household_number.errors %}
-                  <div class="text-danger small mt-1">{{ form.household_number.errors|first }}</div>
-                {% endif %}
-              </div>
-            </div>
-
-            <!-- Meter Info -->
-            <div class="col-md-4">
-              <div class="mb-3">
-                {{ form.usage_type.label_tag }}
-                {{ form.usage_type }}
-                {% if form.usage_type.errors %}
-                  <div class="text-danger small mt-1">{{ form.usage_type.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.meter_brand.label_tag }}
-                {{ form.meter_brand }}
-                {% if form.meter_brand.errors %}
-                  <div class="text-danger small mt-1">{{ form.meter_brand.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.serial_number.label_tag }}
-                {{ form.serial_number }}
-                {% if form.serial_number.errors %}
-                  <div class="text-danger small mt-1">{{ form.serial_number.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.first_reading.label_tag }}
-                {{ form.first_reading }}
-                {% if form.first_reading.errors %}
-                  <div class="text-danger small mt-1">{{ form.first_reading.errors|first }}</div>
-                {% endif %}
-              </div>
-              <div class="mb-3">
-                {{ form.registration_date.label_tag }}
-                {{ form.registration_date }}
-                {% if form.registration_date.errors %}
-                  <div class="text-danger small mt-1">{{ form.registration_date.errors|first }}</div>
-                {% endif %}
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <button type="submit" class="btn btn-success"><i class="bi bi-check2-circle"></i> Submit</button>
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-        </div>
-      </form>
+    <!-- Add Consumer Button -->
+    <div class="mb-6">
+        <button type="button"
+                onclick="openModal('addConsumerModal')"
+                class="btn-success">
+            <i class="bi bi-person-plus mr-2"></i>Add Consumer
+        </button>
     </div>
-  </div>
-</div>
-<!-- End Modal -->
 
-<!-- JS for Dependent Dropdown (No changes needed) -->
+    <!-- Consumer Table -->
+    <div class="card overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="table">
+                <thead class="table-header">
+                    <tr>
+                        <th class="table-cell text-center">ID Number</th>
+                        <th class="table-cell">Name</th>
+                        <th class="table-cell">Phone</th>
+                        <th class="table-cell">Barangay</th>
+                        <th class="table-cell">Purok</th>
+                        <th class="table-cell">Serial</th>
+                        <th class="table-cell text-center" style="width: 200px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for consumer in consumers.object_list %}
+                    <tr class="table-row">
+                        <td class="table-cell text-center font-semibold text-primary-600">
+                            {{ consumer.account_number }}
+                        </td>
+                        <td class="table-cell font-medium">
+                            {{ consumer.first_name }}
+                            {% if consumer.middle_name %}{{ consumer.middle_name }} {% endif %}
+                            {{ consumer.last_name }}
+                        </td>
+                        <td class="table-cell">{{ consumer.phone_number|default:"—" }}</td>
+                        <td class="table-cell">{{ consumer.barangay.name|default:"—" }}</td>
+                        <td class="table-cell">{{ consumer.purok.name|default:"—" }}</td>
+                        <td class="table-cell">{{ consumer.serial_number|default:"—" }}</td>
+                        <td class="table-cell text-center">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'consumers:consumer_detail' consumer.id %}"
+                                   class="btn-info btn-sm">
+                                    <i class="bi bi-eye"></i> View
+                                </a>
+                                <a href="{% url 'consumers:edit_consumer' consumer.pk %}"
+                                   class="btn-warning btn-sm">
+                                    <i class="bi bi-pencil-square"></i> Edit
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="7" class="table-cell text-center text-dark-400 py-12">
+                            <i class="bi bi-inbox text-5xl block mb-3 opacity-30"></i>
+                            <p class="text-lg font-semibold">No consumers found</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    {% if consumers.has_other_pages %}
+    <nav aria-label="Consumer pagination" class="mt-6">
+        <ul class="pagination">
+            <!-- Previous Button -->
+            {% if consumers.has_previous %}
+            <li>
+                <a class="pagination-link"
+                   href="?page={{ consumers.previous_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
+                    <i class="bi bi-chevron-left"></i> Prev
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <span class="pagination-link opacity-50 cursor-not-allowed">
+                    <i class="bi bi-chevron-left"></i> Prev
+                </span>
+            </li>
+            {% endif %}
+
+            <!-- Page Numbers -->
+            {% for num in consumers.paginator.page_range %}
+                {% if consumers.number == num %}
+                <li>
+                    <span class="pagination-link-active">{{ num }}</span>
+                </li>
+                {% elif num >= consumers.number|add:-2 and num <= consumers.number|add:2 %}
+                <li>
+                    <a class="pagination-link"
+                       href="?page={{ num }}&search={{ search_query }}&barangay={{ barangay_filter }}">
+                        {{ num }}
+                    </a>
+                </li>
+                {% endif %}
+            {% endfor %}
+
+            <!-- Next Button -->
+            {% if consumers.has_next %}
+            <li>
+                <a class="pagination-link"
+                   href="?page={{ consumers.next_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
+                    Next <i class="bi bi-chevron-right"></i>
+                </a>
+            </li>
+            {% else %}
+            <li>
+                <span class="pagination-link opacity-50 cursor-not-allowed">
+                    Next <i class="bi bi-chevron-right"></i>
+                </span>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Add Consumer Modal -->
+<div id="addConsumerModal" class="modal-overlay hidden" onclick="closeModalOnOutsideClick(event, 'addConsumerModal')">
+    <div class="modal-content max-w-5xl" onclick="event.stopPropagation()">
+        <form method="POST" action="{% url 'consumers:add_consumer' %}">
+            {% csrf_token %}
+
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-light-300 flex items-center justify-between">
+                <h5 class="text-xl font-bold text-dark-900">Add New Consumer</h5>
+                <button type="button"
+                        onclick="closeModal('addConsumerModal')"
+                        class="text-dark-400 hover:text-dark-900 transition-colors">
+                    <i class="bi bi-x-lg text-2xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-6 max-h-[70vh] overflow-y-auto">
+                <!-- Form Errors -->
+                {% if form.errors %}
+                <div class="alert-danger mb-6">
+                    <strong class="font-bold">Please correct the errors below:</strong>
+                    <ul class="mt-2 ml-5 list-disc">
+                        {% for field in form %}
+                            {% if field.errors %}
+                            <li>{{ field.label }}: {{ field.errors|first }}</li>
+                            {% endif %}
+                        {% endfor %}
+                        {% for error in form.non_field_errors %}
+                        <li>{{ error }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endif %}
+
+                <!-- Form Grid - 3 Columns -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+                    <!-- Column 1: Personal Info -->
+                    <div class="space-y-4">
+                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Personal Information</h6>
+
+                        <div>
+                            <label for="{{ form.first_name.id_for_label }}" class="form-label">{{ form.first_name.label }}</label>
+                            {{ form.first_name }}
+                            {% if form.first_name.errors %}
+                            <p class="form-error">{{ form.first_name.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.middle_name.id_for_label }}" class="form-label">{{ form.middle_name.label }}</label>
+                            {{ form.middle_name }}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.last_name.id_for_label }}" class="form-label">{{ form.last_name.label }}</label>
+                            {{ form.last_name }}
+                            {% if form.last_name.errors %}
+                            <p class="form-error">{{ form.last_name.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.birth_date.id_for_label }}" class="form-label">{{ form.birth_date.label }}</label>
+                            {{ form.birth_date }}
+                            {% if form.birth_date.errors %}
+                            <p class="form-error">{{ form.birth_date.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.gender.id_for_label }}" class="form-label">{{ form.gender.label }}</label>
+                            {{ form.gender }}
+                            {% if form.gender.errors %}
+                            <p class="form-error">{{ form.gender.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.phone_number.id_for_label }}" class="form-label">{{ form.phone_number.label }}</label>
+                            {{ form.phone_number }}
+                            {% if form.phone_number.errors %}
+                            <p class="form-error">{{ form.phone_number.errors|first }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Column 2: Address & Household -->
+                    <div class="space-y-4">
+                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Address & Household</h6>
+
+                        <div>
+                            <label for="{{ form.civil_status.id_for_label }}" class="form-label">{{ form.civil_status.label }}</label>
+                            {{ form.civil_status }}
+                            {% if form.civil_status.errors %}
+                            <p class="form-error">{{ form.civil_status.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.spouse_name.id_for_label }}" class="form-label">{{ form.spouse_name.label }}</label>
+                            {{ form.spouse_name }}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.barangay.id_for_label }}" class="form-label">{{ form.barangay.label }}</label>
+                            {{ form.barangay }}
+                            {% if form.barangay.errors %}
+                            <p class="form-error">{{ form.barangay.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.purok.id_for_label }}" class="form-label">{{ form.purok.label }}</label>
+                            {{ form.purok }}
+                            {% if form.purok.errors %}
+                            <p class="form-error">{{ form.purok.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.household_number.id_for_label }}" class="form-label">{{ form.household_number.label }}</label>
+                            {{ form.household_number }}
+                            {% if form.household_number.errors %}
+                            <p class="form-error">{{ form.household_number.errors|first }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Column 3: Meter Info -->
+                    <div class="space-y-4">
+                        <h6 class="font-bold text-dark-700 text-sm uppercase tracking-wide border-b pb-2">Meter Information</h6>
+
+                        <div>
+                            <label for="{{ form.usage_type.id_for_label }}" class="form-label">{{ form.usage_type.label }}</label>
+                            {{ form.usage_type }}
+                            {% if form.usage_type.errors %}
+                            <p class="form-error">{{ form.usage_type.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.meter_brand.id_for_label }}" class="form-label">{{ form.meter_brand.label }}</label>
+                            {{ form.meter_brand }}
+                            {% if form.meter_brand.errors %}
+                            <p class="form-error">{{ form.meter_brand.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.serial_number.id_for_label }}" class="form-label">{{ form.serial_number.label }}</label>
+                            {{ form.serial_number }}
+                            {% if form.serial_number.errors %}
+                            <p class="form-error">{{ form.serial_number.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.first_reading.id_for_label }}" class="form-label">{{ form.first_reading.label }}</label>
+                            {{ form.first_reading }}
+                            {% if form.first_reading.errors %}
+                            <p class="form-error">{{ form.first_reading.errors|first }}</p>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <label for="{{ form.registration_date.id_for_label }}" class="form-label">{{ form.registration_date.label }}</label>
+                            {{ form.registration_date }}
+                            {% if form.registration_date.errors %}
+                            <p class="form-error">{{ form.registration_date.errors|first }}</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-light-300 flex items-center justify-end gap-3">
+                <button type="button"
+                        onclick="closeModal('addConsumerModal')"
+                        class="btn-secondary">
+                    Cancel
+                </button>
+                <button type="submit" class="btn-success">
+                    <i class="bi bi-check2-circle mr-2"></i>Submit
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
 <script>
-// ... (your existing JavaScript for dependent dropdowns) ...
-</script>
+// Modal Functions
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        // Add animation
+        setTimeout(() => {
+            modal.style.backgroundColor = 'rgba(0, 0, 0, 0.5)';
+        }, 10);
+    }
+}
 
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0)';
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 200);
+    }
+}
+
+function closeModalOnOutsideClick(event, modalId) {
+    if (event.target.id === modalId) {
+        closeModal(modalId);
+    }
+}
+
+// Dependent Dropdown: Barangay → Purok
+document.addEventListener('DOMContentLoaded', function() {
+    const barangaySelect = document.getElementById('{{ form.barangay.id_for_label }}');
+    const purokSelect = document.getElementById('{{ form.purok.id_for_label }}');
+
+    if (barangaySelect && purokSelect) {
+        barangaySelect.addEventListener('change', function() {
+            const barangayId = this.value;
+            purokSelect.innerHTML = '<option value="">Loading...</option>';
+
+            if (barangayId) {
+                fetch(`/api/puroks/?barangay=${barangayId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        purokSelect.innerHTML = '<option value="">Select Purok</option>';
+                        data.forEach(purok => {
+                            const option = document.createElement('option');
+                            option.value = purok.id;
+                            option.textContent = purok.name;
+                            purokSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching puroks:', error);
+                        purokSelect.innerHTML = '<option value="">Error loading puroks</option>';
+                    });
+            } else {
+                purokSelect.innerHTML = '<option value="">Select Barangay First</option>';
+            }
+        });
+    }
+
+    // Auto-open modal if form has errors
+    {% if form.errors %}
+    openModal('addConsumerModal');
+    {% endif %}
+});
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal('addConsumerModal');
+    }
+});
+</script>
 {% endblock %}

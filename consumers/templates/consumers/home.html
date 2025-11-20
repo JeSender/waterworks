@@ -3,612 +3,120 @@
 
 {% block title %}Dashboard - Balilihan Waterworks{% endblock %}
 
-{% block extra_css %}
-<style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-
-    * {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    }
-
-    .main-content {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        background-attachment: fixed !important;
-        padding: 2rem !important;
-        overflow-y: auto !important;
-        min-height: calc(100vh - 80px);
-    }
-
-    .dark-mode .main-content {
-        background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%) !important;
-    }
-
-    .dashboard-wrapper {
-        max-width: 1400px;
-        margin: 0 auto;
-        display: flex;
-        flex-direction: column;
-        gap: 2rem;
-    }
-
-    /* Dashboard Header */
-    .dashboard-header {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        text-align: center;
-    }
-
-    .dark-mode .dashboard-header {
-        background: rgba(45, 45, 45, 0.95);
-    }
-
-    .dashboard-header h1 {
-        font-size: 2.5rem;
-        font-weight: 800;
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-        margin: 0;
-        line-height: 1.2;
-    }
-
-    .dark-mode .dashboard-header h1 {
-        background: linear-gradient(135deg, #818cf8 0%, #c084fc 100%);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    .dashboard-header p {
-        font-size: 1rem;
-        color: #64748b;
-        margin: 0.5rem 0 0 0;
-        font-weight: 500;
-    }
-
-    .dark-mode .dashboard-header p {
-        color: #94a3b8;
-    }
-
-    /* Main Grid Layout */
-    .dashboard-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-        gap: 1.5rem;
-        width: 100%;
-    }
-
-    /* Metric Cards */
-    .metric-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 2px solid transparent;
-        position: relative;
-        overflow: hidden;
-    }
-
-    .metric-card::before {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        height: 5px;
-    }
-
-    .metric-card.connected::before {
-        background: linear-gradient(90deg, #10b981, #059669);
-    }
-
-    .metric-card.disconnected::before {
-        background: linear-gradient(90deg, #ef4444, #dc2626);
-    }
-
-    .metric-card.delinquent::before {
-        background: linear-gradient(90deg, #f59e0b, #d97706);
-    }
-
-    .metric-card:hover {
-        transform: translateY(-8px);
-        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.15);
-    }
-
-    .metric-card.connected:hover {
-        border-color: #10b981;
-    }
-
-    .metric-card.disconnected:hover {
-        border-color: #ef4444;
-    }
-
-    .metric-card.delinquent:hover {
-        border-color: #f59e0b;
-    }
-
-    .dark-mode .metric-card {
-        background: rgba(45, 45, 45, 0.95);
-    }
-
-    .metric-header {
-        display: flex;
-        align-items: center;
-        gap: 1rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .metric-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2rem;
-        color: white;
-        box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
-    }
-
-    .metric-card.connected .metric-icon {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .metric-card.disconnected .metric-icon {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    .metric-card.delinquent .metric-icon {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .metric-info h3 {
-        font-size: 0.875rem;
-        color: #64748b;
-        margin: 0;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .dark-mode .metric-info h3 {
-        color: #94a3b8;
-    }
-
-    .metric-value {
-        font-size: 3rem;
-        font-weight: 900;
-        color: #1e293b;
-        margin: 0.5rem 0;
-        line-height: 1;
-        text-align: center;
-    }
-
-    .dark-mode .metric-value {
-        color: #ffffff;
-    }
-
-    .metric-footer {
-        margin-top: 1.5rem;
-        display: flex;
-        justify-content: center;
-    }
-
-    .btn-view {
-        padding: 0.75rem 2rem;
-        border-radius: 12px;
-        font-weight: 700;
-        font-size: 0.875rem;
-        border: none;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        color: white;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-
-    .metric-card.connected .btn-view {
-        background: linear-gradient(135deg, #10b981, #059669);
-    }
-
-    .metric-card.disconnected .btn-view {
-        background: linear-gradient(135deg, #ef4444, #dc2626);
-    }
-
-    .metric-card.delinquent .btn-view {
-        background: linear-gradient(135deg, #f59e0b, #d97706);
-    }
-
-    .btn-view:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
-        color: white;
-    }
-
-    /* Report & Chart Section */
-    .full-width-section {
-        grid-column: 1 / -1;
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.5rem;
-    }
-
-    .report-card,
-    .chart-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-        transition: all 0.3s ease;
-    }
-
-    .dark-mode .report-card,
-    .dark-mode .chart-card {
-        background: rgba(45, 45, 45, 0.95);
-    }
-
-    .report-card:hover,
-    .chart-card:hover {
-        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
-    }
-
-    .section-title {
-        font-size: 1.25rem;
-        font-weight: 800;
-        color: #1e293b;
-        margin: 0 0 1.5rem 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        padding-bottom: 1rem;
-        border-bottom: 2px solid #e2e8f0;
-    }
-
-    .dark-mode .section-title {
-        color: #ffffff;
-        border-bottom-color: #4a4a4a;
-    }
-
-    .section-title i {
-        font-size: 1.5rem;
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* Form Styling */
-    .form-grid {
-        display: grid;
-        grid-template-columns: 1fr 1fr;
-        gap: 1.25rem;
-        margin-bottom: 1.5rem;
-    }
-
-    .form-group label {
-        display: block;
-        font-size: 0.875rem;
-        font-weight: 700;
-        color: #475569;
-        margin-bottom: 0.625rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
-    .dark-mode .form-group label {
-        color: #cbd5e1;
-    }
-
-    .form-group select {
-        width: 100%;
-        padding: 0.875rem 1rem;
-        border: 2px solid #e2e8f0;
-        border-radius: 12px;
-        font-size: 1rem;
-        background: white;
-        color: #1e293b;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        font-weight: 600;
-    }
-
-    .dark-mode .form-group select {
-        background: #3a3a3a;
-        border-color: #4a4a4a;
-        color: #ffffff;
-    }
-
-    .form-group select:focus {
-        outline: none;
-        border-color: #667eea;
-        box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
-    }
-
-    .btn-generate {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border: none;
-        padding: 1rem 2rem;
-        border-radius: 12px;
-        font-size: 1rem;
-        font-weight: 800;
-        cursor: pointer;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 0.75rem;
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.4);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-    }
-
-    .btn-generate:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 16px 48px rgba(102, 126, 234, 0.5);
-    }
-
-    .btn-generate:active {
-        transform: translateY(-2px);
-    }
-
-    .btn-generate i {
-        font-size: 1.25rem;
-    }
-
-    /* Chart Styling */
-    .chart-wrapper {
-        position: relative;
-        height: 350px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    /* Collections Card */
-    .collections-card {
-        grid-column: 1 / -1;
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        border-radius: 16px;
-        padding: 2rem;
-        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-    }
-
-    .dark-mode .collections-card {
-        background: rgba(45, 45, 45, 0.95);
-    }
-
-    .collections-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-        gap: 1rem;
-        max-height: 400px;
-        overflow-y: auto;
-        padding-right: 0.5rem;
-    }
-
-    .collections-grid::-webkit-scrollbar {
-        width: 8px;
-    }
-
-    .collections-grid::-webkit-scrollbar-track {
-        background: #f1f5f9;
-        border-radius: 10px;
-    }
-
-    .dark-mode .collections-grid::-webkit-scrollbar-track {
-        background: #1a1a1a;
-    }
-
-    .collections-grid::-webkit-scrollbar-thumb {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border-radius: 10px;
-    }
-
-    .collection-item {
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        padding: 1.25rem;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        border: 2px solid transparent;
-    }
-
-    .dark-mode .collection-item {
-        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-    }
-
-    .collection-item:hover {
-        transform: translateY(-4px);
-        border-color: #667eea;
-        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
-    }
-
-    .collection-date {
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
-        font-weight: 700;
-        color: #475569;
-        font-size: 0.875rem;
-        margin-bottom: 0.75rem;
-    }
-
-    .dark-mode .collection-date {
-        color: #cbd5e1;
-    }
-
-    .collection-date i {
-        color: #667eea;
-        font-size: 1.125rem;
-    }
-
-    .collection-amount {
-        font-weight: 900;
-        font-size: 1.5rem;
-        background: linear-gradient(135deg, #10b981, #059669);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-
-    /* Empty State */
-    .empty-state {
-        text-align: center;
-        padding: 3rem;
-        color: #94a3b8;
-    }
-
-    .empty-state i {
-        font-size: 4rem;
-        margin-bottom: 1rem;
-        opacity: 0.3;
-    }
-
-    .empty-state p {
-        font-size: 1.125rem;
-        font-weight: 600;
-    }
-
-    /* Responsive Design */
-    @media (max-width: 1200px) {
-        .full-width-section {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    @media (max-width: 768px) {
-        .main-content {
-            padding: 1rem !important;
-        }
-
-        .dashboard-header h1 {
-            font-size: 1.75rem;
-        }
-
-        .dashboard-header p {
-            font-size: 0.875rem;
-        }
-
-        .dashboard-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .metric-value {
-            font-size: 2.25rem;
-        }
-
-        .form-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .collections-grid {
-            grid-template-columns: 1fr;
-        }
-
-        .chart-wrapper {
-            height: 250px;
-        }
-    }
-
-    /* Loading Animation */
-    @keyframes pulse {
-        0%, 100% { opacity: 1; }
-        50% { opacity: 0.5; }
-    }
-
-    .loading {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
-</style>
-{% endblock %}
-
 {% block main_content %}
-<div class="dashboard-wrapper">
-    <!-- Dashboard Header -->
-    <div class="dashboard-header">
-        <h1>🌊 Balilihan Waterworks</h1>
-        <p>Real-time Management Dashboard - Monitor, Manage, Excel</p>
-    </div>
+<!-- Dashboard Wrapper with Gradient Background -->
+<div class="min-h-screen bg-gradient-to-br from-primary-500 via-purple-500 to-secondary-500 -m-5 p-8">
+    <div class="max-w-7xl mx-auto space-y-8">
 
-    <!-- Main Dashboard Grid -->
-    <div class="dashboard-grid">
-        <!-- Connected Consumers Card -->
-        <div class="metric-card connected">
-            <div class="metric-header">
-                <div class="metric-icon">
-                    <i class="bi bi-check-circle-fill"></i>
+        <!-- Dashboard Header Card -->
+        <div class="glass bg-white/95 backdrop-blur-md rounded-2xl p-8 shadow-2xl text-center transform hover:scale-[1.02] transition-all duration-300">
+            <h1 class="text-4xl md:text-5xl font-extrabold bg-gradient-to-r from-primary-600 to-purple-600 bg-clip-text text-transparent mb-2">
+                🌊 Balilihan Waterworks
+            </h1>
+            <p class="text-dark-500 font-medium text-base md:text-lg">
+                Real-time Management Dashboard - Monitor, Manage, Excel
+            </p>
+        </div>
+
+        <!-- Main Dashboard Grid - 3 Metric Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <!-- Connected Consumers Card -->
+            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-success-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                <!-- Header -->
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-success-500 to-success-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Connected</h3>
+                    </div>
                 </div>
-                <div class="metric-info">
-                    <h3>Connected</h3>
+
+                <!-- Metric Value -->
+                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
+                    {{ connected_count|default:"0" }}
+                </div>
+
+                <!-- Footer Button -->
+                <div class="mt-6">
+                    <a href="{% url 'consumers:connected_consumers' %}"
+                       class="block w-full py-3 px-6 bg-gradient-to-r from-success-500 to-success-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
+                        <i class="bi bi-eye mr-2"></i>View All Details
+                    </a>
                 </div>
             </div>
-            <div class="metric-value">{{ connected_count|default:"0" }}</div>
-            <div class="metric-footer">
-                <a href="{% url 'consumers:connected_consumers' %}" class="btn-view">
-                    <i class="bi bi-eye"></i> View All Details
-                </a>
+
+            <!-- Disconnected Consumers Card -->
+            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-danger-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                <!-- Header -->
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-danger-500 to-danger-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <i class="bi bi-x-circle-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Disconnected</h3>
+                    </div>
+                </div>
+
+                <!-- Metric Value -->
+                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
+                    {{ disconnected_count|default:"0" }}
+                </div>
+
+                <!-- Footer Button -->
+                <div class="mt-6">
+                    <a href="{% url 'consumers:disconnected_consumers' %}"
+                       class="block w-full py-3 px-6 bg-gradient-to-r from-danger-500 to-danger-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
+                        <i class="bi bi-eye mr-2"></i>View All Details
+                    </a>
+                </div>
+            </div>
+
+            <!-- Delinquent Accounts Card -->
+            <div class="metric-card group bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl border-t-4 border-warning-500 hover:shadow-2xl hover:-translate-y-2 transition-all duration-300">
+                <!-- Header -->
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-16 h-16 bg-gradient-to-br from-warning-500 to-warning-600 rounded-2xl flex items-center justify-center text-white text-3xl shadow-lg group-hover:scale-110 transition-transform duration-300">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-dark-500 uppercase tracking-wider">Delinquent</h3>
+                    </div>
+                </div>
+
+                <!-- Metric Value -->
+                <div class="text-6xl font-black text-dark-900 text-center my-6 metric-value">
+                    {{ delinquent_count|default:"0" }}
+                </div>
+
+                <!-- Footer Button -->
+                <div class="mt-6">
+                    <a href="{% url 'consumers:delinquent_consumers' %}"
+                       class="block w-full py-3 px-6 bg-gradient-to-r from-warning-500 to-warning-600 text-white font-bold text-sm rounded-xl shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 text-center">
+                        <i class="bi bi-eye mr-2"></i>View All Details
+                    </a>
+                </div>
             </div>
         </div>
 
-        <!-- Disconnected Consumers Card -->
-        <div class="metric-card disconnected">
-            <div class="metric-header">
-                <div class="metric-icon">
-                    <i class="bi bi-x-circle-fill"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>Disconnected</h3>
-                </div>
-            </div>
-            <div class="metric-value">{{ disconnected_count|default:"0" }}</div>
-            <div class="metric-footer">
-                <a href="{% url 'consumers:disconnected_consumers' %}" class="btn-view">
-                    <i class="bi bi-eye"></i> View All Details
-                </a>
-            </div>
-        </div>
+        <!-- Report Generation & Chart Section - 2 Column Grid -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        <!-- Delinquent Accounts Card -->
-        <div class="metric-card delinquent">
-            <div class="metric-header">
-                <div class="metric-icon">
-                    <i class="bi bi-exclamation-triangle-fill"></i>
-                </div>
-                <div class="metric-info">
-                    <h3>Delinquent</h3>
-                </div>
-            </div>
-            <div class="metric-value">{{ delinquent_count|default:"0" }}</div>
-            <div class="metric-footer">
-                <a href="{% url 'consumers:delinquent_consumers' %}" class="btn-view">
-                    <i class="bi bi-eye"></i> View All Details
-                </a>
-            </div>
-        </div>
-
-        <!-- Report Generation & Payment Chart Section -->
-        <div class="full-width-section">
             <!-- Report Generation Card -->
-            <div class="report-card">
-                <h3 class="section-title">
-                    <i class="bi bi-file-earmark-spreadsheet-fill"></i>
+            <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <h3 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
+                    <i class="bi bi-file-earmark-spreadsheet-fill text-2xl text-primary-600"></i>
                     Generate Monthly Report
                 </h3>
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label for="reportMonth">📅 Select Month</label>
-                        <select id="reportMonth" name="month" class="form-select">
+
+                <!-- Form Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label for="reportMonth" class="block text-xs font-bold text-dark-700 uppercase tracking-wide mb-2">
+                            📅 Select Month
+                        </label>
+                        <select id="reportMonth" name="month" class="form-select w-full">
                             <option value="1">January</option>
                             <option value="2">February</option>
                             <option value="3">March</option>
@@ -623,9 +131,11 @@
                             <option value="12">December</option>
                         </select>
                     </div>
-                    <div class="form-group">
-                        <label for="reportYear">📆 Select Year</label>
-                        <select id="reportYear" name="year" class="form-select">
+                    <div>
+                        <label for="reportYear" class="block text-xs font-bold text-dark-700 uppercase tracking-wide mb-2">
+                            📆 Select Year
+                        </label>
+                        <select id="reportYear" name="year" class="form-select w-full">
                             <option value="2025">2025</option>
                             <option value="2024">2024</option>
                             <option value="2023">2023</option>
@@ -633,46 +143,57 @@
                         </select>
                     </div>
                 </div>
-                <button type="button" class="btn-generate" onclick="generateExcelReport()">
-                    <i class="bi bi-download"></i>
+
+                <!-- Generate Button -->
+                <button type="button"
+                        class="w-full py-4 px-6 bg-gradient-to-r from-primary-600 to-purple-600 text-white font-extrabold text-base rounded-xl shadow-lg hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 uppercase tracking-wide"
+                        onclick="generateExcelReport()">
+                    <i class="bi bi-download mr-2 text-lg"></i>
                     Download Excel Report
                 </button>
             </div>
 
             <!-- Payment Status Chart Card -->
-            <div class="chart-card">
-                <h4 class="section-title">
-                    <i class="bi bi-pie-chart-fill"></i>
+            <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+                <h4 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
+                    <i class="bi bi-pie-chart-fill text-2xl text-primary-600"></i>
                     Payment Status Overview
                 </h4>
-                <div class="chart-wrapper">
+
+                <!-- Chart Container -->
+                <div class="relative h-80 flex items-center justify-center">
                     <canvas id="paymentChart"></canvas>
                 </div>
             </div>
         </div>
 
-        <!-- Recent Collections Card -->
-        <div class="collections-card">
-            <h4 class="section-title">
-                <i class="bi bi-cash-coin"></i>
+        <!-- Recent Collections Card - Full Width -->
+        <div class="bg-white/95 backdrop-blur-md rounded-2xl p-6 shadow-xl hover:shadow-2xl transition-all duration-300">
+            <h4 class="flex items-center gap-3 text-xl font-extrabold text-dark-900 mb-6 pb-4 border-b-2 border-light-300">
+                <i class="bi bi-cash-coin text-2xl text-success-600"></i>
                 Recent Collections
             </h4>
+
             {% if recent_collections %}
-            <div class="collections-grid">
+            <!-- Collections Grid -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 max-h-96 overflow-y-auto scrollbar-thin pr-2">
                 {% for collection in recent_collections %}
-                <div class="collection-item">
-                    <div class="collection-date">
-                        <i class="bi bi-calendar-check"></i>
+                <div class="bg-gradient-to-br from-light-50 to-light-200 p-5 rounded-xl hover:-translate-y-1 hover:shadow-lg hover:border-primary-500 border-2 border-transparent transition-all duration-300">
+                    <div class="flex items-center gap-2 text-dark-700 font-bold text-sm mb-3">
+                        <i class="bi bi-calendar-check text-primary-600 text-lg"></i>
                         {{ collection.date|date:"M d, Y" }}
                     </div>
-                    <div class="collection-amount">₱{{ collection.amount|floatformat:2|intcomma }}</div>
+                    <div class="text-2xl font-black bg-gradient-to-r from-success-600 to-success-500 bg-clip-text text-transparent">
+                        ₱{{ collection.amount|floatformat:2|intcomma }}
+                    </div>
                 </div>
                 {% endfor %}
             </div>
             {% else %}
-            <div class="empty-state">
-                <i class="bi bi-inbox"></i>
-                <p>No recent collections to display</p>
+            <!-- Empty State -->
+            <div class="text-center py-12">
+                <i class="bi bi-inbox text-6xl text-dark-300 opacity-30 mb-4"></i>
+                <p class="text-lg font-semibold text-dark-400">No recent collections to display</p>
             </div>
             {% endif %}
         </div>
@@ -689,9 +210,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('reportMonth').value = now.getMonth() + 1;
     document.getElementById('reportYear').value = now.getFullYear();
 
-    // Payment Status Chart with enhanced styling
+    // Payment Status Chart
     const ctx = document.getElementById('paymentChart').getContext('2d');
-    const isDarkMode = document.body.classList.contains('dark-mode');
 
     new Chart(ctx, {
         type: 'doughnut',
@@ -699,12 +219,9 @@ document.addEventListener('DOMContentLoaded', function() {
             labels: ['Paid Bills', 'Pending Bills'],
             datasets: [{
                 data: [{{ paid_bills|default:"0" }}, {{ pending_bills|default:"0" }}],
-                backgroundColor: [
-                    '#10b981',
-                    '#f59e0b'
-                ],
+                backgroundColor: ['#10b981', '#f59e0b'],
                 borderWidth: 4,
-                borderColor: isDarkMode ? '#2d2d2d' : '#ffffff',
+                borderColor: '#ffffff',
                 hoverOffset: 15,
                 hoverBorderWidth: 6
             }]
@@ -717,12 +234,8 @@ document.addEventListener('DOMContentLoaded', function() {
                     position: 'bottom',
                     labels: {
                         padding: 20,
-                        font: {
-                            size: 14,
-                            weight: '700',
-                            family: 'Inter'
-                        },
-                        color: isDarkMode ? '#ffffff' : '#1e293b',
+                        font: { size: 14, weight: '700', family: 'Inter' },
+                        color: '#1e293b',
                         usePointStyle: true,
                         pointStyle: 'circle'
                     }
@@ -730,24 +243,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 tooltip: {
                     backgroundColor: 'rgba(0, 0, 0, 0.9)',
                     padding: 16,
-                    titleFont: {
-                        size: 16,
-                        weight: '700'
-                    },
-                    bodyFont: {
-                        size: 14,
-                        weight: '600'
-                    },
+                    titleFont: { size: 16, weight: '700' },
+                    bodyFont: { size: 14, weight: '600' },
                     cornerRadius: 12,
                     displayColors: true,
                     callbacks: {
                         label: function(context) {
-                            let label = context.label || '';
-                            if (label) {
-                                label += ': ';
-                            }
-                            label += context.parsed + ' bills';
-                            return label;
+                            return context.label + ': ' + context.parsed + ' bills';
                         }
                     }
                 }
@@ -762,7 +264,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Animate counter numbers with easing
+    // Animate counter numbers
     function animateValue(element, start, end, duration) {
         let startTimestamp = null;
         const step = (timestamp) => {
@@ -777,7 +279,7 @@ document.addEventListener('DOMContentLoaded', function() {
         window.requestAnimationFrame(step);
     }
 
-    // Animate all metric values with stagger effect
+    // Animate all metric values with stagger
     document.querySelectorAll('.metric-value').forEach((el, index) => {
         const finalValue = parseInt(el.textContent) || 0;
         el.textContent = '0';
@@ -787,7 +289,8 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Fade in cards with stagger
-    document.querySelectorAll('.metric-card, .report-card, .chart-card, .collections-card').forEach((card, index) => {
+    const allCards = document.querySelectorAll('.metric-card, .bg-white\\/95');
+    allCards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         setTimeout(() => {
@@ -797,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 100 + (index * 100));
     });
 
-    // Show welcome notification
+    // Welcome notification
     setTimeout(() => {
         if (typeof showToast === 'function') {
             showToast('success', '🎉 Welcome to your Dashboard! All systems operational.', 4000);
@@ -805,7 +308,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }, 800);
 });
 
-// Generate Excel Report Function with enhanced feedback
+// Generate Excel Report Function
 function generateExcelReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
@@ -814,7 +317,7 @@ function generateExcelReport() {
 
     const btn = event.target;
     btn.disabled = true;
-    btn.innerHTML = '<i class="bi bi-hourglass-split loading"></i> Generating Report...';
+    btn.innerHTML = '<i class="bi bi-hourglass-split animate-spin"></i> Generating Report...';
 
     if (typeof showLoading === 'function') {
         showLoading(`📊 Generating ${monthNames[month]} ${year} delinquent report...`);
