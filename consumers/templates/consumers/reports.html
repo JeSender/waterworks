@@ -91,14 +91,39 @@
             <!-- RIGHT COLUMN: Report Results Display -->
             <div class="flex-1">
                 {% if report_data is not None %}
-                <div class="bg-white p-6 rounded-lg shadow-md">
+                <div class="bg-white p-6 rounded-lg shadow-md report-container">
 
-                    <!-- Report Title & Timestamp -->
-                    <div class="mb-6">
-                        <h3 class="text-xl font-bold text-gray-800 mb-1">{{ report_title }}</h3>
-                        <p class="text-xs text-gray-500">
-                            <i class="bi bi-calendar-check me-1"></i>Report Period: {{ month_display }}
-                        </p>
+                    <!-- Report Header with Logos (Hidden on screen, shown on print) -->
+                    <div class="print-header hidden">
+                        {% load static %}
+                        <div class="logo-container">
+                            <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" class="logo-print">
+                            <img src="{% static 'consumers/images/logo.jpg' %}" alt="Waterworks Logo" class="logo-print logo-circle">
+                        </div>
+                        <div class="header-text">
+                            <h2 class="main-title">REPUBLIC OF THE PHILIPPINES</h2>
+                            <h3 class="sub-title">PROVINCE OF BOHOL</h3>
+                            <h3 class="sub-title">MUNICIPALITY OF BALILIHAN</h3>
+                            <h2 class="main-title">BALILIHAN WATERWORKS</h2>
+                            <h3 class="report-type-title">{{ report_title }}</h3>
+                            <p class="report-period">Report Period: {{ month_display }}</p>
+                        </div>
+                    </div>
+
+                    <!-- Report Title & Timestamp (Screen only) -->
+                    <div class="mb-6 screen-only">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-800 mb-1">{{ report_title }}</h3>
+                                <p class="text-xs text-gray-500">
+                                    <i class="bi bi-calendar-check me-1"></i>Report Period: {{ month_display }}
+                                </p>
+                            </div>
+                            <button onclick="window.print()" class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm flex items-center gap-2">
+                                <i class="bi bi-printer"></i>
+                                Print Report
+                            </button>
+                        </div>
                     </div>
 
                     <!-- Summary KPI Cards - Side by Side -->
@@ -289,9 +314,19 @@
 </div>
 
 <style>
+/* Print Header - Hidden on Screen */
+.print-header {
+    display: none;
+}
+
+.screen-only {
+    display: block;
+}
+
 /* Print Styles */
 @media print {
-    form, button, a[href*="export"], .bg-gradient-to-br {
+    /* Hide screen-only elements */
+    form, button, a[href*="export"], .bg-gradient-to-br, .screen-only {
         display: none !important;
     }
 
@@ -309,6 +344,113 @@
 
     .shadow-md, .shadow-lg {
         box-shadow: none !important;
+    }
+
+    /* Show print header */
+    .print-header {
+        display: block !important;
+        margin-bottom: 30px;
+    }
+
+    /* Logo Container */
+    .logo-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding: 0 20px;
+    }
+
+    .logo-print {
+        width: 80px;
+        height: auto;
+    }
+
+    .logo-circle {
+        border-radius: 50%;
+        object-fit: cover;
+        width: 80px;
+        height: 80px;
+    }
+
+    /* Header Text */
+    .header-text {
+        text-align: center;
+        margin-bottom: 20px;
+    }
+
+    .main-title {
+        margin: 5px 0;
+        color: #003366;
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .sub-title {
+        margin: 3px 0;
+        color: #0055aa;
+        font-size: 16px;
+        font-weight: 600;
+    }
+
+    .report-type-title {
+        margin: 15px 0 5px 0;
+        color: #1a1a1a;
+        font-size: 18px;
+        font-weight: bold;
+        text-transform: uppercase;
+    }
+
+    .report-period {
+        margin: 5px 0;
+        color: #666;
+        font-size: 14px;
+    }
+
+    /* Report Container */
+    .report-container {
+        border: 2px solid #000 !important;
+        padding: 30px !important;
+        background: white !important;
+    }
+
+    /* Remove colors from tables for printing */
+    thead {
+        background: #f0f0f0 !important;
+        color: #000 !important;
+        border: 2px solid #000 !important;
+    }
+
+    thead th {
+        color: #000 !important;
+        font-weight: bold !important;
+    }
+
+    tbody tr {
+        border-bottom: 1px solid #ddd !important;
+    }
+
+    tbody tr:hover {
+        background: transparent !important;
+    }
+
+    tfoot {
+        background: #f5f5f5 !important;
+        border-top: 2px solid #000 !important;
+    }
+
+    tfoot td {
+        color: #000 !important;
+    }
+
+    /* Page breaks */
+    .report-container {
+        page-break-inside: avoid;
+    }
+
+    /* Summary cards */
+    .flex.gap-4 {
+        margin-bottom: 20px !important;
     }
 }
 
