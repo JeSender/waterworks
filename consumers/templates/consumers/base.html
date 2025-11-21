@@ -267,6 +267,16 @@
                     <span class="font-medium">Login History</span>
                 </a>
             </div>
+            {% elif user.staffprofile.role == 'admin' %}
+            <!-- Admin Role - Login History Only -->
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Administration</div>
+                <a href="{% url 'consumers:user_login_history' %}"
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-clock-history me-2.5 text-base" style="width: 20px;"></i>
+                    <span class="font-medium">Login History</span>
+                </a>
+            </div>
             {% endif %}
         </nav>
     </div>
