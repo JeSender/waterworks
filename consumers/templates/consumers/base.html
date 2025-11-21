@@ -190,7 +190,6 @@
                         </div>
                         <div class="flex-1">
                             <div class="font-bold text-dark-900">{{ request.user.get_full_name|default:request.user.username }}</div>
-                            <div class="text-xs text-dark-500">Administrator</div>
                         </div>
                     </div>
                     <div class="text-xs text-dark-500">{{ request.user.email|default:"No email" }}</div>
