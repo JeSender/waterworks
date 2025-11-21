@@ -172,7 +172,7 @@
             <button class="dropdown-toggle flex items-center gap-2 p-0 border-0 bg-transparent cursor-pointer"
                     type="button"
                     id="userDropdown"
-                    onclick="toggleDropdown('userDropdown')">
+                    onclick="toggleDropdown('userDropdown', event)">
                 <!-- Profile Icon or Photo -->
                 {% if request.user.staffprofile.profile_photo and request.user.staffprofile.role == 'admin' %}
                     <!-- Admin with Profile Photo -->
@@ -316,18 +316,36 @@
     <!-- Utility Scripts -->
     <script>
         // Dropdown toggle function
-        function toggleDropdown(id) {
-            const menu = document.getElementById(id + '-menu');
-            menu.classList.toggle('show');
+        function toggleDropdown(id, event) {
+            // Prevent event bubbling
+            if (event) {
+                event.stopPropagation();
+            }
 
-            // Close dropdown when clicking outside
-            document.addEventListener('click', function closeDropdown(e) {
-                const dropdown = document.getElementById(id);
-                if (!dropdown.contains(e.target)) {
-                    menu.classList.remove('show');
-                    document.removeEventListener('click', closeDropdown);
+            const menu = document.getElementById(id + '-menu');
+            const dropdown = document.getElementById(id);
+
+            // Close all other dropdowns first
+            document.querySelectorAll('.dropdown-menu.show').forEach(m => {
+                if (m.id !== id + '-menu') {
+                    m.classList.remove('show');
                 }
             });
+
+            // Toggle current dropdown
+            menu.classList.toggle('show');
+
+            // Close dropdown when clicking outside (delayed to prevent immediate trigger)
+            if (menu.classList.contains('show')) {
+                setTimeout(() => {
+                    document.addEventListener('click', function closeDropdown(e) {
+                        if (!dropdown.contains(e.target)) {
+                            menu.classList.remove('show');
+                            document.removeEventListener('click', closeDropdown);
+                        }
+                    });
+                }, 10);
+            }
         }
 
         // Loading overlay utility
@@ -387,6 +405,15 @@
                 }
             });
         }
+
+        // Close dropdown on Escape key
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.dropdown-menu.show').forEach(menu => {
+                    menu.classList.remove('show');
+                });
+            }
+        });
 
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
