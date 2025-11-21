@@ -174,39 +174,23 @@
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown', event)">
                 <!-- Admin Icon with Letter A -->
-                {% if request.user.staffprofile.role == 'admin' %}
-                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg"
-                         style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                        A
-                    </div>
-                {% else %}
-                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg"
-                         style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-                        S
-                    </div>
-                {% endif %}
-                <!-- Role Text beside icon -->
-                <span class="text-dark-900 text-sm font-semibold">
-                    {% if request.user.staffprofile.role == 'admin' %}Admin{% else %}Staff{% endif %}
-                </span>
+                <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                     style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                    A
+                </div>
+                <!-- Admin Text -->
+                <span class="text-dark-900 text-sm font-semibold">Admin</span>
             </button>
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
                     <div class="flex items-center gap-3 mb-2">
-                        {% if request.user.staffprofile.role == 'admin' %}
-                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl"
-                                 style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                A
-                            </div>
-                        {% else %}
-                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl"
-                                 style="background: linear-gradient(135deg, #2563eb, #1d4ed8);">
-                                S
-                            </div>
-                        {% endif %}
+                        <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                             style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                            A
+                        </div>
                         <div class="flex-1">
                             <div class="font-bold text-dark-900">{{ request.user.get_full_name|default:request.user.username }}</div>
-                            <div class="text-xs text-dark-500">{% if request.user.staffprofile.role == 'admin' %}Administrator{% else %}Staff{% endif %}</div>
+                            <div class="text-xs text-dark-500">Administrator</div>
                         </div>
                     </div>
                     <div class="text-xs text-dark-500">{{ request.user.email|default:"No email" }}</div>
