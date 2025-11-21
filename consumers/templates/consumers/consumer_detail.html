@@ -236,7 +236,7 @@ async function confirmDisconnect(consumerId, consumerName) {
         });
 
         // Navigate to disconnect URL
-        window.location.href = `/consumer/${consumerId}/disconnect/`;
+        window.location.href = `/disconnect/${consumerId}/`;
     }
 }
 
@@ -267,7 +267,7 @@ async function confirmReconnect(consumerId, consumerName) {
         // Create a form and submit
         const form = document.createElement('form');
         form.method = 'POST';
-        form.action = `/consumer/${consumerId}/reconnect/`;
+        form.action = `/reconnect/${consumerId}/`;
 
         const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
         const csrfInput = document.createElement('input');
