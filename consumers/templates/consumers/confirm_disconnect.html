@@ -1,103 +1,338 @@
 {% extends "consumers/base.html" %}
 {% load static %}
 
-{% block title %}Confirm Disconnection{% endblock %}
+{% block title %}Confirm Disconnection - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
-<div class="max-w-2xl mx-auto">
+<div class="max-w-3xl mx-auto">
     <!-- Page Header -->
-    <div class="mb-5">
-        <h2 class="text-xl font-bold text-dark-900">Confirm Disconnection</h2>
-        <p class="text-dark-500 text-xs mt-1">Verify consumer disconnection details</p>
+    <div class="mb-6">
+        <a href="{% url 'consumers:consumer_detail' consumer.id %}"
+           class="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm mb-3 transition-colors">
+            <i class="bi bi-arrow-left"></i>
+            Back to Consumer Details
+        </a>
+        <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
+            <i class="bi bi-plug text-danger-600"></i>
+            Confirm Disconnection
+        </h2>
+        <p class="text-dark-500 text-sm mt-1">Verify consumer disconnection details before proceeding</p>
     </div>
 
-    <!-- Confirmation Card -->
-    <div class="bg-white rounded-lg border-2 border-danger-300 shadow-sm">
-        <!-- Card Header -->
-        <div class="px-5 py-3 bg-danger-600 border-b border-danger-700">
-            <div class="flex items-center gap-2 text-white">
-                <i class="bi bi-exclamation-triangle-fill text-lg"></i>
-                <h5 class="text-sm font-semibold">Disconnect Consumer Confirmation</h5>
+    <!-- Warning Banner -->
+    <div class="mb-6 bg-gradient-to-r from-danger-600 to-danger-700 rounded-lg p-6 text-white shadow-lg">
+        <div class="flex items-start gap-4">
+            <div class="flex-shrink-0">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center">
+                    <i class="bi bi-exclamation-triangle-fill text-3xl"></i>
+                </div>
             </div>
+            <div class="flex-1">
+                <h3 class="text-lg font-bold mb-2">Disconnection Warning</h3>
+                <p class="text-sm text-danger-50 leading-relaxed">
+                    You are about to disconnect a consumer's water service. This action will change their account status to disconnected
+                    and prevent them from receiving water service until reconnected. Please verify all details carefully.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consumer Information Card -->
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden mb-6">
+        <!-- Card Header -->
+        <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700 border-b border-primary-700">
+            <h3 class="text-base font-semibold text-white flex items-center gap-2">
+                <i class="bi bi-person-circle"></i>
+                Consumer Information
+            </h3>
         </div>
 
         <!-- Card Body -->
-        <div class="px-5 py-4">
-            <p class="text-sm text-dark-700 mb-4">
-                Are you sure you want to disconnect the following consumer? This action will change their status to disconnected.
-            </p>
-
-            <!-- Consumer Info Alert -->
-            <div class="mb-5 p-4 bg-warning-50 border-l-4 border-warning-500 rounded">
-                <div class="flex items-start gap-3">
-                    <div class="flex-shrink-0 w-10 h-10 bg-warning-100 rounded-full flex items-center justify-center">
-                        <i class="bi bi-person-circle text-warning-700 text-xl"></i>
+        <div class="p-6">
+            <!-- Consumer Details Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center">
+                        <span class="text-2xl font-bold text-primary-700">
+                            {{ consumer.first_name.0|upper }}{{ consumer.last_name.0|upper }}
+                        </span>
                     </div>
                     <div class="flex-1">
-                        <div class="text-sm font-semibold text-dark-900 mb-1">
-                            {{ consumer.account_number }} – {{ consumer.first_name }} {{ consumer.last_name }}
-                        </div>
-                        <div class="text-xs text-dark-600">
-                            <span class="font-medium">Barangay:</span> {{ consumer.barangay.name|default:"—" }}
-                            {% if consumer.purok %}
-                            <span class="mx-1">•</span>
-                            <span class="font-medium">Purok:</span> {{ consumer.purok.name }}
-                            {% endif %}
-                        </div>
-                        {% if consumer.phone_number %}
-                        <div class="text-xs text-dark-600 mt-0.5">
-                            <span class="font-medium">Phone:</span> {{ consumer.phone_number }}
-                        </div>
-                        {% endif %}
+                        <p class="text-xs text-dark-500 font-medium mb-1">Full Name</p>
+                        <p class="text-lg font-bold text-dark-900">{{ consumer.first_name }} {{ consumer.last_name }}</p>
                     </div>
                 </div>
-            </div>
 
-            <!-- Disconnection Form -->
-            <form method="POST">
-                {% csrf_token %}
+                <div>
+                    <p class="text-xs text-dark-500 font-medium mb-1">Account Number</p>
+                    <p class="text-lg font-mono font-bold text-primary-700">{{ consumer.account_number }}</p>
+                </div>
 
-                <div class="mb-4">
-                    <label for="reason" class="block text-xs font-medium text-dark-700 mb-1">
-                        Reason for Disconnection (Optional)
-                    </label>
-                    <input
-                        type="text"
-                        name="reason"
-                        id="reason"
-                        class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-transparent"
-                        placeholder="e.g., Non-payment, Requested by consumer, Violation"
-                    >
-                    <p class="mt-1 text-xs text-dark-500">
-                        <i class="bi bi-info-circle mr-1"></i>
-                        Provide a reason for record-keeping purposes
+                <div>
+                    <p class="text-xs text-dark-500 font-medium mb-1">Barangay</p>
+                    <p class="text-base font-semibold text-dark-900">
+                        {{ consumer.barangay.name|default:"—" }}
+                        {% if consumer.purok %}
+                            <span class="text-dark-500 font-normal">• {{ consumer.purok.name }}</span>
+                        {% endif %}
                     </p>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex items-center justify-end gap-2 pt-3 border-t border-light-200">
-                    <a href="{% url 'consumers:consumer_detail' consumer.id %}"
-                       class="px-4 py-2 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
-                        <i class="bi bi-x-circle mr-1"></i>Cancel
-                    </a>
-                    <button type="submit"
-                            class="px-4 py-2 bg-danger-600 text-white text-sm font-medium rounded hover:bg-danger-700 transition-colors shadow-sm"
-                            onclick="return confirm('Are you sure you want to disconnect this consumer? This action can be reversed later.')">
-                        <i class="bi bi-plug-fill mr-1"></i>Yes, Disconnect Consumer
-                    </button>
+                {% if consumer.phone_number %}
+                <div>
+                    <p class="text-xs text-dark-500 font-medium mb-1">Phone Number</p>
+                    <p class="text-base font-semibold text-dark-900 flex items-center gap-2">
+                        <i class="bi bi-telephone-fill text-success-600"></i>
+                        {{ consumer.phone_number }}
+                    </p>
                 </div>
-            </form>
+                {% endif %}
+
+                <div>
+                    <p class="text-xs text-dark-500 font-medium mb-1">Current Status</p>
+                    <span class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold
+                        {% if consumer.status == 'active' %}bg-success-100 text-success-800 border border-success-300
+                        {% else %}bg-danger-100 text-danger-800 border border-danger-300{% endif %}">
+                        <i class="bi {% if consumer.status == 'active' %}bi-check-circle-fill{% else %}bi-x-circle-fill{% endif %}"></i>
+                        {{ consumer.get_status_display }}
+                    </span>
+                </div>
+
+                <div>
+                    <p class="text-xs text-dark-500 font-medium mb-1">Meter Number</p>
+                    <p class="text-base font-mono font-semibold text-dark-900">{{ consumer.meter_number|default:"Not assigned" }}</p>
+                </div>
+            </div>
+
+            <!-- Outstanding Bills Alert (if any) -->
+            <div class="p-4 bg-warning-50 border-l-4 border-warning-500 rounded">
+                <div class="flex items-start gap-3">
+                    <i class="bi bi-info-circle-fill text-warning-700 text-xl mt-0.5"></i>
+                    <div class="flex-1">
+                        <h4 class="font-semibold text-warning-900 mb-1 text-sm">Outstanding Bills</h4>
+                        <p class="text-xs text-warning-800">
+                            Please verify any outstanding bills before disconnection. Consumers should settle their accounts before disconnection.
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
+    <!-- Disconnection Form -->
+    <div class="bg-white rounded-lg border-2 border-danger-300 shadow-sm overflow-hidden">
+        <!-- Form Header -->
+        <div class="px-6 py-4 bg-danger-50 border-b border-danger-200">
+            <h3 class="text-base font-semibold text-danger-900 flex items-center gap-2">
+                <i class="bi bi-clipboard-check"></i>
+                Disconnection Details
+            </h3>
+        </div>
+
+        <!-- Form Body -->
+        <form method="POST" id="disconnectForm" class="p-6">
+            {% csrf_token %}
+
+            <div class="mb-6">
+                <label for="reason" class="block text-sm font-semibold text-dark-900 mb-2">
+                    Reason for Disconnection <span class="text-dark-500 font-normal">(Optional but recommended)</span>
+                </label>
+                <textarea
+                    name="reason"
+                    id="reason"
+                    rows="4"
+                    class="w-full px-4 py-3 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-transparent resize-none"
+                    placeholder="e.g., Non-payment of bills for 3+ months, Requested by consumer, Meter tampering, etc."
+                ></textarea>
+                <p class="mt-2 text-xs text-dark-500 flex items-start gap-2">
+                    <i class="bi bi-info-circle mt-0.5"></i>
+                    <span>Providing a reason helps maintain accurate records and can be useful for future reference or reconnection requests.</span>
+                </p>
+            </div>
+
+            <!-- Common Reasons (Quick Select) -->
+            <div class="mb-6">
+                <p class="text-sm font-semibold text-dark-900 mb-3">Quick Select Common Reasons:</p>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
+                    <button type="button" onclick="selectReason('Non-payment of bills')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-currency-dollar mr-1"></i>
+                        Non-payment
+                    </button>
+                    <button type="button" onclick="selectReason('Consumer request')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-person-check mr-1"></i>
+                        Consumer Request
+                    </button>
+                    <button type="button" onclick="selectReason('Meter tampering detected')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-shield-x mr-1"></i>
+                        Meter Tampering
+                    </button>
+                    <button type="button" onclick="selectReason('Violation of terms')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-exclamation-triangle mr-1"></i>
+                        Violation
+                    </button>
+                    <button type="button" onclick="selectReason('Property vacancy')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-house mr-1"></i>
+                        Property Vacant
+                    </button>
+                    <button type="button" onclick="selectReason('Maintenance required')"
+                            class="px-3 py-2 bg-light-100 hover:bg-light-200 border border-light-300 rounded-lg text-xs font-medium text-dark-700 transition-colors">
+                        <i class="bi bi-tools mr-1"></i>
+                        Maintenance
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center justify-between gap-3 pt-6 border-t border-light-200">
+                <a href="{% url 'consumers:consumer_detail' consumer.id %}"
+                   class="px-6 py-3 border-2 border-light-400 text-dark-700 text-sm font-semibold rounded-lg hover:bg-light-50 transition-colors flex items-center gap-2">
+                    <i class="bi bi-x-circle"></i>
+                    Cancel
+                </a>
+                <button type="button" onclick="showConfirmation()"
+                        class="px-6 py-3 bg-danger-600 text-white text-sm font-semibold rounded-lg hover:bg-danger-700 transition-colors shadow-lg hover:shadow-xl flex items-center gap-2">
+                    <i class="bi bi-plug-fill"></i>
+                    Disconnect Consumer
+                </button>
+            </div>
+        </form>
+    </div>
+
     <!-- Info Notice -->
-    <div class="mt-4 p-3 bg-info-50 border border-info-200 rounded-lg">
-        <div class="flex items-start gap-2 text-xs text-info-800">
-            <i class="bi bi-info-circle-fill text-sm mt-0.5"></i>
-            <div>
-                <strong class="font-semibold">Note:</strong> Disconnected consumers can be reconnected at any time from their detail page. All historical data will be preserved.
+    <div class="mt-6 p-4 bg-info-50 border border-info-200 rounded-lg">
+        <div class="flex items-start gap-3 text-sm">
+            <i class="bi bi-lightbulb-fill text-info-600 text-lg mt-0.5"></i>
+            <div class="flex-1">
+                <h4 class="font-semibold text-info-900 mb-1">Important Information</h4>
+                <ul class="text-xs text-info-800 space-y-1 list-disc list-inside">
+                    <li>Disconnected consumers can be reconnected at any time from their detail page</li>
+                    <li>All historical data, bills, and payment records will be preserved</li>
+                    <li>The consumer's account will be marked as "Disconnected" in the system</li>
+                    <li>This action is reversible and does not delete any consumer information</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+// Quick select reason
+function selectReason(reason) {
+    const textarea = document.getElementById('reason');
+    textarea.value = reason;
+    textarea.focus();
+}
+
+// Enhanced confirmation with SweetAlert2
+function showConfirmation() {
+    const reason = document.getElementById('reason').value.trim();
+    const consumerName = '{{ consumer.first_name }} {{ consumer.last_name }}';
+    const accountNumber = '{{ consumer.account_number }}';
+
+    Swal.fire({
+        title: 'Confirm Disconnection',
+        html: `
+            <div class="text-left">
+                <div class="mb-4 p-4 bg-danger-50 border border-danger-200 rounded-lg">
+                    <div class="flex items-start gap-3">
+                        <i class="bi bi-exclamation-triangle-fill text-danger-600 text-2xl"></i>
+                        <div>
+                            <p class="font-semibold text-danger-900 mb-2">You are about to disconnect:</p>
+                            <p class="font-bold text-dark-900">${consumerName}</p>
+                            <p class="text-sm text-dark-600">Account: <span class="font-mono font-semibold">${accountNumber}</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                ${reason ? `
+                <div class="mb-4 p-3 bg-light-100 rounded-lg">
+                    <p class="text-sm text-dark-600 font-medium mb-1">Reason for disconnection:</p>
+                    <p class="text-sm text-dark-900 italic">"${reason}"</p>
+                </div>
+                ` : `
+                <div class="mb-4 p-3 bg-warning-50 border border-warning-300 rounded-lg">
+                    <p class="text-xs text-warning-800">
+                        <i class="bi bi-info-circle mr-1"></i>
+                        No reason provided. Consider adding a reason for record-keeping.
+                    </p>
+                </div>
+                `}
+
+                <div class="mb-3">
+                    <p class="text-sm font-semibold text-dark-900 mb-2">This action will:</p>
+                    <ul class="text-sm text-dark-700 space-y-1">
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-success-600 mt-0.5"></i>
+                            <span>Change account status to "Disconnected"</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-success-600 mt-0.5"></i>
+                            <span>Preserve all historical data and records</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <i class="bi bi-check2 text-success-600 mt-0.5"></i>
+                            <span>Allow reconnection at any time</span>
+                        </li>
+                    </ul>
+                </div>
+
+                <p class="text-sm text-dark-900 font-semibold">
+                    Are you sure you want to proceed with this disconnection?
+                </p>
+            </div>
+        `,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc2626',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-plug-fill mr-2"></i>Yes, Disconnect Consumer',
+        cancelButtonText: '<i class="bi bi-x-circle mr-2"></i>Cancel',
+        customClass: {
+            confirmButton: 'px-5 py-2.5 text-sm font-semibold',
+            cancelButton: 'px-5 py-2.5 text-sm font-semibold',
+            popup: 'rounded-xl'
+        },
+        width: '600px',
+        showClass: {
+            popup: 'animate__animated animate__fadeInDown animate__faster'
+        },
+        hideClass: {
+            popup: 'animate__animated animate__fadeOutUp animate__faster'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show processing state
+            Swal.fire({
+                title: 'Processing Disconnection...',
+                html: `
+                    <div class="text-center py-4">
+                        <i class="bi bi-hourglass-split text-4xl text-primary-600 mb-3"></i>
+                        <p class="text-dark-700">Updating consumer status...</p>
+                    </div>
+                `,
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Submit form
+            document.getElementById('disconnectForm').submit();
+        }
+    });
+}
+
+// Optional: Keyboard shortcut (Ctrl+Enter to submit)
+document.getElementById('reason').addEventListener('keydown', function(e) {
+    if (e.ctrlKey && e.key === 'Enter') {
+        showConfirmation();
+    }
+});
+</script>
 {% endblock %}
