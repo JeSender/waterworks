@@ -6,11 +6,17 @@
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
-    <!-- Minimal Header -->
+    <!-- Header with Dynamic Date -->
     <div class="mb-6 flex items-center justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-dark-900">Dashboard</h2>
-            <p class="text-xs text-dark-500 mt-1">{{ selected_date|date:"F d, Y" }}</p>
+            <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
+                <i class="bi bi-droplet-fill text-primary-600"></i>
+                Balilihan Waterworks
+            </h2>
+            <p class="text-xs text-dark-500 mt-1">
+                <i class="bi bi-calendar3 mr-1"></i>
+                Today is {{ current_date|date:"l, F d, Y" }}
+            </p>
         </div>
         <div class="flex items-center gap-2">
             <a href="{% url 'consumers:reports' %}" class="px-3 py-1.5 bg-light-100 hover:bg-light-200 text-dark-700 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5">
@@ -80,7 +86,7 @@
             </div>
         </a>
 
-        <!-- Total Bills -->
+        <!-- Outstanding Bills -->
         <a href="{% url 'consumers:reports' %}" class="group block">
             <div class="bg-white border border-light-300 rounded-lg p-3 hover:shadow-md hover:border-info-300 transition-all duration-200">
                 <div class="flex items-center justify-between">
@@ -89,7 +95,7 @@
                             <i class="bi bi-receipt-cutoff text-info-600 text-sm"></i>
                         </div>
                         <div>
-                            <div class="text-xs text-dark-500 font-medium">Total Bills</div>
+                            <div class="text-xs text-dark-500 font-medium">Outstanding Bills</div>
                             <div class="text-xl font-bold text-dark-900 metric-value">{{ total_bills|default:"0" }}</div>
                         </div>
                     </div>
@@ -119,29 +125,70 @@
             </div>
         </div>
 
-        <!-- Payment Status Doughnut -->
+        <!-- Payment Status Summary -->
         <div class="bg-white border border-light-300 rounded-lg overflow-hidden">
             <div class="px-4 py-3 border-b border-light-200 bg-light-50">
                 <h3 class="text-sm font-bold text-dark-900 flex items-center gap-2">
                     <i class="bi bi-pie-chart-fill text-success-600"></i>
-                    Payment Status
+                    Payment Summary
                 </h3>
             </div>
             <div class="p-4">
-                <div class="relative" style="height: 160px;">
-                    <canvas id="paymentChart"></canvas>
-                </div>
-                <div class="grid grid-cols-2 gap-2 mt-3">
-                    <div class="text-center p-2 bg-success-50 rounded">
-                        <div class="text-xs text-dark-600">Paid</div>
-                        <div class="text-lg font-bold text-success-700">{{ paid_bills|default:"0" }}</div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="text-center p-3 bg-success-50 rounded-lg">
+                        <div class="text-xs text-dark-600 mb-1">Paid Bills</div>
+                        <div class="text-2xl font-bold text-success-700">{{ paid_bills|default:"0" }}</div>
                     </div>
-                    <div class="text-center p-2 bg-warning-50 rounded">
-                        <div class="text-xs text-dark-600">Pending</div>
-                        <div class="text-lg font-bold text-warning-700">{{ pending_bills|default:"0" }}</div>
+                    <div class="text-center p-3 bg-warning-50 rounded-lg">
+                        <div class="text-xs text-dark-600 mb-1">Pending Bills</div>
+                        <div class="text-2xl font-bold text-warning-700">{{ pending_bills|default:"0" }}</div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    <!-- Consumer Bill Status by Barangay Section -->
+    <div class="bg-white border border-light-300 rounded-lg overflow-hidden mb-4">
+        <div class="px-4 py-3 border-b border-light-200 bg-gradient-to-r from-primary-600 to-purple-600">
+            <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <i class="bi bi-people-fill"></i>
+                    Consumer Bill Status by Barangay
+                </h3>
+                <div class="flex items-center gap-2">
+                    <label for="barangayFilter" class="text-white text-xs">Filter:</label>
+                    <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-white bg-white/20 text-white">
+                        <option value="all" class="text-dark-900">All Barangays</option>
+                        {% for barangay in all_barangays %}
+                        <option value="{{ barangay.id }}" class="text-dark-900">{{ barangay.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="overflow-x-auto" style="max-height: 350px; overflow-y: auto;">
+            <table class="w-full text-xs">
+                <thead class="bg-light-50 sticky top-0">
+                    <tr class="border-b border-light-200">
+                        <th class="px-3 py-2 text-left font-semibold text-dark-700">Account No.</th>
+                        <th class="px-3 py-2 text-left font-semibold text-dark-700">Consumer Name</th>
+                        <th class="px-3 py-2 text-left font-semibold text-dark-700">Barangay</th>
+                        <th class="px-3 py-2 text-left font-semibold text-dark-700">Latest Bill Date</th>
+                        <th class="px-3 py-2 text-right font-semibold text-dark-700">Amount (PHP)</th>
+                        <th class="px-3 py-2 text-center font-semibold text-dark-700">Payment Status</th>
+                    </tr>
+                </thead>
+                <tbody id="consumerBillStatusBody" class="divide-y divide-light-200">
+                    <!-- Data populated via JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        <div class="px-4 py-2 bg-light-50 border-t border-light-200">
+            <small class="text-dark-500 text-xs">
+                <i class="bi bi-info-circle mr-1"></i>
+                Showing <span id="visibleCount" class="font-semibold">0</span> of <span id="totalCount" class="font-semibold">0</span> consumers
+            </small>
         </div>
     </div>
 
@@ -283,6 +330,98 @@ document.addEventListener('DOMContentLoaded', function() {
     Chart.defaults.font.size = 11;
     Chart.defaults.color = '#6b7280';
 
+    // ========== Consumer Bill Status Table ==========
+    const consumerBillStatusData = {{ consumer_bill_status|safe }};
+    const barangayFilter = document.getElementById('barangayFilter');
+    const tableBody = document.getElementById('consumerBillStatusBody');
+    const visibleCountEl = document.getElementById('visibleCount');
+    const totalCountEl = document.getElementById('totalCount');
+
+    function getStatusBadge(status) {
+        let badgeClasses = '';
+        let icon = '';
+        let displayText = status;
+
+        switch(status) {
+            case 'Paid':
+                badgeClasses = 'bg-success-100 text-success-700';
+                icon = 'bi-check-circle-fill';
+                break;
+            case 'Pending':
+                badgeClasses = 'bg-warning-100 text-warning-700';
+                icon = 'bi-clock-fill';
+                break;
+            case 'Overdue':
+            case 'Unpaid':
+                badgeClasses = 'bg-danger-100 text-danger-700';
+                icon = 'bi-exclamation-triangle-fill';
+                displayText = 'Delinquent';
+                break;
+            case 'No Bill':
+                badgeClasses = 'bg-light-200 text-dark-600';
+                icon = 'bi-dash-circle';
+                break;
+            default:
+                badgeClasses = 'bg-light-200 text-dark-600';
+                icon = 'bi-question-circle';
+        }
+        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeClasses}"><i class="bi ${icon} mr-1"></i>${displayText}</span>`;
+    }
+
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function formatCurrency(amount) {
+        if (amount === 0 || amount === null) return '₱0.00';
+        return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderBillStatusTable(filter = 'all') {
+        let filteredData = consumerBillStatusData;
+        if (filter !== 'all') {
+            filteredData = consumerBillStatusData.filter(item => item.barangay_id == filter);
+        }
+
+        visibleCountEl.textContent = filteredData.length;
+        totalCountEl.textContent = consumerBillStatusData.length;
+        tableBody.innerHTML = '';
+
+        if (filteredData.length === 0) {
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-dark-400 py-8">
+                        <i class="bi bi-inbox text-3xl block mb-2 opacity-30"></i>
+                        No consumers found for the selected barangay
+                    </td>
+                </tr>
+            `;
+            return;
+        }
+
+        filteredData.forEach(item => {
+            const row = document.createElement('tr');
+            row.className = 'hover:bg-light-50 transition-colors';
+            row.innerHTML = `
+                <td class="px-3 py-2 text-dark-900 font-medium">${item.account_number}</td>
+                <td class="px-3 py-2 text-dark-700">${item.consumer_name}</td>
+                <td class="px-3 py-2 text-dark-700">${item.barangay}</td>
+                <td class="px-3 py-2 text-dark-700">${formatDate(item.latest_bill_date)}</td>
+                <td class="px-3 py-2 text-right font-bold text-dark-900">${formatCurrency(item.latest_bill_amount)}</td>
+                <td class="px-3 py-2 text-center">${getStatusBadge(item.payment_status)}</td>
+            `;
+            tableBody.appendChild(row);
+        });
+    }
+
+    renderBillStatusTable();
+    barangayFilter.addEventListener('change', function() {
+        renderBillStatusTable(this.value);
+    });
+    // ========== End Consumer Bill Status Table ==========
+
     // Revenue Bar Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
     new Chart(revenueCtx, {
@@ -380,50 +519,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     grid: { display: false }
                 }
             }
-        }
-    });
-
-    // Payment Status Doughnut
-    const paymentCtx = document.getElementById('paymentChart').getContext('2d');
-    new Chart(paymentCtx, {
-        type: 'doughnut',
-        data: {
-            labels: ['Paid', 'Pending'],
-            datasets: [{
-                data: [{{ paid_bills|default:"0" }}, {{ pending_bills|default:"0" }}],
-                backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(245, 158, 11, 0.8)'],
-                borderColor: ['rgba(34, 197, 94, 1)', 'rgba(245, 158, 11, 1)'],
-                borderWidth: 2,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        padding: 10,
-                        font: { size: 11, weight: 'bold' },
-                        usePointStyle: true,
-                    }
-                },
-                tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                    padding: 8,
-                    titleFont: { size: 11 },
-                    bodyFont: { size: 12, weight: 'bold' },
-                    cornerRadius: 4,
-                    callbacks: {
-                        label: function(context) {
-                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                            const percentage = ((context.parsed / total) * 100).toFixed(1);
-                            return context.label + ': ' + context.parsed + ' (' + percentage + '%)';
-                        }
-                    }
-                }
-            },
-            cutout: '65%'
         }
     });
 

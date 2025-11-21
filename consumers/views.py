@@ -981,9 +981,51 @@ def home(request):
         revenue_list.append((label, amount))
 
     # Chart Data: Payment Status Distribution
-    total_bills = Bill.objects.count()
+    total_bills = Bill.objects.filter(status__in=['Pending', 'Unpaid', 'Overdue']).count()  # Outstanding bills only
     paid_bills = Bill.objects.filter(status='Paid').count()
     pending_bills = Bill.objects.filter(status='Pending').count()
+
+    # Get all barangays for filter dropdown
+    all_barangays = Barangay.objects.all().order_by('name')
+
+    # Consumer Bill Status Data - Get latest bill for each consumer
+    from django.db.models import Subquery, OuterRef
+    latest_bill_subquery = Bill.objects.filter(
+        consumer=OuterRef('pk')
+    ).order_by('-billing_period').values('id')[:1]
+
+    consumers_with_bills = Consumer.objects.filter(
+        status='active'
+    ).annotate(
+        latest_bill_id=Subquery(latest_bill_subquery)
+    ).select_related('barangay')
+
+    consumer_bill_status = []
+    for consumer in consumers_with_bills:
+        if consumer.latest_bill_id:
+            try:
+                latest_bill = Bill.objects.get(id=consumer.latest_bill_id)
+                consumer_bill_status.append({
+                    'account_number': consumer.account_number,
+                    'consumer_name': consumer.full_name,
+                    'barangay': consumer.barangay.name if consumer.barangay else 'N/A',
+                    'barangay_id': consumer.barangay.id if consumer.barangay else None,
+                    'latest_bill_date': latest_bill.billing_period,
+                    'latest_bill_amount': float(latest_bill.total_amount),
+                    'payment_status': latest_bill.status,
+                })
+            except Bill.DoesNotExist:
+                pass
+        else:
+            consumer_bill_status.append({
+                'account_number': consumer.account_number,
+                'consumer_name': consumer.full_name,
+                'barangay': consumer.barangay.name if consumer.barangay else 'N/A',
+                'barangay_id': consumer.barangay.id if consumer.barangay else None,
+                'latest_bill_date': None,
+                'latest_bill_amount': 0,
+                'payment_status': 'No Bill',
+            })
 
     # Chart Data: Barangay Consumer Distribution
     barangay_data = Consumer.objects.values('barangay__name').annotate(
@@ -1021,6 +1063,7 @@ def home(request):
         'selected_month': selected_month,
         'selected_year': selected_year,
         'selected_date': selected_date,  # For template date formatting
+        'current_date': datetime.now(),  # For dynamic date display
         # Chart data
         'revenue_labels': json.dumps(revenue_labels),
         'revenue_data': json.dumps(revenue_data),
@@ -1032,6 +1075,9 @@ def home(request):
         'consumption_labels': json.dumps(consumption_labels),
         'consumption_data': json.dumps(consumption_data),
         'total_bills': total_bills,
+        # Consumer Bill Status by Barangay
+        'all_barangays': all_barangays,
+        'consumer_bill_status': json.dumps(consumer_bill_status, default=str),
     }
     return render(request, 'consumers/home.html', context)
 
