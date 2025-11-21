@@ -1855,20 +1855,22 @@ def confirm_all_readings(request, barangay_id):
     success_count = 0
     for reading in readings_to_confirm:
         try:
+            # Find previous confirmed reading
             prev = MeterReading.objects.filter(
                 consumer=reading.consumer,
                 is_confirmed=True,
                 reading_date__lt=reading.reading_date
             ).order_by('-reading_date').first()
 
-            if not prev:
-                first = MeterReading.objects.filter(consumer=reading.consumer).order_by('reading_date').first()
-                if not first or first.id == reading.id:
+            # Calculate consumption
+            if prev:
+                # Has previous reading - validate current >= previous
+                if reading.reading_value < prev.reading_value:
                     continue
-                prev = first
-
-            if reading.reading_value < prev.reading_value:
-                continue
+                cons = reading.reading_value - prev.reading_value
+            else:
+                # First reading for this consumer - use reading value as consumption
+                cons = reading.reading_value
 
             # Get system settings and determine rate based on usage type
             setting = SystemSetting.objects.first()
@@ -1879,20 +1881,23 @@ def confirm_all_readings(request, barangay_id):
                 else:  # residential or default
                     rate = setting.residential_rate_per_cubic
                 fixed = setting.fixed_charge
+                billing_day = setting.billing_day_of_month
+                due_day = setting.due_day_of_month
             else:
                 # Fallback to defaults if no settings exist
                 rate = Decimal('22.50')
                 fixed = Decimal('50.00')
+                billing_day = 1
+                due_day = 20
 
-            cons = reading.reading_value - prev.reading_value
             total = (Decimal(cons) * rate) + fixed
 
             Bill.objects.create(
                 consumer=reading.consumer,
-                previous_reading=prev,
+                previous_reading=prev,  # Will be None for first reading
                 current_reading=reading,
-                billing_period=reading.reading_date.replace(day=1),
-                due_date=reading.reading_date.replace(day=20),
+                billing_period=reading.reading_date.replace(day=billing_day),
+                due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
                 rate_per_cubic=rate,
                 fixed_charge=fixed,
