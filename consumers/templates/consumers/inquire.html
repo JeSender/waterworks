@@ -2,22 +2,25 @@
 {% load dict_extras %}
 {% load static %}
 
-{% block title %}Bill Inquiry & Payment{% endblock %}
+{% block title %}Bill Inquiry & Payment - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-dark-900">Bill Inquiry & Payment</h2>
-        <p class="text-dark-500 text-sm mt-1">Select area and consumer to view bills and process payments</p>
+    <div class="mb-8">
+        <h2 class="text-3xl font-bold text-dark-900">Bill Inquiry & Payment</h2>
+        <p class="text-dark-500 text-sm mt-2">Process consumer bill payments and generate receipts</p>
     </div>
 
     <!-- Messages -->
     {% if messages %}
-    <div class="mb-6 space-y-2">
+    <div class="mb-6 space-y-3">
         {% for message in messages %}
-        <div class="flex items-center justify-between p-4 rounded-lg border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% elif message.tags == 'warning' %}bg-warning-50 border-warning-200 text-warning-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %}">
-            <span class="text-sm font-medium">{{ message }}</span>
+        <div class="flex items-center justify-between p-4 rounded-xl border-l-4 {% if message.tags == 'success' %}bg-success-50 border-success-500 text-success-900{% elif message.tags == 'error' %}bg-danger-50 border-danger-500 text-danger-900{% elif message.tags == 'warning' %}bg-warning-50 border-warning-500 text-warning-900{% else %}bg-info-50 border-info-500 text-info-900{% endif %} shadow-sm">
+            <div class="flex items-center gap-3">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} text-xl"></i>
+                <span class="text-sm font-semibold">{{ message }}</span>
+            </div>
             <button onclick="this.parentElement.remove()" class="text-dark-500 hover:text-dark-700 transition-colors">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -26,44 +29,23 @@
     </div>
     {% endif %}
 
-    <!-- Step Progress Indicator -->
-    <div class="mb-6 flex items-center justify-center gap-2">
-        <div class="flex items-center">
-            <div class="flex items-center justify-center w-10 h-10 rounded-full {% if selected_barangay %}bg-primary-600 text-white{% else %}bg-primary-100 text-primary-600{% endif %} text-sm font-bold shadow-sm">
-                1
-            </div>
-            <span class="ml-2 text-sm font-semibold {% if selected_barangay %}text-dark-900{% else %}text-dark-500{% endif %}">Select Area</span>
+    <!-- Location Selection -->
+    <div class="bg-white rounded-xl border border-light-300 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-primary-500 to-primary-600 px-6 py-4">
+            <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                <i class="bi bi-geo-alt-fill"></i>
+                Select Location
+            </h3>
+            <p class="text-primary-100 text-xs mt-1">Choose barangay and purok to filter consumers</p>
         </div>
-        <i class="bi bi-arrow-right text-dark-300 mx-1"></i>
-        <div class="flex items-center">
-            <div class="flex items-center justify-center w-10 h-10 rounded-full {% if selected_barangay and not selected_consumer %}bg-primary-600 text-white{% elif selected_consumer %}bg-success-600 text-white{% else %}bg-light-300 text-dark-500{% endif %} text-sm font-bold shadow-sm">
-                2
-            </div>
-            <span class="ml-2 text-sm font-semibold {% if selected_barangay %}text-dark-900{% else %}text-dark-500{% endif %}">Select Consumer</span>
-        </div>
-        <i class="bi bi-arrow-right text-dark-300 mx-1"></i>
-        <div class="flex items-center">
-            <div class="flex items-center justify-center w-10 h-10 rounded-full {% if selected_consumer %}bg-primary-600 text-white{% else %}bg-light-300 text-dark-500{% endif %} text-sm font-bold shadow-sm">
-                3
-            </div>
-            <span class="ml-2 text-sm font-semibold {% if selected_consumer %}text-dark-900{% else %}text-dark-500{% endif %}">Process Payment</span>
-        </div>
-    </div>
-
-    <!-- Step 1: Area Selection -->
-    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden mb-6">
-        <div class="px-5 py-3 bg-primary-600 flex items-center gap-2">
-            <i class="bi bi-map-fill text-white text-lg"></i>
-            <h3 class="text-sm font-semibold text-white">Step 1: Select Location</h3>
-        </div>
-        <div class="p-5">
-            <form method="get" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-6">
+            <form method="get" class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <!-- Barangay Dropdown -->
                 <div>
-                    <label class="block text-xs font-medium text-dark-700 mb-1">
-                        <i class="bi bi-geo-alt-fill text-primary-600 mr-1"></i>Barangay
+                    <label class="block text-xs font-bold text-dark-700 mb-2 uppercase tracking-wide">
+                        <i class="bi bi-map text-primary-600 mr-1"></i>Barangay
                     </label>
-                    <select name="barangay" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white" onchange="this.form.submit()">
+                    <select name="barangay" class="w-full px-4 py-3 text-sm border-2 border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-all font-medium" onchange="this.form.submit()">
                         <option value="">Select Barangay...</option>
                         {% for b in barangays %}
                         <option value="{{ b.id }}" {% if selected_barangay == b.id|stringformat:"s" %}selected{% endif %}>
@@ -75,10 +57,10 @@
 
                 <!-- Purok Dropdown -->
                 <div>
-                    <label class="block text-xs font-medium text-dark-700 mb-1">
-                        <i class="bi bi-people-fill text-secondary-600 mr-1"></i>Purok (Optional)
+                    <label class="block text-xs font-bold text-dark-700 mb-2 uppercase tracking-wide">
+                        <i class="bi bi-people text-info-600 mr-1"></i>Purok <span class="text-dark-400 font-normal">(Optional)</span>
                     </label>
-                    <select name="purok" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent bg-white" onchange="this.form.submit()">
+                    <select name="purok" class="w-full px-4 py-3 text-sm border-2 border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-all font-medium" onchange="this.form.submit()">
                         <option value="">All Puroks</option>
                         {% for p in puroks %}
                         <option value="{{ p.id }}" {% if selected_purok == p.id|stringformat:"s" %}selected{% endif %}>
@@ -90,14 +72,12 @@
             </form>
 
             {% if selected_barangay %}
-            <div class="mt-4 p-3 bg-info-50 border-l-4 border-info-500 rounded">
-                <div class="flex items-center text-sm text-info-800">
-                    <i class="bi bi-info-circle-fill mr-2"></i>
-                    <span>Location selected:
-                        <strong>
-                            {% for b in barangays %}{% if b.id == selected_barangay|add:"0" %}{{ b.name }}{% endif %}{% endfor %}
-                            {% if selected_purok %}/ {% for p in puroks %}{% if p.id == selected_purok|add:"0" %}{{ p.name }}{% endif %}{% endfor %}{% endif %}
-                        </strong>
+            <div class="mt-5 p-4 bg-gradient-to-r from-info-50 to-info-100 border-l-4 border-info-500 rounded-lg">
+                <div class="flex items-center gap-2 text-sm text-info-900">
+                    <i class="bi bi-check-circle-fill text-info-600"></i>
+                    <span class="font-semibold">
+                        {% for b in barangays %}{% if b.id == selected_barangay|add:"0" %}{{ b.name }}{% endif %}{% endfor %}
+                        {% if selected_purok %}<span class="text-info-600 mx-1">•</span>{% for p in puroks %}{% if p.id == selected_purok|add:"0" %}{{ p.name }}{% endif %}{% endfor %}{% endif %}
                     </span>
                 </div>
             </div>
@@ -105,56 +85,61 @@
         </div>
     </div>
 
-    <!-- Step 2: Consumer List with Search -->
+    <!-- Consumer List -->
     {% if selected_barangay and not selected_consumer %}
-    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 bg-success-600 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="bi bi-person-check-fill text-white text-lg"></i>
-                <h3 class="text-sm font-semibold text-white">Step 2: Select Consumer</h3>
+    <div class="bg-white rounded-xl border border-light-300 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+        <div class="bg-gradient-to-r from-success-500 to-success-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="bi bi-people-fill"></i>
+                        Select Consumer
+                    </h3>
+                    <p class="text-success-100 text-xs mt-1">Choose consumer to process payment</p>
+                </div>
+                <span class="px-3 py-1.5 bg-white bg-opacity-20 text-white text-xs font-bold rounded-full">
+                    {{ consumers|length }} Total
+                </span>
             </div>
-            <span class="px-3 py-1 bg-white bg-opacity-20 text-white text-xs font-semibold rounded-full">
-                {{ consumers|length }} consumer{% if consumers|length != 1 %}s{% endif %}
-            </span>
         </div>
 
         <!-- Search Bar -->
         {% if consumers %}
-        <div class="p-4 bg-light-50 border-b border-light-200">
+        <div class="p-6 bg-light-50 border-b-2 border-light-200">
             <div class="relative">
-                <input type="text" id="search-consumer" placeholder="Search by name or account number..." class="w-full px-3 py-2 pl-10 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent">
-                <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-dark-400"></i>
+                <input type="text" id="search-consumer" placeholder="Search by name or account number..." class="w-full px-4 py-3 pl-12 text-sm border-2 border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-success-500 transition-all font-medium">
+                <i class="bi bi-search absolute left-4 top-1/2 transform -translate-y-1/2 text-dark-400 text-lg"></i>
             </div>
-            <div class="mt-2 text-xs text-dark-600 flex items-center justify-between">
-                <span><span class="font-semibold" id="visible-count">{{ consumers|length }}</span> of {{ consumers|length }} showing</span>
-                <button onclick="clearSearch()" class="text-primary-600 hover:text-primary-700 font-medium transition-colors">
-                    <i class="bi bi-x-circle mr-1"></i>Clear
+            <div class="mt-3 flex items-center justify-between text-xs">
+                <span class="text-dark-600">Showing <strong class="text-dark-900" id="visible-count">{{ consumers|length }}</strong> of <strong class="text-dark-900">{{ consumers|length }}</strong></span>
+                <button onclick="clearSearch()" class="text-success-600 hover:text-success-700 font-semibold transition-colors flex items-center gap-1">
+                    <i class="bi bi-arrow-clockwise"></i>Reset
                 </button>
             </div>
         </div>
         {% endif %}
 
-        <div class="p-5">
+        <div class="p-6">
             {% if consumers %}
             <div class="space-y-3" id="consumer-list">
                 {% for consumer in consumers %}
-                <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}&consumer={{ consumer.id }}" class="consumer-card block p-4 border border-light-300 rounded-lg hover:border-primary-500 hover:shadow-md transition-all duration-150 bg-white" data-consumer-name="{{ consumer.first_name|lower }} {{ consumer.last_name|lower }}" data-consumer-account="{{ consumer.account_number|lower }}">
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1 flex items-center gap-3">
-                            <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <i class="bi bi-person-fill text-primary-600 text-xl"></i>
+                <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}&consumer={{ consumer.id }}" class="consumer-card group block p-5 border-2 border-light-300 rounded-xl hover:border-success-500 hover:shadow-lg transition-all duration-200 bg-white" data-consumer-name="{{ consumer.first_name|lower }} {{ consumer.last_name|lower }}" data-consumer-account="{{ consumer.account_number|lower }}">
+                    <div class="flex items-center justify-between gap-4">
+                        <div class="flex-1 flex items-center gap-4">
+                            <div class="w-14 h-14 bg-gradient-to-br from-primary-100 to-primary-200 rounded-full flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform duration-200">
+                                <i class="bi bi-person-fill text-primary-700 text-2xl"></i>
                             </div>
                             <div class="flex-1">
-                                <h6 class="text-sm font-semibold text-dark-900">
+                                <h6 class="text-base font-bold text-dark-900 group-hover:text-success-600 transition-colors">
                                     {{ consumer.first_name }} {{ consumer.last_name }}
                                 </h6>
-                                <div class="text-xs text-dark-500 font-mono">{{ consumer.account_number }}</div>
-                                <div class="flex items-center gap-2 text-xs text-dark-500 mt-1">
-                                    <i class="bi bi-geo-alt-fill"></i>
-                                    <span>{{ consumer.barangay.name|default:"—" }}</span>
+                                <div class="text-xs text-dark-500 font-mono font-semibold mt-0.5">{{ consumer.account_number }}</div>
+                                <div class="flex items-center gap-2 text-xs text-dark-600 mt-2">
+                                    <i class="bi bi-geo-alt-fill text-primary-600"></i>
+                                    <span class="font-medium">{{ consumer.barangay.name|default:"—" }}</span>
                                     {% if consumer.purok %}
-                                    <span class="text-dark-300">|</span>
-                                    <span>{{ consumer.purok.name }}</span>
+                                    <span class="text-dark-300">•</span>
+                                    <span class="font-medium">{{ consumer.purok.name }}</span>
                                     {% endif %}
                                 </div>
                             </div>
@@ -162,21 +147,19 @@
                         {% with bill=consumer_bills|get_item:consumer.id %}
                         {% if bill %}
                         <div class="text-right flex-shrink-0">
-                            <div class="flex items-center justify-end gap-1 mb-1">
-                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-warning-100 text-warning-800">
-                                    <i class="bi bi-clock-fill mr-1"></i>Pending
-                                </span>
-                            </div>
-                            <div class="flex items-baseline justify-end gap-0.5 text-warning-700 font-bold text-lg">
-                                <span class="text-base">₱</span>
+                            <span class="inline-flex items-center px-3 py-1 text-xs font-bold rounded-full bg-warning-100 text-warning-800 border border-warning-300 mb-2">
+                                <i class="bi bi-clock-fill mr-1"></i>Pending
+                            </span>
+                            <div class="flex items-baseline justify-end gap-1 text-warning-700 font-extrabold text-2xl">
+                                <span class="text-lg">₱</span>
                                 <span>{{ bill.total_amount|floatformat:2 }}</span>
                             </div>
-                            <div class="text-xs text-dark-400">{{ bill.billing_period|date:"M Y" }}</div>
+                            <div class="text-xs text-dark-500 font-semibold mt-1">{{ bill.billing_period|date:"M Y" }}</div>
                         </div>
                         {% else %}
                         <div class="text-right flex-shrink-0">
-                            <span class="inline-flex items-center px-3 py-1 bg-success-100 text-success-700 text-xs font-medium rounded-lg">
-                                <i class="bi bi-check-circle-fill mr-1"></i>No Pending Bill
+                            <span class="inline-flex items-center px-4 py-2 bg-success-100 text-success-700 text-xs font-bold rounded-lg border border-success-300">
+                                <i class="bi bi-check-circle-fill mr-1.5"></i>No Bill
                             </span>
                         </div>
                         {% endif %}
@@ -187,21 +170,21 @@
             </div>
 
             <!-- No Results Message -->
-            <div id="no-results" class="hidden text-center py-12">
-                <i class="bi bi-search text-6xl text-light-300 block mb-2"></i>
-                <h5 class="text-base font-semibold text-dark-700 mb-2">No Consumers Found</h5>
-                <p class="text-sm text-dark-500">Try adjusting your search terms</p>
+            <div id="no-results" class="hidden text-center py-16">
+                <i class="bi bi-search text-7xl text-light-300 block mb-4 opacity-40"></i>
+                <h5 class="text-lg font-bold text-dark-700 mb-2">No Consumers Found</h5>
+                <p class="text-sm text-dark-500">Try different search terms</p>
             </div>
             {% else %}
             <!-- Empty State -->
-            <div class="text-center py-12">
-                <i class="bi bi-inbox text-6xl text-light-300 block mb-2"></i>
-                <h5 class="text-base font-bold text-dark-700 mb-2">No Consumers Found</h5>
-                <p class="text-sm text-dark-500 mb-4 max-w-md mx-auto">
-                    There are no consumers registered in this area. Add new consumers to the system or select a different location.
+            <div class="text-center py-16">
+                <i class="bi bi-inbox text-7xl text-light-300 block mb-4 opacity-40"></i>
+                <h5 class="text-lg font-bold text-dark-700 mb-2">No Consumers</h5>
+                <p class="text-sm text-dark-500 mb-5 max-w-md mx-auto">
+                    No consumers found in this area. Try selecting a different location.
                 </p>
-                <a href="{% url 'consumers:consumer_management' %}" class="inline-flex items-center px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm">
-                    <i class="bi bi-plus-circle mr-2"></i>Add New Consumer
+                <a href="{% url 'consumers:consumer_management' %}" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 hover:from-primary-600 hover:to-primary-700 text-white text-sm font-semibold rounded-lg shadow-md hover:shadow-lg transition-all">
+                    <i class="bi bi-plus-circle-fill mr-2"></i>Add Consumer
                 </a>
             </div>
             {% endif %}
@@ -209,46 +192,55 @@
     </div>
     {% endif %}
 
-    <!-- Step 3: Payment Form -->
+    <!-- Payment Form -->
     {% if selected_consumer %}
-    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden">
-        <div class="px-5 py-3 bg-secondary-600 flex items-center justify-between">
-            <div class="flex items-center gap-2">
-                <i class="bi bi-credit-card-fill text-white text-lg"></i>
-                <h3 class="text-sm font-semibold text-white">Step 3: Process Payment</h3>
+    <div class="bg-white rounded-xl border border-light-300 shadow-sm hover:shadow-md transition-shadow duration-300 overflow-hidden">
+        <div class="bg-gradient-to-r from-purple-500 to-purple-600 px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="bi bi-credit-card-fill"></i>
+                        Process Payment
+                    </h3>
+                    <p class="text-purple-100 text-xs mt-1">Complete transaction and generate receipt</p>
+                </div>
+                <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}" class="inline-flex items-center px-4 py-2 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-xs font-semibold rounded-lg transition-all">
+                    <i class="bi bi-arrow-left mr-1.5"></i>Back
+                </a>
             </div>
-            <a href="?barangay={{ selected_barangay }}&purok={{ selected_purok }}" class="inline-flex items-center px-3 py-1 bg-white bg-opacity-20 hover:bg-opacity-30 text-white text-xs font-medium rounded transition-colors">
-                <i class="bi bi-arrow-left mr-1"></i>Back to List
-            </a>
         </div>
 
-        <div class="p-5">
+        <div class="p-6">
             <!-- Consumer Info Card -->
-            <div class="mb-5 p-4 bg-gradient-to-br from-primary-50 to-secondary-50 rounded-lg border border-primary-200">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                        <i class="bi bi-person-fill text-primary-600 text-xl"></i>
+            <div class="mb-6 p-5 bg-gradient-to-br from-primary-50 to-primary-100 rounded-xl border-2 border-primary-200">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-14 h-14 bg-gradient-to-br from-primary-500 to-primary-600 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg">
+                        <i class="bi bi-person-fill text-white text-2xl"></i>
                     </div>
                     <div>
-                        <h4 class="text-base font-bold text-dark-900">
+                        <h4 class="text-lg font-bold text-dark-900">
                             {{ selected_consumer.first_name }} {{ selected_consumer.last_name }}
                         </h4>
-                        <p class="text-sm text-dark-600 font-mono">{{ selected_consumer.account_number }}</p>
+                        <p class="text-sm text-dark-600 font-mono font-semibold">{{ selected_consumer.account_number }}</p>
                     </div>
                 </div>
-                <div class="grid grid-cols-2 gap-3">
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-geo-alt-fill text-primary-600"></i>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-primary-200 rounded-lg flex items-center justify-center">
+                            <i class="bi bi-geo-alt-fill text-primary-700"></i>
+                        </div>
                         <div>
-                            <div class="text-xs text-dark-500">Barangay</div>
-                            <div class="text-sm font-semibold text-dark-900">{{ selected_consumer.barangay.name|default:"—" }}</div>
+                            <div class="text-xs text-dark-600 font-semibold">Barangay</div>
+                            <div class="text-sm font-bold text-dark-900">{{ selected_consumer.barangay.name|default:"—" }}</div>
                         </div>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <i class="bi bi-people-fill text-secondary-600"></i>
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 bg-info-200 rounded-lg flex items-center justify-center">
+                            <i class="bi bi-people-fill text-info-700"></i>
+                        </div>
                         <div>
-                            <div class="text-xs text-dark-500">Purok</div>
-                            <div class="text-sm font-semibold text-dark-900">{{ selected_consumer.purok.name|default:"—" }}</div>
+                            <div class="text-xs text-dark-600 font-semibold">Purok</div>
+                            <div class="text-sm font-bold text-dark-900">{{ selected_consumer.purok.name|default:"—" }}</div>
                         </div>
                     </div>
                 </div>
@@ -256,101 +248,103 @@
 
             {% if latest_bill %}
             <!-- Bill Details Card -->
-            <div class="mb-5 p-5 bg-gradient-to-br from-warning-50 to-warning-100 rounded-lg border-l-4 border-warning-600">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center gap-2">
+            <div class="mb-6 p-6 bg-gradient-to-br from-warning-50 to-warning-100 rounded-xl border-2 border-warning-300 shadow-sm">
+                <div class="flex items-center justify-between mb-5">
+                    <h5 class="text-base font-bold text-dark-900 flex items-center gap-2">
                         <i class="bi bi-receipt-cutoff text-warning-700 text-xl"></i>
-                        <h5 class="text-sm font-bold text-dark-900">Bill Details</h5>
-                    </div>
-                    <span class="inline-flex items-center px-2 py-0.5 bg-warning-600 text-white text-xs font-semibold rounded-full">
-                        <i class="bi bi-clock-fill mr-1"></i>Pending
+                        Bill Details
+                    </h5>
+                    <span class="inline-flex items-center px-3 py-1.5 bg-warning-600 text-white text-xs font-bold rounded-full">
+                        <i class="bi bi-clock-fill mr-1.5"></i>Pending
                     </span>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    <div>
-                        <div class="text-xs text-dark-600 mb-1">Billing Period</div>
-                        <div class="text-sm font-semibold text-dark-900">{{ latest_bill.billing_period|date:"M Y" }}</div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
+                    <div class="bg-white bg-opacity-50 p-3 rounded-lg">
+                        <div class="text-xs text-dark-600 font-semibold mb-1">Billing Period</div>
+                        <div class="text-sm font-bold text-dark-900">{{ latest_bill.billing_period|date:"M Y" }}</div>
                     </div>
-                    <div>
-                        <div class="text-xs text-dark-600 mb-1">Due Date</div>
-                        <div class="text-sm font-semibold text-dark-900">{{ latest_bill.due_date|date:"M d, Y" }}</div>
+                    <div class="bg-white bg-opacity-50 p-3 rounded-lg">
+                        <div class="text-xs text-dark-600 font-semibold mb-1">Due Date</div>
+                        <div class="text-sm font-bold text-dark-900">{{ latest_bill.due_date|date:"M d, Y" }}</div>
                     </div>
-                    <div>
-                        <div class="text-xs text-dark-600 mb-1">Consumption</div>
-                        <div class="text-sm font-semibold text-dark-900">{{ latest_bill.consumption }} m³</div>
+                    <div class="bg-white bg-opacity-50 p-3 rounded-lg">
+                        <div class="text-xs text-dark-600 font-semibold mb-1">Consumption</div>
+                        <div class="text-sm font-bold text-dark-900">{{ latest_bill.consumption }} m³</div>
                     </div>
-                    <div>
-                        <div class="text-xs text-dark-600 mb-1">Rate</div>
-                        <div class="text-sm font-semibold text-dark-900">₱{{ latest_bill.rate_per_cubic|floatformat:2 }}/m³</div>
+                    <div class="bg-white bg-opacity-50 p-3 rounded-lg">
+                        <div class="text-xs text-dark-600 font-semibold mb-1">Rate</div>
+                        <div class="text-sm font-bold text-dark-900">₱{{ latest_bill.rate_per_cubic|floatformat:2 }}/m³</div>
                     </div>
                 </div>
 
-                <div class="pt-4 border-t border-warning-200">
-                    <div class="text-sm text-dark-600 mb-2">Amount Due</div>
-                    <div class="flex items-baseline gap-1 text-warning-700 font-bold text-4xl">
-                        <span class="text-3xl">₱</span>
+                <div class="pt-5 border-t-2 border-warning-300">
+                    <div class="text-sm text-dark-700 font-semibold mb-2">Total Amount Due</div>
+                    <div class="flex items-baseline gap-2 text-warning-700 font-extrabold text-5xl">
+                        <span class="text-4xl">₱</span>
                         <span id="amount-due">{{ latest_bill.total_amount|floatformat:2 }}</span>
                     </div>
                 </div>
             </div>
 
             <!-- Payment Form -->
-            <form method="post" id="payment-form" class="space-y-4">
+            <form method="post" id="payment-form" class="space-y-5">
                 {% csrf_token %}
                 <input type="hidden" name="bill_id" value="{{ latest_bill.id }}">
                 <input type="hidden" id="bill-amount" value="{{ latest_bill.total_amount }}">
 
                 <!-- Cash Received Input -->
                 <div>
-                    <label class="block text-sm font-semibold text-dark-900 mb-2">
-                        <i class="bi bi-cash-stack text-success-600 mr-1"></i>Cash Received
+                    <label class="block text-sm font-bold text-dark-900 mb-3 uppercase tracking-wide">
+                        <i class="bi bi-cash-stack text-success-600 mr-1.5"></i>Cash Received
                     </label>
                     <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-dark-400 text-xl font-semibold">₱</span>
-                        <input type="number" step="0.01" name="received_amount" id="received-amount" class="w-full pl-12 pr-4 py-3 text-xl font-bold border-2 border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent" min="{{ latest_bill.total_amount }}" placeholder="0.00" oninput="calculateChange()" required>
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-5 text-dark-400 text-2xl font-bold">₱</span>
+                        <input type="number" step="0.01" name="received_amount" id="received-amount" class="w-full pl-14 pr-5 py-4 text-2xl font-extrabold border-2 border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-success-500 transition-all" min="{{ latest_bill.total_amount }}" placeholder="0.00" oninput="calculateChange()" required>
                     </div>
-                    <div class="mt-2 flex items-center text-xs text-dark-500">
-                        <i class="bi bi-info-circle mr-1"></i>
-                        <span>Minimum: <strong>₱{{ latest_bill.total_amount|floatformat:2 }}</strong></span>
+                    <div class="mt-3 p-3 bg-light-50 rounded-lg border border-light-200">
+                        <div class="flex items-center text-xs text-dark-600">
+                            <i class="bi bi-info-circle-fill text-info-600 mr-2"></i>
+                            <span>Minimum payment: <strong class="text-dark-900">₱{{ latest_bill.total_amount|floatformat:2 }}</strong></span>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Change Calculator -->
-                <div id="change-display" class="hidden p-4 bg-success-50 border-2 border-success-200 rounded-lg">
-                    <div class="flex items-center justify-between mb-2">
-                        <span class="text-sm font-medium text-dark-700">Change to Return:</span>
-                        <div class="flex items-baseline gap-1 text-success-700 font-bold text-2xl">
-                            <span class="text-xl">₱</span>
+                <div id="change-display" class="hidden p-5 bg-gradient-to-br from-success-50 to-success-100 border-2 border-success-300 rounded-xl shadow-sm">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-bold text-dark-900">Change to Return</span>
+                        <div class="flex items-baseline gap-1 text-success-700 font-extrabold text-3xl">
+                            <span class="text-2xl">₱</span>
                             <span id="change-amount">0.00</span>
                         </div>
                     </div>
-                    <div class="text-xs text-success-700">
-                        <i class="bi bi-check-circle-fill mr-1"></i>
-                        Ensure correct change is returned to consumer
+                    <div class="text-xs text-success-800 font-semibold flex items-center gap-2">
+                        <i class="bi bi-check-circle-fill"></i>
+                        Verify change amount before completing transaction
                     </div>
                 </div>
 
                 <!-- Submit Button -->
-                <button type="submit" class="w-full flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-success-600 to-success-700 hover:from-success-700 hover:to-success-800 text-white text-base font-semibold rounded-lg transition-all duration-150 shadow-md">
-                    <i class="bi bi-check-circle-fill text-xl"></i>
+                <button type="submit" class="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-success-500 to-success-600 hover:from-success-600 hover:to-success-700 text-white text-base font-bold rounded-xl transition-all duration-200 shadow-lg hover:shadow-xl">
+                    <i class="bi bi-check-circle-fill text-2xl"></i>
                     <span>Process Payment & Generate Receipt</span>
                 </button>
             </form>
 
             {% else %}
             <!-- No Bill Alert -->
-            <div class="p-5 bg-warning-50 border-2 border-warning-200 rounded-lg">
-                <div class="flex items-start gap-3">
-                    <div class="flex-shrink-0 w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center">
-                        <i class="bi bi-exclamation-triangle-fill text-warning-700 text-xl"></i>
+            <div class="p-6 bg-gradient-to-br from-warning-50 to-warning-100 border-2 border-warning-300 rounded-xl shadow-sm">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0 w-14 h-14 bg-gradient-to-br from-warning-500 to-warning-600 rounded-full flex items-center justify-center shadow-lg">
+                        <i class="bi bi-exclamation-triangle-fill text-white text-2xl"></i>
                     </div>
                     <div class="flex-1">
-                        <h6 class="text-sm font-bold text-warning-900 mb-2">No Pending Bill Found</h6>
-                        <p class="text-sm text-warning-800 mb-3">
-                            This consumer has no pending bill. Meter readings must be confirmed first to generate a bill.
+                        <h6 class="text-lg font-bold text-warning-900 mb-2">No Pending Bill</h6>
+                        <p class="text-sm text-warning-800 mb-4 leading-relaxed">
+                            This consumer doesn't have any pending bills at the moment. Confirm meter readings to generate bills.
                         </p>
-                        <a href="{% url 'consumers:meter_readings' %}" class="inline-flex items-center px-4 py-2 bg-warning-600 hover:bg-warning-700 text-white text-sm font-semibold rounded-lg transition-colors shadow-sm">
+                        <a href="{% url 'consumers:meter_readings' %}" class="inline-flex items-center px-5 py-2.5 bg-gradient-to-r from-warning-500 to-warning-600 hover:from-warning-600 hover:to-warning-700 text-white text-sm font-bold rounded-lg shadow-md hover:shadow-lg transition-all">
                             <i class="bi bi-speedometer2 mr-2"></i>Go to Meter Readings
                         </a>
                     </div>
