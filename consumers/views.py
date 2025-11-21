@@ -2740,9 +2740,16 @@ def create_user(request):
             user.set_password(password)
             user.save()
 
-            # Create staff profile if barangay assigned
-            if assigned_barangay_id:
-                barangay = Barangay.objects.get(id=assigned_barangay_id)
+            # Create staff profile for staff users
+            if is_staff:
+                # Field staff requires barangay, admin doesn't
+                if role == 'field_staff' and not assigned_barangay_id:
+                    messages.warning(request, f"User '{username}' created but field staff should have an assigned barangay.")
+
+                barangay = None
+                if assigned_barangay_id:
+                    barangay = Barangay.objects.get(id=assigned_barangay_id)
+
                 StaffProfile.objects.create(
                     user=user,
                     assigned_barangay=barangay,

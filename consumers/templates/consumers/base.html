@@ -267,7 +267,7 @@
                     <span class="font-medium">Login History</span>
                 </a>
             </div>
-            {% elif user.staffprofile.role == 'admin' %}
+            {% elif user.staffprofile and user.staffprofile.role == 'admin' %}
             <!-- Admin Role - Login History Only -->
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Administration</div>
