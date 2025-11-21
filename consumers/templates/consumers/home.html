@@ -156,14 +156,20 @@
                     <i class="bi bi-people-fill"></i>
                     Consumer Bill Status by Barangay
                 </h3>
-                <div class="flex items-center gap-2">
-                    <label for="barangayFilter" class="text-white text-xs">Filter:</label>
-                    <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-white bg-white/20 text-white">
-                        <option value="all" class="text-dark-900">All Barangays</option>
-                        {% for barangay in all_barangays %}
-                        <option value="{{ barangay.id }}" class="text-dark-900">{{ barangay.name }}</option>
-                        {% endfor %}
-                    </select>
+                <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2">
+                        <label for="barangayFilter" class="text-white text-xs">Filter:</label>
+                        <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded focus:outline-none focus:ring-1 focus:ring-white bg-white/20 text-white">
+                            <option value="all" class="text-dark-900">All Barangays</option>
+                            {% for barangay in all_barangays %}
+                            <option value="{{ barangay.id }}" data-name="{{ barangay.name }}" class="text-dark-900">{{ barangay.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button onclick="printBillStatus()" class="px-3 py-1 text-xs font-medium bg-white/20 hover:bg-white/30 text-white rounded transition-colors flex items-center gap-1.5">
+                        <i class="bi bi-printer-fill"></i>
+                        Print Report
+                    </button>
                 </div>
             </div>
         </div>
@@ -580,6 +586,197 @@ function generateReport() {
             showConfirmButton: false
         });
     }, 1000);
+}
+
+// Print Bill Status Report Function
+function printBillStatus() {
+    const barangayFilter = document.getElementById('barangayFilter');
+    const selectedValue = barangayFilter.value;
+    const selectedOption = barangayFilter.options[barangayFilter.selectedIndex];
+    const barangayName = selectedValue === 'all' ? 'All Barangays' : selectedOption.dataset.name;
+
+    // Get filtered data
+    const consumerBillStatusData = {{ consumer_bill_status|safe }};
+    let filteredData = consumerBillStatusData;
+    if (selectedValue !== 'all') {
+        filteredData = consumerBillStatusData.filter(item => item.barangay_id == selectedValue);
+    }
+
+    if (filteredData.length === 0) {
+        Swal.fire({
+            icon: 'warning',
+            title: 'No Data',
+            text: 'No consumers found for the selected barangay.',
+            confirmButtonColor: '#6366f1'
+        });
+        return;
+    }
+
+    // Format helpers
+    function formatDate(dateStr) {
+        if (!dateStr) return 'N/A';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+    }
+
+    function formatCurrency(amount) {
+        if (amount === 0 || amount === null) return '₱0.00';
+        return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function getStatusStyle(status) {
+        switch(status) {
+            case 'Paid': return 'background-color: #dcfce7; color: #166534; border: 1px solid #86efac;';
+            case 'Pending': return 'background-color: #fef3c7; color: #92400e; border: 1px solid #fcd34d;';
+            case 'Overdue': case 'Unpaid': return 'background-color: #fee2e2; color: #991b1b; border: 1px solid #fca5a5;';
+            default: return 'background-color: #f3f4f6; color: #4b5563; border: 1px solid #d1d5db;';
+        }
+    }
+
+    function getStatusText(status) {
+        if (status === 'Overdue' || status === 'Unpaid') return 'Delinquent';
+        return status;
+    }
+
+    // Count by status
+    const paidCount = filteredData.filter(d => d.payment_status === 'Paid').length;
+    const pendingCount = filteredData.filter(d => d.payment_status === 'Pending').length;
+    const delinquentCount = filteredData.filter(d => d.payment_status === 'Overdue' || d.payment_status === 'Unpaid').length;
+    const noBillCount = filteredData.filter(d => d.payment_status === 'No Bill').length;
+
+    // Generate table rows
+    let tableRows = '';
+    filteredData.forEach((item, index) => {
+        tableRows += `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${index + 1}</td>
+                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827;">${item.account_number}</td>
+                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.consumer_name}</td>
+                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.barangay}</td>
+                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${formatDate(item.latest_bill_date)}</td>
+                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827; text-align: right;">${formatCurrency(item.latest_bill_amount)}</td>
+                <td style="padding: 10px 12px; text-align: center;">
+                    <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; ${getStatusStyle(item.payment_status)}">${getStatusText(item.payment_status)}</span>
+                </td>
+            </tr>
+        `;
+    });
+
+    // Current date
+    const now = new Date();
+    const printDate = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+    const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+
+    // Create print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Consumer Bill Status Report - ${barangayName}</title>
+            <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+            <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: #111827; }
+                @media print {
+                    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    .no-print { display: none !important; }
+                    @page { size: A4 landscape; margin: 10mm; }
+                }
+            </style>
+        </head>
+        <body>
+            <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
+                <!-- Header with Logos -->
+                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #6366f1;">
+                    <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" style="width: 80px; height: 80px; object-fit: contain;">
+                    <div style="text-align: center; flex: 1; padding: 0 20px;">
+                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Republic of the Philippines</p>
+                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Province of Bohol</p>
+                        <h1 style="font-size: 22px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">MUNICIPALITY OF BALILIHAN</h1>
+                        <p style="font-size: 14px; font-weight: 600; color: #6366f1;">Balilihan Waterworks System</p>
+                    </div>
+                    <img src="{% static 'consumers/images/water_icon.png' %}" alt="Waterworks Logo" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid #6366f1; object-fit: cover;">
+                </div>
+
+                <!-- Report Title -->
+                <div style="text-align: center; margin-bottom: 24px;">
+                    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">
+                        <i class="bi bi-people-fill" style="color: #6366f1; margin-right: 8px;"></i>
+                        Consumer Bill Status Report
+                    </h2>
+                    <p style="font-size: 16px; font-weight: 600; color: #4f46e5; background: linear-gradient(135deg, #eef2ff, #e0e7ff); padding: 8px 20px; border-radius: 8px; display: inline-block;">
+                        ${barangayName}
+                    </p>
+                </div>
+
+                <!-- Summary Cards -->
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
+                    <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #86efac;">
+                        <p style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Paid</p>
+                        <p style="font-size: 28px; font-weight: 800; color: #15803d;">${paidCount}</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fcd34d;">
+                        <p style="font-size: 11px; color: #92400e; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Pending</p>
+                        <p style="font-size: 28px; font-weight: 800; color: #b45309;">${pendingCount}</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fca5a5;">
+                        <p style="font-size: 11px; color: #991b1b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Delinquent</p>
+                        <p style="font-size: 28px; font-weight: 800; color: #dc2626;">${delinquentCount}</p>
+                    </div>
+                    <div style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #d1d5db;">
+                        <p style="font-size: 11px; color: #4b5563; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">No Bill</p>
+                        <p style="font-size: 28px; font-weight: 800; color: #374151;">${noBillCount}</p>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div style="border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">#</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Account No.</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Consumer Name</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Barangay</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Latest Bill Date</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: right; text-transform: uppercase;">Amount (PHP)</th>
+                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: center; text-transform: uppercase;">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${tableRows}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Footer -->
+                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 2px solid #e5e7eb;">
+                    <div>
+                        <p style="font-size: 11px; color: #6b7280;">Total Consumers: <span style="font-weight: 700; color: #111827;">${filteredData.length}</span></p>
+                    </div>
+                    <div style="text-align: right;">
+                        <p style="font-size: 11px; color: #6b7280;">Generated on: <span style="font-weight: 600; color: #374151;">${printDate} at ${printTime}</span></p>
+                        <p style="font-size: 10px; color: #9ca3af; margin-top: 2px;">Balilihan Waterworks Management System</p>
+                    </div>
+                </div>
+
+                <!-- Print Button (hidden when printing) -->
+                <div class="no-print" style="text-align: center; margin-top: 30px;">
+                    <button onclick="window.print()" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 12px 32px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 10px;">
+                        <i class="bi bi-printer-fill" style="margin-right: 8px;"></i>Print Report
+                    </button>
+                    <button onclick="window.close()" style="background: #f3f4f6; color: #374151; padding: 12px 32px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                        <i class="bi bi-x-lg" style="margin-right: 8px;"></i>Close
+                    </button>
+                </div>
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
 }
 </script>
 {% endblock %}
