@@ -16,6 +16,13 @@
             <p class="text-xs text-dark-500 mt-1">
                 <i class="bi bi-calendar3 mr-1"></i>
                 Today is <span id="current-date-display"></span>
+                <script>
+                    (function() {
+                        const now = new Date();
+                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                        document.getElementById('current-date-display').textContent = now.toLocaleDateString('en-US', options);
+                    })();
+                </script>
             </p>
         </div>
         <div class="flex items-center gap-2">
