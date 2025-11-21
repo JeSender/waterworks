@@ -23,6 +23,7 @@
             </div>
         {% endfor %}
     </div>
+    
 {% endif %}
 
 <!-- Consolidated Search & Action Controls -->
@@ -139,19 +140,19 @@
         <div class="flex flex-wrap gap-6 text-xs text-gray-600">
             <div>
                 <span class="font-semibold text-gray-700">Total Barangays:</span>
-                <span class="ml-1">{{ total_barangays }}</span>
+                <span class="ml-1">{{ barangay_data|length }}</span>
             </div>
             <div>
                 <span class="font-semibold text-gray-700">Total Consumers:</span>
-                <span class="ml-1">{{ total_consumers_sum }}</span>
+                <span class="ml-1">{{ barangay_data|sum_total_consumers }}</span>
             </div>
             <div>
                 <span class="font-semibold text-gray-700">Total Ready:</span>
-                <span class="ml-1 text-green-700 font-semibold">{{ total_ready_sum }}</span>
+                <span class="ml-1 text-green-700 font-semibold">{{ barangay_data|sum_ready }}</span>
             </div>
             <div>
                 <span class="font-semibold text-gray-700">Total Pending:</span>
-                <span class="ml-1 text-yellow-700 font-semibold">{{ total_pending_sum }}</span>
+                <span class="ml-1 text-yellow-700 font-semibold">{{ barangay_data|sum_pending }}</span>
             </div>
         </div>
     </div>

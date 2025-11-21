@@ -1,41 +1,266 @@
 {% extends "consumers/base.html" %}
+{% load humanize %}
 
-{% block title %}{{ title }}{% endblock %}
+{% block title %}{{ title }} - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
-<h2 class="mb-3">{{ title }}</h2>
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6 flex items-center justify-between">
+        <div>
+            <h2 class="text-2xl font-bold text-dark-900">{{ title }}</h2>
+            <p class="text-dark-500 text-sm mt-1">
+                {% if title == "Connected Consumers" %}
+                    View all active water service consumers
+                {% elif title == "Disconnected Consumers" %}
+                    View all disconnected water service consumers
+                {% else %}
+                    Manage and view consumer records
+                {% endif %}
+            </p>
+            {% if selected_month and selected_year %}
+            <p class="text-xs text-info-600 mt-1">
+                <i class="bi bi-calendar-event mr-1"></i>
+                Showing results for: {{ selected_month }}/{{ selected_year }}
+            </p>
+            {% endif %}
+        </div>
+        <div class="flex gap-2">
+            <a href="{% url 'consumers:consumer_management' %}"
+               class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:shadow-lg transition-all duration-200">
+                <i class="bi bi-person-plus-fill"></i>
+                Add New Consumer
+            </a>
+            <a href="{% url 'consumers:consumer_list' %}"
+               class="px-4 py-2.5 bg-light-100 text-dark-700 rounded-lg text-sm font-medium hover:bg-light-200 transition-colors flex items-center gap-2">
+                <i class="bi bi-arrow-left"></i>
+                Back to All
+            </a>
+        </div>
+    </div>
 
-{% if selected_month and selected_year %}
-<p>Showing results for: {{ selected_month }}/{{ selected_year }}</p>
-{% endif %}
+    <!-- Stats Summary -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <!-- Total Count -->
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 {% if title == 'Connected Consumers' %}bg-success-100{% else %}bg-danger-100{% endif %} rounded-lg flex items-center justify-center">
+                    <i class="bi {% if title == 'Connected Consumers' %}bi-check-circle-fill text-success-600{% else %}bi-x-circle-fill text-danger-600{% endif %} text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-dark-500 uppercase">Total {{ title }}</p>
+                    <p class="text-2xl font-bold text-dark-900">{{ consumers|length|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
 
-<table class="table table-striped table-hover table-bordered align-middle">
-  <thead class="table-primary text-center">
-    <tr>
-      <th>Name</th>
-      <th>Phone</th>
-      <th>Barangay</th>
-      <th>Serial</th>
-      <th>Actions</th>
-    </tr>
-  </thead>
-  <tbody>
-    {% for consumer in consumers %}
-    <tr>
-      <td>{{ consumer.first_name }} {{ consumer.middle_name }} {{ consumer.last_name }}</td>
-      <td>{{ consumer.phone_number }}</td>
-      <td>{{ consumer.barangay.name|default:"-" }}</td>
-      <td>{{ consumer.serial_number }}</td>
-      <td class="text-center">
-        <a href="{% url 'consumers:consumer_detail' consumer.id %}" class="btn btn-info btn-sm">View</a>
-        <a href="{% url 'consumers:consumer_bill' consumer.id %}" class="btn btn-success btn-sm">Bills</a>
-      </td>
-    </tr>
-    {% empty %}
-    <tr>
-      <td colspan="5" class="text-center text-muted">No consumers found.</td>
-    </tr>
-    {% endfor %}
-  </tbody>
-</table>
+        <!-- Usage Type Breakdown -->
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-info-100 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-house-fill text-info-600 text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-dark-500 uppercase">Residential</p>
+                    <p class="text-2xl font-bold text-dark-900">
+                        {% widthratio consumers|length 1 1 as total %}
+                        {{ consumers|default_if_none:consumers|length|default:"0" }}
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Commercial -->
+        <div class="bg-white rounded-lg border border-light-300 shadow-sm p-4 hover:shadow-md transition-all duration-200">
+            <div class="flex items-center gap-3">
+                <div class="w-12 h-12 bg-warning-100 rounded-lg flex items-center justify-center">
+                    <i class="bi bi-building text-warning-600 text-2xl"></i>
+                </div>
+                <div>
+                    <p class="text-xs font-medium text-dark-500 uppercase">Commercial</p>
+                    <p class="text-2xl font-bold text-dark-900">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Consumer Table -->
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden">
+        <!-- Table Header -->
+        <div class="px-6 py-4 border-b border-light-200 bg-light-50">
+            <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                <i class="bi bi-list-ul"></i>
+                Consumer List
+                {% if consumers %}
+                    <span class="text-xs font-normal text-dark-500 ml-2">({{ consumers|length }} results)</span>
+                {% endif %}
+            </h3>
+        </div>
+
+        <!-- Table -->
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-light-50 border-b border-light-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Account #
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Consumer Name
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Contact
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Location
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Meter Serial
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Usage Type
+                        </th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Status
+                        </th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-dark-700 uppercase tracking-wider">
+                            Actions
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-light-200 bg-white">
+                    {% for consumer in consumers %}
+                    <tr class="hover:bg-light-50 transition-colors duration-150">
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-1 rounded">
+                                {{ consumer.account_number }}
+                            </span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                    <i class="bi bi-person-fill text-primary-600 text-sm"></i>
+                                </div>
+                                <div>
+                                    <p class="font-semibold text-dark-900">
+                                        {{ consumer.first_name }} {% if consumer.middle_name %}{{ consumer.middle_name|slice:":1" }}.{% endif %} {{ consumer.last_name }}
+                                    </p>
+                                    <p class="text-xs text-dark-500">
+                                        {{ consumer.usage_type }}
+                                    </p>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center gap-1 text-dark-600">
+                                <i class="bi bi-telephone text-xs"></i>
+                                <span>{{ consumer.phone_number|default:"-" }}</span>
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div>
+                                <p class="font-medium text-dark-900">{{ consumer.barangay.name|default:"-" }}</p>
+                                {% if consumer.purok %}
+                                <p class="text-xs text-dark-500">{{ consumer.purok.name }}</p>
+                                {% endif %}
+                            </div>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="font-mono text-xs text-dark-600">{{ consumer.serial_number|default:"-" }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if consumer.usage_type == "Commercial" %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-warning-100 text-warning-700">
+                                    <i class="bi bi-building mr-1"></i>
+                                    Commercial
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-info-100 text-info-700">
+                                    <i class="bi bi-house mr-1"></i>
+                                    Residential
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            {% if consumer.status == "active" %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-success-100 text-success-700">
+                                    <i class="bi bi-check-circle-fill mr-1"></i>
+                                    Connected
+                                </span>
+                            {% else %}
+                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-danger-100 text-danger-700">
+                                    <i class="bi bi-x-circle-fill mr-1"></i>
+                                    Disconnected
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-center gap-2">
+                                <a href="{% url 'consumers:consumer_detail' consumer.id %}"
+                                   class="p-2 text-info-600 hover:bg-info-50 rounded-lg transition-colors"
+                                   title="View Details">
+                                    <i class="bi bi-eye-fill"></i>
+                                </a>
+                                <a href="{% url 'consumers:edit_consumer' consumer.id %}"
+                                   class="p-2 text-warning-600 hover:bg-warning-50 rounded-lg transition-colors"
+                                   title="Edit Consumer">
+                                    <i class="bi bi-pencil-fill"></i>
+                                </a>
+                                <a href="{% url 'consumers:consumer_bill' consumer.id %}"
+                                   class="p-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
+                                   title="View Bills">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-12 text-center">
+                            <div class="flex flex-col items-center justify-center text-dark-400">
+                                <i class="bi bi-inbox text-5xl mb-3 opacity-30"></i>
+                                <p class="text-base font-medium mb-1">No consumers found</p>
+                                <p class="text-sm">
+                                    {% if title == "Connected Consumers" %}
+                                        There are no connected consumers at this time.
+                                    {% elif title == "Disconnected Consumers" %}
+                                        There are no disconnected consumers at this time.
+                                    {% else %}
+                                        No consumers match your criteria.
+                                    {% endif %}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Table Footer -->
+        {% if consumers %}
+        <div class="px-6 py-4 border-t border-light-200 bg-light-50">
+            <div class="flex items-center justify-between">
+                <p class="text-xs text-dark-600">
+                    Showing <strong>{{ consumers|length }}</strong> consumer{{ consumers|length|pluralize }}
+                </p>
+                <div class="flex gap-2 text-xs text-dark-600">
+                    <span>
+                        <i class="bi bi-calendar3 mr-1"></i>
+                        Last updated: {{ consumers.0.updated_at|date:"M d, Y" }}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+// Add any interactive JavaScript here if needed
+document.addEventListener('DOMContentLoaded', function() {
+    // Optional: Add row click handlers or other interactions
+    console.log('{{ title }} page loaded with {{ consumers|length }} consumers');
+});
+</script>
 {% endblock %}
