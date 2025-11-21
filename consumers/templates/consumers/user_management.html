@@ -25,6 +25,23 @@
         </div>
     </div>
 
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="flex items-center justify-between p-4 rounded-lg border-l-4 {% if message.tags == 'success' %}bg-success-50 border-success-500 text-success-900{% elif message.tags == 'error' %}bg-danger-50 border-danger-500 text-danger-900{% elif message.tags == 'warning' %}bg-warning-50 border-warning-500 text-warning-900{% else %}bg-info-50 border-info-500 text-info-900{% endif %} shadow-sm">
+            <div class="flex items-center gap-3">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} text-xl"></i>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-dark-500 hover:text-dark-700 transition-colors">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
     <!-- Security Notice -->
     <div class="mb-6 px-4 py-3 rounded-lg border bg-warning-50 border-warning-200 text-warning-800">
         <div class="flex items-start gap-2">
