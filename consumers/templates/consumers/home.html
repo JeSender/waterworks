@@ -15,7 +15,7 @@
             </h2>
             <p class="text-xs text-dark-500 mt-1">
                 <i class="bi bi-calendar3 mr-1"></i>
-                Today is {{ current_date|date:"l, F d, Y" }}
+                Today is <span id="current-date-display"></span>
             </p>
         </div>
         <div class="flex items-center gap-2">
@@ -265,6 +265,17 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Display real-time current date
+    function updateCurrentDate() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const formattedDate = now.toLocaleDateString('en-US', options);
+        document.getElementById('current-date-display').textContent = formattedDate;
+    }
+    updateCurrentDate();
+    // Update date every minute to keep it current
+    setInterval(updateCurrentDate, 60000);
+
     // Set current month and year
     const now = new Date();
     document.getElementById('reportMonth').value = now.getMonth() + 1;
