@@ -347,8 +347,8 @@ class MeterReading(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-reading_date']
-        unique_together = ['consumer', 'reading_date']
+        ordering = ['-reading_date', '-created_at']
+        # Removed unique_together to allow multiple readings on same date for testing/demo
 
     def __str__(self):
         return f"{self.consumer} - {self.reading_value} on {self.reading_date}"

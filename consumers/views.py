@@ -2489,15 +2489,6 @@ def confirm_reading(request, reading_id):
         messages.error(request, "Reading date cannot be in the future.")
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    # Check for duplicates on the same date
-    duplicate = MeterReading.objects.filter(
-        consumer=consumer,
-        reading_date=current.reading_date
-    ).exclude(id=current.id).first()
-    if duplicate:
-        messages.error(request, f"Another reading already exists on {current.reading_date}.")
-        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-
     # Find the previous confirmed reading
     previous = MeterReading.objects.filter(
         consumer=consumer,
