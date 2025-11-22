@@ -34,6 +34,7 @@ urlpatterns = [
     path('meter-readings/', views.meter_reading_overview, name='meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/', views.barangay_meter_readings, name='barangay_meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/confirm-all/', views.confirm_all_readings, name='confirm_all_readings'),
+    path('meter-readings/confirm-all-global/', views.confirm_all_readings_global, name='confirm_all_readings_global'),
     path('meter-readings/barangay/<int:barangay_id>/export/', views.export_barangay_readings, name='export_barangay_readings'),
     path('meter-readings/<int:reading_id>/confirm/', views.confirm_reading, name='confirm_reading'),
     path('meter-readings/barangay/<int:barangay_id>/confirm-selected/', views.confirm_selected_readings, name='confirm_selected_readings'),

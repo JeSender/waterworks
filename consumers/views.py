@@ -2154,6 +2154,91 @@ def confirm_all_readings(request, barangay_id):
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
 
+@login_required
+def confirm_all_readings_global(request):
+    """
+    Confirm ALL unconfirmed readings across ALL barangays.
+    """
+    if request.method != "POST":
+        return redirect('consumers:meter_readings')
+
+    # Get all unconfirmed readings
+    readings_to_confirm = MeterReading.objects.filter(
+        is_confirmed=False
+    ).select_related('consumer')
+
+    success_count = 0
+    error_count = 0
+
+    for reading in readings_to_confirm:
+        try:
+            consumer = reading.consumer
+
+            # Find previous confirmed reading
+            prev = MeterReading.objects.filter(
+                consumer=consumer,
+                is_confirmed=True,
+                reading_date__lt=reading.reading_date
+            ).order_by('-reading_date').first()
+
+            # Calculate consumption
+            if prev:
+                if reading.reading_value < prev.reading_value:
+                    continue
+                cons = reading.reading_value - prev.reading_value
+            else:
+                cons = reading.reading_value
+
+            # Get system settings
+            setting = SystemSetting.objects.first()
+            if setting:
+                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
+                billing_day = setting.billing_day_of_month
+                due_day = setting.due_day_of_month
+            else:
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
+                billing_day = 1
+                due_day = 20
+
+            total = (Decimal(cons) * rate) + fixed
+
+            Bill.objects.create(
+                consumer=consumer,
+                previous_reading=prev,
+                current_reading=reading,
+                billing_period=reading.reading_date.replace(day=billing_day),
+                due_date=reading.reading_date.replace(day=due_day),
+                consumption=cons,
+                rate_per_cubic=rate,
+                fixed_charge=fixed,
+                total_amount=total,
+                status='Pending'
+            )
+            reading.is_confirmed = True
+            reading.save()
+            success_count += 1
+        except Exception as e:
+            import logging
+            logging.error(f"Error confirming reading {reading.id}: {str(e)}")
+            error_count += 1
+            continue
+
+    if success_count > 0:
+        messages.success(request, f"✅ {success_count} readings confirmed and bills generated across all barangays.")
+    else:
+        messages.info(request, "No unconfirmed readings found.")
+
+    if error_count > 0:
+        messages.warning(request, f"⚠️ {error_count} readings could not be processed.")
+
+    return redirect('consumers:meter_readings')
+
+
 # ───────────────────────────────────────
 # NEW: Export to Excel
 # ───────────────────────────────────────
@@ -2478,10 +2563,16 @@ def confirm_selected_readings(request, barangay_id):
     reading_ids = request.POST.getlist('reading_ids')
     consumer_ids = request.POST.getlist('consumer_ids')  # For consumers with no reading (optional)
 
+    # Debug: Check what readings were selected
+    if not reading_ids:
+        messages.warning(request, "No readings were selected for confirmation.")
+        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
+
     success_count = 0
 
     # Process selected readings
     error_count = 0
+    error_details = []
     for reading_id in reading_ids:
         try:
             reading = MeterReading.objects.get(id=reading_id)
@@ -2542,12 +2633,17 @@ def confirm_selected_readings(request, barangay_id):
             import logging
             logging.error(f"Error confirming reading {reading_id}: {str(e)}")
             error_count += 1
+            error_details.append(f"Reading {reading_id}: {str(e)}")
             continue
 
     if success_count > 0:
         messages.success(request, f"✅ {success_count} readings confirmed and bills generated.")
+    elif error_count == 0 and success_count == 0:
+        messages.info(request, "No new readings to confirm (may already be confirmed).")
+
     if error_count > 0:
-        messages.warning(request, f"⚠️ {error_count} readings could not be processed.")
+        messages.error(request, f"⚠️ {error_count} readings failed: {'; '.join(error_details[:3])}")
+
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
 # consumers/views.py
