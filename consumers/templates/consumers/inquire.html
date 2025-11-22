@@ -8,8 +8,18 @@
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
     <div class="mb-8">
-        <h2 class="text-3xl font-bold text-dark-900">Bill Inquiry & Payment</h2>
-        <p class="text-dark-500 text-sm mt-2">Process consumer bill payments and generate receipts</p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-3xl font-bold text-dark-900">Bill Inquiry & Payment</h2>
+                <p class="text-dark-500 text-sm mt-2">Process consumer bill payments and generate receipts</p>
+            </div>
+            {% if total_pending_bills > 0 %}
+            <div class="px-4 py-2 bg-warning-100 border border-warning-300 rounded-lg">
+                <div class="text-xs text-warning-700 font-medium">Total Pending Bills</div>
+                <div class="text-2xl font-bold text-warning-800">{{ total_pending_bills }}</div>
+            </div>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Messages -->
@@ -53,7 +63,7 @@
                         <option value="">Select Barangay...</option>
                         {% for b in barangays %}
                         <option value="{{ b.id }}" {% if selected_barangay == b.id|stringformat:"s" %}selected{% endif %}>
-                            {{ b.name }}
+                            {{ b.name }}{% with pending=barangay_pending_counts|get_item:b.id %}{% if pending %} ({{ pending }} pending){% endif %}{% endwith %}
                         </option>
                         {% endfor %}
                     </select>

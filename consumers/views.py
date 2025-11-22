@@ -2701,8 +2701,17 @@ def inquire(request):
     selected_barangay = request.GET.get('barangay')
     selected_purok = request.GET.get('purok')
     selected_consumer_id = request.GET.get('consumer')
-    
+
+    # Get barangays with pending bill counts
     barangays = Barangay.objects.all()
+    barangay_pending_counts = {}
+    for b in barangays:
+        pending_count = Bill.objects.filter(
+            consumer__barangay=b,
+            status='Pending'
+        ).count()
+        barangay_pending_counts[b.id] = pending_count
+
     puroks = Purok.objects.none()
     consumers = Consumer.objects.none()
     consumer_bills = {}
@@ -2722,8 +2731,12 @@ def inquire(request):
             bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
             consumer_bills[c.id] = bill
 
+    # Count total pending bills
+    total_pending_bills = Bill.objects.filter(status='Pending').count()
+
     context = {
         'barangays': barangays,
+        'barangay_pending_counts': barangay_pending_counts,
         'puroks': puroks,
         'consumers': consumers,
         'consumer_bills': consumer_bills,
@@ -2731,6 +2744,7 @@ def inquire(request):
         'selected_purok': selected_purok,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
+        'total_pending_bills': total_pending_bills,
     }
     return render(request, 'consumers/inquire.html', context)
 
