@@ -73,17 +73,40 @@ def calculate_water_bill(consumer, consumption):
     return float(rate), float(total_amount)
 
 
-# NEW: API View for submitting meter readings from the Android app (Updated to match app data format)
-@csrf_exempt # Be careful with CSRF in production, consider using proper tokens for mobile apps
+# ============================================================================
+# API VIEW: MOBILE APP METER READING SUBMISSION
+# ============================================================================
+# FLOW OVERVIEW:
+# 1. Mobile app (field staff) submits meter reading anytime
+# 2. Reading is saved with is_confirmed=FALSE (pending admin review)
+# 3. Admin manually clicks "Confirm" button in web portal
+# 4. Upon confirmation, Bill is generated with status='Pending'
+# 5. Bill appears in Inquire/Payment page for payment processing
+#
+# TESTING vs PRODUCTION:
+# - For TESTING: Submit reading from app → Confirm in admin → Pay bill
+# - For PRODUCTION: Same flow, but with real meter readings
+# - The billing_day_of_month and due_day_of_month in SystemSettings
+#   only affect the DATES on the bill, not WHEN bills are generated
+# ============================================================================
+@csrf_exempt  # Be careful with CSRF in production, consider using proper tokens for mobile apps
 def api_submit_reading(request):
     """
     API endpoint for Android app to submit meter readings.
 
-    Returns complete bill details including:
+    IMPORTANT: Readings submitted here are NOT auto-confirmed.
+    Admin must manually confirm each reading to generate a bill.
+
+    FLOW:
+    1. App submits reading → MeterReading created (is_confirmed=False)
+    2. Admin confirms → Bill generated → Bill status='Pending'
+    3. Admin processes payment → Bill status='Paid'
+
+    Returns bill preview (not actual bill - bill created on confirm):
     - status, message
     - consumer_name, account_number, reading_date
     - previous_reading, current_reading, consumption
-    - rate, total_amount, field_staff_name
+    - rate, total_amount (estimated), field_staff_name
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -176,13 +199,15 @@ def api_submit_reading(request):
                 existing_reading.save()
 
         except MeterReading.DoesNotExist:
-            # If no existing reading for the date, create a new one (original behavior)
+            # If no existing reading for the date, create a new one
+            # IMPORTANT: is_confirmed=False means admin must manually confirm
+            # this reading before a bill is generated
             reading = MeterReading.objects.create(
                 consumer=consumer,
                 reading_date=reading_date,
                 reading_value=current_reading,
-                source='mobile_app', # Mark source as coming from the mobile app
-                is_confirmed=True  # Auto-confirm readings from mobile app
+                source='mobile_app',  # Mark source as coming from the mobile app
+                is_confirmed=False  # CHANGED: Require manual admin confirmation
             )
 
         # Track activity for login session
@@ -2467,13 +2492,39 @@ def meter_readings(request):
     })
 
 
-# consumers/views.py
-
+# ============================================================================
+# CONFIRM READING VIEW - ADMIN MANUAL CONFIRMATION
+# ============================================================================
+# This is the CRITICAL step where admin manually confirms a meter reading.
+# Upon confirmation:
+# 1. Consumption is calculated (current - previous reading)
+# 2. Bill is IMMEDIATELY generated with status='Pending'
+# 3. Bill appears in Inquire/Payment page for payment processing
+#
+# TESTING FLOW:
+# Step 1: Mobile app submits reading (is_confirmed=False)
+# Step 2: Admin clicks "Confirm" button HERE → Bill created instantly
+# Step 3: Admin goes to Inquire page → Pays the bill
+#
+# NOTE: billing_day_of_month and due_day_of_month from SystemSettings
+# only set the DATES on the bill, they do NOT delay bill creation.
+# Bill is created IMMEDIATELY when you click Confirm.
+# ============================================================================
 @login_required
 def confirm_reading(request, reading_id):
     """
     Confirm a meter reading and generate a bill for the consumer.
-    If this is the first reading for the consumer, the consumption is calculated as the current reading value.
+
+    TESTING: Click this to instantly generate a bill from a pending reading.
+
+    FLOW:
+    1. App submits reading → MeterReading (is_confirmed=False)
+    2. Admin clicks Confirm → THIS FUNCTION RUNS
+    3. Bill created with status='Pending' → Appears in payment page
+    4. Admin processes payment → Bill status='Paid'
+
+    If this is the first reading for the consumer, consumption is calculated
+    from consumer.first_reading (initial meter value at registration).
     """
     current = get_object_or_404(MeterReading, id=reading_id)
     consumer = current.consumer
@@ -2484,19 +2535,24 @@ def confirm_reading(request, reading_id):
         messages.error(request, "This reading is already confirmed and billed.")
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    # Validate date
+    # Validate date - cannot confirm future readings
     if current.reading_date > date.today():
         messages.error(request, "Reading date cannot be in the future.")
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    # Find the previous confirmed reading
+    # Find the previous confirmed reading for consumption calculation
     previous = MeterReading.objects.filter(
         consumer=consumer,
         is_confirmed=True,
         reading_date__lt=current.reading_date
     ).order_by('-reading_date').first()
 
-    # Calculate consumption
+    # ========================================================================
+    # CONSUMPTION CALCULATION
+    # ========================================================================
+    # consumption = current_reading - previous_reading
+    # If no previous reading, use consumer.first_reading as baseline
+    # ========================================================================
     if previous:
         # Use the previous confirmed reading for calculation
         if current.reading_value < previous.reading_value:
@@ -2506,25 +2562,33 @@ def confirm_reading(request, reading_id):
             messages.warning(request, "Zero consumption. Bill will be generated.")
         consumption = current.reading_value - previous.reading_value
     else:
-        # This is the first reading for the consumer
-        # Use consumer's initial first_reading as the baseline
+        # FIRST READING for this consumer
+        # Use consumer's initial first_reading (set at registration) as baseline
         baseline = consumer.first_reading if consumer.first_reading else 0
         if current.reading_value < baseline:
             messages.error(request, f"Current reading ({current.reading_value}) < initial reading ({baseline}).")
             return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
         consumption = current.reading_value - baseline
 
-    # Generate bill
+    # ========================================================================
+    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM
+    # ========================================================================
+    # Bill is created RIGHT NOW, not on a schedule.
+    # billing_day_of_month: Only affects billing_period date on the bill
+    # due_day_of_month: Only affects due_date on the bill
+    # These do NOT control WHEN bills are generated - that's instant on confirm.
+    # ========================================================================
     try:
         setting = SystemSetting.objects.first()
 
-        # Apply correct rate based on consumer usage type
+        # Apply correct rate based on consumer usage type (Residential vs Commercial)
         if setting:
             if consumer.usage_type == 'Residential':
                 rate = setting.residential_rate_per_cubic
             else:  # Commercial
                 rate = setting.commercial_rate_per_cubic
             fixed_charge = setting.fixed_charge
+            # These only set the DATE values on the bill, not when it's created
             billing_day = setting.billing_day_of_month
             due_day = setting.due_day_of_month
         else:
@@ -2534,13 +2598,17 @@ def confirm_reading(request, reading_id):
             billing_day = 1
             due_day = 20
 
+        # Calculate total: (consumption × rate) + fixed_charge
         total_amount = (Decimal(consumption) * rate) + fixed_charge
 
+        # CREATE BILL IMMEDIATELY - This is the key action
         Bill.objects.create(
             consumer=consumer,
-            previous_reading=previous, # Will be None if this is the first reading
+            previous_reading=previous,  # Will be None if this is the first reading
             current_reading=current,
+            # billing_period: First day of billing month (just for display/records)
             billing_period=current.reading_date.replace(day=billing_day),
+            # due_date: When payment is due (just for display/records)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
             rate_per_cubic=rate,
@@ -2658,17 +2726,44 @@ def confirm_selected_readings(request, barangay_id):
 
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-# consumers/views.py
-
+# ============================================================================
+# INQUIRE / PAYMENT VIEW - BILL INQUIRY AND PAYMENT PROCESSING
+# ============================================================================
+# This is the FINAL step in the billing flow where payments are processed.
+#
+# COMPLETE FLOW (for testing):
+# 1. Mobile app submits reading → MeterReading (is_confirmed=False)
+# 2. Admin confirms reading → Bill created (status='Pending')
+# 3. Admin comes HERE → Selects consumer → Sees pending bill
+# 4. Admin enters received amount → Payment processed → Bill status='Paid'
+# 5. Receipt generated with OR number
+#
+# HOW TO TEST:
+# 1. Submit reading from app (or create manually)
+# 2. Go to Meter Readings → Barangay → Click "Confirm"
+# 3. Come to this Inquire page → Select barangay → Select consumer
+# 4. You'll see the pending bill → Enter payment amount → Submit
+# ============================================================================
 @login_required
 def inquire(request):
     """
-    Handles both:
-    - GET: Area/consumer selection
-    - POST: Payment processing
+    Bill Inquiry and Payment Processing page.
+
+    TESTING: After confirming a meter reading, come here to pay the bill.
+
+    GET: Display bill inquiry form
+        - Select Barangay → Purok → Consumer
+        - Shows pending bills for selected consumer
+
+    POST: Process payment
+        - Creates Payment record with auto-generated OR number
+        - Updates Bill status to 'Paid'
+        - Redirects to receipt page
     """
     if request.method == "POST":
-        # Handle payment submission
+        # ====================================================================
+        # PAYMENT PROCESSING (Final step in billing flow)
+        # ====================================================================
         bill_id = request.POST.get('bill_id')
         received_amount = request.POST.get('received_amount')
 
@@ -2681,21 +2776,23 @@ def inquire(request):
             received_amount = Decimal(received_amount)
             amount_due = bill.total_amount
 
+            # Validate payment amount
             if received_amount < amount_due:
                 messages.error(request, f"Insufficient payment. Amount due is ₱{amount_due}.")
                 return redirect(request.get_full_path())  # Stay on same consumer
 
-            # Create payment
+            # CREATE PAYMENT RECORD
+            # OR number format: OR-YYYYMMDD-XXXXXX (auto-generated)
             payment = Payment.objects.create(
                 bill=bill,
                 amount_paid=amount_due,
                 received_amount=received_amount,
-                change=received_amount - amount_due,
+                change=received_amount - amount_due,  # Auto-calculate change
                 payment_date=timezone.now(),
                 or_number=f"OR-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
             )
 
-            # Mark bill as paid
+            # MARK BILL AS PAID - This completes the billing cycle
             bill.status = 'Paid'
             bill.save()
 

@@ -412,40 +412,63 @@ from decimal import Decimal # Import Decimal
 
 # ... (other imports remain the same) ...
 
+# ============================================================================
+# SYSTEM SETTINGS MODEL (Singleton)
+# ============================================================================
+# IMPORTANT: These settings configure billing rates and dates.
+#
+# BILLING SCHEDULE CLARIFICATION:
+# - billing_day_of_month: Sets the DAY shown on the bill's billing_period
+# - due_day_of_month: Sets the DAY shown on the bill's due_date
+#
+# NOTE: These do NOT control WHEN bills are generated!
+# Bills are generated INSTANTLY when admin clicks "Confirm" on a meter reading.
+# These settings only affect the DATE VALUES written on the bill.
+#
+# FOR TESTING: You can test the full flow anytime:
+# 1. Submit meter reading from app
+# 2. Admin confirms reading → Bill created immediately
+# 3. Admin processes payment → Done!
+# ============================================================================
 class SystemSetting(models.Model):
     """
-    Model to store system-wide settings.
-    This version includes separate rates for Residential and Commercial usage.
+    System-wide configuration for water rates and billing.
+
+    IMPORTANT: billing_day_of_month and due_day_of_month only affect
+    the DATES shown on bills, not WHEN bills are generated.
+    Bills are created instantly when a meter reading is confirmed.
     """
-    # --- NEW: Add fields for separate rates ---
+    # Water consumption rates (per cubic meter)
     residential_rate_per_cubic = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('22.50'), # Default residential rate
-        help_text="Rate applied to residential consumers (₱ / m³)"
+        default=Decimal('22.50'),
+        help_text="Rate for residential consumers (₱ / m³)"
     )
     commercial_rate_per_cubic = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('25.00'), # Default commercial rate
-        help_text="Rate applied to commercial consumers (₱ / m³)"
+        default=Decimal('25.00'),
+        help_text="Rate for commercial consumers (₱ / m³)"
     )
-    # --- END NEW ---
 
-    # Billing configuration
+    # Fixed monthly charge
     fixed_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal('50.00'),
         help_text="Fixed charge added to every bill (₱)"
     )
+
+    # Billing date configuration (for display on bills only)
+    # NOTE: Does NOT control when bills are generated - that's instant on confirm
     billing_day_of_month = models.IntegerField(
         default=1,
-        help_text="Day of month for billing period (1-28)"
+        help_text="Day shown as billing period start on bills (1-28). Does NOT delay bill creation."
     )
     due_day_of_month = models.IntegerField(
         default=20,
-        help_text="Day of month for bill due date (1-28)"
+        help_text="Day shown as due date on bills (1-28). Does NOT delay bill creation."
     )
 
     # Optional: Keep a field to track when the settings were last updated
