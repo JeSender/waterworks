@@ -2512,6 +2512,31 @@ def user_login_history(request):
 
 
 @login_required
+def session_activities(request, session_id):
+    """
+    View detailed activities for a specific login session.
+    Shows all meter readings and actions performed during the session.
+    """
+    # Security check - only admins and superusers
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+
+    login_event = get_object_or_404(UserLoginEvent, id=session_id)
+    activities = UserActivity.objects.filter(login_event=login_event).order_by('-created_at')
+
+    # Calculate session stats
+    total_readings = activities.filter(action='meter_reading_submitted').count()
+
+    context = {
+        'login_event': login_event,
+        'activities': activities,
+        'total_readings': total_readings,
+    }
+    return render(request, 'consumers/session_activities.html', context)
+
+
+@login_required
 def consumer_bill(request, consumer_id):
     """
     Display all bills for a specific consumer with summary statistics.

@@ -73,6 +73,7 @@ urlpatterns = [
     # User Management & Security
     path('admin-verification/', views.admin_verification, name='admin_verification'),
     path('user-login-history/', views.user_login_history, name='user_login_history'),
+    path('session/<int:session_id>/activities/', views.session_activities, name='session_activities'),
     path('user-management/', views.user_management, name='user_management'),
     path('user/create/', views.create_user, name='create_user'),
     path('user/<int:user_id>/edit/', views.edit_user, name='edit_user'),
