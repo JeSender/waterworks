@@ -924,6 +924,83 @@ def forgot_username(request):
     })
 
 
+def account_recovery(request):
+    """
+    Unified account recovery - recovers username and generates password reset link.
+    """
+    from .decorators import get_client_ip
+
+    recovery_result = None
+
+    if request.method == "POST":
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+
+        user = None
+
+        # Try to find user by email first
+        if email:
+            user = User.objects.filter(email__iexact=email, is_staff=True).first()
+            if not user:
+                messages.error(request, "No account found with that email address.")
+
+        # Try by name if email not provided or not found
+        elif first_name and last_name:
+            user = User.objects.filter(
+                first_name__iexact=first_name,
+                last_name__iexact=last_name,
+                is_staff=True
+            ).first()
+            if not user:
+                messages.error(request, "No account found with that name.")
+        else:
+            messages.error(request, "Please enter your email or full name.")
+
+        if user:
+            # Check if user is admin/superuser (can reset password)
+            can_reset = user.is_superuser or (user.is_staff and user.groups.filter(name='Admin').exists())
+
+            recovery_result = {
+                'username': user.username,
+            }
+
+            if can_reset:
+                # Generate password reset token
+                existing_token = PasswordResetToken.objects.filter(
+                    user=user,
+                    is_used=False,
+                    expires_at__gt=timezone.now()
+                ).first()
+
+                if existing_token:
+                    token = existing_token
+                else:
+                    token = PasswordResetToken.objects.create(
+                        user=user,
+                        ip_address=get_client_ip(request)
+                    )
+
+                reset_url = request.build_absolute_uri(
+                    reverse('consumers:password_reset_confirm', kwargs={'token': token.token})
+                )
+                recovery_result['reset_url'] = reset_url
+
+                # Log activity
+                UserActivity.objects.create(
+                    user=user,
+                    action='password_reset_requested',
+                    description=f'Account recovery initiated for {user.username}',
+                    ip_address=get_client_ip(request)
+                )
+
+            messages.success(request, "Account found successfully!")
+
+    return render(request, 'consumers/account_recovery.html', {
+        'recovery_result': recovery_result
+    })
+
+
 def password_reset_confirm(request, token):
     """
     Confirm password reset with token and set new password.
