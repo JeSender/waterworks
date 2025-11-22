@@ -167,8 +167,10 @@
                         <td class="px-4 py-2 text-center">
                             {% if item.prev_reading %}
                                 <span class="text-sm text-gray-600">{{ item.prev_reading.reading_value }}</span>
+                            {% elif item.consumer.first_reading %}
+                                <span class="text-sm text-blue-600" title="Initial meter reading at registration">{{ item.consumer.first_reading }}</span>
                             {% else %}
-                                <span class="text-sm text-gray-400">—</span>
+                                <span class="text-sm text-gray-400">0</span>
                             {% endif %}
                         </td>
 

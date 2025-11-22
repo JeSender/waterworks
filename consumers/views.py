@@ -1981,20 +1981,23 @@ def meter_reading_overview(request):
     # Get all barangays, annotate total consumers, and ORDER BY name for alphabetical sorting
     barangays = Barangay.objects.annotate(
         total_consumers=Count('consumer', distinct=True)
-    ).order_by('name')  # 👈 This is the fix!
+    ).order_by('name')
 
     barangay_data = []
     for b in barangays:
-        consumer_ids = list(Consumer.objects.filter(barangay=b).values_list('id', flat=True))
+        # Only count active (connected) consumers
+        consumer_ids = list(Consumer.objects.filter(barangay=b, status='active').values_list('id', flat=True))
         if not consumer_ids:
             ready = not_updated = 0
         else:
+            # Count ALL unconfirmed readings (not just current month)
+            # This matches what barangay_meter_readings shows
             ready = MeterReading.objects.filter(
                 consumer_id__in=consumer_ids,
-                reading_date__gte=current_month,
                 is_confirmed=False
-            ).count()
+            ).values('consumer_id').distinct().count()
 
+            # Count consumers who have at least one reading this month
             updated_consumers = MeterReading.objects.filter(
                 consumer_id__in=consumer_ids,
                 reading_date__gte=current_month
@@ -2035,14 +2038,14 @@ def barangay_meter_readings(request, barangay_id):
     barangay = get_object_or_404(Barangay, id=barangay_id)
     today = date.today()
 
-    # Get all consumers in this barangay
-    consumers = Consumer.objects.filter(barangay=barangay).select_related('barangay').order_by('id')
+    # Get all active consumers in this barangay
+    consumers = Consumer.objects.filter(barangay=barangay, status='active').select_related('barangay').order_by('id')
 
     readings_with_data = []
     for consumer in consumers:
-        # Get latest reading for this consumer
-        latest_reading = MeterReading.objects.filter(consumer=consumer).order_by('-reading_date').first()
-        
+        # Get latest reading for this consumer (unconfirmed takes priority for display)
+        latest_reading = MeterReading.objects.filter(consumer=consumer).order_by('-reading_date', '-created_at').first()
+
         if latest_reading:
             # Find previous confirmed reading
             prev = MeterReading.objects.filter(
@@ -2050,10 +2053,14 @@ def barangay_meter_readings(request, barangay_id):
                 is_confirmed=True,
                 reading_date__lt=latest_reading.reading_date
             ).order_by('-reading_date').first()
-            
-            consumption = None
+
+            # Calculate consumption
             if prev:
                 consumption = latest_reading.reading_value - prev.reading_value
+            else:
+                # First reading - use consumer's first_reading as baseline
+                baseline = consumer.first_reading if consumer.first_reading else 0
+                consumption = latest_reading.reading_value - baseline
         else:
             latest_reading = None
             prev = None
@@ -2105,8 +2112,11 @@ def confirm_all_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - prev.reading_value
             else:
-                # First reading for this consumer - use reading value as consumption
-                cons = reading.reading_value
+                # First reading for this consumer - use consumer's first_reading as baseline
+                baseline = reading.consumer.first_reading if reading.consumer.first_reading else 0
+                if reading.reading_value < baseline:
+                    continue
+                cons = reading.reading_value - baseline
 
             # Get system settings and determine rate based on usage type
             setting = SystemSetting.objects.first()
@@ -2187,7 +2197,11 @@ def confirm_all_readings_global(request):
                     continue
                 cons = reading.reading_value - prev.reading_value
             else:
-                cons = reading.reading_value
+                # First reading for this consumer - use consumer's first_reading as baseline
+                baseline = consumer.first_reading if consumer.first_reading else 0
+                if reading.reading_value < baseline:
+                    continue
+                cons = reading.reading_value - baseline
 
             # Get system settings
             setting = SystemSetting.objects.first()
@@ -2501,9 +2515,13 @@ def confirm_reading(request, reading_id):
             messages.warning(request, "Zero consumption. Bill will be generated.")
         consumption = current.reading_value - previous.reading_value
     else:
-        # This is the first reading for the consumer, so treat previous as 0
-        # Consumption is the full current reading value
-        consumption = current.reading_value
+        # This is the first reading for the consumer
+        # Use consumer's initial first_reading as the baseline
+        baseline = consumer.first_reading if consumer.first_reading else 0
+        if current.reading_value < baseline:
+            messages.error(request, f"Current reading ({current.reading_value}) < initial reading ({baseline}).")
+            return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
+        consumption = current.reading_value - baseline
 
     # Generate bill
     try:
@@ -2592,8 +2610,11 @@ def confirm_selected_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - prev.reading_value
             else:
-                # First reading - use reading value as consumption
-                cons = reading.reading_value
+                # First reading - use consumer's first_reading as baseline
+                baseline = consumer.first_reading if consumer.first_reading else 0
+                if reading.reading_value < baseline:
+                    continue
+                cons = reading.reading_value - baseline
 
             # Get system settings
             setting = SystemSetting.objects.first()
@@ -2724,7 +2745,8 @@ def inquire(request):
 
     if selected_barangay:
         puroks = Purok.objects.filter(barangay_id=selected_barangay)
-        consumers = Consumer.objects.filter(barangay_id=selected_barangay)
+        # Only show active (connected) consumers on the payment page
+        consumers = Consumer.objects.filter(barangay_id=selected_barangay, status='active')
         if selected_purok:
             consumers = consumers.filter(purok_id=selected_purok)
         for c in consumers:
