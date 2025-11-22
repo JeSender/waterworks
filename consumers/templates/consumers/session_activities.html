@@ -139,10 +139,14 @@
                     <!-- Timeline Dot -->
                     <div class="absolute left-0 top-0 w-7 h-7 -translate-x-1/2 rounded-full flex items-center justify-center
                         {% if activity.action == 'meter_reading_submitted' %}bg-success-100 text-success-600
+                        {% elif activity.action == 'consumer_created' %}bg-primary-100 text-primary-600
+                        {% elif activity.action == 'consumer_updated' %}bg-info-100 text-info-600
                         {% elif activity.action == 'consumer_disconnected' %}bg-danger-100 text-danger-600
-                        {% elif activity.action == 'consumer_reconnected' %}bg-info-100 text-info-600
-                        {% else %}bg-primary-100 text-primary-600{% endif %}">
-                        <i class="bi bi-{% if activity.action == 'meter_reading_submitted' %}speedometer2{% elif activity.action == 'consumer_disconnected' %}plug{% elif activity.action == 'consumer_reconnected' %}plug-fill{% else %}activity{% endif %} text-sm"></i>
+                        {% elif activity.action == 'consumer_reconnected' %}bg-success-100 text-success-600
+                        {% elif activity.action == 'user_created' %}bg-purple-100 text-purple-600
+                        {% elif activity.action == 'payment_processed' %}bg-warning-100 text-warning-600
+                        {% else %}bg-light-200 text-dark-600{% endif %}">
+                        <i class="bi bi-{% if activity.action == 'meter_reading_submitted' %}speedometer2{% elif activity.action == 'consumer_created' %}person-plus{% elif activity.action == 'consumer_updated' %}pencil{% elif activity.action == 'consumer_disconnected' %}plug{% elif activity.action == 'consumer_reconnected' %}plug-fill{% elif activity.action == 'user_created' %}person-badge{% elif activity.action == 'payment_processed' %}cash-coin{% else %}activity{% endif %} text-sm"></i>
                     </div>
 
                     <!-- Activity Card -->
@@ -150,10 +154,14 @@
                         <div class="flex items-start justify-between mb-2">
                             <span class="inline-flex items-center px-3 py-1 rounded-lg text-xs font-semibold
                                 {% if activity.action == 'meter_reading_submitted' %}bg-success-100 text-success-700
+                                {% elif activity.action == 'consumer_created' %}bg-primary-100 text-primary-700
+                                {% elif activity.action == 'consumer_updated' %}bg-info-100 text-info-700
                                 {% elif activity.action == 'consumer_disconnected' %}bg-danger-100 text-danger-700
-                                {% elif activity.action == 'consumer_reconnected' %}bg-info-100 text-info-700
-                                {% else %}bg-primary-100 text-primary-700{% endif %}">
-                                <i class="bi bi-{% if activity.action == 'meter_reading_submitted' %}speedometer2{% elif activity.action == 'consumer_disconnected' %}plug{% elif activity.action == 'consumer_reconnected' %}plug-fill{% else %}activity{% endif %} mr-1.5"></i>
+                                {% elif activity.action == 'consumer_reconnected' %}bg-success-100 text-success-700
+                                {% elif activity.action == 'user_created' %}bg-purple-100 text-purple-700
+                                {% elif activity.action == 'payment_processed' %}bg-warning-100 text-warning-700
+                                {% else %}bg-light-200 text-dark-700{% endif %}">
+                                <i class="bi bi-{% if activity.action == 'meter_reading_submitted' %}speedometer2{% elif activity.action == 'consumer_created' %}person-plus{% elif activity.action == 'consumer_updated' %}pencil{% elif activity.action == 'consumer_disconnected' %}plug{% elif activity.action == 'consumer_reconnected' %}plug-fill{% elif activity.action == 'user_created' %}person-badge{% elif activity.action == 'payment_processed' %}cash-coin{% else %}activity{% endif %} mr-1.5"></i>
                                 {{ activity.get_action_display }}
                             </span>
                             <span class="text-xs text-dark-500 flex items-center gap-1">

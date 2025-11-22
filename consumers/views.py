@@ -1146,6 +1146,24 @@ def disconnect_consumer(request, consumer_id):
         consumer.status = 'disconnected'
         consumer.disconnect_reason = request.POST.get('reason', '')
         consumer.save()
+
+        # Track activity
+        try:
+            current_session = UserLoginEvent.objects.filter(
+                user=request.user,
+                logout_timestamp__isnull=True,
+                status='success'
+            ).order_by('-login_timestamp').first()
+
+            UserActivity.objects.create(
+                user=request.user,
+                action='consumer_disconnected',
+                description=f"Disconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number}). Reason: {consumer.disconnect_reason or 'Not specified'}",
+                login_event=current_session
+            )
+        except Exception:
+            pass
+
         messages.success(request, f"{consumer.full_name} has been disconnected.")
         return redirect('consumers:disconnected_consumers')
     return render(request, 'consumers/confirm_disconnect.html', {'consumer': consumer})
@@ -1157,6 +1175,24 @@ def reconnect_consumer(request, consumer_id):
         consumer.status = 'active'
         consumer.disconnect_reason = ''  # Optional: clear reason
         consumer.save()
+
+        # Track activity
+        try:
+            current_session = UserLoginEvent.objects.filter(
+                user=request.user,
+                logout_timestamp__isnull=True,
+                status='success'
+            ).order_by('-login_timestamp').first()
+
+            UserActivity.objects.create(
+                user=request.user,
+                action='consumer_reconnected',
+                description=f"Reconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number})",
+                login_event=current_session
+            )
+        except Exception:
+            pass
+
         messages.success(request, f"{consumer.full_name} has been reconnected.")
         return redirect('consumers:consumer_detail', consumer.id)
     # Optional: handle GET with confirmation, but POST-only is simpler
@@ -1273,11 +1309,29 @@ def add_consumer(request):
     if request.method == "POST":
         form = ConsumerForm(request.POST)
         if form.is_valid():
-            form.save()
-            messages.success(request, "✅ Consumer added successfully!")
+            consumer = form.save()
+
+            # Track activity
+            try:
+                current_session = UserLoginEvent.objects.filter(
+                    user=request.user,
+                    logout_timestamp__isnull=True,
+                    status='success'
+                ).order_by('-login_timestamp').first()
+
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='consumer_created',
+                    description=f"Created new consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number}) in {consumer.barangay.name}",
+                    login_event=current_session
+                )
+            except Exception:
+                pass  # Don't fail consumer creation if activity logging fails
+
+            messages.success(request, "Consumer added successfully!")
             return redirect('consumers:consumer_management')
         else:
-            messages.error(request, "❌ Please correct the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = ConsumerForm()
 
@@ -1291,10 +1345,28 @@ def edit_consumer(request, consumer_id):
         form = ConsumerForm(request.POST, instance=consumer)
         if form.is_valid():
             form.save()
-            messages.success(request, "✅ Consumer updated successfully!")
+
+            # Track activity
+            try:
+                current_session = UserLoginEvent.objects.filter(
+                    user=request.user,
+                    logout_timestamp__isnull=True,
+                    status='success'
+                ).order_by('-login_timestamp').first()
+
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='consumer_updated',
+                    description=f"Updated consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number})",
+                    login_event=current_session
+                )
+            except Exception:
+                pass
+
+            messages.success(request, "Consumer updated successfully!")
             return redirect('consumers:consumer_management')
         else:
-            messages.error(request, "❌ Please correct the errors below.")
+            messages.error(request, "Please correct the errors below.")
     else:
         form = ConsumerForm(instance=consumer)
 

@@ -136,8 +136,11 @@ class UserActivity(models.Model):
         ('payment_processed', 'Payment Processed'),
         ('meter_reading_confirmed', 'Meter Reading Confirmed'),
         ('meter_reading_submitted', 'Meter Reading Submitted'),
+        ('consumer_created', 'Consumer Created'),
+        ('consumer_updated', 'Consumer Updated'),
         ('consumer_disconnected', 'Consumer Disconnected'),
         ('consumer_reconnected', 'Consumer Reconnected'),
+        ('system_settings_updated', 'System Settings Updated'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activities')
