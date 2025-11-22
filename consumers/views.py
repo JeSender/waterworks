@@ -1436,9 +1436,11 @@ def consumer_management(request):
     # Optimize query with select_related to avoid N+1 queries
     consumers = Consumer.objects.select_related('barangay', 'purok', 'meter_brand').all()
     if search_query:
+        # Search by name, account number, or serial number
         consumers = consumers.filter(
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
+            Q(account_number__icontains=search_query) |
             Q(serial_number__icontains=search_query)
         )
     if barangay_filter:

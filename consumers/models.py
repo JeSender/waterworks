@@ -299,31 +299,41 @@ class Consumer(models.Model):
     # Methods
     # ========================
     def save(self, *args, **kwargs):
-        # Auto-generate account_number if not set
+        # Auto-generate ID Number if not set
+        # Format: YYYYMM0001 (Year + Month + 4-digit sequence)
+        # Example: 2024110001 (November 2024, consumer #1)
         if not self.account_number:
-            # Use Django ORM instead of raw SQL to prevent SQL injection
-            # Get all existing account numbers that match the pattern
-            existing_accounts = Consumer.objects.filter(
-                account_number__startswith='BW-'
+            from django.utils import timezone
+
+            # Get current year and month
+            now = timezone.now()
+            year_month = now.strftime('%Y%m')  # e.g., "202411"
+
+            # Find existing ID numbers for this month
+            # Pattern: starts with current YYYYMM
+            existing_ids = Consumer.objects.filter(
+                account_number__startswith=year_month
             ).exclude(
                 pk=self.pk  # Exclude self if updating
             ).values_list('account_number', flat=True)
 
-            # Extract numeric parts and find max
-            numbers = []
-            for acc in existing_accounts:
+            # Extract sequence numbers and find max
+            sequences = []
+            for id_num in existing_ids:
                 try:
-                    # Extract number after 'BW-'
-                    num_part = acc.split('-')[1]
-                    if num_part.isdigit() and len(num_part) == 5:
-                        numbers.append(int(num_part))
-                except (IndexError, ValueError):
+                    # Extract last 4 digits (sequence part)
+                    if len(id_num) == 10 and id_num.isdigit():
+                        seq = int(id_num[6:])  # Get digits after YYYYMM
+                        sequences.append(seq)
+                except (ValueError, IndexError):
                     continue
 
-            # Get next number
-            last_num = max(numbers) if numbers else 0
-            new_num = last_num + 1
-            self.account_number = f'BW-{new_num:05d}'
+            # Get next sequence number
+            last_seq = max(sequences) if sequences else 0
+            new_seq = last_seq + 1
+
+            # Generate ID Number: YYYYMM + 4-digit sequence
+            self.account_number = f'{year_month}{new_seq:04d}'
         super().save(*args, **kwargs)
 
     def __str__(self):
