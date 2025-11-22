@@ -56,9 +56,37 @@ class UserLoginEvent(models.Model):
         return None
 
     @property
+    def session_duration_formatted(self):
+        """Return formatted session duration string"""
+        if self.logout_timestamp:
+            duration = self.logout_timestamp - self.login_timestamp
+            total_seconds = int(duration.total_seconds())
+            hours, remainder = divmod(total_seconds, 3600)
+            minutes, seconds = divmod(remainder, 60)
+
+            if hours > 0:
+                return f"{hours}h {minutes}m"
+            elif minutes > 0:
+                return f"{minutes}m {seconds}s"
+            else:
+                return f"{seconds}s"
+        return None
+
+    @property
     def is_active_session(self):
         """Check if session is still active"""
         return self.status == 'success' and self.logout_timestamp is None
+
+    @property
+    def activities_count(self):
+        """Get count of activities during this session"""
+        return self.activities.count() if hasattr(self, 'activities') else 0
+
+    def get_session_activities(self):
+        """Get all activities that occurred during this login session"""
+        if hasattr(self, 'activities'):
+            return self.activities.all()
+        return []
 
 
 class PasswordResetToken(models.Model):
@@ -107,6 +135,9 @@ class UserActivity(models.Model):
         ('bill_created', 'Bill Created'),
         ('payment_processed', 'Payment Processed'),
         ('meter_reading_confirmed', 'Meter Reading Confirmed'),
+        ('meter_reading_submitted', 'Meter Reading Submitted'),
+        ('consumer_disconnected', 'Consumer Disconnected'),
+        ('consumer_reconnected', 'Consumer Reconnected'),
     ]
 
     user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='activities')
@@ -116,6 +147,7 @@ class UserActivity(models.Model):
     user_agent = models.TextField(blank=True)
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     target_user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='targeted_activities')
+    login_event = models.ForeignKey('UserLoginEvent', on_delete=models.SET_NULL, null=True, blank=True, related_name='activities', help_text="The login session during which this activity occurred")
 
     class Meta:
         ordering = ['-created_at']

@@ -185,6 +185,26 @@ def api_submit_reading(request):
                 is_confirmed=True  # Auto-confirm readings from mobile app
             )
 
+        # Track activity for login session
+        if request.user.is_authenticated:
+            try:
+                # Find current login session
+                current_session = UserLoginEvent.objects.filter(
+                    user=request.user,
+                    logout_timestamp__isnull=True,
+                    status='success'
+                ).order_by('-login_timestamp').first()
+
+                # Log the meter reading activity
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='meter_reading_submitted',
+                    description=f"Meter reading submitted for {consumer.first_name} {consumer.last_name} ({consumer.account_number}). Reading: {current_reading}, Consumption: {consumption} m³",
+                    login_event=current_session
+                )
+            except Exception:
+                pass  # Don't fail the reading submission if activity logging fails
+
         # Return complete bill details (ALL 11 REQUIRED FIELDS)
         return JsonResponse({
             'status': 'success',
@@ -2423,8 +2443,8 @@ def user_login_history(request):
     date_from = request.GET.get('date_from', '')
     date_to = request.GET.get('date_to', '')
 
-    # Base query
-    login_events = UserLoginEvent.objects.select_related('user').all()
+    # Base query - prefetch activities for session tracking
+    login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities').all()
 
     # Apply filters
     if search_query:
