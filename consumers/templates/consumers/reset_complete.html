@@ -5,7 +5,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Password Reset Complete - Balilihan Waterworks</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -13,129 +12,70 @@
                 extend: {
                     colors: {
                         primary: { 50: '#eff6ff', 100: '#dbeafe', 200: '#bfdbfe', 300: '#93c5fd', 400: '#60a5fa', 500: '#3b82f6', 600: '#2563eb', 700: '#1d4ed8', 800: '#1e40af', 900: '#1e3a8a' },
-                        success: { 50: '#f0fdf4', 100: '#dcfce7', 200: '#bbf7d0', 300: '#86efac', 400: '#4ade80', 500: '#22c55e', 600: '#16a34a', 700: '#15803d', 800: '#166534', 900: '#14532d' },
-                        danger: { 50: '#fef2f2', 100: '#fee2e2', 200: '#fecaca', 300: '#fca5a5', 400: '#f87171', 500: '#ef4444', 600: '#dc2626', 700: '#b91c1c', 800: '#991b1b', 900: '#7f1d1d' },
-                        warning: { 50: '#fffbeb', 100: '#fef3c7', 200: '#fde68a', 300: '#fcd34d', 400: '#fbbf24', 500: '#f59e0b', 600: '#d97706', 700: '#b45309', 800: '#92400e', 900: '#78350f' },
-                        info: { 50: '#f0f9ff', 100: '#e0f2fe', 200: '#bae6fd', 300: '#7dd3fc', 400: '#38bdf8', 500: '#0ea5e9', 600: '#0284c7', 700: '#0369a1', 800: '#075985', 900: '#0c4a6e' },
                         dark: { 50: '#f9fafb', 100: '#f3f4f6', 200: '#e5e7eb', 300: '#d1d5db', 400: '#9ca3af', 500: '#6b7280', 600: '#4b5563', 700: '#374151', 800: '#1f2937', 900: '#111827' }
                     }
                 }
             }
         }
     </script>
-    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         body {
-            background: url("{% static 'consumers/images/background.jpg' %}") no-repeat center center fixed;
-            background-size: cover;
+            background: linear-gradient(135deg, #1e3a8a 0%, #2563eb 50%, #3b82f6 100%);
+            min-height: 100vh;
             font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
         }
-        .complete-container {
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            backdrop-filter: blur(3px);
-        }
-        .success-icon {
-            animation: scaleIn 0.5s ease-out;
-        }
         @keyframes scaleIn {
-            from {
-                transform: scale(0);
-                opacity: 0;
-            }
-            to {
-                transform: scale(1);
-                opacity: 1;
-            }
+            from { transform: scale(0); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
         }
-        .countdown {
-            font-weight: bold;
-            color: #4f46e5;
-        }
+        .success-icon { animation: scaleIn 0.5s ease-out; }
     </style>
 </head>
-<body class="antialiased">
-    <div class="complete-container">
-        <div class="bg-white/90 backdrop-blur-sm p-10 rounded-2xl w-full max-w-md shadow-2xl text-center">
+<body class="flex items-center justify-center p-4">
+    <div class="w-full max-w-sm">
+        <!-- Card -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
             <!-- Success Icon -->
-            <div class="success-icon mb-6">
-                <div class="inline-flex items-center justify-center w-24 h-24 bg-success-100 rounded-full mb-4">
-                    <i class="bi bi-check-circle-fill text-success-600 text-6xl"></i>
+            <div class="success-icon mb-4">
+                <div class="w-20 h-20 mx-auto bg-green-100 rounded-full flex items-center justify-center">
+                    <i class="bi bi-check-circle-fill text-green-600 text-5xl"></i>
                 </div>
             </div>
 
-            <!-- Success Message -->
-            <h2 class="text-2xl font-bold text-dark-900 mb-3">
-                Password Reset Successful!
-            </h2>
+            <h2 class="text-xl font-bold text-dark-800 mb-2">Password Reset Successful!</h2>
+            <p class="text-sm text-dark-600 mb-6">You can now login with your new password.</p>
 
-            <p class="text-dark-600 mb-6 text-sm">
-                Your password has been successfully updated. You can now login with your new password.
-            </p>
-
-            <!-- Security Info -->
-            <div class="bg-info-50 border border-info-200 rounded-lg p-4 mb-6 text-left">
-                <p class="text-xs text-info-700 font-semibold mb-2">
-                    <i class="bi bi-shield-check mr-1"></i>Security Tips:
-                </p>
-                <ul class="text-xs text-info-700 space-y-1 list-disc list-inside">
-                    <li>Keep your password confidential</li>
-                    <li>Don't share your password with anyone</li>
-                    <li>Use a unique password for this account</li>
-                    <li>Change your password periodically</li>
-                </ul>
-            </div>
-
-            <!-- Auto-redirect Notice -->
-            <div class="bg-light-50 border border-light-200 rounded-lg p-3 mb-6">
-                <p class="text-xs text-dark-600">
-                    <i class="bi bi-info-circle mr-1"></i>
-                    Redirecting to login page in <span class="countdown" id="countdown">5</span> seconds...
-                </p>
+            <!-- Redirect Notice -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4 text-xs text-blue-700">
+                <i class="bi bi-info-circle mr-1"></i>
+                Redirecting to login in <span class="font-bold" id="countdown">5</span> seconds...
             </div>
 
             <!-- Login Button -->
-            <a href="{% url 'consumers:staff_login' %}"
-               class="block w-full btn-primary py-3 rounded-lg font-medium transition-all duration-200 hover:shadow-lg">
-                <i class="bi bi-box-arrow-in-right mr-2"></i>
-                Go to Login Page
+            <a href="{% url 'consumers:staff_login' %}" class="block w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg transition-colors">
+                <i class="bi bi-box-arrow-in-right mr-1"></i> Go to Login
             </a>
+        </div>
 
-            <!-- Logo -->
-            <div class="mt-6 pt-6 border-t border-light-200">
-                <img src="{% static 'consumers/images/logo.jpg' %}"
-                     alt="Logo"
-                     class="w-16 h-16 rounded-full object-cover mx-auto opacity-80">
-                <p class="text-xs text-dark-500 mt-2">Balilihan Waterworks</p>
-            </div>
+        <!-- Logo -->
+        <div class="text-center mt-6">
+            <img src="{% static 'consumers/images/logo.jpg' %}" alt="Logo" class="w-12 h-12 rounded-lg mx-auto opacity-80">
+            <p class="text-blue-200 text-xs mt-2">Balilihan Waterworks</p>
         </div>
     </div>
 
     <script>
-        // Auto-redirect countdown
         let countdown = 5;
-        const countdownElement = document.getElementById('countdown');
-
+        const el = document.getElementById('countdown');
         const timer = setInterval(() => {
             countdown--;
-            countdownElement.textContent = countdown;
-
+            el.textContent = countdown;
             if (countdown <= 0) {
                 clearInterval(timer);
                 window.location.href = "{% url 'consumers:staff_login' %}";
             }
         }, 1000);
-
-        // Optional: Allow user to click anywhere to redirect immediately
-        document.addEventListener('click', function(e) {
-            if (!e.target.closest('a')) {
-                clearInterval(timer);
-                window.location.href = "{% url 'consumers:staff_login' %}";
-            }
-        });
     </script>
 </body>
 </html>
