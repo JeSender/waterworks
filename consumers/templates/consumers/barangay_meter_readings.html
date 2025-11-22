@@ -36,37 +36,6 @@
     </div>
 {% endif %}
 
-<!-- Bulk Confirmation Workflow -->
-<form id="bulk-confirm-form" method="post" action="{% url 'consumers:confirm_selected_readings' barangay.id %}" class="mb-6">
-    {% csrf_token %}
-    <div class="bg-orange-50 border border-orange-200 rounded-lg p-4">
-        <div class="flex items-center gap-4">
-            <!-- Select All Checkbox -->
-            <div class="flex items-center gap-2">
-                <input type="checkbox"
-                       id="select-all"
-                       onclick="toggleAllCheckboxes(this)"
-                       class="w-5 h-5 text-orange-600 bg-white border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer">
-                <label for="select-all" class="text-sm font-medium text-gray-700 cursor-pointer select-none">
-                    Select All Pending
-                </label>
-            </div>
-
-            <!-- Confirm Selected Button -->
-            <button type="submit"
-                    onclick="return confirm('⚠️ Confirm selected readings? This will generate bills for all checked readings.')"
-                    class="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 text-sm inline-flex items-center">
-                <i class="bi bi-check-circle-fill mr-2"></i>Confirm Selected
-            </button>
-
-            <!-- Counter Display -->
-            <span id="selected-count" class="text-sm text-gray-600 ml-auto">
-                <span class="font-semibold" id="count-number">0</span> selected
-            </span>
-        </div>
-    </div>
-</form>
-
 <!-- Search Filter -->
 <div class="mb-4 flex items-center gap-3">
     <div class="flex-1 relative">
@@ -96,8 +65,6 @@
         <table class="w-full">
             <thead class="bg-gray-100 border-b border-gray-200">
                 <tr>
-                    <!-- Checkbox Column -->
-                    <th class="px-3 py-3 w-12"></th>
                     <!-- Data Columns -->
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         ID Number
@@ -130,20 +97,6 @@
                     <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.consumption and item.consumption > 100 %}bg-red-50{% endif %}"
                         data-consumer-name="{{ item.consumer.first_name|lower }} {{ item.consumer.last_name|lower }}"
                         data-consumer-id="{{ item.display_id|lower }}">
-                        <!-- Checkbox Column -->
-                        <td class="px-3 py-2 text-center">
-                            {% if item.reading and not item.reading.is_confirmed %}
-                                <input type="checkbox"
-                                       name="reading_ids"
-                                       value="{{ item.reading.id }}"
-                                       class="row-checkbox w-4 h-4 text-orange-600 bg-white border-gray-300 rounded focus:ring-2 focus:ring-orange-500 cursor-pointer">
-                            {% else %}
-                                <input type="checkbox"
-                                       disabled
-                                       class="w-4 h-4 bg-gray-100 border-gray-300 rounded cursor-not-allowed opacity-50">
-                            {% endif %}
-                        </td>
-
                         <!-- ID Number -->
                         <td class="px-4 py-2">
                             <span class="text-sm font-semibold text-gray-800">{{ item.display_id }}</span>
@@ -234,7 +187,7 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="9" class="px-4 py-8 text-center text-gray-500 text-sm">
+                        <td colspan="8" class="px-4 py-8 text-center text-gray-500 text-sm">
                             <i class="bi bi-inbox text-3xl mb-2 block text-gray-400"></i>
                             No consumers found in this barangay.
                         </td>
@@ -278,56 +231,9 @@
 <!-- JavaScript: Enhanced Functionality -->
 <script>
 /**
- * Toggle all checkboxes (only enabled and visible ones)
- */
-function toggleAllCheckboxes(source) {
-    const checkboxes = Array.from(document.querySelectorAll('.row-checkbox:not([disabled])'))
-        .filter(cb => cb.closest('tr').style.display !== 'none');
-    checkboxes.forEach(cb => cb.checked = source.checked);
-    updateSelectedCount();
-}
-
-/**
- * Update selected count display
- */
-function updateSelectedCount() {
-    const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled]):checked');
-    const count = checkboxes.length;
-    document.getElementById('count-number').textContent = count;
-
-    // Update "Select All" checkbox state
-    const allCheckboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
-    const selectAllCheckbox = document.getElementById('select-all');
-    if (allCheckboxes.length > 0) {
-        selectAllCheckbox.checked = count === allCheckboxes.length;
-        selectAllCheckbox.indeterminate = count > 0 && count < allCheckboxes.length;
-    }
-}
-
-/**
  * Initialize on page load
  */
 document.addEventListener('DOMContentLoaded', function() {
-    const checkboxes = document.querySelectorAll('.row-checkbox:not([disabled])');
-
-    // Add change listener to each checkbox
-    checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateSelectedCount);
-    });
-
-    // Initial count
-    updateSelectedCount();
-
-    // Form submission validation
-    document.getElementById('bulk-confirm-form').addEventListener('submit', function(e) {
-        const checkedCount = document.querySelectorAll('.row-checkbox:not([disabled]):checked').length;
-        if (checkedCount === 0) {
-            e.preventDefault();
-            alert('⚠️ Please select at least one reading to confirm.');
-            return false;
-        }
-    });
-
     // Search functionality
     const searchInput = document.getElementById('search-consumer');
     if (searchInput) {
@@ -350,7 +256,6 @@ function filterConsumers() {
     const rows = document.querySelectorAll('tbody tr[data-consumer-name]');
 
     let visibleCount = 0;
-    let visiblePendingCount = 0;
 
     rows.forEach(row => {
         const consumerName = row.getAttribute('data-consumer-name');
@@ -359,12 +264,6 @@ function filterConsumers() {
         if (consumerName.includes(filter) || consumerId.includes(filter)) {
             row.style.display = '';
             visibleCount++;
-
-            // Count visible pending checkboxes
-            const checkbox = row.querySelector('.row-checkbox:not([disabled])');
-            if (checkbox) {
-                visiblePendingCount++;
-            }
         } else {
             row.style.display = 'none';
         }
@@ -372,9 +271,6 @@ function filterConsumers() {
 
     // Update visible count display
     updateVisibleCount(visibleCount, rows.length);
-
-    // Update "Select All" to only select visible rows
-    updateSelectAllForVisibleRows();
 }
 
 /**
@@ -399,26 +295,6 @@ function updateVisibleCount(visible, total) {
         emptyRow.style.display = '';
     } else if (emptyRow) {
         emptyRow.style.display = 'none';
-    }
-}
-
-/**
- * Update "Select All" to work with filtered results
- */
-function updateSelectAllForVisibleRows() {
-    const selectAllCheckbox = document.getElementById('select-all');
-    const visibleCheckboxes = Array.from(document.querySelectorAll('.row-checkbox:not([disabled])'))
-        .filter(cb => cb.closest('tr').style.display !== 'none');
-
-    if (visibleCheckboxes.length > 0) {
-        const allChecked = visibleCheckboxes.every(cb => cb.checked);
-        const someChecked = visibleCheckboxes.some(cb => cb.checked);
-
-        selectAllCheckbox.checked = allChecked;
-        selectAllCheckbox.indeterminate = someChecked && !allChecked;
-    } else {
-        selectAllCheckbox.checked = false;
-        selectAllCheckbox.indeterminate = false;
     }
 }
 
