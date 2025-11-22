@@ -52,17 +52,6 @@
         </div>
     </div>
 
-    <!-- Bulk Action Button -->
-    <form method="post" action="{% url 'consumers:confirm_all_readings_global' %}" style="display: inline;">
-        {% csrf_token %}
-        <button
-            type="submit"
-            onclick="return confirm('⚠️ Are you sure you want to confirm ALL unconfirmed readings across all barangays? This will generate bills for all pending readings.')"
-            class="px-6 py-2 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-semibold rounded-lg shadow-md transition-all duration-150 text-sm whitespace-nowrap"
-        >
-            <i class="bi bi-check-circle-fill mr-2"></i>Confirm All Readings
-        </button>
-    </form>
 </div>
 
 <!-- Data Table: High-Density Professional Layout -->
