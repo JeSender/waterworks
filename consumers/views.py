@@ -867,6 +867,63 @@ def forgot_password_request(request):
     })
 
 
+def forgot_username(request):
+    """
+    Username recovery page - allows users to recover their username via email or full name.
+    """
+    recovered_username = None
+    recovery_method = None
+
+    if request.method == "POST":
+        email = request.POST.get('email', '').strip()
+        first_name = request.POST.get('first_name', '').strip()
+        last_name = request.POST.get('last_name', '').strip()
+
+        if email:
+            # Try to find user by email
+            users = User.objects.filter(email__iexact=email, is_staff=True)
+            if users.exists():
+                if users.count() == 1:
+                    recovered_username = users.first().username
+                    recovery_method = 'email'
+                    messages.success(request, f"Username found for email: {email}")
+                else:
+                    # Multiple users with same email
+                    usernames = [u.username for u in users]
+                    recovered_username = ", ".join(usernames)
+                    recovery_method = 'email'
+                    messages.success(request, f"Multiple accounts found for this email.")
+            else:
+                messages.error(request, "No staff account found with that email address.")
+
+        elif first_name and last_name:
+            # Try to find user by full name
+            users = User.objects.filter(
+                first_name__iexact=first_name,
+                last_name__iexact=last_name,
+                is_staff=True
+            )
+            if users.exists():
+                if users.count() == 1:
+                    recovered_username = users.first().username
+                    recovery_method = 'name'
+                    messages.success(request, f"Username found for {first_name} {last_name}")
+                else:
+                    usernames = [u.username for u in users]
+                    recovered_username = ", ".join(usernames)
+                    recovery_method = 'name'
+                    messages.success(request, f"Multiple accounts found with this name.")
+            else:
+                messages.error(request, "No staff account found with that name.")
+        else:
+            messages.error(request, "Please provide either an email or your full name.")
+
+    return render(request, 'consumers/forgot_username.html', {
+        'recovered_username': recovered_username,
+        'recovery_method': recovery_method
+    })
+
+
 def password_reset_confirm(request, token):
     """
     Confirm password reset with token and set new password.

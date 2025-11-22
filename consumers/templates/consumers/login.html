@@ -103,11 +103,16 @@
                     Login
                 </button>
 
-                <!-- Forgot Password Link -->
-                <div class="text-center mt-3">
-                    <a href="{% url 'consumers:forgot_password' %}" class="text-sm text-dark-900 hover:text-primary-700 font-medium transition-colors bg-white/60 px-4 py-2 rounded-lg inline-block hover:bg-white/80">
-                        <i class="bi bi-key mr-1"></i>Forgot Password?
-                    </a>
+                <!-- Account Recovery Links -->
+                <div class="text-center mt-3 space-y-2">
+                    <div class="flex flex-col sm:flex-row gap-2 justify-center">
+                        <a href="{% url 'consumers:forgot_password' %}" class="text-sm text-dark-900 hover:text-primary-700 font-medium transition-colors bg-white/60 px-4 py-2 rounded-lg inline-block hover:bg-white/80">
+                            <i class="bi bi-key mr-1"></i>Forgot Password?
+                        </a>
+                        <a href="{% url 'consumers:forgot_username' %}" class="text-sm text-dark-900 hover:text-primary-700 font-medium transition-colors bg-white/60 px-4 py-2 rounded-lg inline-block hover:bg-white/80">
+                            <i class="bi bi-person-question mr-1"></i>Forgot Username?
+                        </a>
+                    </div>
                 </div>
             </form>
 

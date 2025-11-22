@@ -14,6 +14,7 @@ urlpatterns = [
 
     # Password Recovery
     path('forgot-password/', views.forgot_password_request, name='forgot_password'),
+    path('forgot-username/', views.forgot_username, name='forgot_username'),
     path('reset-password/<str:token>/', views.password_reset_confirm, name='password_reset_confirm'),
     path('reset-complete/', views.password_reset_complete, name='password_reset_complete'),
 
