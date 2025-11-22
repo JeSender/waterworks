@@ -108,6 +108,14 @@ def api_submit_reading(request):
         except Consumer.DoesNotExist:
             return JsonResponse({'error': 'Consumer not found'}, status=404)
 
+        # Check if consumer is disconnected - reject meter reading submission
+        if consumer.status == 'disconnected':
+            return JsonResponse({
+                'error': 'Consumer is disconnected',
+                'message': f'{consumer.first_name} {consumer.last_name} is currently disconnected. Meter reading not allowed.',
+                'consumer_status': 'disconnected'
+            }, status=403)
+
         # Determine the reading date
         if reading_date_str:
             # Parse the date string if provided by the app
@@ -344,6 +352,8 @@ def api_consumers(request):
                 'account_number': consumer.account_number,
                 'name': f"{consumer.first_name} {consumer.last_name}",
                 'serial_number': consumer.serial_number,
+                'status': consumer.status,  # 'active' or 'disconnected'
+                'is_active': consumer.status == 'active',  # Boolean for easy checking
                 # NEW: Add the latest confirmed reading value to the response
                 'latest_confirmed_reading': latest_confirmed_reading_value
             })
