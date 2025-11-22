@@ -2111,8 +2111,8 @@ def confirm_all_readings(request, barangay_id):
             # Get system settings and determine rate based on usage type
             setting = SystemSetting.objects.first()
             if setting:
-                # Use appropriate rate based on consumer's usage type
-                if reading.consumer.usage_type == 'commercial':
+                # Use appropriate rate based on consumer's usage type (case-insensitive)
+                if reading.consumer.usage_type and reading.consumer.usage_type.lower() == 'commercial':
                     rate = setting.commercial_rate_per_cubic
                 else:  # residential or default
                     rate = setting.residential_rate_per_cubic
@@ -2143,10 +2143,14 @@ def confirm_all_readings(request, barangay_id):
             reading.is_confirmed = True
             reading.save()
             success_count += 1
-        except Exception:
+        except Exception as e:
+            # Log the error for debugging
+            import logging
+            logging.error(f"Error confirming reading {reading.id}: {str(e)}")
             continue
 
-    messages.success(request, f"✅ {success_count} readings confirmed.")
+    if success_count > 0:
+        messages.success(request, f"✅ {success_count} readings confirmed and bills generated.")
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
 
@@ -2477,6 +2481,7 @@ def confirm_selected_readings(request, barangay_id):
     success_count = 0
 
     # Process selected readings
+    error_count = 0
     for reading_id in reading_ids:
         try:
             reading = MeterReading.objects.get(id=reading_id)
@@ -2490,27 +2495,40 @@ def confirm_selected_readings(request, barangay_id):
                 reading_date__lt=reading.reading_date
             ).order_by('-reading_date').first()
 
-            if not prev:
-                first = MeterReading.objects.filter(consumer=consumer).order_by('reading_date').first()
-                if not first or first.id == reading.id:
+            # Calculate consumption
+            if prev:
+                if reading.reading_value < prev.reading_value:
                     continue
-                prev = first
+                cons = reading.reading_value - prev.reading_value
+            else:
+                # First reading - use reading value as consumption
+                cons = reading.reading_value
 
-            if reading.reading_value < prev.reading_value:
-                continue
-
+            # Get system settings
             setting = SystemSetting.objects.first()
-            rate = setting.rate_per_cubic if setting else Decimal('22.50')
-            fixed = Decimal('50.00')
-            cons = reading.reading_value - prev.reading_value
+            if setting:
+                # Use appropriate rate based on consumer's usage type (case-insensitive)
+                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
+                billing_day = setting.billing_day_of_month
+                due_day = setting.due_day_of_month
+            else:
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
+                billing_day = 1
+                due_day = 20
+
             total = (Decimal(cons) * rate) + fixed
 
             Bill.objects.create(
                 consumer=consumer,
                 previous_reading=prev,
                 current_reading=reading,
-                billing_period=reading.reading_date.replace(day=1),
-                due_date=reading.reading_date.replace(day=20),
+                billing_period=reading.reading_date.replace(day=billing_day),
+                due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
                 rate_per_cubic=rate,
                 fixed_charge=fixed,
@@ -2520,10 +2538,16 @@ def confirm_selected_readings(request, barangay_id):
             reading.is_confirmed = True
             reading.save()
             success_count += 1
-        except Exception:
+        except Exception as e:
+            import logging
+            logging.error(f"Error confirming reading {reading_id}: {str(e)}")
+            error_count += 1
             continue
 
-    messages.success(request, f"✅ {success_count} readings confirmed.")
+    if success_count > 0:
+        messages.success(request, f"✅ {success_count} readings confirmed and bills generated.")
+    if error_count > 0:
+        messages.warning(request, f"⚠️ {error_count} readings could not be processed.")
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
 # consumers/views.py
