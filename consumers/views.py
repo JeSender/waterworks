@@ -2903,11 +2903,15 @@ def inquire(request):
     # Load all active consumers directly for faster transaction
     consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok').order_by('last_name', 'first_name')
 
-    # Build consumer bills dictionary
+    # Build consumer bills dictionary and track consumers with any bills
     consumer_bills = {}
+    consumers_with_bills = set()
     for c in consumers:
         bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
         consumer_bills[c.id] = bill
+        # Check if consumer has ever had any bills
+        if c.bills.exists():
+            consumers_with_bills.add(c.id)
 
     selected_consumer = None
     latest_bill = None
@@ -2922,6 +2926,7 @@ def inquire(request):
     context = {
         'consumers': consumers,
         'consumer_bills': consumer_bills,
+        'consumers_with_bills': consumers_with_bills,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
         'total_pending_bills': total_pending_bills,
