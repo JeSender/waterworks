@@ -165,22 +165,21 @@
                             {% endif %}
                         </td>
 
-                        <!-- Actions: Icon-Only Buttons with Tooltips -->
+                        <!-- Actions: Text Button for Easy Navigation -->
                         <td class="px-4 py-2 text-center">
                             {% if item.reading and not item.reading.is_confirmed %}
                                 <a href="{% url 'consumers:confirm_reading' item.reading.id %}"
                                    onclick="return confirm('Confirm billing for {{ item.display_id }}?\n\nConsumer: {{ item.consumer.first_name }} {{ item.consumer.last_name }}\nConsumption: {{ item.consumption|default:"N/A" }} m³')"
-                                   class="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-150"
-                                   title="Confirm & Generate Bill">
-                                    <i class="bi bi-check-circle-fill text-lg"></i>
+                                   class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors duration-150">
+                                    Confirm
                                 </a>
                             {% elif item.reading %}
-                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-400" title="Already Confirmed">
-                                    <i class="bi bi-check-circle text-lg"></i>
+                                <span class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg cursor-not-allowed">
+                                    Confirmed
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-300" title="No Reading Available">
-                                    <i class="bi bi-dash-circle text-lg"></i>
+                                <span class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-gray-400 bg-gray-50 rounded-lg cursor-not-allowed">
+                                    No Reading
                                 </span>
                             {% endif %}
                         </td>
