@@ -5,110 +5,110 @@
 {% block title %}Meter Reading Overview{% endblock %}
 
 {% block main_content %}
-<!-- Header: Compact & Minimal -->
+<!-- Header -->
 <div class="mb-6">
-    <h1 class="text-2xl font-bold text-gray-800">Meter Reading Overview</h1>
-    <p class="text-sm text-gray-500 mt-1">As of {{ current_month|date:"F Y" }}</p>
+    <h1 class="text-2xl font-bold text-dark-900">Meter Reading Overview</h1>
+    <p class="text-base text-dark-500 mt-1">As of {{ current_month|date:"F Y" }}</p>
 </div>
 
 <!-- Messages -->
 {% if messages %}
-    <div class="mb-4 space-y-2">
+    <div class="mb-6 space-y-2">
         {% for message in messages %}
-            <div class="flex items-center justify-between p-4 rounded-lg border {% if message.tags == 'success' %}bg-green-50 border-green-200 text-green-800{% elif message.tags == 'error' %}bg-red-50 border-red-200 text-red-800{% elif message.tags == 'warning' %}bg-yellow-50 border-yellow-200 text-yellow-800{% else %}bg-blue-50 border-blue-200 text-blue-800{% endif %}">
-                <span class="text-sm font-medium">{{ message }}</span>
-                <button onclick="this.parentElement.remove()" class="text-gray-500 hover:text-gray-700">
+            <div class="flex items-center justify-between p-4 rounded-xl border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% elif message.tags == 'warning' %}bg-warning-50 border-warning-200 text-warning-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %}">
+                <span class="text-base font-medium">{{ message }}</span>
+                <button onclick="this.parentElement.remove()" class="text-dark-500 hover:text-dark-700">
                     <i class="bi bi-x-lg"></i>
                 </button>
             </div>
         {% endfor %}
     </div>
-    
 {% endif %}
 
-<!-- Consolidated Search & Action Controls -->
-<div class="mb-6 flex flex-col md:flex-row gap-3 items-start md:items-center">
-    <!-- Search Controls Group -->
-    <div class="flex-1 flex flex-col sm:flex-row gap-2 w-full md:w-auto">
-        <input
-            type="text"
-            class="flex-1 px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
-            placeholder="Search by barangay name..."
-            id="search-barangay"
-        >
-        <div class="flex gap-2">
-            <button
-                onclick="filterBarangays()"
-                class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm"
+<!-- Search & Action Controls -->
+<div class="bg-white rounded-xl p-6 shadow-md mb-6">
+    <div class="flex flex-col md:flex-row gap-4 items-start md:items-center">
+        <!-- Search Controls Group -->
+        <div class="flex-1 flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <input
+                type="text"
+                class="flex-1 px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-base"
+                placeholder="Search by barangay name..."
+                id="search-barangay"
             >
-                <i class="bi bi-search mr-1"></i>Search
-            </button>
-            <button
-                onclick="resetFilter()"
-                class="px-5 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm"
-            >
-                <i class="bi bi-arrow-counterclockwise mr-1"></i>Reset
-            </button>
+            <div class="flex gap-3">
+                <button
+                    onclick="filterBarangays()"
+                    class="btn-primary"
+                >
+                    <i class="bi bi-search"></i>Search
+                </button>
+                <button
+                    onclick="resetFilter()"
+                    class="btn-secondary"
+                >
+                    <i class="bi bi-arrow-counterclockwise"></i>Reset
+                </button>
+            </div>
         </div>
     </div>
-
 </div>
 
-<!-- Data Table: High-Density Professional Layout -->
-<div class="bg-white rounded-lg shadow-md overflow-hidden">
+<!-- Data Table -->
+<div class="bg-white rounded-xl shadow-md overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
-            <thead class="bg-gray-100 border-b border-gray-200">
+            <thead class="bg-light-100 border-b border-light-200">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th class="px-4 py-4 text-left text-sm font-semibold text-dark-700 uppercase tracking-wider">
                         Barangay
                     </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th class="px-4 py-4 text-center text-sm font-semibold text-dark-700 uppercase tracking-wider">
                         Total Consumers
                     </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th class="px-4 py-4 text-center text-sm font-semibold text-dark-700 uppercase tracking-wider">
                         Ready to Confirm
                     </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                    <th class="px-4 py-4 text-center text-sm font-semibold text-dark-700 uppercase tracking-wider">
                         Not Updated
                     </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider w-24">
+                    <th class="px-4 py-4 text-center text-sm font-semibold text-dark-700 uppercase tracking-wider w-24">
                         Actions
                     </th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-gray-200" id="barangay-table-body">
+            <tbody class="divide-y divide-light-200" id="barangay-table-body">
                 {% for item in barangay_data %}
-                    <tr class="hover:bg-gray-50 transition-colors duration-100" data-barangay="{{ item.barangay.name|lower }}">
+                    <tr class="hover:bg-light-50 transition-colors duration-100" data-barangay="{{ item.barangay.name|lower }}">
                         <!-- Barangay Name -->
-                        <td class="px-4 py-3">
-                            <span class="text-sm font-semibold text-gray-800">{{ item.barangay.name }}</span>
+                        <td class="px-4 py-4">
+                            <span class="text-base font-semibold text-dark-800">{{ item.barangay.name }}</span>
                         </td>
 
                         <!-- Total Consumers -->
-                        <td class="px-4 py-3 text-center">
-                            <span class="text-sm text-gray-700">{{ item.total_consumers }}</span>
+                        <td class="px-4 py-4 text-center">
+                            <span class="text-base text-dark-700">{{ item.total_consumers }}</span>
                         </td>
 
                         <!-- Ready to Confirm -->
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full bg-green-100 text-green-800">
+                        <td class="px-4 py-4 text-center">
+                            <span class="badge badge-success">
                                 {{ item.ready_to_confirm }}
                             </span>
                         </td>
 
                         <!-- Not Updated -->
-                        <td class="px-4 py-3 text-center">
-                            <span class="inline-flex items-center justify-center px-3 py-1 text-xs font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                        <td class="px-4 py-4 text-center">
+                            <span class="badge badge-warning">
                                 {{ item.not_yet_updated }}
                             </span>
                         </td>
 
-                        <!-- Actions: Text Button for Easy Navigation -->
-                        <td class="px-4 py-3 text-center">
+                        <!-- Actions -->
+                        <td class="px-4 py-4 text-center">
                             <a
                                 href="{% url 'consumers:barangay_meter_readings' item.barangay.id %}"
-                                class="inline-flex items-center justify-center px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg shadow-sm transition-colors duration-150"
+                                class="btn-primary btn-sm"
                             >
                                 View
                             </a>
@@ -116,8 +116,8 @@
                     </tr>
                 {% empty %}
                     <tr>
-                        <td colspan="5" class="px-4 py-8 text-center text-gray-500 text-sm">
-                            <i class="bi bi-inbox text-3xl mb-2 block text-gray-400"></i>
+                        <td colspan="5" class="px-4 py-12 text-center text-dark-500 text-base">
+                            <i class="bi bi-inbox text-4xl mb-3 block text-dark-400"></i>
                             No barangays found.
                         </td>
                     </tr>
@@ -128,34 +128,31 @@
 
     <!-- Table Footer: Summary Statistics -->
     {% if barangay_data %}
-    <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
-        <div class="flex flex-wrap gap-6 text-xs text-gray-600">
+    <div class="bg-light-50 px-6 py-4 border-t border-light-200">
+        <div class="flex flex-wrap gap-6 text-base text-dark-600">
             <div>
-                <span class="font-semibold text-gray-700">Total Barangays:</span>
+                <span class="font-semibold text-dark-700">Total Barangays:</span>
                 <span class="ml-1">{{ total_barangays }}</span>
             </div>
             <div>
-                <span class="font-semibold text-gray-700">Total Consumers:</span>
+                <span class="font-semibold text-dark-700">Total Consumers:</span>
                 <span class="ml-1">{{ total_consumers_sum }}</span>
             </div>
             <div>
-                <span class="font-semibold text-gray-700">Total Ready:</span>
-                <span class="ml-1 text-green-700 font-semibold">{{ total_ready_sum }}</span>
+                <span class="font-semibold text-dark-700">Total Ready:</span>
+                <span class="ml-1 text-success-700 font-semibold">{{ total_ready_sum }}</span>
             </div>
             <div>
-                <span class="font-semibold text-gray-700">Total Pending:</span>
-                <span class="ml-1 text-yellow-700 font-semibold">{{ total_pending_sum }}</span>
+                <span class="font-semibold text-dark-700">Total Pending:</span>
+                <span class="ml-1 text-warning-700 font-semibold">{{ total_pending_sum }}</span>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- JavaScript: Enhanced Functionality -->
+<!-- JavaScript -->
 <script>
-/**
- * Filter barangays by search input
- */
 function filterBarangays() {
     const input = document.getElementById('search-barangay');
     const filter = input.value.toLowerCase().trim();
@@ -172,16 +169,12 @@ function filterBarangays() {
         }
     });
 
-    // Show "no results" message if needed
     const emptyRow = document.querySelector('#barangay-table-body tr:not([data-barangay])');
     if (emptyRow) {
         emptyRow.style.display = visibleCount === 0 ? '' : 'none';
     }
 }
 
-/**
- * Reset filter and show all barangays
- */
 function resetFilter() {
     document.getElementById('search-barangay').value = '';
     const rows = document.querySelectorAll('#barangay-table-body tr');
@@ -190,42 +183,10 @@ function resetFilter() {
     });
 }
 
-/**
- * Allow Enter key to trigger search
- */
 document.getElementById('search-barangay').addEventListener('keypress', function(e) {
     if (e.key === 'Enter') {
         filterBarangays();
     }
 });
-
-/**
- * Helper function to get CSRF token (if needed for AJAX)
- */
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
 </script>
-
-<!-- Custom Styles for Animation -->
-<style>
-@keyframes spin {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-.animate-spin {
-    animation: spin 1s linear infinite;
-}
-</style>
 {% endblock %}

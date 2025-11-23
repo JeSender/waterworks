@@ -9,17 +9,17 @@
     <!-- Page Header -->
     <div class="mb-6">
         <h2 class="text-2xl font-bold text-dark-900">System Settings</h2>
-        <p class="text-dark-500 text-sm mt-1">Configure water rates, reading schedule, and billing cycle</p>
+        <p class="text-dark-500 text-base mt-1">Configure water rates, reading schedule, and billing cycle</p>
     </div>
 
     <!-- Success/Error Messages -->
     {% if messages %}
     <div class="mb-6">
         {% for message in messages %}
-        <div class="px-4 py-3 rounded-lg border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %} mb-3">
+        <div class="px-4 py-3 rounded-xl border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %} mb-3">
             <div class="flex items-start gap-2">
                 <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% else %}bi-info-circle-fill{% endif %} text-lg"></i>
-                <span class="text-sm font-medium">{{ message }}</span>
+                <span class="text-base font-medium">{{ message }}</span>
             </div>
         </div>
         {% endfor %}
@@ -34,222 +34,204 @@
             <div class="lg:col-span-2 space-y-6">
 
                 <!-- CARD 1: Water Consumption Rates -->
-                <div class="bg-white rounded-lg border border-light-300 shadow-sm">
-                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
-                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
-                            <i class="bi bi-droplet-fill text-primary-600"></i>
-                            Water Consumption Rates
-                        </h3>
-                    </div>
-                    <div class="px-5 py-5 space-y-5">
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-                            <!-- Residential Rate -->
-                            <div>
-                                <label for="residential_rate_per_cubic" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Residential Rate (₱/m³)
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        name="residential_rate_per_cubic"
-                                        id="residential_rate_per_cubic"
-                                        value="{{ setting.residential_rate_per_cubic }}"
-                                        class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                        required
-                                        oninput="updatePreview()">
-                                </div>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-6">
+                        <i class="bi bi-droplet-fill text-primary-600"></i>
+                        Water Consumption Rates
+                    </h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                        <!-- Residential Rate -->
+                        <div>
+                            <label for="residential_rate_per_cubic" class="block text-base font-medium text-dark-700 mb-2">
+                                Residential Rate (₱/m³)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-dark-500 text-base font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    name="residential_rate_per_cubic"
+                                    id="residential_rate_per_cubic"
+                                    value="{{ setting.residential_rate_per_cubic }}"
+                                    class="w-full pl-10 pr-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
                             </div>
+                        </div>
 
-                            <!-- Commercial Rate -->
-                            <div>
-                                <label for="commercial_rate_per_cubic" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Commercial Rate (₱/m³)
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        name="commercial_rate_per_cubic"
-                                        id="commercial_rate_per_cubic"
-                                        value="{{ setting.commercial_rate_per_cubic }}"
-                                        class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                        required
-                                        oninput="updatePreview()">
-                                </div>
+                        <!-- Commercial Rate -->
+                        <div>
+                            <label for="commercial_rate_per_cubic" class="block text-base font-medium text-dark-700 mb-2">
+                                Commercial Rate (₱/m³)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-dark-500 text-base font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0.01"
+                                    name="commercial_rate_per_cubic"
+                                    id="commercial_rate_per_cubic"
+                                    value="{{ setting.commercial_rate_per_cubic }}"
+                                    class="w-full pl-10 pr-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
                             </div>
+                        </div>
 
-                            <!-- Fixed Charge -->
-                            <div>
-                                <label for="fixed_charge" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Fixed Monthly Charge (₱)
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0"
-                                        name="fixed_charge"
-                                        id="fixed_charge"
-                                        value="{{ setting.fixed_charge }}"
-                                        class="w-full pl-8 pr-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                        required
-                                        oninput="updatePreview()">
-                                </div>
+                        <!-- Fixed Charge -->
+                        <div>
+                            <label for="fixed_charge" class="block text-base font-medium text-dark-700 mb-2">
+                                Fixed Monthly Charge (₱)
+                            </label>
+                            <div class="relative">
+                                <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-dark-500 text-base font-semibold">₱</span>
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    name="fixed_charge"
+                                    id="fixed_charge"
+                                    value="{{ setting.fixed_charge }}"
+                                    class="w-full pl-10 pr-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                    required
+                                    oninput="updatePreview()">
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- CARD 2: Reading Schedule -->
-                <div class="bg-white rounded-lg border border-light-300 shadow-sm">
-                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
-                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
-                            <i class="bi bi-speedometer2 text-info-600"></i>
-                            Reading Schedule
-                        </h3>
-                        <p class="text-xs text-dark-500 mt-1">Define when field staff should submit meter readings</p>
-                    </div>
-                    <div class="px-5 py-5">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <!-- Reading Start Day -->
-                            <div>
-                                <label for="reading_start_day" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Reading Period Start
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="28"
-                                        name="reading_start_day"
-                                        id="reading_start_day"
-                                        value="{{ setting.reading_start_day|default:1 }}"
-                                        class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
-                                        required
-                                        oninput="updateTimeline()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
-                                </div>
-                                <p class="mt-1 text-xs text-dark-500">
-                                    <i class="bi bi-info-circle mr-1"></i>
-                                    Day when reading collection starts
-                                </p>
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
+                        <i class="bi bi-speedometer2 text-info-600"></i>
+                        Reading Schedule
+                    </h3>
+                    <p class="text-base text-dark-500 mb-6">Define when field staff should submit meter readings</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Reading Start Day -->
+                        <div>
+                            <label for="reading_start_day" class="block text-base font-medium text-dark-700 mb-2">
+                                Reading Period Start
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="reading_start_day"
+                                    id="reading_start_day"
+                                    value="{{ setting.reading_start_day|default:1 }}"
+                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
+                                    required
+                                    oninput="updateTimeline()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
                             </div>
-
-                            <!-- Reading End Day -->
-                            <div>
-                                <label for="reading_end_day" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Reading Period End
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="28"
-                                        name="reading_end_day"
-                                        id="reading_end_day"
-                                        value="{{ setting.reading_end_day|default:10 }}"
-                                        class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
-                                        required
-                                        oninput="updateTimeline()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
-                                </div>
-                                <p class="mt-1 text-xs text-dark-500">
-                                    <i class="bi bi-info-circle mr-1"></i>
-                                    Deadline for submitting readings
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 3: Billing Schedule -->
-                <div class="bg-white rounded-lg border border-light-300 shadow-sm">
-                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
-                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
-                            <i class="bi bi-calendar-event text-success-600"></i>
-                            Billing Schedule
-                        </h3>
-                        <p class="text-xs text-dark-500 mt-1">Configure billing period and payment due dates</p>
-                    </div>
-                    <div class="px-5 py-5">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                            <!-- Billing Day -->
-                            <div>
-                                <label for="billing_day_of_month" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Billing Period Start
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="28"
-                                        name="billing_day_of_month"
-                                        id="billing_day_of_month"
-                                        value="{{ setting.billing_day_of_month }}"
-                                        class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
-                                        required
-                                        oninput="updateTimeline()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
-                                </div>
-                                <p class="mt-1 text-xs text-dark-500">
-                                    <i class="bi bi-info-circle mr-1"></i>
-                                    Date shown on bills as billing period start
-                                </p>
-                            </div>
-
-                            <!-- Due Day -->
-                            <div>
-                                <label for="due_day_of_month" class="block text-xs font-medium text-dark-700 mb-1">
-                                    Payment Due Date
-                                </label>
-                                <div class="relative">
-                                    <input
-                                        type="number"
-                                        min="1"
-                                        max="28"
-                                        name="due_day_of_month"
-                                        id="due_day_of_month"
-                                        value="{{ setting.due_day_of_month }}"
-                                        class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
-                                        required
-                                        oninput="updateTimeline()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
-                                </div>
-                                <p class="mt-1 text-xs text-dark-500">
-                                    <i class="bi bi-info-circle mr-1"></i>
-                                    Deadline for consumer payments
-                                </p>
-                            </div>
+                            <p class="mt-2 text-sm text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Day when reading collection starts
+                            </p>
                         </div>
 
-                        <div class="mt-4 p-3 bg-warning-50 border-l-4 border-warning-500 rounded">
-                            <p class="text-xs text-warning-800">
-                                <i class="bi bi-exclamation-triangle-fill mr-1"></i>
-                                <strong>Note:</strong> Days are limited to 1-28 to ensure consistency across all months.
+                        <!-- Reading End Day -->
+                        <div>
+                            <label for="reading_end_day" class="block text-base font-medium text-dark-700 mb-2">
+                                Reading Period End
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="reading_end_day"
+                                    id="reading_end_day"
+                                    value="{{ setting.reading_end_day|default:10 }}"
+                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
+                                    required
+                                    oninput="updateTimeline()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
+                            </div>
+                            <p class="mt-2 text-sm text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Deadline for submitting readings
                             </p>
                         </div>
                     </div>
                 </div>
 
+                <!-- CARD 3: Billing Schedule -->
+                <div class="bg-white rounded-xl shadow-md p-6">
+                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
+                        <i class="bi bi-calendar-event text-success-600"></i>
+                        Billing Schedule
+                    </h3>
+                    <p class="text-base text-dark-500 mb-6">Configure billing period and payment due dates</p>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <!-- Billing Day -->
+                        <div>
+                            <label for="billing_day_of_month" class="block text-base font-medium text-dark-700 mb-2">
+                                Billing Period Start
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="billing_day_of_month"
+                                    id="billing_day_of_month"
+                                    value="{{ setting.billing_day_of_month }}"
+                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
+                                    required
+                                    oninput="updateTimeline()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
+                            </div>
+                            <p class="mt-2 text-sm text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Date shown on bills as billing period start
+                            </p>
+                        </div>
+
+                        <!-- Due Day -->
+                        <div>
+                            <label for="due_day_of_month" class="block text-base font-medium text-dark-700 mb-2">
+                                Payment Due Date
+                            </label>
+                            <div class="relative">
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="28"
+                                    name="due_day_of_month"
+                                    id="due_day_of_month"
+                                    value="{{ setting.due_day_of_month }}"
+                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
+                                    required
+                                    oninput="updateTimeline()">
+                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
+                            </div>
+                            <p class="mt-2 text-sm text-dark-500">
+                                <i class="bi bi-info-circle mr-1"></i>
+                                Deadline for consumer payments
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 p-4 bg-warning-50 border-l-4 border-warning-500 rounded-xl">
+                        <p class="text-sm text-warning-800">
+                            <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                            <strong>Note:</strong> Days are limited to 1-28 to ensure consistency across all months.
+                        </p>
+                    </div>
+                </div>
+
                 <!-- Save Button -->
                 <div class="flex items-center justify-end gap-3">
-                    <button
-                        type="button"
-                        onclick="resetForm()"
-                        class="px-4 py-2 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
-                        <i class="bi bi-arrow-counterclockwise mr-1"></i>Reset
+                    <button type="button" onclick="resetForm()" class="btn-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i>Reset
                     </button>
-                    <button
-                        type="submit"
-                        class="px-6 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm"
-                        onclick="return confirmSave()">
-                        <i class="bi bi-save mr-1"></i>Save Settings
+                    <button type="submit" class="btn-primary" onclick="return confirmSave()">
+                        <i class="bi bi-save"></i>Save Settings
                     </button>
                 </div>
             </div>
@@ -258,14 +240,12 @@
             <div class="lg:col-span-1 space-y-6">
 
                 <!-- Billing Cycle Timeline -->
-                <div class="bg-white rounded-lg border border-light-300 shadow-sm sticky top-6">
-                    <div class="px-5 py-3 border-b border-light-200 bg-light-50">
-                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
-                            <i class="bi bi-diagram-3 text-primary-600"></i>
-                            Monthly Billing Cycle
-                        </h3>
-                    </div>
-                    <div class="px-5 py-4">
+                <div class="bg-white rounded-xl shadow-md sticky top-6 p-6">
+                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-6">
+                        <i class="bi bi-diagram-3 text-primary-600"></i>
+                        Monthly Billing Cycle
+                    </h3>
+                    <div>
                         <!-- Visual Timeline -->
                         <div class="space-y-4">
                             <!-- Step 1: Reading Period -->

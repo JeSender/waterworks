@@ -14,11 +14,11 @@
                     <i class="bi bi-credit-card-2-front-fill text-primary-600"></i>
                     Bill Inquiry & Payment
                 </h2>
-                <p class="text-dark-500 text-sm mt-1">Process consumer bill payments and generate receipts</p>
+                <p class="text-dark-500 text-base mt-1">Process consumer bill payments and generate receipts</p>
             </div>
             {% if total_pending_bills > 0 %}
-            <div class="px-4 py-2 bg-warning-100 border border-warning-300 rounded-lg">
-                <div class="text-xs text-warning-700 font-medium">Total Pending</div>
+            <div class="bg-white p-6 rounded-xl shadow-md">
+                <div class="text-sm text-warning-700 font-medium">Total Pending</div>
                 <div class="text-2xl font-bold text-warning-800">{{ total_pending_bills }}</div>
             </div>
             {% endif %}
@@ -44,15 +44,15 @@
 
     {% if not selected_consumer %}
     <!-- Consumer Selection Panel -->
-    <div class="bg-white rounded-xl border border-light-300 shadow-sm overflow-hidden">
+    <div class="bg-white rounded-xl shadow-md overflow-hidden">
         <!-- Header with Search -->
-        <div class="px-5 py-4 bg-gradient-to-r from-primary-600 to-primary-700">
-            <div class="flex items-center justify-between mb-3">
-                <h3 class="text-white font-bold flex items-center gap-2">
+        <div class="px-6 py-5 bg-gradient-to-r from-primary-600 to-primary-700">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-white font-bold text-base flex items-center gap-2">
                     <i class="bi bi-people-fill"></i>
                     Select Consumer
                 </h3>
-                <span class="px-3 py-1 bg-white/20 text-white text-xs font-semibold rounded-full">
+                <span class="px-4 py-1.5 bg-white/20 text-white text-sm font-semibold rounded-full">
                     {{ consumers|length }} Consumers
                 </span>
             </div>
@@ -62,10 +62,10 @@
                 <input type="text"
                        id="search-consumer"
                        placeholder="Search by name or ID number..."
-                       class="w-full pl-11 pr-4 py-3 text-sm bg-white border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-dark-400"
+                       class="w-full pl-12 pr-4 py-3 text-base bg-white border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-dark-400"
                        autofocus>
             </div>
-            <div class="mt-2 flex items-center justify-between text-xs text-white/80">
+            <div class="mt-3 flex items-center justify-between text-sm text-white/80">
                 <span>Showing <strong class="text-white" id="visible-count">{{ consumers|length }}</strong> consumers</span>
                 <button onclick="clearSearch()" class="hover:text-white transition-colors flex items-center gap-1">
                     <i class="bi bi-arrow-clockwise"></i>Clear
