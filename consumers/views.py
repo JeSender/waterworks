@@ -2084,8 +2084,8 @@ def load_puroks(request):
 
 
 def get_consumer_display_id(consumer):
-    """Returns formatted ID like 'bw-00001' based on consumer.id"""
-    return f"bw-{consumer.id:05d}"
+    """Returns the consumer's account number as the display ID"""
+    return consumer.account_number or f"bw-{consumer.id:05d}"
 
 
 
