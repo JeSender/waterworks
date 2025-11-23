@@ -198,15 +198,15 @@
 
         <!-- Table with scroll -->
         <div class="table-scroll flex-1 min-h-0">
-            <table class="w-full text-xs" id="consumerBillStatusTable">
+            <table class="w-full text-sm" id="consumerBillStatusTable">
                 <thead class="bg-light-50 sticky top-0 z-10">
                     <tr class="border-b border-light-200">
-                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">ID Number</th>
-                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Consumer Name</th>
-                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Barangay</th>
-                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Latest Bill Date</th>
-                        <th class="text-right text-xs font-semibold text-dark-700 py-1.5 px-2">Amount (PHP)</th>
-                        <th class="text-center text-xs font-semibold text-dark-700 py-1.5 px-2">Payment Status</th>
+                        <th class="text-left text-sm font-semibold text-dark-700 py-2 px-3">ID Number</th>
+                        <th class="text-left text-sm font-semibold text-dark-700 py-2 px-3">Consumer Name</th>
+                        <th class="text-left text-sm font-semibold text-dark-700 py-2 px-3">Barangay</th>
+                        <th class="text-left text-sm font-semibold text-dark-700 py-2 px-3">Latest Bill Date</th>
+                        <th class="text-right text-sm font-semibold text-dark-700 py-2 px-3">Amount (PHP)</th>
+                        <th class="text-center text-sm font-semibold text-dark-700 py-2 px-3">Payment Status</th>
                     </tr>
                 </thead>
                 <tbody id="consumerBillStatusBody" class="divide-y divide-light-200">
@@ -307,12 +307,12 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.className = 'hover:bg-light-50 transition-colors';
             row.innerHTML = `
-                <td class="py-1 px-2 font-semibold text-dark-900">${item.account_number}</td>
-                <td class="py-1 px-2 text-dark-700">${item.consumer_name}</td>
-                <td class="py-1 px-2 text-dark-700">${item.barangay}</td>
-                <td class="py-1 px-2 text-dark-700">${formatDate(item.latest_bill_date)}</td>
-                <td class="py-1 px-2 text-right font-semibold text-dark-900">${formatCurrency(item.latest_bill_amount)}</td>
-                <td class="py-1 px-2 text-center">${getStatusBadge(item.payment_status)}</td>
+                <td class="py-2 px-3 font-semibold text-dark-900">${item.account_number}</td>
+                <td class="py-2 px-3 text-dark-700">${item.consumer_name}</td>
+                <td class="py-2 px-3 text-dark-700">${item.barangay}</td>
+                <td class="py-2 px-3 text-dark-700">${formatDate(item.latest_bill_date)}</td>
+                <td class="py-2 px-3 text-right font-semibold text-dark-900">${formatCurrency(item.latest_bill_amount)}</td>
+                <td class="py-2 px-3 text-center">${getStatusBadge(item.payment_status)}</td>
             `;
             tableBody.appendChild(row);
         });
