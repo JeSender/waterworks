@@ -425,30 +425,31 @@ from decimal import Decimal # Import Decimal
 # ============================================================================
 # SYSTEM SETTINGS MODEL (Singleton)
 # ============================================================================
-# IMPORTANT: These settings configure billing rates and dates.
+# Configures billing rates, reading schedule, and billing cycle.
 #
-# BILLING SCHEDULE CLARIFICATION:
-# - billing_day_of_month: Sets the DAY shown on the bill's billing_period
-# - due_day_of_month: Sets the DAY shown on the bill's due_date
+# BILLING WORKFLOW:
+# 1. Reading Period: Field staff submit readings (reading_start_day to reading_end_day)
+# 2. Admin Confirmation: Admin reviews and confirms readings
+# 3. Bill Generation: Bill created instantly when reading is confirmed
+# 4. Payment Due: Consumer pays before due_day_of_month
 #
-# NOTE: These do NOT control WHEN bills are generated!
-# Bills are generated INSTANTLY when admin clicks "Confirm" on a meter reading.
-# These settings only affect the DATE VALUES written on the bill.
-#
-# FOR TESTING: You can test the full flow anytime:
-# 1. Submit meter reading from app
-# 2. Admin confirms reading → Bill created immediately
-# 3. Admin processes payment → Done!
+# FOR TESTING: You can test the full flow anytime - bills are generated
+# instantly when admin confirms a reading, regardless of schedule settings.
 # ============================================================================
 class SystemSetting(models.Model):
     """
-    System-wide configuration for water rates and billing.
+    System-wide configuration for water rates, reading schedule, and billing.
 
-    IMPORTANT: billing_day_of_month and due_day_of_month only affect
-    the DATES shown on bills, not WHEN bills are generated.
-    Bills are created instantly when a meter reading is confirmed.
+    The schedule fields help organize the monthly billing cycle:
+    - Reading period: When field staff should submit meter readings
+    - Billing period: The billing cycle start date shown on bills
+    - Due date: Payment deadline shown on bills
+
+    Bills are created INSTANTLY when admin confirms a reading.
     """
-    # Water consumption rates (per cubic meter)
+    # -------------------------
+    # WATER CONSUMPTION RATES
+    # -------------------------
     residential_rate_per_cubic = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -461,8 +462,6 @@ class SystemSetting(models.Model):
         default=Decimal('25.00'),
         help_text="Rate for commercial consumers (₱ / m³)"
     )
-
-    # Fixed monthly charge
     fixed_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
@@ -470,18 +469,35 @@ class SystemSetting(models.Model):
         help_text="Fixed charge added to every bill (₱)"
     )
 
-    # Billing date configuration (for display on bills only)
-    # NOTE: Does NOT control when bills are generated - that's instant on confirm
+    # -------------------------
+    # READING SCHEDULE
+    # -------------------------
+    # Defines the window when field staff should submit meter readings
+    reading_start_day = models.IntegerField(
+        default=1,
+        help_text="Day of month when reading period starts (1-28)"
+    )
+    reading_end_day = models.IntegerField(
+        default=10,
+        help_text="Day of month when reading period ends (1-28)"
+    )
+
+    # -------------------------
+    # BILLING SCHEDULE
+    # -------------------------
+    # These affect the dates displayed on generated bills
     billing_day_of_month = models.IntegerField(
         default=1,
-        help_text="Day shown as billing period start on bills (1-28). Does NOT delay bill creation."
+        help_text="Day shown as billing period start on bills (1-28)"
     )
     due_day_of_month = models.IntegerField(
         default=20,
-        help_text="Day shown as due date on bills (1-28). Does NOT delay bill creation."
+        help_text="Day when payment is due (1-28)"
     )
 
-    # Optional: Keep a field to track when the settings were last updated
+    # -------------------------
+    # METADATA
+    # -------------------------
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

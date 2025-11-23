@@ -462,18 +462,23 @@ def api_get_current_rates(request):
 @login_required
 def system_management(request):
     """
-    Manage system-wide settings like residential and commercial water rates.
-    Focuses only on rate settings, removes user-specific info like login time/barangay.
+    Manage system-wide settings: water rates, reading schedule, and billing schedule.
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
 
     if request.method == "POST":
         try:
-            # Get the new values from the form
+            # Get water rate values
             new_res_rate_str = request.POST.get("residential_rate_per_cubic")
             new_comm_rate_str = request.POST.get("commercial_rate_per_cubic")
             new_fixed_charge_str = request.POST.get("fixed_charge")
+
+            # Get reading schedule values
+            reading_start = request.POST.get("reading_start_day")
+            reading_end = request.POST.get("reading_end_day")
+
+            # Get billing schedule values
             billing_day = request.POST.get("billing_day_of_month")
             due_day = request.POST.get("due_day_of_month")
 
@@ -481,39 +486,49 @@ def system_management(request):
             new_res_rate = Decimal(new_res_rate_str)
             new_comm_rate = Decimal(new_comm_rate_str)
             new_fixed_charge = Decimal(new_fixed_charge_str)
+
+            # Validate and convert schedule days
+            reading_start = int(reading_start)
+            reading_end = int(reading_end)
             billing_day = int(billing_day)
             due_day = int(due_day)
 
+            # Validate rates
             if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
                 raise ValueError("Rates must be positive and fixed charge cannot be negative.")
 
-            if billing_day < 1 or billing_day > 28 or due_day < 1 or due_day > 28:
-                raise ValueError("Billing and due days must be between 1 and 28.")
+            # Validate all days are within 1-28
+            for day, name in [(reading_start, "Reading start"), (reading_end, "Reading end"),
+                              (billing_day, "Billing day"), (due_day, "Due day")]:
+                if day < 1 or day > 28:
+                    raise ValueError(f"{name} must be between 1 and 28.")
+
+            # Validate reading period logic
+            if reading_start > reading_end:
+                raise ValueError("Reading start day must be before or equal to reading end day.")
 
             # Update the setting object
             setting.residential_rate_per_cubic = new_res_rate
             setting.commercial_rate_per_cubic = new_comm_rate
             setting.fixed_charge = new_fixed_charge
+            setting.reading_start_day = reading_start
+            setting.reading_end_day = reading_end
             setting.billing_day_of_month = billing_day
             setting.due_day_of_month = due_day
-            setting.save() # Save the changes to the database
+            setting.save()
 
-            # Send success message
-            messages.success(request, "✅ System settings updated successfully!")
+            messages.success(request, "System settings updated successfully!")
         except (InvalidOperation, ValueError, TypeError) as e:
-            messages.error(request, f"❌ Invalid input: {e}")
+            messages.error(request, f"Invalid input: {e}")
         except Exception as e:
-            messages.error(request, f"❌ Error updating settings: {e}")
+            messages.error(request, f"Error updating settings: {e}")
 
-        # Redirect back to the system management page after processing POST
         return redirect("consumers:system_management")
 
-    # For GET requests, just pass the setting object to the template
+    # For GET requests, pass the setting object to the template
     context = {
-        "setting": setting, # Pass the setting object containing both rates
-        # Removed assigned_barangay and login_time from context
+        "setting": setting,
     }
-    # Render the template with the context
     return render(request, "consumers/system_management.html", context)
 
 # ... (your other views remain the same) ...
