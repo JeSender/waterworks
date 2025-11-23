@@ -1,278 +1,243 @@
 {% extends "consumers/base.html" %}
 {% load humanize %}
-{% load static %}
 
 {% block title %}Dashboard - Balilihan Waterworks{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Layout overrides for dashboard - single page, no scroll */
+    body { overflow: hidden !important; height: 100vh; }
+    .main-content { height: calc(100vh - 60px); overflow: hidden !important; display: flex; flex-direction: column; }
+    .dashboard-wrapper { height: 100%; overflow: hidden; display: flex; flex-direction: column; }
+
+    /* Scrollbar Styling */
+    .table-responsive::-webkit-scrollbar { width: 5px; height: 5px; }
+    .table-responsive::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
+    .table-responsive::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
+    .table-responsive::-webkit-scrollbar-thumb:hover { background: #555; }
+
+    /* Metric cards compact */
+    .metric-card { transition: all 0.2s ease; }
+    .metric-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.15); }
+
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+        .main-content { height: auto; overflow-y: auto !important; }
+        body { overflow-y: auto !important; }
+        .dashboard-wrapper { height: auto; }
+    }
+</style>
+{% endblock %}
+
 {% block main_content %}
-<div class="max-w-7xl mx-auto">
-    <!-- Header with Dynamic Date -->
-    <div class="mb-6 flex items-center justify-between">
+<div class="container-fluid px-2 py-2 dashboard-wrapper">
+    <!-- Dashboard Header - Compact -->
+    <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2 px-4 rounded-lg mb-2 shadow-md flex justify-between items-center flex-shrink-0">
         <div>
-            <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
-                <i class="bi bi-droplet-fill text-primary-600"></i>
-                Balilihan Waterworks
+            <h2 class="font-bold text-lg m-0 flex items-center gap-2">
+                <i class="bi bi-droplet-fill"></i>Balilihan Waterworks
             </h2>
-            <p class="text-xs text-dark-500 mt-1">
-                <i class="bi bi-calendar3 mr-1"></i>
-                Today is <span id="current-date-display"></span>
-                <script>
-                    (function() {
-                        const now = new Date();
-                        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-                        document.getElementById('current-date-display').textContent = now.toLocaleDateString('en-US', options);
-                    })();
-                </script>
+            <p class="text-xs opacity-90 m-0">
+                <i class="bi bi-calendar3 mr-1"></i>Today is {{ current_date|date:"l, F d, Y" }}
             </p>
         </div>
         <div class="flex items-center gap-2">
-            <a href="{% url 'consumers:reports' %}" class="px-3 py-1.5 bg-light-100 hover:bg-light-200 text-dark-700 text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5">
-                <i class="bi bi-file-earmark-text"></i>
-                Reports
+            <a href="{% url 'consumers:reports' %}" class="px-3 py-1 bg-white/20 hover:bg-white/30 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1">
+                <i class="bi bi-file-earmark-text"></i>Reports
             </a>
-            <a href="{% url 'consumers:inquire' %}" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5">
-                <i class="bi bi-cash-coin"></i>
-                Payments
+            <a href="{% url 'consumers:inquire' %}" class="px-3 py-1 bg-white text-primary-700 text-xs font-medium rounded-lg transition-colors flex items-center gap-1 hover:bg-gray-100">
+                <i class="bi bi-cash-coin"></i>Payments
             </a>
         </div>
     </div>
 
-    <!-- Consumer Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <!-- Connected -->
-        <a href="{% url 'consumers:connected_consumers' %}" class="group block">
-            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg hover:border-success-300 transition-all duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-success-100 rounded-xl flex items-center justify-center">
-                            <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-base text-dark-500 font-medium">Connected</div>
-                            <div class="text-2xl font-bold text-dark-900 metric-value">{{ connected_count|default:"0" }}</div>
-                        </div>
+    <!-- Key Metrics Row - Compact 5 columns -->
+    <div class="grid grid-cols-5 gap-2 mb-2 flex-shrink-0">
+        <!-- Connected Consumers -->
+        <a href="{% url 'consumers:connected_consumers' %}" class="block">
+            <div class="metric-card bg-white rounded-lg p-2.5 shadow-sm border-l-4 border-success-500 h-full">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-success-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="bi bi-check-circle-fill text-success-600 text-sm"></i>
                     </div>
-                    <i class="bi bi-arrow-right text-success-600 opacity-0 group-hover:opacity-100 transition-opacity text-xl"></i>
+                    <div>
+                        <div class="text-xs text-dark-500 font-medium">Connected</div>
+                        <div class="text-xl font-bold text-dark-900 leading-none">{{ connected_count }}</div>
+                    </div>
                 </div>
             </div>
         </a>
 
-        <!-- Disconnected -->
-        <a href="{% url 'consumers:disconnected_consumers' %}" class="group block">
-            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg hover:border-danger-300 transition-all duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-danger-100 rounded-xl flex items-center justify-center">
-                            <i class="bi bi-x-circle-fill text-danger-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-base text-dark-500 font-medium">Disconnected</div>
-                            <div class="text-2xl font-bold text-dark-900 metric-value">{{ disconnected_count|default:"0" }}</div>
-                        </div>
+        <!-- Disconnected Consumers -->
+        <a href="{% url 'consumers:disconnected_consumers' %}" class="block">
+            <div class="metric-card bg-white rounded-lg p-2.5 shadow-sm border-l-4 border-danger-500 h-full">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-danger-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="bi bi-x-circle-fill text-danger-600 text-sm"></i>
                     </div>
-                    <i class="bi bi-arrow-right text-danger-600 opacity-0 group-hover:opacity-100 transition-opacity text-xl"></i>
+                    <div>
+                        <div class="text-xs text-dark-500 font-medium">Disconnected</div>
+                        <div class="text-xl font-bold text-dark-900 leading-none">{{ disconnected_count }}</div>
+                    </div>
                 </div>
             </div>
         </a>
 
-        <!-- Delinquent -->
-        <a href="{% url 'consumers:delinquent_consumers' %}" class="group block">
-            <div class="bg-white p-6 rounded-xl shadow-md hover:shadow-lg hover:border-warning-300 transition-all duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-warning-100 rounded-xl flex items-center justify-center">
-                            <i class="bi bi-exclamation-triangle-fill text-warning-600 text-xl"></i>
-                        </div>
-                        <div>
-                            <div class="text-base text-dark-500 font-medium">Delinquent</div>
-                            <div class="text-2xl font-bold text-dark-900 metric-value">{{ delinquent_count|default:"0" }}</div>
-                        </div>
+        <!-- Delinquent Accounts -->
+        <a href="{% url 'consumers:delinquent_consumers' %}" class="block">
+            <div class="metric-card bg-white rounded-lg p-2.5 shadow-sm border-l-4 border-warning-500 h-full">
+                <div class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-warning-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <i class="bi bi-exclamation-triangle-fill text-warning-600 text-sm"></i>
                     </div>
-                    <i class="bi bi-arrow-right text-warning-600 opacity-0 group-hover:opacity-100 transition-opacity text-xl"></i>
+                    <div>
+                        <div class="text-xs text-dark-500 font-medium">Delinquent</div>
+                        <div class="text-xl font-bold text-dark-900 leading-none">{{ delinquent_count }}</div>
+                    </div>
                 </div>
             </div>
         </a>
-    </div>
-
-    <!-- Revenue Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <!-- Today's Revenue -->
-        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm text-primary-100 font-medium uppercase tracking-wide">Today's Revenue</div>
-                    <div class="text-2xl font-bold text-white mt-1">₱{{ today_revenue|floatformat:2|intcomma }}</div>
-                    <div class="text-sm text-primary-200 mt-2">
-                        <i class="bi bi-receipt mr-1"></i>{{ today_payment_count }} payment{{ today_payment_count|pluralize }} today
-                    </div>
-                </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="bi bi-cash-stack text-white text-2xl"></i>
-                </div>
-            </div>
-        </div>
 
         <!-- Monthly Revenue -->
-        <div class="bg-gradient-to-br from-success-500 to-success-600 rounded-xl p-6 shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm text-success-100 font-medium uppercase tracking-wide">This Month's Revenue</div>
-                    <div class="text-2xl font-bold text-white mt-1">₱{{ monthly_revenue|floatformat:2|intcomma }}</div>
-                    <div class="text-sm text-success-200 mt-2">
-                        <i class="bi bi-calendar-month mr-1"></i>{{ current_date|date:"F Y" }}
-                    </div>
+        <div class="bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-2.5 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-graph-up-arrow text-white text-sm"></i>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="bi bi-graph-up-arrow text-white text-2xl"></i>
+                <div>
+                    <div class="text-xs text-success-100 font-medium">This Month</div>
+                    <div class="text-lg font-bold text-white leading-none">₱{{ monthly_revenue|floatformat:2|intcomma }}</div>
                 </div>
             </div>
         </div>
 
         <!-- Total Revenue -->
-        <div class="bg-gradient-to-br from-info-500 to-info-600 rounded-xl p-6 shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm text-info-100 font-medium uppercase tracking-wide">Total Revenue</div>
-                    <div class="text-2xl font-bold text-white mt-1">₱{{ total_revenue|floatformat:2|intcomma }}</div>
-                    <div class="text-sm text-info-200 mt-2">
-                        <i class="bi bi-bank mr-1"></i>All Time Collection
-                    </div>
+        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-2.5 shadow-sm">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="bi bi-wallet2 text-white text-sm"></i>
                 </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="bi bi-wallet2 text-white text-2xl"></i>
+                <div>
+                    <div class="text-xs text-primary-100 font-medium">Total Revenue</div>
+                    <div class="text-lg font-bold text-white leading-none">₱{{ total_revenue|floatformat:2|intcomma }}</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Quick Report Generator -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
-            <h3 class="text-white font-bold text-base flex items-center gap-2">
+    <!-- Quick Report Generator - Compact Single Row -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden mb-2 flex-shrink-0">
+        <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-3 py-1.5 flex items-center justify-between">
+            <h3 class="text-white font-semibold text-xs flex items-center gap-1.5 m-0">
                 <i class="bi bi-file-earmark-text-fill"></i>
                 Quick Report Generator
             </h3>
-            <p class="text-white/80 text-sm mt-1">Generate delinquent consumer reports by month and year</p>
+            <span class="text-white/80 text-xs">Generate delinquent reports by month/year</span>
         </div>
-        <div class="p-6">
-            <div class="flex items-end gap-4">
-                <div class="flex-1">
-                    <label class="block text-base font-medium text-dark-700 mb-2">Select Month</label>
-                    <select id="reportMonth" class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-all">
-                        <option value="1">January</option>
-                        <option value="2">February</option>
-                        <option value="3">March</option>
-                        <option value="4">April</option>
-                        <option value="5">May</option>
-                        <option value="6">June</option>
-                        <option value="7">July</option>
-                        <option value="8">August</option>
-                        <option value="9">September</option>
-                        <option value="10">October</option>
-                        <option value="11">November</option>
-                        <option value="12">December</option>
+        <div class="p-2 flex items-center gap-3">
+            <div class="flex items-center gap-2 flex-1">
+                <label class="text-xs font-medium text-dark-700 whitespace-nowrap">Month:</label>
+                <select id="reportMonth" class="flex-1 px-2 py-1.5 text-xs border border-light-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
+                    <option value="1">January</option>
+                    <option value="2">February</option>
+                    <option value="3">March</option>
+                    <option value="4">April</option>
+                    <option value="5">May</option>
+                    <option value="6">June</option>
+                    <option value="7">July</option>
+                    <option value="8">August</option>
+                    <option value="9">September</option>
+                    <option value="10">October</option>
+                    <option value="11">November</option>
+                    <option value="12">December</option>
+                </select>
+            </div>
+            <div class="flex items-center gap-2 flex-1">
+                <label class="text-xs font-medium text-dark-700 whitespace-nowrap">Year:</label>
+                <select id="reportYear" class="flex-1 px-2 py-1.5 text-xs border border-light-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white">
+                    <option value="2025">2025</option>
+                    <option value="2024">2024</option>
+                    <option value="2023">2023</option>
+                </select>
+            </div>
+            <button type="button" onclick="generateReport()" class="px-3 py-1.5 bg-primary-600 hover:bg-primary-700 text-white text-xs font-medium rounded-lg transition-colors flex items-center gap-1.5 whitespace-nowrap">
+                <i class="bi bi-printer-fill"></i>
+                Generate Report
+            </button>
+        </div>
+    </div>
+
+    <!-- Consumer Bill Status by Barangay Section - Takes remaining space -->
+    <div class="bg-white rounded-lg shadow-sm overflow-hidden flex-1 flex flex-col min-h-0">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-2 px-3 flex justify-between items-center flex-shrink-0">
+            <h5 class="text-xs font-semibold m-0 flex items-center gap-1.5">
+                <i class="bi bi-people-fill"></i>
+                Consumer Bill Status by Barangay
+            </h5>
+            <div class="flex items-center gap-3">
+                <div class="flex items-center gap-1.5">
+                    <label for="barangayFilter" class="text-white text-xs m-0">Filter:</label>
+                    <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded-md focus:outline-none bg-white/20 text-white min-w-[140px]">
+                        <option value="all" class="text-dark-900">All Barangays</option>
+                        {% for barangay in all_barangays %}
+                        <option value="{{ barangay.id }}" class="text-dark-900">{{ barangay.name }}</option>
+                        {% endfor %}
                     </select>
                 </div>
-                <div class="flex-1">
-                    <label class="block text-base font-medium text-dark-700 mb-2">Select Year</label>
-                    <select id="reportYear" class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white transition-all">
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
-                    </select>
-                </div>
-                <button type="button" onclick="generateReport()" class="btn-primary btn-lg">
+                <button onclick="printBillStatus()" class="px-2 py-1 text-xs font-medium bg-white/20 hover:bg-white/30 text-white rounded-md transition-colors flex items-center gap-1">
                     <i class="bi bi-printer-fill"></i>
-                    Generate Report
+                    Print
                 </button>
             </div>
         </div>
-    </div>
 
-    <!-- Consumer Bill Status by Barangay Section -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6">
-        <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700">
-            <div class="flex items-center justify-between">
-                <h3 class="text-base font-bold text-white flex items-center gap-2">
-                    <i class="bi bi-people-fill"></i>
-                    Consumer Bill Status by Barangay
-                </h3>
-                <div class="flex items-center gap-4">
-                    <div class="flex items-center gap-2">
-                        <label for="barangayFilter" class="text-white text-sm">Filter:</label>
-                        <select id="barangayFilter" class="px-3 py-2 text-sm border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
-                            <option value="all" class="text-dark-900">All Barangays</option>
-                            {% for barangay in all_barangays %}
-                            <option value="{{ barangay.id }}" data-name="{{ barangay.name }}" class="text-dark-900">{{ barangay.name }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                    <button onclick="printBillStatus()" class="px-4 py-2 text-sm font-medium bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors flex items-center gap-2">
-                        <i class="bi bi-printer-fill"></i>
-                        Print Report
-                    </button>
-                </div>
-            </div>
-        </div>
-        <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
-            <table class="w-full">
+        <!-- Table -->
+        <div class="table-responsive flex-1 overflow-y-auto min-h-0">
+            <table class="w-full text-xs" id="consumerBillStatusTable">
                 <thead class="bg-light-50 sticky top-0">
                     <tr class="border-b border-light-200">
-                        <th class="px-4 py-3 text-left text-sm font-semibold text-dark-700">ID Number</th>
-                        <th class="px-4 py-3 text-left text-sm font-semibold text-dark-700">Consumer Name</th>
-                        <th class="px-4 py-3 text-left text-sm font-semibold text-dark-700">Barangay</th>
-                        <th class="px-4 py-3 text-left text-sm font-semibold text-dark-700">Latest Bill Date</th>
-                        <th class="px-4 py-3 text-right text-sm font-semibold text-dark-700">Amount (PHP)</th>
-                        <th class="px-4 py-3 text-center text-sm font-semibold text-dark-700">Payment Status</th>
+                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">ID Number</th>
+                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Consumer Name</th>
+                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Barangay</th>
+                        <th class="text-left text-xs font-semibold text-dark-700 py-1.5 px-2">Latest Bill Date</th>
+                        <th class="text-right text-xs font-semibold text-dark-700 py-1.5 px-2">Amount (PHP)</th>
+                        <th class="text-center text-xs font-semibold text-dark-700 py-1.5 px-2">Payment Status</th>
                     </tr>
                 </thead>
                 <tbody id="consumerBillStatusBody" class="divide-y divide-light-200">
-                    <!-- Data populated via JavaScript -->
+                    <!-- Data will be populated via JavaScript -->
                 </tbody>
             </table>
         </div>
-        <div class="px-6 py-3 bg-light-50 border-t border-light-200">
-            <span class="text-dark-500 text-sm">
+
+        <!-- Footer -->
+        <div class="bg-light-50 py-1.5 px-3 flex-shrink-0 border-t border-light-200">
+            <small class="text-dark-500 text-xs">
                 <i class="bi bi-info-circle mr-1"></i>
                 Showing <span id="visibleCount" class="font-semibold">0</span> of <span id="totalCount" class="font-semibold">0</span> consumers
-            </span>
+            </small>
         </div>
     </div>
-
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Display real-time current date
-    function updateCurrentDate() {
-        const now = new Date();
-        const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const formattedDate = now.toLocaleDateString('en-US', options);
-        document.getElementById('current-date-display').textContent = formattedDate;
-    }
-    updateCurrentDate();
-    // Update date every minute to keep it current
-    setInterval(updateCurrentDate, 60000);
-
     // Set current month and year
     const now = new Date();
     document.getElementById('reportMonth').value = now.getMonth() + 1;
     document.getElementById('reportYear').value = now.getFullYear();
 
-    // Chart.js default configuration
-    Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
-    Chart.defaults.font.size = 11;
-    Chart.defaults.color = '#6b7280';
-
-    // ========== Consumer Bill Status Table ==========
+    /* Consumer Bill Status Data */
     const consumerBillStatusData = {{ consumer_bill_status|safe }};
     const barangayFilter = document.getElementById('barangayFilter');
     const tableBody = document.getElementById('consumerBillStatusBody');
     const visibleCountEl = document.getElementById('visibleCount');
     const totalCountEl = document.getElementById('totalCount');
 
+    /* Function to get status badge HTML */
     function getStatusBadge(status) {
         let badgeClasses = '';
         let icon = '';
@@ -301,22 +266,27 @@ document.addEventListener('DOMContentLoaded', function() {
                 badgeClasses = 'bg-light-200 text-dark-600';
                 icon = 'bi-question-circle';
         }
-        return `<span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${badgeClasses}"><i class="bi ${icon} mr-1"></i>${displayText}</span>`;
+
+        return `<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${badgeClasses}"><i class="bi ${icon}"></i>${displayText}</span>`;
     }
 
+    /* Function to format date */
     function formatDate(dateStr) {
         if (!dateStr) return 'N/A';
         const date = new Date(dateStr);
         return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
+    /* Function to format currency */
     function formatCurrency(amount) {
         if (amount === 0 || amount === null) return '₱0.00';
         return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function renderBillStatusTable(filter = 'all') {
+    /* Function to render table */
+    function renderTable(filter = 'all') {
         let filteredData = consumerBillStatusData;
+
         if (filter !== 'all') {
             filteredData = consumerBillStatusData.filter(item => item.barangay_id == filter);
         }
@@ -328,8 +298,8 @@ document.addEventListener('DOMContentLoaded', function() {
         if (filteredData.length === 0) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-dark-400 py-8">
-                        <i class="bi bi-inbox text-3xl block mb-2 opacity-30"></i>
+                    <td colspan="6" class="text-center text-dark-400 py-6">
+                        <i class="bi bi-inbox text-2xl block mb-2 opacity-30"></i>
                         No consumers found for the selected barangay
                     </td>
                 </tr>
@@ -341,57 +311,24 @@ document.addEventListener('DOMContentLoaded', function() {
             const row = document.createElement('tr');
             row.className = 'hover:bg-light-50 transition-colors';
             row.innerHTML = `
-                <td class="px-3 py-2 text-dark-900 font-medium">${item.account_number}</td>
-                <td class="px-3 py-2 text-dark-700">${item.consumer_name}</td>
-                <td class="px-3 py-2 text-dark-700">${item.barangay}</td>
-                <td class="px-3 py-2 text-dark-700">${formatDate(item.latest_bill_date)}</td>
-                <td class="px-3 py-2 text-right font-bold text-dark-900">${formatCurrency(item.latest_bill_amount)}</td>
-                <td class="px-3 py-2 text-center">${getStatusBadge(item.payment_status)}</td>
+                <td class="py-1 px-2 font-semibold text-dark-900">${item.account_number}</td>
+                <td class="py-1 px-2 text-dark-700">${item.consumer_name}</td>
+                <td class="py-1 px-2 text-dark-700">${item.barangay}</td>
+                <td class="py-1 px-2 text-dark-700">${formatDate(item.latest_bill_date)}</td>
+                <td class="py-1 px-2 text-right font-semibold text-dark-900">${formatCurrency(item.latest_bill_amount)}</td>
+                <td class="py-1 px-2 text-center">${getStatusBadge(item.payment_status)}</td>
             `;
             tableBody.appendChild(row);
         });
     }
 
-    renderBillStatusTable();
+    renderTable();
     barangayFilter.addEventListener('change', function() {
-        renderBillStatusTable(this.value);
-    });
-    // ========== End Consumer Bill Status Table ==========
-
-    // Animate metric values
-    function animateValue(element, start, end, duration) {
-        const range = end - start;
-        const increment = range / (duration / 16);
-        let current = start;
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= end) {
-                element.textContent = end;
-                clearInterval(timer);
-            } else {
-                element.textContent = Math.floor(current);
-            }
-        }, 16);
-    }
-
-    document.querySelectorAll('.metric-value').forEach((el, index) => {
-        const finalValue = parseInt(el.textContent) || 0;
-        el.textContent = '0';
-        setTimeout(() => {
-            animateValue(el, 0, finalValue, 800);
-        }, 100 + (index * 100));
-    });
-
-    // Calculate total revenue
-    const revenueData = {{ revenue_data|safe }};
-    const totalRevenue = revenueData.reduce((sum, value) => sum + value, 0);
-    document.getElementById('totalRevenue').textContent = '₱' + totalRevenue.toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
+        renderTable(this.value);
     });
 });
 
-// Generate Report Function
+/* Generate Report Function */
 function generateReport() {
     const month = document.getElementById('reportMonth').value;
     const year = document.getElementById('reportYear').value;
@@ -418,14 +355,13 @@ function generateReport() {
     }, 1000);
 }
 
-// Print Bill Status Report Function
+/* Print Bill Status Report Function */
 function printBillStatus() {
     const barangayFilter = document.getElementById('barangayFilter');
     const selectedValue = barangayFilter.value;
     const selectedOption = barangayFilter.options[barangayFilter.selectedIndex];
-    const barangayName = selectedValue === 'all' ? 'All Barangays' : selectedOption.dataset.name;
+    const barangayName = selectedValue === 'all' ? 'All Barangays' : selectedOption.text;
 
-    // Get filtered data
     const consumerBillStatusData = {{ consumer_bill_status|safe }};
     let filteredData = consumerBillStatusData;
     if (selectedValue !== 'all') {
@@ -442,7 +378,6 @@ function printBillStatus() {
         return;
     }
 
-    // Format helpers
     function formatDate(dateStr) {
         if (!dateStr) return 'N/A';
         const date = new Date(dateStr);
@@ -468,139 +403,96 @@ function printBillStatus() {
         return status;
     }
 
-    // Count by status
     const paidCount = filteredData.filter(d => d.payment_status === 'Paid').length;
     const pendingCount = filteredData.filter(d => d.payment_status === 'Pending').length;
     const delinquentCount = filteredData.filter(d => d.payment_status === 'Overdue' || d.payment_status === 'Unpaid').length;
     const noBillCount = filteredData.filter(d => d.payment_status === 'No Bill').length;
 
-    // Generate table rows
     let tableRows = '';
     filteredData.forEach((item, index) => {
         tableRows += `
             <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${index + 1}</td>
-                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827;">${item.account_number}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.consumer_name}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.barangay}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${formatDate(item.latest_bill_date)}</td>
-                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827; text-align: right;">${formatCurrency(item.latest_bill_amount)}</td>
-                <td style="padding: 10px 12px; text-align: center;">
-                    <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; ${getStatusStyle(item.payment_status)}">${getStatusText(item.payment_status)}</span>
+                <td style="padding: 8px; font-size: 11px; color: #374151;">${index + 1}</td>
+                <td style="padding: 8px; font-size: 11px; font-weight: 600; color: #111827;">${item.account_number}</td>
+                <td style="padding: 8px; font-size: 11px; color: #374151;">${item.consumer_name}</td>
+                <td style="padding: 8px; font-size: 11px; color: #374151;">${item.barangay}</td>
+                <td style="padding: 8px; font-size: 11px; color: #374151;">${formatDate(item.latest_bill_date)}</td>
+                <td style="padding: 8px; font-size: 11px; font-weight: 600; color: #111827; text-align: right;">${formatCurrency(item.latest_bill_amount)}</td>
+                <td style="padding: 8px; text-align: center;">
+                    <span style="display: inline-block; padding: 3px 8px; border-radius: 9999px; font-size: 10px; font-weight: 600; ${getStatusStyle(item.payment_status)}">${getStatusText(item.payment_status)}</span>
                 </td>
             </tr>
         `;
     });
 
-    // Current date
     const now = new Date();
     const printDate = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
-    // Create print window
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Consumer Bill Status Report - ${barangayName}</title>
             <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: #111827; }
+                body { font-family: 'Segoe UI', system-ui, sans-serif; background: #fff; color: #111827; font-size: 12px; }
                 @media print {
                     body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     .no-print { display: none !important; }
-                    @page { size: A4 landscape; margin: 10mm; }
+                    @page { size: A4 landscape; margin: 8mm; }
                 }
             </style>
         </head>
         <body>
-            <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <!-- Header with Logos -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #6366f1;">
-                    <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" style="width: 80px; height: 80px; object-fit: contain;">
-                    <div style="text-align: center; flex: 1; padding: 0 20px;">
-                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Republic of the Philippines</p>
-                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Province of Bohol</p>
-                        <h1 style="font-size: 22px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">MUNICIPALITY OF BALILIHAN</h1>
-                        <p style="font-size: 14px; font-weight: 600; color: #6366f1;">Balilihan Waterworks System</p>
-                    </div>
-                    <img src="{% static 'consumers/images/water_icon.png' %}" alt="Waterworks Logo" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid #6366f1; object-fit: cover;">
+            <div style="max-width: 1100px; margin: 0 auto; padding: 15px;">
+                <div style="text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #6366f1;">
+                    <p style="font-size: 11px; color: #6b7280;">Republic of the Philippines | Province of Bohol</p>
+                    <h1 style="font-size: 18px; font-weight: 700; color: #1e40af; margin: 5px 0;">MUNICIPALITY OF BALILIHAN - Waterworks System</h1>
+                    <h2 style="font-size: 14px; font-weight: 600; color: #4f46e5;">Consumer Bill Status Report: ${barangayName}</h2>
                 </div>
-
-                <!-- Report Title -->
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">
-                        <i class="bi bi-people-fill" style="color: #6366f1; margin-right: 8px;"></i>
-                        Consumer Bill Status Report
-                    </h2>
-                    <p style="font-size: 16px; font-weight: 600; color: #4f46e5; background: linear-gradient(135deg, #eef2ff, #e0e7ff); padding: 8px 20px; border-radius: 8px; display: inline-block;">
-                        ${barangayName}
-                    </p>
-                </div>
-
-                <!-- Summary Cards -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-                    <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #86efac;">
-                        <p style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Paid</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #15803d;">${paidCount}</p>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
+                    <div style="background: #dcfce7; padding: 10px; border-radius: 8px; text-align: center;">
+                        <p style="font-size: 10px; color: #166534; font-weight: 600;">PAID</p>
+                        <p style="font-size: 22px; font-weight: 800; color: #15803d;">${paidCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fcd34d;">
-                        <p style="font-size: 11px; color: #92400e; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Pending</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #b45309;">${pendingCount}</p>
+                    <div style="background: #fef3c7; padding: 10px; border-radius: 8px; text-align: center;">
+                        <p style="font-size: 10px; color: #92400e; font-weight: 600;">PENDING</p>
+                        <p style="font-size: 22px; font-weight: 800; color: #b45309;">${pendingCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fca5a5;">
-                        <p style="font-size: 11px; color: #991b1b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Delinquent</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #dc2626;">${delinquentCount}</p>
+                    <div style="background: #fee2e2; padding: 10px; border-radius: 8px; text-align: center;">
+                        <p style="font-size: 10px; color: #991b1b; font-weight: 600;">DELINQUENT</p>
+                        <p style="font-size: 22px; font-weight: 800; color: #dc2626;">${delinquentCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #d1d5db;">
-                        <p style="font-size: 11px; color: #4b5563; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">No Bill</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #374151;">${noBillCount}</p>
+                    <div style="background: #f3f4f6; padding: 10px; border-radius: 8px; text-align: center;">
+                        <p style="font-size: 10px; color: #4b5563; font-weight: 600;">NO BILL</p>
+                        <p style="font-size: 22px; font-weight: 800; color: #374151;">${noBillCount}</p>
                     </div>
                 </div>
-
-                <!-- Data Table -->
-                <div style="border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">#</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">ID Number</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Consumer Name</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Barangay</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Latest Bill Date</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: right; text-transform: uppercase;">Amount (PHP)</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: center; text-transform: uppercase;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                        </tbody>
-                    </table>
+                <table style="width: 100%; border-collapse: collapse; border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                        <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: left;">#</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: left;">ID Number</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: left;">Consumer Name</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: left;">Barangay</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: left;">Bill Date</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: right;">Amount</th>
+                            <th style="padding: 8px; font-size: 10px; font-weight: 700; color: white; text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+                <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #6b7280;">
+                    <span>Total: <strong>${filteredData.length}</strong> consumers</span>
+                    <span>Generated: ${printDate} at ${printTime}</span>
                 </div>
-
-                <!-- Footer -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-                    <div>
-                        <p style="font-size: 11px; color: #6b7280;">Total Consumers: <span style="font-weight: 700; color: #111827;">${filteredData.length}</span></p>
-                    </div>
-                    <div style="text-align: right;">
-                        <p style="font-size: 11px; color: #6b7280;">Generated on: <span style="font-weight: 600; color: #374151;">${printDate} at ${printTime}</span></p>
-                        <p style="font-size: 10px; color: #9ca3af; margin-top: 2px;">Balilihan Waterworks Management System</p>
-                    </div>
-                </div>
-
-                <!-- Print Button (hidden when printing) -->
-                <div class="no-print" style="text-align: center; margin-top: 30px;">
-                    <button onclick="window.print()" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 12px 32px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 10px;">
-                        <i class="bi bi-printer-fill" style="margin-right: 8px;"></i>Print Report
-                    </button>
-                    <button onclick="window.close()" style="background: #f3f4f6; color: #374151; padding: 12px 32px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                        <i class="bi bi-x-lg" style="margin-right: 8px;"></i>Close
-                    </button>
+                <div class="no-print" style="text-align: center; margin-top: 20px;">
+                    <button onclick="window.print()" style="background: #6366f1; color: white; padding: 10px 25px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print</button>
+                    <button onclick="window.close()" style="background: #f3f4f6; color: #374151; padding: 10px 25px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
                 </div>
             </div>
         </body>
