@@ -58,9 +58,6 @@ The Balilihan Waterworks Management System is a comprehensive water utility mana
 │                 │ • View assigned barangay consumers            │
 │                 │ • Submit meter readings via app               │
 │                 │ • Limited web portal access                   │
-├─────────────────┼───────────────────────────────────────────────┤
-│ REGULAR USER    │ Basic login only                              │
-│                 │ • View dashboard                              │
 └─────────────────┴───────────────────────────────────────────────┘
 ```
 
