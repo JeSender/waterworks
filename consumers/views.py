@@ -2808,24 +2808,18 @@ def inquire(request):
             messages.error(request, f"Error processing payment: {e}")
             return redirect(request.get_full_path())
 
-    # ===== GET REQUEST (your existing logic) =====
-    selected_barangay = request.GET.get('barangay')
-    selected_purok = request.GET.get('purok')
+    # ===== GET REQUEST - Direct consumer selection (no location filter) =====
     selected_consumer_id = request.GET.get('consumer')
 
-    # Get barangays with pending bill counts
-    barangays = Barangay.objects.all()
-    barangay_pending_counts = {}
-    for b in barangays:
-        pending_count = Bill.objects.filter(
-            consumer__barangay=b,
-            status='Pending'
-        ).count()
-        barangay_pending_counts[b.id] = pending_count
+    # Load all active consumers directly for faster transaction
+    consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok').order_by('last_name', 'first_name')
 
-    puroks = Purok.objects.none()
-    consumers = Consumer.objects.none()
+    # Build consumer bills dictionary
     consumer_bills = {}
+    for c in consumers:
+        bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
+        consumer_bills[c.id] = bill
+
     selected_consumer = None
     latest_bill = None
 
@@ -2833,27 +2827,12 @@ def inquire(request):
         selected_consumer = get_object_or_404(Consumer, id=selected_consumer_id)
         latest_bill = selected_consumer.bills.filter(status='Pending').order_by('-billing_period').first()
 
-    if selected_barangay:
-        puroks = Purok.objects.filter(barangay_id=selected_barangay)
-        # Only show active (connected) consumers on the payment page
-        consumers = Consumer.objects.filter(barangay_id=selected_barangay, status='active')
-        if selected_purok:
-            consumers = consumers.filter(purok_id=selected_purok)
-        for c in consumers:
-            bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
-            consumer_bills[c.id] = bill
-
     # Count total pending bills
     total_pending_bills = Bill.objects.filter(status='Pending').count()
 
     context = {
-        'barangays': barangays,
-        'barangay_pending_counts': barangay_pending_counts,
-        'puroks': puroks,
         'consumers': consumers,
         'consumer_bills': consumer_bills,
-        'selected_barangay': selected_barangay,
-        'selected_purok': selected_purok,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
         'total_pending_bills': total_pending_bills,
