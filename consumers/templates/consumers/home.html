@@ -93,23 +93,6 @@
             </div>
         </a>
 
-        <!-- Outstanding Bills -->
-        <a href="{% url 'consumers:reports' %}" class="group block">
-            <div class="bg-white border border-light-300 rounded-lg p-3 hover:shadow-md hover:border-info-300 transition-all duration-200">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-info-100 rounded-lg flex items-center justify-center">
-                            <i class="bi bi-receipt-cutoff text-info-600 text-sm"></i>
-                        </div>
-                        <div>
-                            <div class="text-xs text-dark-500 font-medium">Outstanding Bills</div>
-                            <div class="text-xl font-bold text-dark-900 metric-value">{{ total_bills|default:"0" }}</div>
-                        </div>
-                    </div>
-                    <i class="bi bi-arrow-right text-info-600 opacity-0 group-hover:opacity-100 transition-opacity"></i>
-                </div>
-            </div>
-        </a>
     </div>
 
     <!-- Quick Report Generator -->
@@ -206,66 +189,6 @@
         </div>
     </div>
 
-    <!-- Revenue Summary Table -->
-    <div class="bg-white border border-light-300 rounded-lg overflow-hidden">
-        <div class="px-4 py-3 border-b border-light-200 bg-light-50">
-            <div class="flex items-center justify-between">
-                <h3 class="text-sm font-bold text-dark-900 flex items-center gap-2">
-                    <i class="bi bi-cash-coin text-success-600"></i>
-                    Revenue Summary
-                </h3>
-                <span class="text-xs text-dark-500">Last 6 months</span>
-            </div>
-        </div>
-        <div class="p-4">
-            {% if revenue_list %}
-            <div class="overflow-x-auto">
-                <table class="w-full text-xs">
-                    <thead class="bg-light-50">
-                        <tr class="border-b border-light-200">
-                            <th class="px-3 py-2 text-left font-semibold text-dark-700">Period</th>
-                            <th class="px-3 py-2 text-right font-semibold text-dark-700">Amount</th>
-                            <th class="px-3 py-2 text-center font-semibold text-dark-700">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-light-200">
-                        {% for label, amount in revenue_list %}
-                        <tr class="hover:bg-light-50 transition-colors">
-                            <td class="px-3 py-2 text-dark-900 font-medium">{{ label }}</td>
-                            <td class="px-3 py-2 text-right font-bold text-success-700">₱{{ amount|floatformat:2|intcomma }}</td>
-                            <td class="px-3 py-2 text-center">
-                                {% if amount > 0 %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-success-100 text-success-700">
-                                    <i class="bi bi-check-circle-fill mr-1"></i>Paid
-                                </span>
-                                {% else %}
-                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-light-200 text-dark-600">
-                                    No Data
-                                </span>
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                    <tfoot class="bg-light-100 border-t-2 border-light-300">
-                        <tr>
-                            <td class="px-3 py-2 font-bold text-dark-900">Total</td>
-                            <td class="px-3 py-2 text-right">
-                                <span class="text-base font-extrabold text-success-700" id="totalRevenue">₱0.00</span>
-                            </td>
-                            <td class="px-3 py-2"></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-            {% else %}
-            <div class="text-center py-8 text-dark-400">
-                <i class="bi bi-inbox text-4xl block mb-2 opacity-30"></i>
-                <p class="text-xs">No revenue data available</p>
-            </div>
-            {% endif %}
-        </div>
-    </div>
 </div>
 {% endblock %}
 
