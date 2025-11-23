@@ -37,8 +37,8 @@
         </div>
     </div>
 
-    <!-- Thin Stats Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-5">
+    <!-- Consumer Stats Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
         <!-- Connected -->
         <a href="{% url 'consumers:connected_consumers' %}" class="group block">
             <div class="bg-white border border-light-300 rounded-lg p-3 hover:shadow-md hover:border-success-300 transition-all duration-200">
@@ -92,7 +92,57 @@
                 </div>
             </div>
         </a>
+    </div>
 
+    <!-- Revenue Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-5">
+        <!-- Today's Revenue -->
+        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg p-4 shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-primary-100 font-medium uppercase tracking-wide">Today's Revenue</div>
+                    <div class="text-2xl font-bold text-white mt-1">₱{{ today_revenue|floatformat:2|intcomma }}</div>
+                    <div class="text-xs text-primary-200 mt-1">
+                        <i class="bi bi-receipt mr-1"></i>{{ today_payment_count }} payment{{ today_payment_count|pluralize }} today
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="bi bi-cash-stack text-white text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Monthly Revenue -->
+        <div class="bg-gradient-to-br from-success-500 to-success-600 rounded-lg p-4 shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-success-100 font-medium uppercase tracking-wide">This Month's Revenue</div>
+                    <div class="text-2xl font-bold text-white mt-1">₱{{ monthly_revenue|floatformat:2|intcomma }}</div>
+                    <div class="text-xs text-success-200 mt-1">
+                        <i class="bi bi-calendar-month mr-1"></i>{{ current_date|date:"F Y" }}
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="bi bi-graph-up-arrow text-white text-2xl"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Total Revenue -->
+        <div class="bg-gradient-to-br from-info-500 to-info-600 rounded-lg p-4 shadow-md">
+            <div class="flex items-center justify-between">
+                <div>
+                    <div class="text-xs text-info-100 font-medium uppercase tracking-wide">Total Revenue</div>
+                    <div class="text-2xl font-bold text-white mt-1">₱{{ total_revenue|floatformat:2|intcomma }}</div>
+                    <div class="text-xs text-info-200 mt-1">
+                        <i class="bi bi-bank mr-1"></i>All Time Collection
+                    </div>
+                </div>
+                <div class="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="bi bi-wallet2 text-white text-2xl"></i>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- Quick Report Generator -->

@@ -1170,6 +1170,7 @@ def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
     current_month = datetime.now().month
     current_year = datetime.now().year
+    today = datetime.now().date()
 
     # Get counts
     connected_count = Consumer.objects.filter(status='active').count()
@@ -1180,6 +1181,28 @@ def home(request):
         bills__status='Pending',
         bills__billing_period__lt=datetime.now().date()
     ).distinct().count()
+
+    # ==========================================
+    # REVENUE CALCULATIONS
+    # ==========================================
+    # Today's Revenue
+    today_revenue = Payment.objects.filter(
+        payment_date=today
+    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
+
+    # This Month's Revenue
+    monthly_revenue = Payment.objects.filter(
+        payment_date__month=current_month,
+        payment_date__year=current_year
+    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
+
+    # Total Revenue (All Time)
+    total_revenue = Payment.objects.aggregate(
+        total=Sum('amount_paid')
+    )['total'] or Decimal('0.00')
+
+    # Today's payment count
+    today_payment_count = Payment.objects.filter(payment_date=today).count()
 
     # Handle report filter - support both month_year and separate month/year
     month_year = request.GET.get('month_year')
@@ -1314,6 +1337,11 @@ def home(request):
         'selected_year': selected_year,
         'selected_date': selected_date,  # For template date formatting
         'current_date': datetime.now(),  # For dynamic date display
+        # Revenue data
+        'today_revenue': today_revenue,
+        'monthly_revenue': monthly_revenue,
+        'total_revenue': total_revenue,
+        'today_payment_count': today_payment_count,
         # Chart data
         'revenue_labels': json.dumps(revenue_labels),
         'revenue_data': json.dumps(revenue_data),
