@@ -69,6 +69,7 @@ urlpatterns = [
 
     # API Endpoints (Android App)
     path('api/login/', views.api_login, name='api_login'),
+    path('api/logout/', views.api_logout, name='api_logout'),
     path('api/consumers/', views.api_consumers, name='api_consumers'),
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),

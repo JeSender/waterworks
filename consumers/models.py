@@ -295,6 +295,29 @@ class Consumer(models.Model):
         middle = f" {self.middle_name}" if self.middle_name else ""
         return f"{self.first_name}{middle} {self.last_name}".strip()
 
+    @property
+    def is_delinquent(self):
+        """Check if consumer has overdue unpaid bills."""
+        from django.utils import timezone
+        return self.bills.filter(
+            status='Pending',
+            due_date__lt=timezone.now().date()
+        ).exists()
+
+    @property
+    def pending_bills_count(self):
+        """Count of pending bills for this consumer."""
+        return self.bills.filter(status='Pending').count()
+
+    @property
+    def overdue_bills_count(self):
+        """Count of overdue unpaid bills."""
+        from django.utils import timezone
+        return self.bills.filter(
+            status='Pending',
+            due_date__lt=timezone.now().date()
+        ).count()
+
     # ========================
     # Methods
     # ========================

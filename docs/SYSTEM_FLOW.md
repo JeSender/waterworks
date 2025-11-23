@@ -433,6 +433,7 @@ The Balilihan Waterworks Management System is a comprehensive water utility mana
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/api/login/` | POST | Mobile app authentication |
+| `/api/logout/` | POST | Mobile app logout with session tracking |
 
 **Request:**
 ```json
@@ -467,9 +468,12 @@ The Balilihan Waterworks Management System is a comprehensive water utility mana
       "id": 1,
       "account_number": "2025110001",
       "name": "Juan Dela Cruz",
-      "usage_type": "Residential",
-      "last_reading": 140,
-      "last_reading_date": "2025-10-15"
+      "serial_number": "SM-12345",
+      "status": "active",
+      "is_active": true,
+      "latest_confirmed_reading": 140,
+      "is_delinquent": false,
+      "pending_bills_count": 0
     }
   ]
 }

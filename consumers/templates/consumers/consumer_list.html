@@ -232,17 +232,25 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3">
-                            {% if consumer.status == "active" %}
-                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-success-100 text-success-700">
-                                    <i class="bi bi-check-circle-fill mr-1"></i>
-                                    Connected
-                                </span>
-                            {% else %}
-                                <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-danger-100 text-danger-700">
-                                    <i class="bi bi-x-circle-fill mr-1"></i>
-                                    Disconnected
-                                </span>
-                            {% endif %}
+                            <div class="flex flex-col gap-1">
+                                {% if consumer.status == "active" %}
+                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-success-100 text-success-700">
+                                        <i class="bi bi-check-circle-fill mr-1"></i>
+                                        Connected
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-danger-100 text-danger-700">
+                                        <i class="bi bi-x-circle-fill mr-1"></i>
+                                        Disconnected
+                                    </span>
+                                {% endif %}
+                                {% if consumer.is_delinquent %}
+                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-warning-100 text-warning-700 border border-warning-300">
+                                        <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                                        Delinquent
+                                    </span>
+                                {% endif %}
+                            </div>
                         </td>
                         <td class="px-4 py-3">
                             <div class="flex items-center justify-center gap-2">

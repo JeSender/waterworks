@@ -104,7 +104,14 @@
 
                         <!-- Consumer Name -->
                         <td class="px-4 py-2">
-                            <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
+                                {% if item.consumer.is_delinquent %}
+                                <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-bold rounded bg-red-100 text-red-700 border border-red-300" title="Has overdue unpaid bills">
+                                    <i class="bi bi-exclamation-triangle-fill mr-0.5"></i>Delinquent
+                                </span>
+                                {% endif %}
+                            </div>
                         </td>
 
                         <!-- Current Reading -->

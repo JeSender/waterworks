@@ -375,7 +375,7 @@ def api_create_reading(request):
 
 @login_required
 def api_consumers(request):
-    """Get consumers for the staff's assigned barangay, including the latest confirmed reading value."""
+    """Get consumers for the staff's assigned barangay, including the latest confirmed reading value and delinquent status."""
     try:
         profile = StaffProfile.objects.select_related('assigned_barangay').get(user=request.user)
         consumers = Consumer.objects.filter(barangay=profile.assigned_barangay).select_related('barangay')
@@ -386,26 +386,72 @@ def api_consumers(request):
             latest_confirmed_reading_obj = MeterReading.objects.filter(
                 consumer=consumer,
                 is_confirmed=True
-            ).order_by('-reading_date').first() # Get the most recent one
+            ).order_by('-reading_date').first()
 
             # Extract the reading value, or default to 0 if no confirmed reading exists
             latest_confirmed_reading_value = latest_confirmed_reading_obj.reading_value if latest_confirmed_reading_obj else 0
 
-            # Append consumer data including the latest confirmed reading value
+            # Check for delinquent status (has unpaid bills past due date)
+            has_overdue_bills = Bill.objects.filter(
+                consumer=consumer,
+                status='Pending',
+                due_date__lt=timezone.now().date()
+            ).exists()
+
+            # Count pending bills
+            pending_bills_count = Bill.objects.filter(
+                consumer=consumer,
+                status='Pending'
+            ).count()
+
+            # Append consumer data including the latest confirmed reading value and delinquent status
             data.append({
                 'id': consumer.id,
                 'account_number': consumer.account_number,
                 'name': f"{consumer.first_name} {consumer.last_name}",
                 'serial_number': consumer.serial_number,
                 'status': consumer.status,  # 'active' or 'disconnected'
-                'is_active': consumer.status == 'active',  # Boolean for easy checking
-                # NEW: Add the latest confirmed reading value to the response
-                'latest_confirmed_reading': latest_confirmed_reading_value
+                'is_active': consumer.status == 'active',
+                'latest_confirmed_reading': latest_confirmed_reading_value,
+                # Delinquent status for Android app
+                'is_delinquent': has_overdue_bills,
+                'pending_bills_count': pending_bills_count
             })
 
         return JsonResponse(data, safe=False)
     except StaffProfile.DoesNotExist:
         return JsonResponse({'error': 'No assigned barangay'}, status=403)
+
+
+@csrf_exempt
+@login_required
+def api_logout(request):
+    """API logout for Android app with session tracking."""
+    from .decorators import get_client_ip, get_user_agent
+
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # Update the logout timestamp for the current session
+        latest_session = UserLoginEvent.objects.filter(
+            user=request.user,
+            session_key=request.session.session_key,
+            logout_timestamp__isnull=True
+        ).first()
+
+        if latest_session:
+            latest_session.logout_timestamp = timezone.now()
+            latest_session.save()
+
+        logout(request)
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Logged out successfully',
+            'logout_time': timezone.now().isoformat()
+        })
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=500)
 
 # ... (other views remain the same) ...
 
