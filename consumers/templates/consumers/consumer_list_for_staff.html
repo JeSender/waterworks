@@ -3,25 +3,28 @@
 {% block title %}Dashboard for {{ assigned_barangay.name }}{% endblock %}
 
 {% block main_content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-person-badge"></i> Welcome, {{ user.username }}!</h2>
-        <a href="{% url 'consumers:logout' %}" class="btn btn-outline-danger btn-sm">
+<div class="max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-6">
+        <h2 class="page-title flex items-center gap-2">
+            <i class="bi bi-person-badge"></i> Welcome, {{ user.username }}!
+        </h2>
+        <a href="{% url 'consumers:logout' %}" class="btn-danger btn-sm">
             <i class="bi bi-box-arrow-right"></i> Logout
         </a>
     </div>
 
     <!-- Staff Information Panel -->
-    <div class="card mb-4 border-info">
-        <div class="card-header bg-info text-white">
-            <h5 class="mb-0">Your Assignment</h5>
+    <div class="card mb-6">
+        <div class="card-header bg-info-600 text-white rounded-t-lg">
+            <h5 class="text-base font-semibold">Your Assignment</h5>
         </div>
         <div class="card-body">
-            <p class="card-text">
-                <strong>Barangay:</strong> {{ assigned_barangay.name }}
+            <p class="text-sm text-dark-700 mb-2">
+                <span class="font-semibold">Barangay:</span> {{ assigned_barangay.name }}
             </p>
-            <p class="card-text">
-                <strong>Login Time:</strong> 
+            <p class="text-sm text-dark-700">
+                <span class="font-semibold">Login Time:</span>
                 {% if login_time %}
                     {{ login_time }}
                 {% else %}
@@ -32,48 +35,47 @@
     </div>
 
     <!-- Consumer List for Assigned Barangay -->
-    <div class="card mb-4 shadow-sm">
+    <div class="card">
         <div class="card-header">
-            <h5 class="mb-0">Consumers in {{ assigned_barangay.name }}</h5>
+            <h5 class="text-base font-semibold">Consumers in {{ assigned_barangay.name }}</h5>
         </div>
-        <div class="card-body">
+        <div class="card-body p-0">
             {% if consumers %}
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="table-header">
                             <tr>
-                                <th>ID Number</th>
-                                <th>Name</th>
-                                <th>Serial No.</th>
-                                <th>Status</th>
-                                <!-- Add other relevant columns -->
+                                <th class="table-cell text-left">ID Number</th>
+                                <th class="table-cell text-left">Name</th>
+                                <th class="table-cell text-left">Serial No.</th>
+                                <th class="table-cell text-left">Status</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for consumer in consumers %}
-                            <tr>
-                                <td>{{ consumer.account_number }}</td>
-                                <td>{{ consumer.first_name }} {{ consumer.last_name }}</td>
-                                <td>{{ consumer.serial_number }}</td>
-                                <td>
-                                    <span class="badge 
-                                        {% if consumer.status == 'active' %}bg-success
-                                        {% elif consumer.status == 'disconnected' %}bg-danger
-                                        {% else %}bg-secondary{% endif %}">
+                            <tr class="table-row">
+                                <td class="table-cell">{{ consumer.account_number }}</td>
+                                <td class="table-cell">{{ consumer.first_name }} {{ consumer.last_name }}</td>
+                                <td class="table-cell">{{ consumer.serial_number }}</td>
+                                <td class="table-cell">
+                                    <span class="badge
+                                        {% if consumer.status == 'active' %}badge-success
+                                        {% elif consumer.status == 'disconnected' %}badge-danger
+                                        {% else %}badge-info{% endif %}">
                                         {{ consumer.get_status_display }}
                                     </span>
                                 </td>
-                                <!-- Add other relevant fields -->
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
             {% else %}
-                <p class="text-muted">No consumers found in {{ assigned_barangay.name }}.</p>
+                <div class="p-6 text-center">
+                    <p class="text-muted">No consumers found in {{ assigned_barangay.name }}.</p>
+                </div>
             {% endif %}
         </div>
     </div>
-
 </div>
 {% endblock %}
