@@ -116,10 +116,10 @@
                     </h5>
                 </div>
                 <div class="p-4 bg-white">
-                    <div class="grid grid-cols-2 gap-3 text-sm">
+                    <div class="grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
                         <div class="flex justify-between py-2 border-b border-light-200">
                             <span class="text-dark-600">Previous Reading:</span>
-                            <span class="font-semibold text-dark-900">{{ payment.bill.previous_reading.reading_value }} m³</span>
+                            <span class="font-semibold text-dark-900">{{ payment.bill.previous_reading.reading_value|default:"0" }} m³</span>
                         </div>
                         <div class="flex justify-between py-2 border-b border-light-200">
                             <span class="text-dark-600">Current Reading:</span>
@@ -133,7 +133,7 @@
                             <span class="text-dark-600">Rate per m³:</span>
                             <span class="font-semibold text-dark-900">₱{{ payment.bill.rate_per_cubic }}</span>
                         </div>
-                        <div class="flex justify-between py-2">
+                        <div class="flex justify-between py-2 border-b border-light-200">
                             <span class="text-dark-600">Fixed Charge:</span>
                             <span class="font-semibold text-dark-900">₱{{ payment.bill.fixed_charge }}</span>
                         </div>
