@@ -2935,10 +2935,20 @@ def payment_receipt(request, payment_id):
     Ensures the payment exists and belongs to a valid bill/consumer.
     """
     payment = get_object_or_404(
-        Payment.objects.select_related('bill__consumer'),
+        Payment.objects.select_related('bill__consumer', 'bill__previous_reading', 'bill__current_reading'),
         id=payment_id
     )
-    return render(request, 'consumers/receipt.html', {'payment': payment})
+
+    # Calculate previous reading value: use stored value or compute from current - consumption
+    if payment.bill.previous_reading:
+        previous_reading_value = payment.bill.previous_reading.reading_value
+    else:
+        previous_reading_value = payment.bill.current_reading.reading_value - payment.bill.consumption
+
+    return render(request, 'consumers/receipt.html', {
+        'payment': payment,
+        'previous_reading_value': previous_reading_value
+    })
 
 @login_required
 def user_login_history(request):
