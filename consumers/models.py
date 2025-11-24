@@ -392,11 +392,11 @@ class MeterReading(models.Model):
 # ----------------------------
 class Bill(models.Model):
     consumer = models.ForeignKey(
-        Consumer, 
-        on_delete=models.CASCADE, 
+        Consumer,
+        on_delete=models.CASCADE,
         related_name='bills'
     )
-    
+
     previous_reading = models.ForeignKey(
         'MeterReading',
         on_delete=models.PROTECT,
@@ -405,7 +405,7 @@ class Bill(models.Model):
         blank=True,
         help_text="The meter reading from the previous billing cycle"
     )
-    
+
     current_reading = models.ForeignKey(
         'MeterReading',
         on_delete=models.PROTECT,
@@ -421,9 +421,50 @@ class Bill(models.Model):
     fixed_charge = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('50.00'))
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
+    # -------------------------
+    # PENALTY TRACKING FIELDS
+    # -------------------------
+    penalty_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Calculated penalty amount for late payment"
+    )
+    penalty_applied_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date when penalty was first applied"
+    )
+    penalty_waived = models.BooleanField(
+        default=False,
+        help_text="Whether the penalty has been waived by admin"
+    )
+    penalty_waived_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='waived_penalties',
+        help_text="Admin who waived the penalty"
+    )
+    penalty_waived_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Reason for waiving the penalty"
+    )
+    penalty_waived_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="Date and time when penalty was waived"
+    )
+    days_overdue = models.IntegerField(
+        default=0,
+        help_text="Number of days the bill is/was overdue"
+    )
+
     status = models.CharField(
-        max_length=20, 
-        choices=BILL_STATUS_CHOICES, 
+        max_length=20,
+        choices=BILL_STATUS_CHOICES,
         default='Pending'
     )
 
@@ -434,8 +475,35 @@ class Bill(models.Model):
         verbose_name = "Utility Bill"
         verbose_name_plural = "Utility Bills"
 
+    @property
+    def is_overdue(self):
+        """Check if bill is overdue (past due date and not paid)"""
+        if self.status == 'Paid':
+            return False
+        return timezone.now().date() > self.due_date
+
+    @property
+    def current_days_overdue(self):
+        """Calculate current days overdue"""
+        if self.status == 'Paid' or not self.is_overdue:
+            return 0
+        return (timezone.now().date() - self.due_date).days
+
+    @property
+    def effective_penalty(self):
+        """Return the effective penalty (0 if waived)"""
+        if self.penalty_waived:
+            return Decimal('0.00')
+        return self.penalty_amount
+
+    @property
+    def total_amount_due(self):
+        """Total amount including penalty (if not waived)"""
+        return self.total_amount + self.effective_penalty
+
     def __str__(self):
-        return f"Bill for {self.consumer} | {self.billing_period.strftime('%B %Y')} | ₱{self.total_amount} ({self.status})"
+        penalty_str = f" + ₱{self.penalty_amount} penalty" if self.penalty_amount > 0 and not self.penalty_waived else ""
+        return f"Bill for {self.consumer} | {self.billing_period.strftime('%B %Y')} | ₱{self.total_amount}{penalty_str} ({self.status})"
 
 
 # ----------------------------
@@ -461,12 +529,13 @@ from decimal import Decimal # Import Decimal
 # ============================================================================
 class SystemSetting(models.Model):
     """
-    System-wide configuration for water rates, reading schedule, and billing.
+    System-wide configuration for water rates, reading schedule, billing, and penalties.
 
     The schedule fields help organize the monthly billing cycle:
     - Reading period: When field staff should submit meter readings
     - Billing period: The billing cycle start date shown on bills
     - Due date: Payment deadline shown on bills
+    - Penalty: Late payment charges applied after due date
 
     Bills are created INSTANTLY when admin confirms a reading.
     """
@@ -519,6 +588,47 @@ class SystemSetting(models.Model):
     )
 
     # -------------------------
+    # PENALTY SETTINGS
+    # -------------------------
+    PENALTY_TYPE_CHOICES = [
+        ('percentage', 'Percentage of Bill'),
+        ('fixed', 'Fixed Amount'),
+    ]
+
+    penalty_enabled = models.BooleanField(
+        default=True,
+        help_text="Enable/disable late payment penalties"
+    )
+    penalty_type = models.CharField(
+        max_length=20,
+        choices=PENALTY_TYPE_CHOICES,
+        default='percentage',
+        help_text="Type of penalty calculation"
+    )
+    penalty_rate = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=Decimal('10.00'),
+        help_text="Penalty rate in percentage (e.g., 10 for 10%)"
+    )
+    fixed_penalty_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('50.00'),
+        help_text="Fixed penalty amount in pesos (used if penalty_type is 'fixed')"
+    )
+    penalty_grace_period_days = models.IntegerField(
+        default=0,
+        help_text="Number of days after due date before penalty is applied (0 = immediate)"
+    )
+    max_penalty_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('500.00'),
+        help_text="Maximum penalty cap (0 = no cap)"
+    )
+
+    # -------------------------
     # METADATA
     # -------------------------
     updated_at = models.DateTimeField(auto_now=True)
@@ -545,29 +655,58 @@ class SystemSetting(models.Model):
     
 class Payment(models.Model):
     bill = models.ForeignKey(
-        'Bill', 
-        on_delete=models.CASCADE, 
+        'Bill',
+        on_delete=models.CASCADE,
         related_name='payments',
         help_text="The bill being paid"
     )
-    amount_paid = models.DecimalField(
-        max_digits=10, 
+    # -------------------------
+    # ORIGINAL BILL AMOUNT
+    # -------------------------
+    original_bill_amount = models.DecimalField(
+        max_digits=10,
         decimal_places=2,
-        help_text="Actual amount due from the bill"
+        default=Decimal('0.00'),
+        help_text="Original bill amount before penalty"
+    )
+    # -------------------------
+    # PENALTY INFORMATION
+    # -------------------------
+    penalty_amount = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
+        help_text="Penalty amount included in this payment"
+    )
+    penalty_waived = models.BooleanField(
+        default=False,
+        help_text="Whether penalty was waived for this payment"
+    )
+    days_overdue_at_payment = models.IntegerField(
+        default=0,
+        help_text="Number of days overdue at the time of payment"
+    )
+    # -------------------------
+    # PAYMENT AMOUNTS
+    # -------------------------
+    amount_paid = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text="Total amount paid (bill + penalty)"
     )
     received_amount = models.DecimalField(
-        max_digits=10, 
+        max_digits=10,
         decimal_places=2,
         help_text="Cash amount received from the consumer"
     )
     change = models.DecimalField(
-        max_digits=10, 
-        decimal_places=2, 
-        default=0.00,
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('0.00'),
         help_text="Change to return to the consumer"
     )
     or_number = models.CharField(
-        max_length=50, 
+        max_length=50,
         unique=True,
         editable=False,
         help_text="Official Receipt number (auto-generated)"
@@ -575,6 +714,21 @@ class Payment(models.Model):
     payment_date = models.DateTimeField(
         auto_now_add=True,
         help_text="Date and time of payment"
+    )
+    # -------------------------
+    # PAYMENT PROCESSING INFO
+    # -------------------------
+    processed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_payments',
+        help_text="Staff who processed the payment"
+    )
+    remarks = models.TextField(
+        blank=True,
+        help_text="Additional notes or remarks about the payment"
     )
 
     class Meta:
@@ -586,8 +740,6 @@ class Payment(models.Model):
         """Validate business logic before saving."""
         if self.received_amount < self.amount_paid:
             raise ValidationError("Received amount cannot be less than the amount due.")
-        if self.amount_paid != self.bill.total_amount:
-            raise ValidationError("Amount paid must match the bill's total amount.")
 
     def save(self, *args, **kwargs):
         # Auto-compute change
@@ -604,5 +756,11 @@ class Payment(models.Model):
 
         super().save(*args, **kwargs)
 
+    @property
+    def total_with_penalty(self):
+        """Total amount including any penalty"""
+        return self.original_bill_amount + self.penalty_amount
+
     def __str__(self):
-        return f"OR#{self.or_number} - {self.bill.consumer.account_number}"
+        penalty_info = f" (incl. ₱{self.penalty_amount} penalty)" if self.penalty_amount > 0 else ""
+        return f"OR#{self.or_number} - {self.bill.consumer.account_number}{penalty_info}"

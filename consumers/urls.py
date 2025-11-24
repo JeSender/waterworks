@@ -66,6 +66,7 @@ urlpatterns = [
     # Payments
     path('payment/', views.inquire, name='inquire'),
     path('payment/receipt/<int:payment_id>/', views.payment_receipt, name='payment_receipt'),
+    path('payment/history/', views.payment_history, name='payment_history'),
 
     # API Endpoints (Android App)
     path('api/login/', views.api_login, name='api_login'),

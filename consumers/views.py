@@ -549,7 +549,7 @@ def api_get_current_rates(request):
 @login_required
 def system_management(request):
     """
-    Manage system-wide settings: water rates, reading schedule, and billing schedule.
+    Manage system-wide settings: water rates, reading schedule, billing schedule, and penalties.
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
@@ -569,10 +569,24 @@ def system_management(request):
             billing_day = request.POST.get("billing_day_of_month")
             due_day = request.POST.get("due_day_of_month")
 
+            # Get penalty settings
+            penalty_enabled = request.POST.get("penalty_enabled") == "on"
+            penalty_type = request.POST.get("penalty_type", "percentage")
+            penalty_rate_str = request.POST.get("penalty_rate", "10")
+            fixed_penalty_str = request.POST.get("fixed_penalty_amount", "50")
+            grace_period_str = request.POST.get("penalty_grace_period_days", "0")
+            max_penalty_str = request.POST.get("max_penalty_amount", "500")
+
             # Validate and convert to Decimal
             new_res_rate = Decimal(new_res_rate_str)
             new_comm_rate = Decimal(new_comm_rate_str)
             new_fixed_charge = Decimal(new_fixed_charge_str)
+
+            # Validate and convert penalty values
+            penalty_rate = Decimal(penalty_rate_str)
+            fixed_penalty = Decimal(fixed_penalty_str)
+            grace_period = int(grace_period_str)
+            max_penalty = Decimal(max_penalty_str)
 
             # Validate and convert schedule days
             reading_start = int(reading_start)
@@ -583,6 +597,18 @@ def system_management(request):
             # Validate rates
             if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
                 raise ValueError("Rates must be positive and fixed charge cannot be negative.")
+
+            # Validate penalty settings
+            if penalty_rate < 0 or penalty_rate > 100:
+                raise ValueError("Penalty rate must be between 0 and 100 percent.")
+            if fixed_penalty < 0:
+                raise ValueError("Fixed penalty amount cannot be negative.")
+            if grace_period < 0 or grace_period > 30:
+                raise ValueError("Grace period must be between 0 and 30 days.")
+            if max_penalty < 0:
+                raise ValueError("Maximum penalty cannot be negative.")
+            if penalty_type not in ['percentage', 'fixed']:
+                raise ValueError("Invalid penalty type.")
 
             # Validate all days are within 1-28
             for day, name in [(reading_start, "Reading start"), (reading_end, "Reading end"),
@@ -602,7 +628,27 @@ def system_management(request):
             setting.reading_end_day = reading_end
             setting.billing_day_of_month = billing_day
             setting.due_day_of_month = due_day
+
+            # Update penalty settings
+            setting.penalty_enabled = penalty_enabled
+            setting.penalty_type = penalty_type
+            setting.penalty_rate = penalty_rate
+            setting.fixed_penalty_amount = fixed_penalty
+            setting.penalty_grace_period_days = grace_period
+            setting.max_penalty_amount = max_penalty
+
             setting.save()
+
+            # Log the activity
+            if hasattr(request, 'login_event') and request.login_event:
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='system_settings_updated',
+                    description=f"Updated system settings including penalty configuration",
+                    ip_address=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    login_event=request.login_event
+                )
 
             messages.success(request, "System settings updated successfully!")
         except (InvalidOperation, ValueError, TypeError) as e:
@@ -2879,25 +2925,34 @@ def confirm_selected_readings(request, barangay_id):
 @login_required
 def inquire(request):
     """
-    Bill Inquiry and Payment Processing page.
+    Bill Inquiry and Payment Processing page with Penalty Support.
 
     TESTING: After confirming a meter reading, come here to pay the bill.
 
     GET: Display bill inquiry form
         - Select Barangay → Purok → Consumer
         - Shows pending bills for selected consumer
+        - Calculates and displays any applicable penalties
 
     POST: Process payment
         - Creates Payment record with auto-generated OR number
+        - Includes penalty amount in payment if applicable
         - Updates Bill status to 'Paid'
         - Redirects to receipt page
     """
+    from .utils import calculate_penalty, update_bill_penalty, get_payment_breakdown
+
+    # Get system settings for penalty calculation
+    system_settings = SystemSetting.objects.first()
+
     if request.method == "POST":
         # ====================================================================
         # PAYMENT PROCESSING (Final step in billing flow)
         # ====================================================================
         bill_id = request.POST.get('bill_id')
         received_amount = request.POST.get('received_amount')
+        waive_penalty = request.POST.get('waive_penalty') == 'true'
+        waive_reason = request.POST.get('waive_reason', '').strip()
 
         if not bill_id or not received_amount:
             messages.error(request, "Missing bill or payment amount.")
@@ -2906,29 +2961,65 @@ def inquire(request):
         try:
             bill = get_object_or_404(Bill, id=bill_id)
             received_amount = Decimal(received_amount)
-            amount_due = bill.total_amount
+
+            # Update penalty calculation before processing payment
+            update_bill_penalty(bill, system_settings, save=True)
+
+            # Handle penalty waiver if requested (admin only)
+            if waive_penalty and bill.penalty_amount > 0:
+                if request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin'):
+                    bill.penalty_waived = True
+                    bill.penalty_waived_by = request.user
+                    bill.penalty_waived_reason = waive_reason or "Waived at payment"
+                    bill.penalty_waived_date = timezone.now()
+                    bill.save()
+                else:
+                    messages.warning(request, "Only administrators can waive penalties.")
+
+            # Calculate total amount due (bill + effective penalty)
+            original_bill_amount = bill.total_amount
+            effective_penalty = bill.effective_penalty
+            total_amount_due = bill.total_amount_due
 
             # Validate payment amount
-            if received_amount < amount_due:
-                messages.error(request, f"Insufficient payment. Amount due is ₱{amount_due}.")
-                return redirect(request.get_full_path())  # Stay on same consumer
+            if received_amount < total_amount_due:
+                messages.error(request, f"Insufficient payment. Total amount due is ₱{total_amount_due:,.2f} (Bill: ₱{original_bill_amount:,.2f} + Penalty: ₱{effective_penalty:,.2f}).")
+                return redirect(f"{request.path}?consumer={bill.consumer.id}")
 
-            # CREATE PAYMENT RECORD
+            # CREATE PAYMENT RECORD with penalty tracking
             # OR number format: OR-YYYYMMDD-XXXXXX (auto-generated)
             payment = Payment.objects.create(
                 bill=bill,
-                amount_paid=amount_due,
+                original_bill_amount=original_bill_amount,
+                penalty_amount=effective_penalty,
+                penalty_waived=bill.penalty_waived,
+                days_overdue_at_payment=bill.days_overdue,
+                amount_paid=total_amount_due,
                 received_amount=received_amount,
-                change=received_amount - amount_due,  # Auto-calculate change
+                change=received_amount - total_amount_due,
                 payment_date=timezone.now(),
-                or_number=f"OR-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+                or_number=f"OR-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
+                processed_by=request.user,
             )
 
             # MARK BILL AS PAID - This completes the billing cycle
             bill.status = 'Paid'
             bill.save()
 
-            messages.success(request, f"Payment processed successfully! OR: {payment.or_number}")
+            # Log the activity
+            if hasattr(request, 'login_event') and request.login_event:
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='payment_processed',
+                    description=f"Processed payment OR#{payment.or_number} for {bill.consumer.full_name}. Amount: ₱{total_amount_due:,.2f}" +
+                               (f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""),
+                    ip_address=get_client_ip(request),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    login_event=request.login_event
+                )
+
+            penalty_msg = f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""
+            messages.success(request, f"Payment processed successfully! OR: {payment.or_number}{penalty_msg}")
             return redirect('consumers:payment_receipt', payment_id=payment.id)
 
         except (ValueError, InvalidOperation):
@@ -2949,6 +3040,9 @@ def inquire(request):
     consumers_with_bills = set()
     for c in consumers:
         bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
+        if bill:
+            # Update penalty for display
+            update_bill_penalty(bill, system_settings, save=True)
         consumer_bills[c.id] = bill
         # Check if consumer has ever had any bills
         if c.bills.exists():
@@ -2956,13 +3050,23 @@ def inquire(request):
 
     selected_consumer = None
     latest_bill = None
+    payment_breakdown = None
 
     if selected_consumer_id:
         selected_consumer = get_object_or_404(Consumer, id=selected_consumer_id)
         latest_bill = selected_consumer.bills.filter(status='Pending').order_by('-billing_period').first()
 
+        if latest_bill:
+            # Get detailed payment breakdown including penalty
+            payment_breakdown = get_payment_breakdown(latest_bill, system_settings)
+
     # Count total pending bills
     total_pending_bills = Bill.objects.filter(status='Pending').count()
+
+    # Check if user can waive penalties
+    can_waive_penalty = request.user.is_superuser or (
+        hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin'
+    )
 
     context = {
         'consumers': consumers,
@@ -2970,7 +3074,10 @@ def inquire(request):
         'consumers_with_bills': consumers_with_bills,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
+        'payment_breakdown': payment_breakdown,
         'total_pending_bills': total_pending_bills,
+        'system_settings': system_settings,
+        'can_waive_penalty': can_waive_penalty,
     }
     return render(request, 'consumers/inquire.html', context)
 
@@ -2995,6 +3102,84 @@ def payment_receipt(request, payment_id):
         'payment': payment,
         'previous_reading_value': previous_reading_value
     })
+
+
+@login_required
+def payment_history(request):
+    """
+    Payment History view showing all payments with penalty tracking.
+    Allows filtering by date range, consumer, and penalty status.
+    """
+    from django.core.paginator import Paginator
+    from django.db.models import Sum, Q
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    date_from = request.GET.get('date_from', '')
+    date_to = request.GET.get('date_to', '')
+    penalty_filter = request.GET.get('penalty', '')  # 'with_penalty', 'waived', 'no_penalty'
+
+    # Base query with related data
+    payments = Payment.objects.select_related(
+        'bill__consumer__barangay',
+        'processed_by'
+    ).order_by('-payment_date')
+
+    # Apply filters
+    if search_query:
+        payments = payments.filter(
+            Q(bill__consumer__first_name__icontains=search_query) |
+            Q(bill__consumer__last_name__icontains=search_query) |
+            Q(bill__consumer__account_number__icontains=search_query) |
+            Q(or_number__icontains=search_query)
+        )
+
+    if date_from:
+        payments = payments.filter(payment_date__date__gte=date_from)
+
+    if date_to:
+        payments = payments.filter(payment_date__date__lte=date_to)
+
+    if penalty_filter == 'with_penalty':
+        payments = payments.filter(penalty_amount__gt=0, penalty_waived=False)
+    elif penalty_filter == 'waived':
+        payments = payments.filter(penalty_waived=True)
+    elif penalty_filter == 'no_penalty':
+        payments = payments.filter(penalty_amount=0)
+
+    # Calculate statistics
+    total_stats = payments.aggregate(
+        total_collected=Sum('amount_paid'),
+        total_penalties=Sum('penalty_amount'),
+        total_bills=Sum('original_bill_amount')
+    )
+
+    # Count by penalty status
+    penalty_counts = {
+        'with_penalty': payments.filter(penalty_amount__gt=0, penalty_waived=False).count(),
+        'waived': payments.filter(penalty_waived=True).count(),
+        'no_penalty': payments.filter(penalty_amount=0).count(),
+    }
+
+    # Pagination
+    paginator = Paginator(payments, 25)  # 25 per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'payments': page_obj,
+        'search_query': search_query,
+        'date_from': date_from,
+        'date_to': date_to,
+        'penalty_filter': penalty_filter,
+        'total_stats': total_stats,
+        'penalty_counts': penalty_counts,
+        'total_count': payments.count(),
+    }
+
+    return render(request, 'consumers/payment_history.html', context)
+
 
 @login_required
 def user_login_history(request):
