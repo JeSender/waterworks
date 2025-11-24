@@ -424,7 +424,6 @@ def api_consumers(request):
 
 
 @csrf_exempt
-@login_required
 def api_logout(request):
     """API logout for Android app with session tracking."""
     from .decorators import get_client_ip, get_user_agent
@@ -433,24 +432,66 @@ def api_logout(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        # Update the logout timestamp for the current session
-        latest_session = UserLoginEvent.objects.filter(
-            user=request.user,
-            session_key=request.session.session_key,
-            logout_timestamp__isnull=True
-        ).first()
+        # Get token from request body or header
+        token = None
 
-        if latest_session:
-            latest_session.logout_timestamp = timezone.now()
-            latest_session.save()
+        # Try to get token from request body
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+        except (json.JSONDecodeError, ValueError):
+            pass
 
-        logout(request)
-        return JsonResponse({
-            'status': 'success',
-            'message': 'Logged out successfully',
-            'logout_time': timezone.now().isoformat()
-        })
+        # If no token in body, try Authorization header
+        if not token:
+            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header[7:]
+            elif auth_header.startswith('Token '):
+                token = auth_header[6:]
+
+        # If still no token, try session key from current session
+        if not token and request.session.session_key:
+            token = request.session.session_key
+
+        if token:
+            # Update the logout timestamp for the session with this token
+            latest_session = UserLoginEvent.objects.filter(
+                session_key=token,
+                logout_timestamp__isnull=True,
+                login_method='mobile'
+            ).first()
+
+            if latest_session:
+                latest_session.logout_timestamp = timezone.now()
+                latest_session.save()
+
+                # Also logout from Django session if authenticated
+                if request.user.is_authenticated:
+                    logout(request)
+
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Logged out successfully',
+                    'logout_time': timezone.now().isoformat()
+                })
+            else:
+                # Session not found, might already be logged out
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Session already logged out or not found',
+                    'logout_time': timezone.now().isoformat()
+                })
+        else:
+            return JsonResponse({
+                'error': 'No token provided',
+                'message': 'Please provide token in request body or Authorization header'
+            }, status=400)
+
     except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error during API logout: {e}", exc_info=True)
         return JsonResponse({'error': str(e)}, status=500)
 
 # ... (other views remain the same) ...
