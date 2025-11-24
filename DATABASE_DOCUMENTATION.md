@@ -165,7 +165,7 @@ INSERT INTO consumers_meterreading (consumer_id, reading_date, reading_value, so
 ---
 
 ### 6. **Bill** Table
-Stores billing information.
+Stores billing information with penalty tracking (Updated v2.0).
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
@@ -179,6 +179,13 @@ Stores billing information.
 | rate_per_cubic | DECIMAL(6,2) | DEFAULT 22.50 | Rate per cubic meter |
 | fixed_charge | DECIMAL(8,2) | DEFAULT 50.00 | Fixed monthly charge |
 | total_amount | DECIMAL(10,2) | NOT NULL | Total bill amount |
+| **penalty_amount** | DECIMAL(10,2) | DEFAULT 0.00 | Late payment penalty (NEW) |
+| **penalty_applied_date** | DATE | NULL | When penalty was first applied (NEW) |
+| **penalty_waived** | BOOLEAN | DEFAULT FALSE | Whether penalty was waived (NEW) |
+| **penalty_waived_by_id** | INTEGER | FOREIGN KEY | Admin who waived penalty (NEW) |
+| **penalty_waived_reason** | VARCHAR(255) | NULL | Reason for waiving (NEW) |
+| **penalty_waived_date** | DATETIME | NULL | When penalty was waived (NEW) |
+| **days_overdue** | INTEGER | DEFAULT 0 | Days past due date (NEW) |
 | status | VARCHAR(20) | DEFAULT 'Pending' | Pending/Paid/Overdue |
 | created_at | DATETIME | AUTO | Creation timestamp |
 
@@ -206,7 +213,7 @@ INSERT INTO consumers_bill (consumer_id, previous_reading_id, current_reading_id
 ---
 
 ### 7. **SystemSetting** Table
-System-wide configuration settings.
+System-wide configuration settings including penalty configuration (Updated v2.0).
 
 | Field | Type | Constraints | Description |
 |-------|------|-------------|-------------|
@@ -214,14 +221,27 @@ System-wide configuration settings.
 | residential_rate_per_cubic | DECIMAL(10,2) | DEFAULT 22.50 | Residential rate (₱/m³) |
 | commercial_rate_per_cubic | DECIMAL(10,2) | DEFAULT 25.00 | Commercial rate (₱/m³) |
 | fixed_charge | DECIMAL(10,2) | DEFAULT 50.00 | Fixed monthly charge |
+| reading_start_day | INTEGER | DEFAULT 1 | Reading period start day |
+| reading_end_day | INTEGER | DEFAULT 10 | Reading period end day |
 | billing_day_of_month | INTEGER | DEFAULT 1 | Billing period start day |
 | due_day_of_month | INTEGER | DEFAULT 20 | Payment due day |
+| **penalty_enabled** | BOOLEAN | DEFAULT TRUE | Enable late payment penalties (NEW) |
+| **penalty_type** | VARCHAR(20) | DEFAULT 'percentage' | Type: percentage/fixed (NEW) |
+| **penalty_rate** | DECIMAL(5,2) | DEFAULT 10.00 | Penalty rate percentage (NEW) |
+| **fixed_penalty_amount** | DECIMAL(10,2) | DEFAULT 50.00 | Fixed penalty amount (NEW) |
+| **penalty_grace_period_days** | INTEGER | DEFAULT 0 | Grace period in days (NEW) |
+| **max_penalty_amount** | DECIMAL(10,2) | DEFAULT 500.00 | Maximum penalty cap (NEW) |
 | updated_at | DATETIME | AUTO | Last update timestamp |
 
 **Test Data:**
 ```sql
-INSERT INTO consumers_systemsetting (residential_rate_per_cubic, commercial_rate_per_cubic, fixed_charge, billing_day_of_month, due_day_of_month) VALUES
-(22.50, 25.00, 50.00, 1, 20);
+INSERT INTO consumers_systemsetting (
+    residential_rate_per_cubic, commercial_rate_per_cubic, fixed_charge,
+    reading_start_day, reading_end_day, billing_day_of_month, due_day_of_month,
+    penalty_enabled, penalty_type, penalty_rate, fixed_penalty_amount,
+    penalty_grace_period_days, max_penalty_amount
+) VALUES
+(22.50, 25.00, 50.00, 1, 10, 1, 20, TRUE, 'percentage', 10.00, 50.00, 0, 500.00);
 ```
 
 ---

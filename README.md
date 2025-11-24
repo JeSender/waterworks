@@ -24,7 +24,16 @@ A comprehensive water utility management system with web portal, mobile app inte
 - **Meter Reading** - Web and mobile meter reading submission
 - **Automated Billing** - Generate bills from confirmed readings
 - **Payment Processing** - Track payments with OR generation
+- **Late Payment Penalty System** - Configurable penalties with grace period and waiver
 - **Reports & Analytics** - Revenue, delinquency, and summary reports
+
+### Late Payment Penalty System (v2.0)
+- **Flexible Penalty Types** - Percentage-based or fixed amount penalties
+- **Grace Period** - Configurable grace period before penalties apply
+- **Maximum Cap** - Set maximum penalty amount to protect consumers
+- **Admin Waiver** - Authorized staff can waive penalties with audit trail
+- **Payment History** - Track all payments with penalty status
+- **Real-time Calculation** - Automatic penalty calculation on payment inquiry
 
 ### Security Features
 - **Enhanced Login Tracking** - IP address, device, and session tracking
@@ -120,7 +129,8 @@ See **[RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)** for complete 
 balilihan_waterworks/
 ├── consumers/              # Main Django app
 │   ├── models.py          # Database models
-│   ├── views.py           # Business logic (2300+ lines)
+│   ├── views.py           # Business logic (3200+ lines)
+│   ├── utils.py           # Utility functions (penalty calculation)
 │   ├── decorators.py      # Security decorators
 │   ├── urls.py            # URL routing
 │   ├── forms.py           # Django forms
@@ -151,7 +161,7 @@ balilihan_waterworks/
 - **Barangay** - Area management
 - **Purok** - Sub-area management
 - **StaffProfile** - Staff assignments
-- **SystemSetting** - Water rates configuration
+- **SystemSetting** - Water rates and penalty configuration
 
 ---
 
@@ -244,6 +254,9 @@ python manage.py test consumers
 - [ ] Meter reading submission
 - [ ] Bill generation
 - [ ] Payment processing
+- [ ] Late payment penalty calculation
+- [ ] Penalty waiver (admin only)
+- [ ] Payment history with filters
 - [ ] Report generation
 - [ ] API endpoints
 - [ ] Security features
@@ -256,6 +269,7 @@ python manage.py test consumers
 1. **Revenue Report** - All payments for a period
 2. **Delinquency Report** - Unpaid bills
 3. **Payment Summary** - Consumer payment totals
+4. **Payment History** - All payments with penalty tracking
 
 ### Export Formats
 - Excel (.xlsx) with formatting
@@ -289,6 +303,10 @@ python manage.py test consumers
 
 ## 📖 Documentation
 
+- **[docs/PROGRAM_HIERARCHY.md](docs/PROGRAM_HIERARCHY.md)** - Complete system hierarchy and architecture
+- **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)** - Technical architecture documentation
+- **[docs/SYSTEM_FLOW.md](docs/SYSTEM_FLOW.md)** - Business process workflows
+- **[DATABASE_DOCUMENTATION.md](DATABASE_DOCUMENTATION.md)** - Database schema and models
 - **[RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)** - Complete deployment guide
 - **[DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)** - Changes and configuration summary
 - **[FINAL_IMPLEMENTATION_SUMMARY.md](FINAL_IMPLEMENTATION_SUMMARY.md)** - Feature overview
@@ -410,13 +428,14 @@ This project is developed for educational purposes as part of a thesis/research 
 
 ## 📈 Project Statistics
 
-- **Total Code:** ~2,500 lines Python + templates
+- **Total Code:** ~3,500 lines Python + templates
 - **Database Models:** 11
-- **Web Views:** 40+ functions
+- **Web Views:** 45+ functions
 - **API Endpoints:** 4
 - **Security Features:** 8 major implementations
+- **Penalty System:** Complete with waiver audit trail
 - **User Roles:** 4 levels
-- **Templates:** 15+ HTML pages
+- **Templates:** 35+ HTML pages
 
 ---
 
@@ -433,7 +452,7 @@ This project is developed for educational purposes as part of a thesis/research 
 
 **System Status:** 🟢 **PRODUCTION READY**
 **Platform:** ☁️ **Railway.app**
-**Last Updated:** January 2025
+**Last Updated:** November 2025
 
 ---
 

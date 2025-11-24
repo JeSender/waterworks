@@ -1,6 +1,11 @@
 # Balilihan Waterworks Management System
 ## Complete System Flow Documentation
 
+**Version:** 2.0
+**Last Updated:** November 24, 2025
+
+> **v2.0 Updates:** Added Late Payment Penalty System, Payment History, Penalty Waiver Flow
+
 ---
 
 ## Table of Contents
@@ -8,11 +13,12 @@
 2. [User Roles & Access](#2-user-roles--access)
 3. [System Architecture](#3-system-architecture)
 4. [Monthly Billing Cycle](#4-monthly-billing-cycle)
-5. [Mobile App Flow](#5-mobile-app-flow)
-6. [Web Portal Flow](#6-web-portal-flow)
-7. [API Endpoints](#7-api-endpoints)
-8. [Database Models](#8-database-models)
-9. [Key Features](#9-key-features)
+5. [Late Payment Penalty Flow](#5-late-payment-penalty-flow) *(NEW)*
+6. [Mobile App Flow](#6-mobile-app-flow)
+7. [Web Portal Flow](#7-web-portal-flow)
+8. [API Endpoints](#8-api-endpoints)
+9. [Database Models](#9-database-models)
+10. [Key Features](#10-key-features)
 
 ---
 
@@ -175,9 +181,157 @@ The Balilihan Waterworks Management System is a comprehensive water utility mana
 | `billing_day_of_month` | 1 | Day shown as billing period start on bills |
 | `due_day_of_month` | 20 | Payment deadline shown on bills |
 
+### 4.3 Penalty Settings (NEW v2.0)
+
+| Setting | Default | Description |
+|---------|---------|-------------|
+| `penalty_enabled` | True | Enable/disable late payment penalties |
+| `penalty_type` | percentage | Type of penalty (percentage/fixed) |
+| `penalty_rate` | 10% | Percentage of bill amount |
+| `fixed_penalty_amount` | ₱50.00 | Fixed penalty amount |
+| `penalty_grace_period_days` | 0 | Days after due date before penalty |
+| `max_penalty_amount` | ₱500.00 | Maximum penalty cap |
+
 ---
 
-## 5. Mobile App Flow
+## 5. Late Payment Penalty Flow (NEW v2.0)
+
+### 5.1 Penalty Calculation Workflow
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                 LATE PAYMENT PENALTY FLOW                        │
+└─────────────────────────────────────────────────────────────────┘
+
+    ┌─────────────────────────────────────────────────────────┐
+    │  STEP 1: BILL CREATED (Due Date Set)                    │
+    │  ─────────────────────────────────────────────────────  │
+    │  • Bill generated when reading is confirmed             │
+    │  • Due date = billing_day + due_day_of_month            │
+    │  • Example: Due date = November 20, 2025                │
+    │  • status = 'Pending', penalty_amount = 0               │
+    └───────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │  STEP 2: DUE DATE PASSES                                │
+    │  ─────────────────────────────────────────────────────  │
+    │  • Today > Due Date (e.g., Nov 25 > Nov 20)            │
+    │  • Bill is now OVERDUE                                  │
+    │  • days_overdue = today - due_date = 5 days            │
+    └───────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │  STEP 3: GRACE PERIOD CHECK                             │
+    │  ─────────────────────────────────────────────────────  │
+    │  IF days_overdue <= grace_period_days:                  │
+    │      → No penalty applied (within grace period)         │
+    │  ELSE:                                                  │
+    │      → Proceed to penalty calculation                   │
+    └───────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │  STEP 4: PENALTY CALCULATION                            │
+    │  ─────────────────────────────────────────────────────  │
+    │  IF penalty_type = 'percentage':                        │
+    │      penalty = bill_amount × (penalty_rate / 100)       │
+    │      Example: ₱275 × 10% = ₱27.50                       │
+    │  ELSE (fixed):                                          │
+    │      penalty = fixed_penalty_amount                     │
+    │      Example: ₱50.00                                    │
+    │                                                         │
+    │  Apply maximum cap:                                     │
+    │  IF penalty > max_penalty_amount:                       │
+    │      penalty = max_penalty_amount                       │
+    └───────────────────────────┬─────────────────────────────┘
+                                │
+                                ▼
+    ┌─────────────────────────────────────────────────────────┐
+    │  STEP 5: PAYMENT WITH PENALTY                           │
+    │  ─────────────────────────────────────────────────────  │
+    │  Display to cashier:                                    │
+    │  ┌─────────────────────────────────────────────────┐   │
+    │  │ Bill Amount:         ₱275.00                    │   │
+    │  │ Late Penalty (10%):  ₱27.50  (5 days overdue)  │   │
+    │  │ ─────────────────────────────────────────────── │   │
+    │  │ TOTAL DUE:           ₱302.50                    │   │
+    │  └─────────────────────────────────────────────────┘   │
+    │                                                         │
+    │  Admin Option: [✓] Waive Penalty (reason required)     │
+    └─────────────────────────────────────────────────────────┘
+```
+
+### 5.2 Penalty Waiver Process
+
+```
+┌─────────────────────────────────────────────────────────────────┐
+│                   PENALTY WAIVER FLOW                            │
+└─────────────────────────────────────────────────────────────────┘
+
+    ┌───────────────────────────────────────────────────────────┐
+    │  WHO CAN WAIVE: Superuser or Admin role only              │
+    └───────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │  STEP 1: Admin checks "Waive Penalty" checkbox            │
+    └───────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │  STEP 2: Enter waiver reason (required)                   │
+    │  Example: "First-time late payment", "Financial hardship" │
+    └───────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │  STEP 3: System records waiver                            │
+    │  • bill.penalty_waived = True                             │
+    │  • bill.penalty_waived_by = current_user                  │
+    │  • bill.penalty_waived_reason = reason                    │
+    │  • bill.penalty_waived_date = now()                       │
+    └───────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │  STEP 4: Payment processed without penalty                │
+    │  • payment.penalty_waived = True                          │
+    │  • payment.penalty_amount = original_penalty (for record) │
+    │  • payment.amount_paid = bill_amount only                 │
+    └───────────────────────────────────────────────────────────┘
+                                │
+                                ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │  STEP 5: Receipt shows waived penalty                     │
+    │  ┌─────────────────────────────────────────────────────┐ │
+    │  │ WATER BILL                        ₱275.00           │ │
+    │  │ LATE PENALTY (WAIVED)             ₱27.50 → ₱0.00   │ │
+    │  │ ─────────────────────────────────────────────────── │ │
+    │  │ TOTAL PAID                        ₱275.00           │ │
+    │  │                                                     │ │
+    │  │ Waived by: Admin User                               │ │
+    │  └─────────────────────────────────────────────────────┘ │
+    └───────────────────────────────────────────────────────────┘
+```
+
+### 5.3 Penalty Configuration (System Management)
+
+Administrators can configure penalty settings at `/system-management/`:
+
+| Field | Description | Options |
+|-------|-------------|---------|
+| Enable Penalties | Toggle penalty system on/off | On/Off |
+| Penalty Type | How penalty is calculated | Percentage / Fixed |
+| Penalty Rate | Percentage of bill | 0-100% |
+| Fixed Amount | Fixed penalty amount | ₱0.00+ |
+| Grace Period | Days before penalty | 0-30 days |
+| Maximum Cap | Penalty limit | ₱0.00+ (0=no cap) |
+
+---
+
+## 6. Mobile App Flow
 
 ### 5.1 Field Staff Login
 

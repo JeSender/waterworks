@@ -1,8 +1,10 @@
 # Balilihan Waterworks Management System - System Architecture
 
-**Version:** 1.0
-**Last Updated:** November 18, 2025
+**Version:** 2.0
+**Last Updated:** November 24, 2025
 **Project:** Django-based Water Utility Billing & Management System
+
+> **v2.0 Updates:** Added Late Payment Penalty System, Payment History, Enhanced Audit Trail
 
 ---
 
@@ -26,7 +28,10 @@ The Balilihan Waterworks Management System is a comprehensive web-based platform
 - **Consumer Management:** Registration, tracking, and status management
 - **Meter Reading:** Multi-source data collection (manual, mobile, IoT)
 - **Automated Billing:** Consumption-based billing with configurable rates
+- **Late Payment Penalties:** Configurable penalty system with grace periods (NEW v2.0)
 - **Payment Processing:** Transaction handling with official receipt generation
+- **Penalty Waiver:** Admin ability to waive penalties with audit trail (NEW v2.0)
+- **Payment History:** Complete payment tracking with penalty details (NEW v2.0)
 - **Reporting & Analytics:** Revenue reports, delinquency tracking, exports
 - **Mobile Integration:** RESTful API for Android field staff app
 - **Role-Based Access:** Admin and field staff with barangay-level permissions
