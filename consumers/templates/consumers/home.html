@@ -202,20 +202,25 @@
 
     <!-- Consumer Bill Status by Barangay Section - Takes remaining space (SCROLLABLE TABLE) -->
     <div class="table-container-wrapper bg-white rounded-lg shadow-sm overflow-hidden">
-        <!-- Header with Filter, Print and Total (FIXED within table card) -->
+        <!-- Header with Filter, Search, Print (FIXED within table card) -->
         <div class="bg-gradient-to-r from-primary-600 to-primary-700 text-white py-1.5 px-3 flex justify-between items-center" style="flex-shrink: 0;">
             <div class="flex items-center gap-3">
                 <h5 class="text-xs font-semibold m-0 flex items-center gap-1.5">
                     <i class="bi bi-people-fill"></i>
-                    Consumer Bill Status by Barangay
+                    Consumer Bill Status
                 </h5>
                 <span class="text-xs text-white/80">
                     (<span id="visibleCount" class="font-semibold">0</span> of <span id="totalCount" class="font-semibold">0</span>)
                 </span>
             </div>
             <div class="flex items-center gap-2">
-                <label for="barangayFilter" class="text-white text-xs m-0">Filter:</label>
-                <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded-md focus:outline-none bg-white/20 text-white min-w-[130px]">
+                <!-- Search Input -->
+                <div class="relative">
+                    <input type="text" id="consumerSearch" placeholder="Search consumer..."
+                           class="px-2 py-1 pl-7 text-xs rounded-md focus:outline-none focus:ring-1 focus:ring-white bg-white/20 text-white placeholder-white/60 w-40">
+                    <i class="bi bi-search absolute left-2 top-1/2 -translate-y-1/2 text-white/60 text-xs"></i>
+                </div>
+                <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded-md focus:outline-none bg-white/20 text-white min-w-[120px]">
                     <option value="all" class="text-dark-900">All Barangays</option>
                     {% for barangay in all_barangays %}
                     <option value="{{ barangay.id }}" class="text-dark-900">{{ barangay.name }}</option>
@@ -311,12 +316,26 @@ document.addEventListener('DOMContentLoaded', function() {
         return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    /* Function to render table */
-    function renderTable(filter = 'all') {
+    /* Search input */
+    const searchInput = document.getElementById('consumerSearch');
+    let searchQuery = '';
+
+    /* Function to render table with search and filter */
+    function renderTable(filter = 'all', search = '') {
         let filteredData = consumerBillStatusData;
 
+        // Apply barangay filter
         if (filter !== 'all') {
-            filteredData = consumerBillStatusData.filter(item => item.barangay_id == filter);
+            filteredData = filteredData.filter(item => item.barangay_id == filter);
+        }
+
+        // Apply search filter
+        if (search.trim() !== '') {
+            const searchLower = search.toLowerCase();
+            filteredData = filteredData.filter(item =>
+                item.consumer_name.toLowerCase().includes(searchLower) ||
+                item.account_number.toLowerCase().includes(searchLower)
+            );
         }
 
         visibleCountEl.textContent = filteredData.length;
@@ -328,14 +347,18 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <td colspan="6" class="text-center text-dark-400 py-6">
                         <i class="bi bi-inbox text-2xl block mb-2 opacity-30"></i>
-                        No consumers found for the selected barangay
+                        No consumers found
                     </td>
                 </tr>
             `;
             return;
         }
 
-        filteredData.forEach(item => {
+        // Limit to 10 items for display (but show all filtered results when searching)
+        const displayData = search.trim() !== '' ? filteredData : filteredData.slice(0, 10);
+        const hasMore = search.trim() === '' && filteredData.length > 10;
+
+        displayData.forEach(item => {
             const row = document.createElement('tr');
             row.className = 'hover:bg-light-50 transition-colors';
             row.innerHTML = `
@@ -348,11 +371,34 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tableBody.appendChild(row);
         });
+
+        // Show "more items" indicator if there are more than 10
+        if (hasMore) {
+            const moreRow = document.createElement('tr');
+            moreRow.className = 'bg-light-50';
+            moreRow.innerHTML = `
+                <td colspan="6" class="py-2 px-3 text-center text-xs text-dark-500">
+                    <i class="bi bi-three-dots"></i> ${filteredData.length - 10} more consumers. Use search to find specific consumer.
+                </td>
+            `;
+            tableBody.appendChild(moreRow);
+        }
     }
 
     renderTable();
+
+    // Barangay filter change
     barangayFilter.addEventListener('change', function() {
-        renderTable(this.value);
+        renderTable(this.value, searchInput.value);
+    });
+
+    // Search input with debounce
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            renderTable(barangayFilter.value, this.value);
+        }, 300);
     });
 });
 
