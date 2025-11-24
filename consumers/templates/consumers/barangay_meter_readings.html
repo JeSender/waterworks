@@ -34,6 +34,7 @@
             </div>
         {% endfor %}
     </div>
+    
 {% endif %}
 
 <!-- Search Filter -->
@@ -60,7 +61,8 @@
 </div>
 
 <!-- Data Table: High-Density Professional Layout -->
-<div class="bg-white rounded-lg shadow-md overflow-hidden">
+<div class=
+"bg-white rounded-lg shadow-md overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
             <thead class="bg-gray-100 border-b border-gray-200">
@@ -104,14 +106,7 @@
 
                         <!-- Consumer Name -->
                         <td class="px-4 py-2">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
-                                {% if item.consumer.is_delinquent %}
-                                <span class="inline-flex items-center px-1.5 py-0.5 text-xs font-bold rounded bg-red-100 text-red-700 border border-red-300" title="Has overdue unpaid bills">
-                                    <i class="bi bi-exclamation-triangle-fill mr-0.5"></i>Delinquent
-                                </span>
-                                {% endif %}
-                            </div>
+                            <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
                         </td>
 
                         <!-- Current Reading -->
@@ -172,21 +167,22 @@
                             {% endif %}
                         </td>
 
-                        <!-- Actions: Text Button for Easy Navigation -->
+                        <!-- Actions: Icon-Only Buttons with Tooltips -->
                         <td class="px-4 py-2 text-center">
                             {% if item.reading and not item.reading.is_confirmed %}
                                 <a href="{% url 'consumers:confirm_reading' item.reading.id %}"
                                    onclick="return confirm('Confirm billing for {{ item.display_id }}?\n\nConsumer: {{ item.consumer.first_name }} {{ item.consumer.last_name }}\nConsumption: {{ item.consumption|default:"N/A" }} m³')"
-                                   class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-white bg-green-600 hover:bg-green-700 rounded-lg shadow-sm transition-colors duration-150">
-                                    Confirm
+                                   class="inline-flex items-center justify-center w-8 h-8 text-green-600 hover:bg-green-50 rounded-lg transition-colors duration-150"
+                                   title="Confirm & Generate Bill">
+                                    <i class="bi bi-check-circle-fill text-lg"></i>
                                 </a>
                             {% elif item.reading %}
-                                <span class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-gray-500 bg-gray-100 rounded-lg cursor-not-allowed">
-                                    Confirmed
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-400" title="Already Confirmed">
+                                    <i class="bi bi-check-circle text-lg"></i>
                                 </span>
                             {% else %}
-                                <span class="inline-flex items-center justify-center px-4 py-1.5 text-sm font-medium text-gray-400 bg-gray-50 rounded-lg cursor-not-allowed">
-                                    No Reading
+                                <span class="inline-flex items-center justify-center w-8 h-8 text-gray-300" title="No Reading Available">
+                                    <i class="bi bi-dash-circle text-lg"></i>
                                 </span>
                             {% endif %}
                         </td>

@@ -337,6 +337,63 @@
             border-top: 1px solid #e5e7eb;
         }
 
+        /* === NOTIFICATION SYSTEM === */
+        .notification-dropdown {
+            min-width: 360px;
+            max-height: 400px;
+            overflow: hidden;
+        }
+        .notification-header {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .notification-body {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .notification-item {
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid #f3f4f6;
+            transition: background-color 0.15s;
+        }
+        .notification-item:hover {
+            background-color: #f9fafb;
+        }
+        .notification-item:last-child {
+            border-bottom: none;
+        }
+        .notification-item.unread {
+            background-color: #eef2ff;
+        }
+        .notification-badge {
+            position: absolute;
+            top: -4px;
+            right: -4px;
+            min-width: 18px;
+            height: 18px;
+            padding: 0 5px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: white;
+            background-color: #dc2626;
+            border-radius: 9999px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .notification-icon-wrapper {
+            position: relative;
+            display: inline-flex;
+        }
+        .notification-empty {
+            padding: 2rem 1rem;
+            text-align: center;
+            color: #9ca3af;
+        }
+
         /* Print Styles */
         @media print {
             .sidebar,
@@ -367,8 +424,65 @@
             <h1 class="mb-0 font-bold text-dark-900 text-base">Balilihan Waterworks</h1>
         </div>
 
-        <!-- User Profile Dropdown -->
-        <div class="dropdown">
+        <div class="flex items-center gap-4">
+            <!-- Notification Bell -->
+            <div class="dropdown">
+                <button class="dropdown-toggle notification-icon-wrapper p-2 rounded-lg hover:bg-light-100 transition-colors border-0 bg-transparent cursor-pointer"
+                        type="button"
+                        id="notificationDropdown"
+                        onclick="toggleDropdown('notificationDropdown', event)">
+                    <i class="bi bi-bell text-xl text-dark-600"></i>
+                    {% if messages %}
+                    <span class="notification-badge" id="notificationBadge">{{ messages|length }}</span>
+                    {% endif %}
+                </button>
+                <div class="dropdown-menu notification-dropdown" id="notificationDropdown-menu">
+                    <div class="notification-header">
+                        <span class="font-semibold text-dark-900">Notifications</span>
+                        {% if messages %}
+                        <button onclick="clearAllNotifications()" class="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                            Clear All
+                        </button>
+                        {% endif %}
+                    </div>
+                    <div class="notification-body" id="notificationBody">
+                        {% if messages %}
+                            {% for message in messages %}
+                            <div class="notification-item unread" data-notification-id="{{ forloop.counter }}">
+                                <div class="flex items-start gap-3">
+                                    <div class="flex-shrink-0 mt-0.5">
+                                        {% if message.tags == 'success' %}
+                                        <i class="bi bi-check-circle-fill text-success-600"></i>
+                                        {% elif message.tags == 'error' %}
+                                        <i class="bi bi-x-circle-fill text-danger-600"></i>
+                                        {% elif message.tags == 'warning' %}
+                                        <i class="bi bi-exclamation-triangle-fill text-warning-600"></i>
+                                        {% else %}
+                                        <i class="bi bi-info-circle-fill text-info-600"></i>
+                                        {% endif %}
+                                    </div>
+                                    <div class="flex-1 min-w-0">
+                                        <p class="text-sm text-dark-800 mb-1">{{ message }}</p>
+                                        <p class="text-xs text-dark-400">Just now</p>
+                                    </div>
+                                    <button onclick="dismissNotification(this)" class="flex-shrink-0 text-dark-400 hover:text-dark-600">
+                                        <i class="bi bi-x"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        {% else %}
+                            <div class="notification-empty">
+                                <i class="bi bi-bell-slash text-4xl mb-2 block text-light-400"></i>
+                                <p class="text-sm">No notifications</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- User Profile Dropdown -->
+            <div class="dropdown">
             <button class="dropdown-toggle flex items-center gap-2 p-0 border-0 bg-transparent cursor-pointer"
                     type="button"
                     id="userDropdown"
@@ -399,6 +513,7 @@
                     <span>Logout</span>
                 </a>
             </div>
+        </div>
         </div>
     </div>
 
@@ -544,6 +659,41 @@
         function hideLoading() {
             const overlay = document.getElementById('loadingOverlay');
             overlay.classList.remove('active');
+        }
+
+        // === NOTIFICATION FUNCTIONS ===
+        function dismissNotification(button) {
+            const item = button.closest('.notification-item');
+            item.style.opacity = '0';
+            item.style.transform = 'translateX(20px)';
+            setTimeout(() => {
+                item.remove();
+                updateNotificationBadge();
+            }, 200);
+        }
+
+        function clearAllNotifications() {
+            const body = document.getElementById('notificationBody');
+            body.innerHTML = `
+                <div class="notification-empty">
+                    <i class="bi bi-bell-slash text-4xl mb-2 block text-light-400"></i>
+                    <p class="text-sm">No notifications</p>
+                </div>
+            `;
+            updateNotificationBadge();
+        }
+
+        function updateNotificationBadge() {
+            const badge = document.getElementById('notificationBadge');
+            const items = document.querySelectorAll('.notification-item');
+            if (badge) {
+                if (items.length === 0) {
+                    badge.style.display = 'none';
+                } else {
+                    badge.textContent = items.length;
+                    badge.style.display = 'flex';
+                }
+            }
         }
 
         // Toast notification using SweetAlert2

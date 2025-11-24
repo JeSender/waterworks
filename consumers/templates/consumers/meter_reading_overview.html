@@ -11,19 +11,7 @@
     <p class="text-base text-dark-500 mt-1">As of {{ current_month|date:"F Y" }}</p>
 </div>
 
-<!-- Messages -->
-{% if messages %}
-    <div class="mb-6 space-y-2">
-        {% for message in messages %}
-            <div class="flex items-center justify-between p-4 rounded-xl border {% if message.tags == 'success' %}bg-success-50 border-success-200 text-success-800{% elif message.tags == 'error' %}bg-danger-50 border-danger-200 text-danger-800{% elif message.tags == 'warning' %}bg-warning-50 border-warning-200 text-warning-800{% else %}bg-info-50 border-info-200 text-info-800{% endif %}">
-                <span class="text-base font-medium">{{ message }}</span>
-                <button onclick="this.parentElement.remove()" class="text-dark-500 hover:text-dark-700">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-        {% endfor %}
-    </div>
-{% endif %}
+<!-- Messages now appear in header notification bell -->
 
 <!-- Search & Action Controls -->
 <div class="bg-white rounded-xl p-6 shadow-md mb-6">

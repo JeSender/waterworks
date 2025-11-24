@@ -11,19 +11,7 @@
         <p class="text-dark-500 text-base mt-1">Manage, search, and filter all consumers</p>
     </div>
 
-    <!-- Messages/Alerts -->
-    {% if messages %}
-    <div class="mb-6 space-y-2">
-        {% for message in messages %}
-        <div class="alert-{{ message.tags }} flex items-center justify-between rounded-xl text-base py-3 px-4">
-            <span>{{ message }}</span>
-            <button onclick="this.parentElement.remove()" class="text-current hover:opacity-75">
-                <i class="bi bi-x text-xl"></i>
-            </button>
-        </div>
-        {% endfor %}
-    </div>
-    {% endif %}
+    <!-- Messages now appear in header notification bell -->
 
     <!-- Search + Filter Form -->
     <div class="bg-white rounded-xl p-6 mb-6 shadow-md">
