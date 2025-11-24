@@ -1,7 +1,7 @@
 # consumers/forms.py
 
 from django import forms
-from .models import Consumer
+from .models import Consumer, Barangay
 
 class ConsumerForm(forms.ModelForm):
     # Date pickers for birth_date and registration_date
@@ -11,6 +11,11 @@ class ConsumerForm(forms.ModelForm):
     registration_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
     )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Sort barangay dropdown alphabetically
+        self.fields['barangay'].queryset = Barangay.objects.order_by('name')
 
     class Meta:
         model = Consumer
