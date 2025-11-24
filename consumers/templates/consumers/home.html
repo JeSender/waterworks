@@ -214,12 +214,6 @@
                 </span>
             </div>
             <div class="flex items-center gap-2">
-                <!-- Search Input -->
-                <div class="relative">
-                    <input type="text" id="consumerSearch" placeholder="Search consumer..."
-                           class="px-2 py-1 pl-7 text-xs rounded-md focus:outline-none focus:ring-1 focus:ring-white bg-white/20 text-white placeholder-white/60 w-40">
-                    <i class="bi bi-search absolute left-2 top-1/2 -translate-y-1/2 text-white/60 text-xs"></i>
-                </div>
                 <select id="barangayFilter" class="px-2 py-1 text-xs border-0 rounded-md focus:outline-none bg-white/20 text-white min-w-[120px]">
                     <option value="all" class="text-dark-900">All Barangays</option>
                     {% for barangay in all_barangays %}
@@ -316,26 +310,13 @@ document.addEventListener('DOMContentLoaded', function() {
         return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    /* Search input */
-    const searchInput = document.getElementById('consumerSearch');
-    let searchQuery = '';
-
-    /* Function to render table with search and filter */
-    function renderTable(filter = 'all', search = '') {
+    /* Function to render table with filter */
+    function renderTable(filter = 'all') {
         let filteredData = consumerBillStatusData;
 
         // Apply barangay filter
         if (filter !== 'all') {
             filteredData = filteredData.filter(item => item.barangay_id == filter);
-        }
-
-        // Apply search filter
-        if (search.trim() !== '') {
-            const searchLower = search.toLowerCase();
-            filteredData = filteredData.filter(item =>
-                item.consumer_name.toLowerCase().includes(searchLower) ||
-                item.account_number.toLowerCase().includes(searchLower)
-            );
         }
 
         visibleCountEl.textContent = filteredData.length;
@@ -354,11 +335,7 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Limit to 10 items for display (but show all filtered results when searching)
-        const displayData = search.trim() !== '' ? filteredData : filteredData.slice(0, 10);
-        const hasMore = search.trim() === '' && filteredData.length > 10;
-
-        displayData.forEach(item => {
+        filteredData.forEach(item => {
             const row = document.createElement('tr');
             row.className = 'hover:bg-light-50 transition-colors';
             row.innerHTML = `
@@ -371,34 +348,13 @@ document.addEventListener('DOMContentLoaded', function() {
             `;
             tableBody.appendChild(row);
         });
-
-        // Show "more items" indicator if there are more than 10
-        if (hasMore) {
-            const moreRow = document.createElement('tr');
-            moreRow.className = 'bg-light-50';
-            moreRow.innerHTML = `
-                <td colspan="6" class="py-2 px-3 text-center text-xs text-dark-500">
-                    <i class="bi bi-three-dots"></i> ${filteredData.length - 10} more consumers. Use search to find specific consumer.
-                </td>
-            `;
-            tableBody.appendChild(moreRow);
-        }
     }
 
     renderTable();
 
     // Barangay filter change
     barangayFilter.addEventListener('change', function() {
-        renderTable(this.value, searchInput.value);
-    });
-
-    // Search input with debounce
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            renderTable(barangayFilter.value, this.value);
-        }, 300);
+        renderTable(this.value);
     });
 });
 
