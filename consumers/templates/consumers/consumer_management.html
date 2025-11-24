@@ -6,32 +6,28 @@
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
-    <div class="mb-6">
-        <h2 class="text-2xl font-bold text-dark-900">Consumer Management</h2>
-        <p class="text-dark-500 text-base mt-1">Manage, search, and filter all consumers</p>
+    <div class="mb-3">
+        <h2 class="text-xl font-bold text-dark-900">Consumer Management</h2>
+        <p class="text-dark-500 text-sm">Manage, search, and filter all consumers</p>
     </div>
 
-    <!-- Messages now appear in header notification bell -->
-
-    <!-- Search + Filter Form -->
-    <div class="bg-white rounded-xl p-6 mb-6 shadow-md">
+    <!-- Search + Filter Form - Compact Single Row -->
+    <div class="bg-white rounded-lg p-3 mb-3 shadow-sm">
         <form method="get">
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div class="flex flex-wrap items-center gap-2">
                 <!-- Search Input -->
-                <div class="lg:col-span-2">
-                    <label for="search" class="block text-base font-medium text-dark-700 mb-2">Search</label>
+                <div class="flex-1 min-w-[200px]">
                     <input type="text"
                            id="search"
                            name="search"
-                           placeholder="Name, ID Number, or Serial No...."
-                           class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           placeholder="Search name, ID, or serial..."
+                           class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                            value="{{ search_query }}">
                 </div>
 
                 <!-- Barangay Filter -->
-                <div>
-                    <label for="barangay" class="block text-base font-medium text-dark-700 mb-2">Barangay</label>
-                    <select name="barangay" id="barangay" class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                <div class="w-48">
+                    <select name="barangay" id="barangay" class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
                         <option value="">All Barangays</option>
                         {% for brgy in barangays %}
                         <option value="{{ brgy.id }}" {% if barangay_filter == brgy.id|stringformat:"s" %}selected{% endif %}>
@@ -42,75 +38,73 @@
                 </div>
 
                 <!-- Action Buttons -->
-                <div class="flex items-end gap-3">
-                    <button type="submit" class="btn-primary flex-1">
-                        <i class="bi bi-search"></i>Search
-                    </button>
-                    <a href="{% url 'consumers:consumer_management' %}" class="btn-secondary flex-1 text-center">
-                        <i class="bi bi-arrow-clockwise"></i>Reset
-                    </a>
-                </div>
+                <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="bi bi-search"></i>Search
+                </button>
+                <a href="{% url 'consumers:consumer_management' %}" class="px-4 py-2 bg-light-100 hover:bg-light-200 text-dark-700 text-sm font-medium rounded-lg transition-colors flex items-center gap-1.5 border border-light-300">
+                    <i class="bi bi-arrow-clockwise"></i>Reset
+                </a>
             </div>
         </form>
     </div>
 
     <!-- Add Consumer Button -->
-    <div class="mb-6">
-        <a href="{% url 'consumers:add_consumer' %}" class="btn-success">
+    <div class="mb-3">
+        <a href="{% url 'consumers:add_consumer' %}" class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-1.5">
             <i class="bi bi-plus-circle"></i>Add Consumer
         </a>
     </div>
 
     <!-- Consumer Table -->
-    <div class="bg-white rounded-xl overflow-hidden shadow-md">
+    <div class="bg-white rounded-lg overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
-            <table class="w-full">
+            <table class="w-full text-sm">
                 <thead class="bg-light-100 border-b border-light-300">
                     <tr>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-center uppercase tracking-wider">ID Number</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-left uppercase tracking-wider">Name</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-left uppercase tracking-wider">Phone</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-left uppercase tracking-wider">Barangay</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-left uppercase tracking-wider">Purok</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-left uppercase tracking-wider">Serial No.</th>
-                        <th class="px-4 py-3 text-sm font-semibold text-dark-700 text-center uppercase tracking-wider">Actions</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">ID Number</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Name</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Phone</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Barangay</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Purok</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Serial No.</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-center uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-light-200">
                     {% for consumer in consumers.object_list %}
                     <tr class="hover:bg-light-50 transition-colors">
-                        <td class="px-4 py-3 text-center text-base font-semibold text-primary-600">
+                        <td class="px-3 py-2 font-semibold text-primary-600">
                             {{ consumer.account_number }}
                         </td>
-                        <td class="px-4 py-3 text-base font-medium text-dark-900">
+                        <td class="px-3 py-2 font-medium text-dark-900">
                             {{ consumer.first_name }}
                             {% if consumer.middle_name %}{{ consumer.middle_name|slice:":1" }}. {% endif %}
                             {{ consumer.last_name }}
                         </td>
-                        <td class="px-4 py-3 text-base text-dark-600">{{ consumer.phone_number|default:"—" }}</td>
-                        <td class="px-4 py-3 text-base text-dark-600">{{ consumer.barangay.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-base text-dark-600">{{ consumer.purok.name|default:"—" }}</td>
-                        <td class="px-4 py-3 text-base text-dark-600">{{ consumer.serial_number|default:"—" }}</td>
-                        <td class="px-4 py-3 text-center">
-                            <div class="flex items-center justify-center gap-2">
+                        <td class="px-3 py-2 text-dark-600">{{ consumer.phone_number|default:"n/a" }}</td>
+                        <td class="px-3 py-2 text-dark-600">{{ consumer.barangay.name|default:"—" }}</td>
+                        <td class="px-3 py-2 text-dark-600">{{ consumer.purok.name|default:"—" }}</td>
+                        <td class="px-3 py-2 text-dark-600">{{ consumer.serial_number|default:"—" }}</td>
+                        <td class="px-3 py-2 text-center">
+                            <div class="flex items-center justify-center gap-1">
                                 <a href="{% url 'consumers:consumer_detail' consumer.id %}"
-                                   class="p-2 text-info-600 hover:bg-info-50 rounded-xl transition-colors"
+                                   class="p-1.5 text-info-600 hover:bg-info-50 rounded-lg transition-colors"
                                    title="View Details">
-                                    <i class="bi bi-eye text-base"></i>
+                                    <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="{% url 'consumers:edit_consumer' consumer.pk %}"
-                                   class="p-2 text-warning-600 hover:bg-warning-50 rounded-xl transition-colors"
+                                   class="p-1.5 text-warning-600 hover:bg-warning-50 rounded-lg transition-colors"
                                    title="Edit Consumer">
-                                    <i class="bi bi-pencil text-base"></i>
+                                    <i class="bi bi-pencil"></i>
                                 </a>
                             </div>
                         </td>
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="7" class="px-4 py-12 text-center text-dark-400">
-                            <i class="bi bi-inbox text-4xl block mb-3 opacity-20"></i>
-                            <p class="text-base font-medium">No consumers found</p>
+                        <td colspan="7" class="px-4 py-8 text-center text-dark-400">
+                            <i class="bi bi-inbox text-3xl block mb-2 opacity-20"></i>
+                            <p class="text-sm font-medium">No consumers found</p>
                         </td>
                     </tr>
                     {% endfor %}
@@ -121,19 +115,19 @@
 
     <!-- Pagination -->
     {% if consumers.has_other_pages %}
-    <nav aria-label="Consumer pagination" class="mt-6">
-        <ul class="flex items-center justify-center gap-2">
+    <nav aria-label="Consumer pagination" class="mt-3">
+        <ul class="flex items-center justify-center gap-1">
             <!-- Previous -->
             {% if consumers.has_previous %}
             <li>
-                <a class="px-4 py-2 text-base border border-light-300 rounded-xl hover:bg-light-100 transition-colors"
+                <a class="px-3 py-1.5 text-sm border border-light-300 rounded-lg hover:bg-light-100 transition-colors"
                    href="?page={{ consumers.previous_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
                     <i class="bi bi-chevron-left"></i>
                 </a>
             </li>
             {% else %}
             <li>
-                <span class="px-4 py-2 text-base border border-light-300 rounded-xl opacity-40 cursor-not-allowed">
+                <span class="px-3 py-1.5 text-sm border border-light-300 rounded-lg opacity-40 cursor-not-allowed">
                     <i class="bi bi-chevron-left"></i>
                 </span>
             </li>
@@ -143,13 +137,13 @@
             {% for num in consumers.paginator.page_range %}
                 {% if consumers.number == num %}
                 <li>
-                    <span class="px-4 py-2 text-base font-semibold bg-primary-600 text-white border border-primary-600 rounded-xl">
+                    <span class="px-3 py-1.5 text-sm font-semibold bg-primary-600 text-white border border-primary-600 rounded-lg">
                         {{ num }}
                     </span>
                 </li>
                 {% elif num >= consumers.number|add:-2 and num <= consumers.number|add:2 %}
                 <li>
-                    <a class="px-4 py-2 text-base border border-light-300 rounded-xl hover:bg-light-100 transition-colors"
+                    <a class="px-3 py-1.5 text-sm border border-light-300 rounded-lg hover:bg-light-100 transition-colors"
                        href="?page={{ num }}&search={{ search_query }}&barangay={{ barangay_filter }}">
                         {{ num }}
                     </a>
@@ -160,14 +154,14 @@
             <!-- Next -->
             {% if consumers.has_next %}
             <li>
-                <a class="px-4 py-2 text-base border border-light-300 rounded-xl hover:bg-light-100 transition-colors"
+                <a class="px-3 py-1.5 text-sm border border-light-300 rounded-lg hover:bg-light-100 transition-colors"
                    href="?page={{ consumers.next_page_number }}&search={{ search_query }}&barangay={{ barangay_filter }}">
                     <i class="bi bi-chevron-right"></i>
                 </a>
             </li>
             {% else %}
             <li>
-                <span class="px-4 py-2 text-base border border-light-300 rounded-xl opacity-40 cursor-not-allowed">
+                <span class="px-3 py-1.5 text-sm border border-light-300 rounded-lg opacity-40 cursor-not-allowed">
                     <i class="bi bi-chevron-right"></i>
                 </span>
             </li>
