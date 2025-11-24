@@ -95,23 +95,7 @@
     </div>
 
     <!-- Revenue Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
-        <!-- Today's Revenue -->
-        <div class="bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl p-6 shadow-md">
-            <div class="flex items-center justify-between">
-                <div>
-                    <div class="text-sm text-primary-100 font-medium uppercase tracking-wide">Today's Revenue</div>
-                    <div class="text-2xl font-bold text-white mt-1">₱{{ today_revenue|floatformat:2|intcomma }}</div>
-                    <div class="text-sm text-primary-200 mt-2">
-                        <i class="bi bi-receipt mr-1"></i>{{ today_payment_count }} payment{{ today_payment_count|pluralize }} today
-                    </div>
-                </div>
-                <div class="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="bi bi-cash-stack text-white text-2xl"></i>
-                </div>
-            </div>
-        </div>
-
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
         <!-- Monthly Revenue -->
         <div class="bg-gradient-to-br from-success-500 to-success-600 rounded-xl p-6 shadow-md">
             <div class="flex items-center justify-between">
@@ -478,15 +462,15 @@ function printBillStatus() {
     let tableRows = '';
     filteredData.forEach((item, index) => {
         tableRows += `
-            <tr style="border-bottom: 1px solid #e5e7eb;">
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${index + 1}</td>
-                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827;">${item.account_number}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.consumer_name}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${item.barangay}</td>
-                <td style="padding: 10px 12px; font-size: 12px; color: #374151;">${formatDate(item.latest_bill_date)}</td>
-                <td style="padding: 10px 12px; font-size: 12px; font-weight: 600; color: #111827; text-align: right;">${formatCurrency(item.latest_bill_amount)}</td>
-                <td style="padding: 10px 12px; text-align: center;">
-                    <span style="display: inline-block; padding: 4px 10px; border-radius: 9999px; font-size: 11px; font-weight: 600; ${getStatusStyle(item.payment_status)}">${getStatusText(item.payment_status)}</span>
+            <tr>
+                <td style="text-align: center;">${index + 1}</td>
+                <td style="font-weight: 600;">${item.account_number}</td>
+                <td>${item.consumer_name}</td>
+                <td>${item.barangay}</td>
+                <td style="text-align: center;">${formatDate(item.latest_bill_date)}</td>
+                <td style="text-align: right; font-weight: 600;">${formatCurrency(item.latest_bill_amount)}</td>
+                <td style="text-align: center;">
+                    <span style="display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 9px; font-weight: 600; ${getStatusStyle(item.payment_status)}">${getStatusText(item.payment_status)}</span>
                 </td>
             </tr>
         `;
@@ -497,6 +481,9 @@ function printBillStatus() {
     const printDate = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const printTime = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
 
+    // Calculate total amount
+    const totalAmount = filteredData.reduce((sum, item) => sum + (parseFloat(item.latest_bill_amount) || 0), 0);
+
     // Create print window
     const printWindow = window.open('', '_blank');
     printWindow.document.write(`
@@ -504,104 +491,102 @@ function printBillStatus() {
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <title>Consumer Bill Status Report - ${barangayName}</title>
-            <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
-                body { font-family: 'Segoe UI', system-ui, -apple-system, sans-serif; background: #fff; color: #111827; }
-                @media print {
-                    body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-                    .no-print { display: none !important; }
-                    @page { size: A4 landscape; margin: 10mm; }
+                body { font-family: 'Arial', sans-serif; background: #f0f0f0; color: #111; font-size: 11px; }
+                .page {
+                    width: 8.5in;
+                    min-height: 11in;
+                    margin: 15px auto;
+                    padding: 0.4in;
+                    background: white;
+                    box-shadow: 0 0 10px rgba(0,0,0,0.15);
                 }
+                @media print {
+                    body { background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+                    .page { width: 100%; min-height: auto; margin: 0; padding: 0; box-shadow: none; }
+                    .no-print { display: none !important; }
+                    @page { size: 8.5in 13in; margin: 0.4in; }
+                }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { border: 1px solid #333; padding: 5px 6px; font-size: 10px; }
+                th { background: #003366; color: white; font-weight: 600; text-transform: uppercase; }
+                tr:nth-child(even) { background: #f9f9f9; }
             </style>
         </head>
         <body>
-            <div style="max-width: 1100px; margin: 0 auto; padding: 20px;">
-                <!-- Header with Logos -->
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; padding-bottom: 20px; border-bottom: 3px solid #6366f1;">
-                    <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" style="width: 80px; height: 80px; object-fit: contain;">
-                    <div style="text-align: center; flex: 1; padding: 0 20px;">
-                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 2px;">Republic of the Philippines</p>
-                        <p style="font-size: 12px; color: #6b7280; margin-bottom: 4px;">Province of Bohol</p>
-                        <h1 style="font-size: 22px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">MUNICIPALITY OF BALILIHAN</h1>
-                        <p style="font-size: 14px; font-weight: 600; color: #6366f1;">Balilihan Waterworks System</p>
+            <div class="page">
+                <!-- Header with Two Logos -->
+                <div style="display: flex; align-items: center; justify-content: center; gap: 15px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #003366;">
+                    <img src="/static/consumers/images/municipal.jpg" alt="Municipal Logo" style="width: 55px; height: 55px; object-fit: contain;">
+                    <div style="text-align: center;">
+                        <p style="font-size: 10px; color: #555; margin: 0;">Republic of the Philippines | Province of Bohol</p>
+                        <h1 style="font-size: 14px; font-weight: 700; color: #003366; margin: 2px 0;">MUNICIPALITY OF BALILIHAN</h1>
+                        <p style="font-size: 11px; font-weight: 600; color: #0055aa; margin: 0;">Waterworks System</p>
+                        <p style="font-size: 10px; font-weight: 600; color: #333; margin-top: 3px; background: #eee; padding: 2px 10px; border-radius: 8px; display: inline-block;">Consumer Bill Status Report: ${barangayName}</p>
                     </div>
-                    <img src="{% static 'consumers/images/water_icon.png' %}" alt="Waterworks Logo" style="width: 80px; height: 80px; border-radius: 50%; border: 4px solid #6366f1; object-fit: cover;">
-                </div>
-
-                <!-- Report Title -->
-                <div style="text-align: center; margin-bottom: 24px;">
-                    <h2 style="font-size: 20px; font-weight: 700; color: #111827; margin-bottom: 8px;">
-                        <i class="bi bi-people-fill" style="color: #6366f1; margin-right: 8px;"></i>
-                        Consumer Bill Status Report
-                    </h2>
-                    <p style="font-size: 16px; font-weight: 600; color: #4f46e5; background: linear-gradient(135deg, #eef2ff, #e0e7ff); padding: 8px 20px; border-radius: 8px; display: inline-block;">
-                        ${barangayName}
-                    </p>
+                    <img src="/static/consumers/images/logo.jpg" alt="Waterworks Logo" style="width: 55px; height: 55px; object-fit: cover; border-radius: 50%; border: 2px solid #003366;">
                 </div>
 
                 <!-- Summary Cards -->
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px;">
-                    <div style="background: linear-gradient(135deg, #dcfce7, #bbf7d0); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #86efac;">
-                        <p style="font-size: 11px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Paid</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #15803d;">${paidCount}</p>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin-bottom: 10px;">
+                    <div style="background: #d4edda; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #28a745;">
+                        <p style="font-size: 9px; color: #155724; font-weight: 600; margin: 0;">PAID</p>
+                        <p style="font-size: 18px; font-weight: 800; color: #155724; margin: 0;">${paidCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #fef3c7, #fde68a); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fcd34d;">
-                        <p style="font-size: 11px; color: #92400e; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Pending</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #b45309;">${pendingCount}</p>
+                    <div style="background: #fff3cd; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #ffc107;">
+                        <p style="font-size: 9px; color: #856404; font-weight: 600; margin: 0;">PENDING</p>
+                        <p style="font-size: 18px; font-weight: 800; color: #856404; margin: 0;">${pendingCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #fee2e2, #fecaca); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #fca5a5;">
-                        <p style="font-size: 11px; color: #991b1b; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">Delinquent</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #dc2626;">${delinquentCount}</p>
+                    <div style="background: #f8d7da; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #dc3545;">
+                        <p style="font-size: 9px; color: #721c24; font-weight: 600; margin: 0;">DELINQUENT</p>
+                        <p style="font-size: 18px; font-weight: 800; color: #721c24; margin: 0;">${delinquentCount}</p>
                     </div>
-                    <div style="background: linear-gradient(135deg, #f3f4f6, #e5e7eb); padding: 16px; border-radius: 10px; text-align: center; border: 1px solid #d1d5db;">
-                        <p style="font-size: 11px; color: #4b5563; font-weight: 600; text-transform: uppercase; margin-bottom: 4px;">No Bill</p>
-                        <p style="font-size: 28px; font-weight: 800; color: #374151;">${noBillCount}</p>
+                    <div style="background: #e2e3e5; padding: 6px; border-radius: 4px; text-align: center; border: 1px solid #6c757d;">
+                        <p style="font-size: 9px; color: #383d41; font-weight: 600; margin: 0;">NO BILL</p>
+                        <p style="font-size: 18px; font-weight: 800; color: #383d41; margin: 0;">${noBillCount}</p>
                     </div>
                 </div>
 
                 <!-- Data Table -->
-                <div style="border: 1px solid #e5e7eb; border-radius: 10px; overflow: hidden; margin-bottom: 24px;">
-                    <table style="width: 100%; border-collapse: collapse;">
-                        <thead>
-                            <tr style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">#</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">ID Number</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Consumer Name</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Barangay</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: left; text-transform: uppercase;">Latest Bill Date</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: right; text-transform: uppercase;">Amount (PHP)</th>
-                                <th style="padding: 12px; font-size: 11px; font-weight: 700; color: white; text-align: center; text-transform: uppercase;">Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${tableRows}
-                        </tbody>
-                    </table>
-                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 25px; text-align: center;">#</th>
+                            <th>ID Number</th>
+                            <th>Consumer Name</th>
+                            <th>Barangay</th>
+                            <th style="text-align: center;">Bill Date</th>
+                            <th style="text-align: right;">Amount</th>
+                            <th style="text-align: center;">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${tableRows}
+                        <tr style="background: #e8f4fd;">
+                            <td colspan="5" style="text-align: right; font-weight: 700; color: #003366;">TOTAL AMOUNT:</td>
+                            <td style="text-align: right; font-weight: 800; color: #003366; font-size: 11px;">${formatCurrency(totalAmount)}</td>
+                            <td></td>
+                        </tr>
+                    </tbody>
+                </table>
 
                 <!-- Footer -->
-                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 2px solid #e5e7eb;">
-                    <div>
-                        <p style="font-size: 11px; color: #6b7280;">Total Consumers: <span style="font-weight: 700; color: #111827;">${filteredData.length}</span></p>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 2px solid #003366;">
+                    <div style="font-size: 10px; color: #555;">
+                        Total Consumers: <strong style="color: #000;">${filteredData.length}</strong>
                     </div>
-                    <div style="text-align: right;">
-                        <p style="font-size: 11px; color: #6b7280;">Generated on: <span style="font-weight: 600; color: #374151;">${printDate} at ${printTime}</span></p>
-                        <p style="font-size: 10px; color: #9ca3af; margin-top: 2px;">Balilihan Waterworks Management System</p>
+                    <div style="font-size: 9px; color: #555; text-align: right;">
+                        Generated: ${printDate}<br>Time: ${printTime}
                     </div>
                 </div>
+            </div>
 
-                <!-- Print Button (hidden when printing) -->
-                <div class="no-print" style="text-align: center; margin-top: 30px;">
-                    <button onclick="window.print()" style="background: linear-gradient(135deg, #6366f1, #8b5cf6); color: white; padding: 12px 32px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 10px;">
-                        <i class="bi bi-printer-fill" style="margin-right: 8px;"></i>Print Report
-                    </button>
-                    <button onclick="window.close()" style="background: #f3f4f6; color: #374151; padding: 12px 32px; border: 1px solid #d1d5db; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                        <i class="bi bi-x-lg" style="margin-right: 8px;"></i>Close
-                    </button>
-                </div>
+            <!-- Action Buttons -->
+            <div class="no-print" style="text-align: center; padding: 15px;">
+                <button onclick="window.print()" style="background: #003366; color: white; padding: 10px 25px; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print Report</button>
+                <button onclick="window.close()" style="background: #eee; color: #333; padding: 10px 25px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
             </div>
         </body>
         </html>
