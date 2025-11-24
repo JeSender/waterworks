@@ -432,49 +432,52 @@
                         id="notificationDropdown"
                         onclick="toggleDropdown('notificationDropdown', event)">
                     <i class="bi bi-bell text-xl text-dark-600"></i>
-                    {% if messages %}
-                    <span class="notification-badge" id="notificationBadge">{{ messages|length }}</span>
+                    {% if unread_notifications_count > 0 %}
+                    <span class="notification-badge" id="notificationBadge">{{ unread_notifications_count }}</span>
                     {% endif %}
                 </button>
                 <div class="dropdown-menu notification-dropdown" id="notificationDropdown-menu">
                     <div class="notification-header">
                         <span class="font-semibold text-dark-900">Notifications</span>
-                        {% if messages %}
-                        <button onclick="clearAllNotifications()" class="text-xs text-primary-600 hover:text-primary-700 font-medium">
-                            Clear All
+                        {% if unread_notifications_count > 0 %}
+                        <button onclick="markAllAsRead()" class="text-xs text-primary-600 hover:text-primary-700 font-medium">
+                            Mark All Read
                         </button>
                         {% endif %}
                     </div>
                     <div class="notification-body" id="notificationBody">
-                        {% if messages %}
-                            {% for message in messages %}
-                            <div class="notification-item unread" data-notification-id="{{ forloop.counter }}">
+                        {% if unread_notifications %}
+                            {% for notification in unread_notifications %}
+                            <a href="{% if notification.redirect_url %}{{ notification.redirect_url }}{% else %}#{% endif %}"
+                               class="notification-item unread block no-underline"
+                               data-notification-id="{{ notification.id }}"
+                               onclick="markNotificationRead({{ notification.id }}, '{{ notification.redirect_url }}')">
                                 <div class="flex items-start gap-3">
                                     <div class="flex-shrink-0 mt-0.5">
-                                        {% if message.tags == 'success' %}
-                                        <i class="bi bi-check-circle-fill text-success-600"></i>
-                                        {% elif message.tags == 'error' %}
-                                        <i class="bi bi-x-circle-fill text-danger-600"></i>
-                                        {% elif message.tags == 'warning' %}
-                                        <i class="bi bi-exclamation-triangle-fill text-warning-600"></i>
+                                        {% if notification.notification_type == 'meter_reading' %}
+                                        <i class="bi bi-speedometer2 text-primary-600"></i>
+                                        {% elif notification.notification_type == 'payment' %}
+                                        <i class="bi bi-cash-coin text-success-600"></i>
+                                        {% elif notification.notification_type == 'bill_generated' %}
+                                        <i class="bi bi-receipt text-warning-600"></i>
+                                        {% elif notification.notification_type == 'consumer_registered' %}
+                                        <i class="bi bi-person-plus text-info-600"></i>
                                         {% else %}
-                                        <i class="bi bi-info-circle-fill text-info-600"></i>
+                                        <i class="bi bi-bell-fill text-dark-600"></i>
                                         {% endif %}
                                     </div>
                                     <div class="flex-1 min-w-0">
-                                        <p class="text-sm text-dark-800 mb-1">{{ message }}</p>
-                                        <p class="text-xs text-dark-400">Just now</p>
+                                        <p class="text-sm font-medium text-dark-800 mb-1">{{ notification.title }}</p>
+                                        <p class="text-xs text-dark-600 mb-1">{{ notification.message }}</p>
+                                        <p class="text-xs text-dark-400">{{ notification.time_ago }} ago</p>
                                     </div>
-                                    <button onclick="dismissNotification(this)" class="flex-shrink-0 text-dark-400 hover:text-dark-600">
-                                        <i class="bi bi-x"></i>
-                                    </button>
                                 </div>
-                            </div>
+                            </a>
                             {% endfor %}
                         {% else %}
                             <div class="notification-empty">
                                 <i class="bi bi-bell-slash text-4xl mb-2 block text-light-400"></i>
-                                <p class="text-sm">No notifications</p>
+                                <p class="text-sm">No new notifications</p>
                             </div>
                         {% endif %}
                     </div>
@@ -662,30 +665,64 @@
         }
 
         // === NOTIFICATION FUNCTIONS ===
-        function dismissNotification(button) {
-            const item = button.closest('.notification-item');
-            item.style.opacity = '0';
-            item.style.transform = 'translateX(20px)';
-            setTimeout(() => {
-                item.remove();
-                updateNotificationBadge();
-            }, 200);
+        function markNotificationRead(notificationId, redirectUrl) {
+            event.preventDefault();
+
+            // Send AJAX request to mark as read
+            fetch(`/notifications/${notificationId}/mark-read/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Redirect to the notification URL
+                    if (redirectUrl && redirectUrl !== '#') {
+                        window.location.href = redirectUrl;
+                    } else {
+                        // Just remove the notification
+                        const item = document.querySelector(`[data-notification-id="${notificationId}"]`);
+                        if (item) {
+                            item.remove();
+                            updateNotificationBadge();
+                        }
+                    }
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
 
-        function clearAllNotifications() {
-            const body = document.getElementById('notificationBody');
-            body.innerHTML = `
-                <div class="notification-empty">
-                    <i class="bi bi-bell-slash text-4xl mb-2 block text-light-400"></i>
-                    <p class="text-sm">No notifications</p>
-                </div>
-            `;
-            updateNotificationBadge();
+        function markAllAsRead() {
+            fetch('/notifications/mark-all-read/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Clear notification body
+                    const body = document.getElementById('notificationBody');
+                    body.innerHTML = `
+                        <div class="notification-empty">
+                            <i class="bi bi-bell-slash text-4xl mb-2 block text-light-400"></i>
+                            <p class="text-sm">No new notifications</p>
+                        </div>
+                    `;
+                    updateNotificationBadge();
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
 
         function updateNotificationBadge() {
             const badge = document.getElementById('notificationBadge');
-            const items = document.querySelectorAll('.notification-item');
+            const items = document.querySelectorAll('.notification-item:not(.notification-empty)');
             if (badge) {
                 if (items.length === 0) {
                     badge.style.display = 'none';
@@ -694,6 +731,22 @@
                     badge.style.display = 'flex';
                 }
             }
+        }
+
+        // Get CSRF token from cookies
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
         }
 
         // Toast notification using SweetAlert2

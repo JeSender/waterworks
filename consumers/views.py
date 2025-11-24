@@ -210,6 +210,18 @@ def api_submit_reading(request):
                 is_confirmed=False  # CHANGED: Require manual admin confirmation
             )
 
+            # Create notification for admins/superusers
+            from .models import Notification
+            from django.urls import reverse
+            Notification.objects.create(
+                user=None,  # Notify all admins
+                notification_type='meter_reading',
+                title='New Meter Reading Submitted',
+                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Reading: {current_reading} m³',
+                related_object_id=reading.id,
+                redirect_url=reverse('consumers:meter_readings')
+            )
+
         # Track activity for login session
         if request.user.is_authenticated:
             try:
@@ -3675,6 +3687,63 @@ def reset_user_password(request, user_id):
         return redirect('consumers:user_management')
 
     return redirect('consumers:user_management')
+
+
+# ============================================================================
+# NOTIFICATION VIEWS - Handle real-time notifications
+# ============================================================================
+@login_required
+def mark_notification_read(request, notification_id):
+    """Mark a single notification as read (AJAX endpoint)."""
+    if request.method == 'POST':
+        try:
+            from .models import Notification
+
+            # Get the notification
+            notification = get_object_or_404(Notification, id=notification_id)
+
+            # Check if user has permission to mark this notification
+            # Can mark if: user is the recipient, or it's a global notification (user=None)
+            if notification.user is None or notification.user == request.user:
+                notification.mark_as_read()
+                return JsonResponse({'status': 'success', 'message': 'Notification marked as read'})
+            else:
+                return JsonResponse({'status': 'error', 'message': 'Permission denied'}, status=403)
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
+
+
+@login_required
+def mark_all_notifications_read(request):
+    """Mark all notifications as read for the current user (AJAX endpoint)."""
+    if request.method == 'POST':
+        try:
+            from .models import Notification
+            from django.db.models import Q
+
+            # Mark all notifications for this user or global notifications as read
+            notifications = Notification.objects.filter(
+                is_read=False
+            ).filter(
+                Q(user=request.user) | Q(user__isnull=True)
+            )
+
+            count = notifications.count()
+            for notification in notifications:
+                notification.mark_as_read()
+
+            return JsonResponse({
+                'status': 'success',
+                'message': f'{count} notification(s) marked as read'
+            })
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+
+    return JsonResponse({'status': 'error', 'message': 'Invalid request method'}, status=405)
 
 
 # ===========================

@@ -764,3 +764,68 @@ class Payment(models.Model):
     def __str__(self):
         penalty_info = f" (incl. ₱{self.penalty_amount} penalty)" if self.penalty_amount > 0 else ""
         return f"OR#{self.or_number} - {self.bill.consumer.account_number}{penalty_info}"
+
+
+# ============================================================================
+# NOTIFICATION MODEL - For real-time notifications in header dropdown
+# ============================================================================
+class Notification(models.Model):
+    """
+    Stores system notifications for admin/superuser users.
+    Used for meter reading alerts, payment notifications, etc.
+    """
+    NOTIFICATION_TYPES = [
+        ('meter_reading', 'Meter Reading Submitted'),
+        ('payment', 'Payment Processed'),
+        ('bill_generated', 'Bill Generated'),
+        ('consumer_registered', 'New Consumer Registered'),
+        ('system_alert', 'System Alert'),
+    ]
+
+    # Who should see this notification (null = all admins/superusers)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True,
+                           help_text="Specific user to notify (null = all admins)")
+
+    # Notification details
+    notification_type = models.CharField(max_length=30, choices=NOTIFICATION_TYPES,
+                                       help_text="Type of notification")
+    title = models.CharField(max_length=200, help_text="Short notification title")
+    message = models.TextField(help_text="Notification message")
+
+    # Related object (for redirects)
+    related_object_id = models.IntegerField(null=True, blank=True,
+                                          help_text="ID of related object (e.g., MeterReading ID)")
+    redirect_url = models.CharField(max_length=500, blank=True,
+                                   help_text="URL to redirect when clicked")
+
+    # Status
+    is_read = models.BooleanField(default=False, help_text="Has the user read this notification?")
+    created_at = models.DateTimeField(default=timezone.now, db_index=True)
+    read_at = models.DateTimeField(null=True, blank=True, help_text="When was it marked as read")
+
+    class Meta:
+        ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['user', '-created_at']),
+            models.Index(fields=['is_read', '-created_at']),
+            models.Index(fields=['notification_type', '-created_at']),
+        ]
+        verbose_name = "Notification"
+        verbose_name_plural = "Notifications"
+
+    def __str__(self):
+        user_str = self.user.username if self.user else "All Admins"
+        return f"{self.title} - {user_str} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
+
+    def mark_as_read(self):
+        """Mark this notification as read"""
+        if not self.is_read:
+            self.is_read = True
+            self.read_at = timezone.now()
+            self.save()
+
+    @property
+    def time_ago(self):
+        """Human-readable time ago string"""
+        from django.utils.timesince import timesince
+        return timesince(self.created_at)
