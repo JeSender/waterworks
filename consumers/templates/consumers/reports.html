@@ -156,109 +156,109 @@
                     </div>
 
                     {% if record_count > 0 %}
-                    <!-- Data Table -->
-                    <div class="overflow-x-auto rounded-lg border border-gray-200">
-                        <table class="w-full text-sm">
+                    <!-- Data Table with Repeating Header on Print -->
+                    <div class="overflow-x-auto rounded-lg border border-gray-200 print-table-wrapper">
+                        <table class="w-full text-sm print-table">
 
                             {% comment %} REVENUE REPORT TABLE {% endcomment %}
                             {% if report_type == 'revenue' %}
-                            <thead class="bg-blue-600 text-white">
+                            <thead class="bg-blue-600 text-white print-thead">
                                 <tr>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">OR No.</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Consumer Name</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">ID Number</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Payment Date</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-right uppercase">Amount Paid</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-right uppercase">Change</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-right uppercase">Total Received</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">OR No.</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Consumer Name</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">ID Number</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Payment Date</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Amount Paid</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Change</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Total Received</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white">
                                 {% for payment in report_data %}
                                 <tr class="border-b border-gray-200 even:bg-gray-50 hover:bg-blue-50 transition-all">
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ payment.or_number }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-900 font-medium">{{ payment.bill.consumer.full_name }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ payment.bill.consumer.account_number }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ payment.payment_date|date:"M d, Y" }}</td>
-                                    <td class="px-4 py-3 text-xs text-right text-gray-900 font-semibold">₱{{ payment.amount_paid|floatformat:2|intcomma }}</td>
-                                    <td class="px-4 py-3 text-xs text-right text-gray-700">₱{{ payment.change|floatformat:2|intcomma }}</td>
-                                    <td class="px-4 py-3 text-xs text-right text-gray-900 font-semibold">₱{{ payment.received_amount|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ payment.or_number }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-900 font-medium">{{ payment.bill.consumer.full_name }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ payment.bill.consumer.account_number }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ payment.payment_date|date:"M d, Y" }}</td>
+                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ payment.amount_paid|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-xs text-right text-gray-700">₱{{ payment.change|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ payment.received_amount|floatformat:2|intcomma }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot class="bg-blue-50 border-t-2 border-blue-200">
+                            <tfoot class="bg-blue-50 border-t-2 border-blue-200 print-tfoot">
                                 <tr>
-                                    <td colspan="4" class="px-4 py-3 text-sm font-bold text-right text-blue-900 uppercase">Total Revenue</td>
-                                    <td class="px-4 py-3 text-sm font-bold text-right text-blue-900">₱{{ total_amount|floatformat:2|intcomma }}</td>
+                                    <td colspan="4" class="px-3 py-2 text-sm font-bold text-right uppercase">Total Revenue</td>
+                                    <td class="px-3 py-2 text-sm font-bold text-right">₱{{ total_amount|floatformat:2|intcomma }}</td>
                                     <td colspan="2"></td>
                                 </tr>
                             </tfoot>
 
                             {% comment %} DELINQUENCY REPORT TABLE {% endcomment %}
                             {% elif report_type == 'delinquency' %}
-                            <thead class="bg-red-600 text-white">
+                            <thead class="bg-red-600 text-white print-thead">
                                 <tr>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">ID Number</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Consumer Name</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Barangay</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Billing Period</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Due Date</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-right uppercase">Amount Due</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-center uppercase">Status</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">ID Number</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Consumer Name</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Barangay</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Billing Period</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Due Date</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Amount Due</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-center uppercase">Status</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white">
                                 {% for bill in report_data %}
                                 <tr class="border-b border-gray-200 even:bg-gray-50 hover:bg-red-50 transition-all">
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ bill.consumer.account_number }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-900 font-medium">{{ bill.consumer.full_name }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ bill.consumer.barangay.name|default:"N/A" }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ bill.billing_period|date:"F Y" }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ bill.due_date|date:"M d, Y" }}</td>
-                                    <td class="px-4 py-3 text-xs text-right text-gray-900 font-semibold">₱{{ bill.total_amount|floatformat:2|intcomma }}</td>
-                                    <td class="px-4 py-3 text-xs text-center">
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.consumer.account_number }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-900 font-medium">{{ bill.consumer.full_name }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.consumer.barangay.name|default:"N/A" }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.billing_period|date:"F Y" }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.due_date|date:"M d, Y" }}</td>
+                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ bill.total_amount|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-xs text-center">
                                         {% if bill.status == 'Overdue' %}
-                                        <span class="inline-block px-3 py-1 text-xs font-bold bg-red-600 text-white rounded-full">Overdue</span>
+                                        <span class="inline-block px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">Overdue</span>
                                         {% else %}
-                                        <span class="inline-block px-3 py-1 text-xs font-bold bg-yellow-500 text-white rounded-full">Pending</span>
+                                        <span class="inline-block px-2 py-0.5 text-xs font-bold bg-yellow-500 text-white rounded">Pending</span>
                                         {% endif %}
                                     </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot class="bg-red-50 border-t-2 border-red-200">
+                            <tfoot class="bg-red-50 border-t-2 border-red-200 print-tfoot">
                                 <tr>
-                                    <td colspan="5" class="px-4 py-3 text-sm font-bold text-right text-red-900 uppercase">Total Delinquent Amount</td>
-                                    <td class="px-4 py-3 text-sm font-bold text-right text-red-900">₱{{ total_amount|floatformat:2|intcomma }}</td>
+                                    <td colspan="5" class="px-3 py-2 text-sm font-bold text-right uppercase">Total Delinquent Amount</td>
+                                    <td class="px-3 py-2 text-sm font-bold text-right">₱{{ total_amount|floatformat:2|intcomma }}</td>
                                     <td></td>
                                 </tr>
                             </tfoot>
 
                             {% comment %} SUMMARY REPORT TABLE {% endcomment %}
                             {% elif report_type == 'summary' %}
-                            <thead class="bg-indigo-600 text-white">
+                            <thead class="bg-indigo-600 text-white print-thead">
                                 <tr>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">ID Number</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-left uppercase">Consumer Name</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-right uppercase">Total Paid</th>
-                                    <th class="px-4 py-3 text-xs font-semibold text-center uppercase">Number of Payments</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">ID Number</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Consumer Name</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Total Paid</th>
+                                    <th class="px-3 py-2 text-xs font-semibold text-center uppercase">Number of Payments</th>
                                 </tr>
                             </thead>
                             <tbody class="bg-white">
                                 {% for item in report_data %}
                                 <tr class="border-b border-gray-200 even:bg-gray-50 hover:bg-indigo-50 transition-all">
-                                    <td class="px-4 py-3 text-xs text-gray-700">{{ item.bill__consumer__account_number }}</td>
-                                    <td class="px-4 py-3 text-xs text-gray-900 font-medium">{{ item.bill__consumer__full_name }}</td>
-                                    <td class="px-4 py-3 text-xs text-right text-gray-900 font-semibold">₱{{ item.total_paid|floatformat:2|intcomma }}</td>
-                                    <td class="px-4 py-3 text-xs text-center text-gray-700 font-medium">{{ item.payment_count }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-700">{{ item.bill__consumer__account_number }}</td>
+                                    <td class="px-3 py-2 text-xs text-gray-900 font-medium">{{ item.bill__consumer__full_name }}</td>
+                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ item.total_paid|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-xs text-center text-gray-700 font-medium">{{ item.payment_count }}</td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
-                            <tfoot class="bg-indigo-50 border-t-2 border-indigo-200">
+                            <tfoot class="bg-indigo-50 border-t-2 border-indigo-200 print-tfoot">
                                 <tr>
-                                    <td colspan="2" class="px-4 py-3 text-sm font-bold text-right text-indigo-900 uppercase">Grand Total</td>
-                                    <td class="px-4 py-3 text-sm font-bold text-right text-indigo-900">₱{{ total_amount|floatformat:2|intcomma }}</td>
-                                    <td class="px-4 py-3 text-sm font-bold text-center text-indigo-900">{{ record_count }} consumers</td>
+                                    <td colspan="2" class="px-3 py-2 text-sm font-bold text-right uppercase">Grand Total</td>
+                                    <td class="px-3 py-2 text-sm font-bold text-right">₱{{ total_amount|floatformat:2|intcomma }}</td>
+                                    <td class="px-3 py-2 text-sm font-bold text-center">{{ record_count }} consumers</td>
                                 </tr>
                             </tfoot>
                             {% endif %}
@@ -327,7 +327,8 @@
     nav,
     header,
     footer,
-    .bg-gradient-to-br {
+    .bg-gradient-to-br,
+    .flex.gap-4.mb-6 {
         display: none !important;
     }
 
@@ -374,7 +375,7 @@
     /* Show print header */
     .print-header {
         display: block !important;
-        margin-bottom: 25px;
+        margin-bottom: 10px;
     }
 
     /* Unified Header Row - Logo + Text + Logo */
@@ -382,14 +383,15 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
-        padding-bottom: 15px;
+        gap: 10px;
+        padding-bottom: 8px;
         border-bottom: 2px solid #003366;
-        margin-bottom: 20px;
+        margin-bottom: 10px;
     }
 
     .logo-print {
-        width: 70px;
-        height: 70px;
+        width: 50px;
+        height: 50px;
         object-fit: contain;
         flex-shrink: 0;
     }
@@ -397,104 +399,168 @@
     .logo-circle {
         border-radius: 50%;
         object-fit: cover;
-        border: 3px solid #003366;
+        border: 2px solid #003366;
     }
 
     /* Header Text - Centered between logos */
     .header-text-center {
         text-align: center;
         flex: 1;
-        padding: 0 15px;
+        padding: 0 8px;
     }
 
     .header-text-center p {
-        margin: 2px 0;
-        line-height: 1.3;
+        margin: 1px 0;
+        line-height: 1.2;
     }
 
     .header-text-center .republic {
-        font-size: 12px;
+        font-size: 10px;
         font-weight: bold;
-        color: #003366;
+        color: #000;
     }
 
     .header-text-center .province,
     .header-text-center .municipality {
-        font-size: 11px;
+        font-size: 9px;
         font-weight: 600;
-        color: #0055aa;
+        color: #333;
     }
 
     .header-text-center .waterworks {
-        font-size: 14px;
+        font-size: 11px;
         font-weight: bold;
-        color: #003366;
-        margin-top: 3px;
+        color: #000;
+        margin-top: 2px;
     }
 
     .header-text-center .report-type-title {
-        font-size: 13px;
+        font-size: 11px;
         font-weight: bold;
-        color: #1a1a1a;
-        margin-top: 5px;
+        color: #000;
+        margin-top: 3px;
         text-transform: uppercase;
-        background: #f0f0f0;
-        padding: 3px 12px;
-        border-radius: 15px;
-        display: inline-block;
     }
 
     .header-text-center .report-period {
-        font-size: 11px;
+        font-size: 9px;
         color: #666;
-        margin-top: 5px;
+        margin-top: 2px;
     }
 
-    /* Report Container */
+    /* Report Container - Clean and Simple */
     .report-container {
-        border: 2px solid #000 !important;
-        padding: 30px !important;
+        border: 1px solid #000 !important;
+        padding: 15px !important;
         background: white !important;
-        page-break-before: avoid !important;
     }
 
-    /* Remove colors from tables for printing */
-    thead {
-        background: #f0f0f0 !important;
-        color: #000 !important;
-        border: 2px solid #000 !important;
+    /* Table wrapper for print */
+    .print-table-wrapper {
+        border: none !important;
+        border-radius: 0 !important;
     }
 
-    thead th {
+    /* Table styles for print - repeating header */
+    .print-table {
+        width: 100% !important;
+        border-collapse: collapse !important;
+        font-size: 9px !important;
+    }
+
+    /* IMPORTANT: Make thead repeat on each page */
+    .print-table thead {
+        display: table-header-group !important;
+    }
+
+    .print-table tfoot {
+        display: table-footer-group !important;
+    }
+
+    .print-table tbody {
+        display: table-row-group !important;
+    }
+
+    /* Header styling for print */
+    .print-thead {
+        background: #e5e5e5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print-thead tr {
+        border: 1px solid #000 !important;
+    }
+
+    .print-thead th {
         color: #000 !important;
         font-weight: bold !important;
+        font-size: 8px !important;
+        padding: 4px 6px !important;
+        border: 1px solid #000 !important;
+        background: #e5e5e5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    tbody tr {
-        border-bottom: 1px solid #ddd !important;
+    /* Body rows */
+    .print-table tbody tr {
+        border-bottom: 1px solid #ccc !important;
+        page-break-inside: avoid !important;
     }
 
-    tbody tr:hover {
-        background: transparent !important;
+    .print-table tbody tr:nth-child(even) {
+        background: #f9f9f9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    tfoot {
-        background: #f5f5f5 !important;
-        border-top: 2px solid #000 !important;
+    .print-table tbody td {
+        padding: 3px 6px !important;
+        font-size: 8px !important;
+        border-left: 1px solid #ddd !important;
+        border-right: 1px solid #ddd !important;
     }
 
-    tfoot td {
+    /* Footer row */
+    .print-tfoot {
+        background: #f0f0f0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .print-tfoot tr {
+        border: 1px solid #000 !important;
+    }
+
+    .print-tfoot td {
         color: #000 !important;
-    }
-
-    /* Summary cards for print */
-    .flex.gap-4 {
-        margin-bottom: 20px !important;
+        font-weight: bold !important;
+        font-size: 9px !important;
+        padding: 5px 6px !important;
+        border: 1px solid #000 !important;
     }
 
     /* Page setup */
     @page {
-        margin: 15mm;
+        margin: 10mm;
+        size: portrait;
+    }
+
+    /* Prevent page break inside rows */
+    tr {
+        page-break-inside: avoid !important;
+    }
+
+    /* Status badges for print */
+    .print-table span.rounded,
+    .print-table span.rounded-full {
+        background: #666 !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        padding: 1px 4px !important;
+        font-size: 7px !important;
     }
 }
 
