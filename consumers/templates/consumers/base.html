@@ -597,14 +597,11 @@
     </div>
 
     <!-- Main Content -->
-    <!-- Main Content Area - Flex column with fixed height -->
-    <div class="main-content flex flex-col" style="margin-left: var(--sidebar-width); margin-top: var(--header-height); height: calc(100vh - var(--header-height)); overflow: hidden;" id="main-content">
+    <div class="main-content min-h-screen p-5" style="margin-left: var(--sidebar-width); margin-top: var(--header-height); overflow-y: auto;" id="main-content">
         {% block main_content %}
-        <div class="flex-grow overflow-y-auto p-5">
-            <div class="card p-4 mt-3">
-                <h3 class="mb-3 text-2xl font-bold">Welcome, {{ request.user.username }}</h3>
-                <p class="text-dark-500">Select a menu from the sidebar to start.</p>
-            </div>
+        <div class="card p-4 mt-3">
+            <h3 class="mb-3 text-2xl font-bold">Welcome, {{ request.user.username }}</h3>
+            <p class="text-dark-500">Select a menu from the sidebar to start.</p>
         </div>
         {% endblock %}
     </div>
