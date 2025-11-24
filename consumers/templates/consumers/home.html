@@ -436,6 +436,9 @@ function printBillStatus() {
     const delinquentCount = filteredData.filter(d => d.payment_status === 'Overdue' || d.payment_status === 'Unpaid').length;
     const noBillCount = filteredData.filter(d => d.payment_status === 'No Bill').length;
 
+    // Calculate total amount
+    const totalAmount = filteredData.reduce((sum, item) => sum + (parseFloat(item.latest_bill_amount) || 0), 0);
+
     let tableRows = '';
     filteredData.forEach((item, index) => {
         tableRows += `
@@ -452,6 +455,15 @@ function printBillStatus() {
             </tr>
         `;
     });
+
+    // Add total row
+    tableRows += `
+        <tr style="background: #f8fafc; border-top: 2px solid #6366f1;">
+            <td colspan="5" style="padding: 10px 8px; font-size: 12px; font-weight: 700; color: #1e40af; text-align: right;">TOTAL AMOUNT:</td>
+            <td style="padding: 10px 8px; font-size: 14px; font-weight: 800; color: #1e40af; text-align: right;">${formatCurrency(totalAmount)}</td>
+            <td></td>
+        </tr>
+    `;
 
     const now = new Date();
     const printDate = now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -471,16 +483,17 @@ function printBillStatus() {
                 @media print {
                     body { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
                     .no-print { display: none !important; }
-                    @page { size: A4 landscape; margin: 8mm; }
+                    @page { size: 8.5in 13in; margin: 10mm; }
                 }
             </style>
         </head>
         <body>
             <div style="max-width: 1100px; margin: 0 auto; padding: 15px;">
                 <div style="text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 2px solid #6366f1;">
-                    <p style="font-size: 11px; color: #6b7280;">Republic of the Philippines | Province of Bohol</p>
+                    <img src="/static/consumers/images/municipal.jpg" alt="Municipal Logo" style="width: 60px; height: 60px; object-fit: contain; margin-bottom: 5px;">
+                    <p style="font-size: 11px; color: #6b7280; margin: 0;">Republic of the Philippines | Province of Bohol</p>
                     <h1 style="font-size: 18px; font-weight: 700; color: #1e40af; margin: 5px 0;">MUNICIPALITY OF BALILIHAN - Waterworks System</h1>
-                    <h2 style="font-size: 14px; font-weight: 600; color: #4f46e5;">Consumer Bill Status Report: ${barangayName}</h2>
+                    <h2 style="font-size: 14px; font-weight: 600; color: #4f46e5; margin: 0;">Consumer Bill Status Report: ${barangayName}</h2>
                 </div>
                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px;">
                     <div style="background: #dcfce7; padding: 10px; border-radius: 8px; text-align: center;">
@@ -514,9 +527,18 @@ function printBillStatus() {
                     </thead>
                     <tbody>${tableRows}</tbody>
                 </table>
-                <div style="display: flex; justify-content: space-between; margin-top: 10px; padding-top: 8px; border-top: 1px solid #e5e7eb; font-size: 10px; color: #6b7280;">
-                    <span>Total: <strong>${filteredData.length}</strong> consumers</span>
-                    <span>Generated: ${printDate} at ${printTime}</span>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px; padding-top: 10px; border-top: 2px solid #e5e7eb;">
+                    <div style="font-size: 11px; color: #6b7280;">
+                        <span>Total Consumers: <strong style="color: #111827;">${filteredData.length}</strong></span>
+                    </div>
+                    <div style="text-align: center;">
+                        <span style="font-size: 12px; font-weight: 700; color: #1e40af;">GRAND TOTAL: </span>
+                        <span style="font-size: 16px; font-weight: 800; color: #1e40af;">${formatCurrency(totalAmount)}</span>
+                    </div>
+                    <div style="font-size: 10px; color: #6b7280; text-align: right;">
+                        <span>Generated: ${printDate}</span><br>
+                        <span>Time: ${printTime}</span>
+                    </div>
                 </div>
                 <div class="no-print" style="text-align: center; margin-top: 20px;">
                     <button onclick="window.print()" style="background: #6366f1; color: white; padding: 10px 25px; border: none; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print</button>
