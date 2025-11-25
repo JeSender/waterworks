@@ -44,33 +44,30 @@ def get_previous_reading(consumer):
     return latest_reading.reading_value if latest_reading else 0
 
 
-# Helper function to calculate water bill
+# Helper function to calculate water bill using tiered rates
 def calculate_water_bill(consumer, consumption):
-    """Calculate water bill based on consumption and consumer type."""
-    # Get system settings for rates
-    settings = SystemSetting.objects.first()
+    """
+    Calculate water bill using tiered rate structure.
 
-    if not settings:
-        # Fallback to default rates if no settings exist
-        residential_rate = Decimal('22.50')
-        commercial_rate = Decimal('25.00')
-        fixed_charge = Decimal('50.00')
-    else:
-        residential_rate = settings.residential_rate_per_cubic
-        commercial_rate = settings.commercial_rate_per_cubic
-        fixed_charge = settings.fixed_charge
+    TIERED RATE STRUCTURE:
+    - Tier 1 (1-5 m³): Minimum charge (flat rate)
+    - Tier 2 (6-10 m³): Rate per cubic meter
+    - Tier 3 (11-20 m³): Rate per cubic meter
+    - Tier 4 (21-50 m³): Rate per cubic meter
+    - Tier 5 (51+ m³): Rate per cubic meter
 
-    # Determine rate based on usage type
-    if consumer.usage_type == 'Commercial':
-        rate = commercial_rate
-    else:
-        rate = residential_rate
+    Returns:
+        tuple: (average_rate, total_amount) for backward compatibility
+    """
+    from .utils import calculate_tiered_water_bill
 
-    # Calculate total: (consumption × rate) + fixed charge
-    consumption_charge = Decimal(str(consumption)) * rate
-    total_amount = consumption_charge + fixed_charge
+    # Use the new tiered calculation utility
+    total_amount, average_rate, breakdown = calculate_tiered_water_bill(
+        consumption=consumption,
+        usage_type=consumer.usage_type
+    )
 
-    return float(rate), float(total_amount)
+    return float(average_rate), float(total_amount)
 
 
 # ============================================================================
@@ -561,17 +558,37 @@ def api_get_current_rates(request):
 @login_required
 def system_management(request):
     """
-    Manage system-wide settings: water rates, reading schedule, billing schedule, and penalties.
+    Manage system-wide settings: tiered water rates, reading schedule, billing schedule, and penalties.
+
+    TIERED RATE STRUCTURE:
+    - Tier 1 (1-5 m³): Minimum charge (flat rate)
+    - Tier 2 (6-10 m³): Rate per cubic meter
+    - Tier 3 (11-20 m³): Rate per cubic meter
+    - Tier 4 (21-50 m³): Rate per cubic meter
+    - Tier 5 (51+ m³): Rate per cubic meter
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
 
     if request.method == "POST":
         try:
-            # Get water rate values
-            new_res_rate_str = request.POST.get("residential_rate_per_cubic")
-            new_comm_rate_str = request.POST.get("commercial_rate_per_cubic")
-            new_fixed_charge_str = request.POST.get("fixed_charge")
+            # -------------------------
+            # RESIDENTIAL TIERED RATES
+            # -------------------------
+            res_minimum = Decimal(request.POST.get("residential_minimum_charge", "75"))
+            res_tier2 = Decimal(request.POST.get("residential_tier2_rate", "15"))
+            res_tier3 = Decimal(request.POST.get("residential_tier3_rate", "16"))
+            res_tier4 = Decimal(request.POST.get("residential_tier4_rate", "17"))
+            res_tier5 = Decimal(request.POST.get("residential_tier5_rate", "18"))
+
+            # -------------------------
+            # COMMERCIAL TIERED RATES
+            # -------------------------
+            comm_minimum = Decimal(request.POST.get("commercial_minimum_charge", "100"))
+            comm_tier2 = Decimal(request.POST.get("commercial_tier2_rate", "18"))
+            comm_tier3 = Decimal(request.POST.get("commercial_tier3_rate", "20"))
+            comm_tier4 = Decimal(request.POST.get("commercial_tier4_rate", "22"))
+            comm_tier5 = Decimal(request.POST.get("commercial_tier5_rate", "24"))
 
             # Get reading schedule values
             reading_start = request.POST.get("reading_start_day")
@@ -589,11 +606,6 @@ def system_management(request):
             grace_period_str = request.POST.get("penalty_grace_period_days", "0")
             max_penalty_str = request.POST.get("max_penalty_amount", "500")
 
-            # Validate and convert to Decimal
-            new_res_rate = Decimal(new_res_rate_str)
-            new_comm_rate = Decimal(new_comm_rate_str)
-            new_fixed_charge = Decimal(new_fixed_charge_str)
-
             # Validate and convert penalty values
             penalty_rate = Decimal(penalty_rate_str)
             fixed_penalty = Decimal(fixed_penalty_str)
@@ -606,9 +618,22 @@ def system_management(request):
             billing_day = int(billing_day)
             due_day = int(due_day)
 
-            # Validate rates
-            if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
-                raise ValueError("Rates must be positive and fixed charge cannot be negative.")
+            # Validate tiered rates (must be positive)
+            rate_fields = [
+                (res_minimum, "Residential minimum charge"),
+                (res_tier2, "Residential Tier 2 rate"),
+                (res_tier3, "Residential Tier 3 rate"),
+                (res_tier4, "Residential Tier 4 rate"),
+                (res_tier5, "Residential Tier 5 rate"),
+                (comm_minimum, "Commercial minimum charge"),
+                (comm_tier2, "Commercial Tier 2 rate"),
+                (comm_tier3, "Commercial Tier 3 rate"),
+                (comm_tier4, "Commercial Tier 4 rate"),
+                (comm_tier5, "Commercial Tier 5 rate"),
+            ]
+            for rate, name in rate_fields:
+                if rate < 0:
+                    raise ValueError(f"{name} cannot be negative.")
 
             # Validate penalty settings
             if penalty_rate < 0 or penalty_rate > 100:
@@ -632,10 +657,21 @@ def system_management(request):
             if reading_start > reading_end:
                 raise ValueError("Reading start day must be before or equal to reading end day.")
 
-            # Update the setting object
-            setting.residential_rate_per_cubic = new_res_rate
-            setting.commercial_rate_per_cubic = new_comm_rate
-            setting.fixed_charge = new_fixed_charge
+            # Update residential tiered rates
+            setting.residential_minimum_charge = res_minimum
+            setting.residential_tier2_rate = res_tier2
+            setting.residential_tier3_rate = res_tier3
+            setting.residential_tier4_rate = res_tier4
+            setting.residential_tier5_rate = res_tier5
+
+            # Update commercial tiered rates
+            setting.commercial_minimum_charge = comm_minimum
+            setting.commercial_tier2_rate = comm_tier2
+            setting.commercial_tier3_rate = comm_tier3
+            setting.commercial_tier4_rate = comm_tier4
+            setting.commercial_tier5_rate = comm_tier5
+
+            # Update schedule settings
             setting.reading_start_day = reading_start
             setting.reading_end_day = reading_end
             setting.billing_day_of_month = billing_day
@@ -656,7 +692,7 @@ def system_management(request):
                 UserActivity.objects.create(
                     user=request.user,
                     action='system_settings_updated',
-                    description=f"Updated system settings including penalty configuration",
+                    description=f"Updated system settings including tiered rate configuration",
                     ip_address=get_client_ip(request),
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
                     login_event=request.login_event
@@ -2369,25 +2405,23 @@ def confirm_all_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings and determine rate based on usage type
+            # Get system settings and calculate using tiered rates
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                # Use appropriate rate based on consumer's usage type (case-insensitive)
-                if reading.consumer.usage_type and reading.consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:  # residential or default
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                # Fallback to defaults if no settings exist
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using tiered rates
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=reading.consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=reading.consumer,
@@ -2396,8 +2430,8 @@ def confirm_all_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,  # Store average rate for reference
+                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
                 total_amount=total,
                 status='Pending'
             )
@@ -2454,23 +2488,23 @@ def confirm_all_readings_global(request):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings
+            # Get system settings and calculate using tiered rates
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using tiered rates
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=consumer,
@@ -2479,8 +2513,8 @@ def confirm_all_readings_global(request):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,  # Store average rate for reference
+                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
                 total_amount=total,
                 status='Pending'
             )
@@ -2797,35 +2831,39 @@ def confirm_reading(request, reading_id):
         consumption = current.reading_value - baseline
 
     # ========================================================================
-    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM
+    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM (TIERED RATES)
     # ========================================================================
     # Bill is created RIGHT NOW, not on a schedule.
     # billing_day_of_month: Only affects billing_period date on the bill
     # due_day_of_month: Only affects due_date on the bill
     # These do NOT control WHEN bills are generated - that's instant on confirm.
+    #
+    # TIERED RATE STRUCTURE:
+    # - Tier 1 (1-5 m³): Minimum charge (flat rate)
+    # - Tier 2 (6-10 m³): Rate per cubic meter
+    # - Tier 3 (11-20 m³): Rate per cubic meter
+    # - Tier 4 (21-50 m³): Rate per cubic meter
+    # - Tier 5 (51+ m³): Rate per cubic meter
     # ========================================================================
     try:
+        from .utils import calculate_tiered_water_bill
+
         setting = SystemSetting.objects.first()
 
-        # Apply correct rate based on consumer usage type (Residential vs Commercial)
+        # Get billing schedule dates
         if setting:
-            if consumer.usage_type == 'Residential':
-                rate = setting.residential_rate_per_cubic
-            else:  # Commercial
-                rate = setting.commercial_rate_per_cubic
-            fixed_charge = setting.fixed_charge
-            # These only set the DATE values on the bill, not when it's created
             billing_day = setting.billing_day_of_month
             due_day = setting.due_day_of_month
         else:
-            # Fallback rates if SystemSetting doesn't exist
-            rate = Decimal('22.50') if consumer.usage_type == 'Residential' else Decimal('25.00')
-            fixed_charge = Decimal('50.00')
             billing_day = 1
             due_day = 20
 
-        # Calculate total: (consumption × rate) + fixed_charge
-        total_amount = (Decimal(consumption) * rate) + fixed_charge
+        # Calculate bill using tiered rates
+        total_amount, average_rate, breakdown = calculate_tiered_water_bill(
+            consumption=consumption,
+            usage_type=consumer.usage_type,
+            settings=setting
+        )
 
         # CREATE BILL IMMEDIATELY - This is the key action
         Bill.objects.create(
@@ -2837,8 +2875,8 @@ def confirm_reading(request, reading_id):
             # due_date: When payment is due (just for display/records)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            rate_per_cubic=rate,
-            fixed_charge=fixed_charge,
+            rate_per_cubic=average_rate,  # Store average rate for reference
+            fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
             total_amount=total_amount,
             status='Pending'
         )
@@ -2901,24 +2939,23 @@ def confirm_selected_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings
+            # Get system settings and calculate using tiered rates
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                # Use appropriate rate based on consumer's usage type (case-insensitive)
-                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using tiered rates
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=consumer,
@@ -2927,8 +2964,8 @@ def confirm_selected_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,  # Store average rate for reference
+                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
                 total_amount=total,
                 status='Pending'
             )

@@ -1,12 +1,168 @@
 # consumers/utils.py
 """
 Utility functions for the Balilihan Waterworks Management System.
-Contains penalty calculations, bill processing helpers, and other utilities.
+Contains penalty calculations, bill processing helpers, tiered rate calculations, and other utilities.
 """
 
 from decimal import Decimal, ROUND_HALF_UP
 from django.utils import timezone
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Dict
+
+
+def calculate_tiered_water_bill(consumption: int, usage_type: str, settings=None) -> Tuple[Decimal, Decimal, Dict]:
+    """
+    Calculate water bill using tiered rate structure.
+
+    TIERED RATE STRUCTURE:
+    - Tier 1 (1-5 m³): Minimum charge (flat rate)
+    - Tier 2 (6-10 m³): Rate per cubic meter for units 6-10
+    - Tier 3 (11-20 m³): Rate per cubic meter for units 11-20
+    - Tier 4 (21-50 m³): Rate per cubic meter for units 21-50
+    - Tier 5 (51+ m³): Rate per cubic meter for units 51+
+
+    The billing is CUMULATIVE - each tier adds to the total.
+    Example: 25 m³ consumption
+    - Tier 1 (1-5): Minimum charge = ₱75 (Residential)
+    - Tier 2 (6-10): 5 units × ₱15 = ₱75
+    - Tier 3 (11-20): 10 units × ₱16 = ₱160
+    - Tier 4 (21-25): 5 units × ₱17 = ₱85
+    - Total = ₱395
+
+    Args:
+        consumption: Water consumption in cubic meters
+        usage_type: 'Residential' or 'Commercial'
+        settings: Optional SystemSetting instance (will fetch if not provided)
+
+    Returns:
+        Tuple of (total_amount, average_rate, breakdown_dict)
+        - total_amount: Total bill amount
+        - average_rate: Effective average rate per cubic meter
+        - breakdown_dict: Detailed breakdown of calculation
+    """
+    from .models import SystemSetting
+
+    # Get system settings if not provided
+    if settings is None:
+        settings = SystemSetting.objects.first()
+
+    # Set default rates based on usage type
+    if usage_type == 'Commercial':
+        if settings:
+            minimum_charge = settings.commercial_minimum_charge
+            tier2_rate = settings.commercial_tier2_rate
+            tier3_rate = settings.commercial_tier3_rate
+            tier4_rate = settings.commercial_tier4_rate
+            tier5_rate = settings.commercial_tier5_rate
+        else:
+            # Default commercial rates
+            minimum_charge = Decimal('100.00')
+            tier2_rate = Decimal('18.00')
+            tier3_rate = Decimal('20.00')
+            tier4_rate = Decimal('22.00')
+            tier5_rate = Decimal('24.00')
+    else:  # Residential
+        if settings:
+            minimum_charge = settings.residential_minimum_charge
+            tier2_rate = settings.residential_tier2_rate
+            tier3_rate = settings.residential_tier3_rate
+            tier4_rate = settings.residential_tier4_rate
+            tier5_rate = settings.residential_tier5_rate
+        else:
+            # Default residential rates
+            minimum_charge = Decimal('75.00')
+            tier2_rate = Decimal('15.00')
+            tier3_rate = Decimal('16.00')
+            tier4_rate = Decimal('17.00')
+            tier5_rate = Decimal('18.00')
+
+    # Initialize breakdown
+    breakdown = {
+        'consumption': consumption,
+        'usage_type': usage_type,
+        'tier1_units': 0,
+        'tier1_amount': Decimal('0.00'),
+        'tier2_units': 0,
+        'tier2_rate': tier2_rate,
+        'tier2_amount': Decimal('0.00'),
+        'tier3_units': 0,
+        'tier3_rate': tier3_rate,
+        'tier3_amount': Decimal('0.00'),
+        'tier4_units': 0,
+        'tier4_rate': tier4_rate,
+        'tier4_amount': Decimal('0.00'),
+        'tier5_units': 0,
+        'tier5_rate': tier5_rate,
+        'tier5_amount': Decimal('0.00'),
+        'minimum_charge': minimum_charge,
+    }
+
+    total_amount = Decimal('0.00')
+
+    if consumption <= 0:
+        # Zero consumption - still charge minimum
+        breakdown['tier1_units'] = 0
+        breakdown['tier1_amount'] = minimum_charge
+        total_amount = minimum_charge
+    elif consumption <= 5:
+        # Tier 1: 1-5 m³ (minimum charge only)
+        breakdown['tier1_units'] = consumption
+        breakdown['tier1_amount'] = minimum_charge
+        total_amount = minimum_charge
+    else:
+        # Start with minimum charge for first 5 units
+        breakdown['tier1_units'] = 5
+        breakdown['tier1_amount'] = minimum_charge
+        total_amount = minimum_charge
+
+        remaining = consumption - 5
+
+        # Tier 2: 6-10 m³ (up to 5 units at tier2_rate)
+        if remaining > 0:
+            tier2_units = min(remaining, 5)
+            tier2_amount = Decimal(tier2_units) * tier2_rate
+            breakdown['tier2_units'] = tier2_units
+            breakdown['tier2_amount'] = tier2_amount
+            total_amount += tier2_amount
+            remaining -= tier2_units
+
+        # Tier 3: 11-20 m³ (up to 10 units at tier3_rate)
+        if remaining > 0:
+            tier3_units = min(remaining, 10)
+            tier3_amount = Decimal(tier3_units) * tier3_rate
+            breakdown['tier3_units'] = tier3_units
+            breakdown['tier3_amount'] = tier3_amount
+            total_amount += tier3_amount
+            remaining -= tier3_units
+
+        # Tier 4: 21-50 m³ (up to 30 units at tier4_rate)
+        if remaining > 0:
+            tier4_units = min(remaining, 30)
+            tier4_amount = Decimal(tier4_units) * tier4_rate
+            breakdown['tier4_units'] = tier4_units
+            breakdown['tier4_amount'] = tier4_amount
+            total_amount += tier4_amount
+            remaining -= tier4_units
+
+        # Tier 5: 51+ m³ (all remaining at tier5_rate)
+        if remaining > 0:
+            tier5_units = remaining
+            tier5_amount = Decimal(tier5_units) * tier5_rate
+            breakdown['tier5_units'] = tier5_units
+            breakdown['tier5_amount'] = tier5_amount
+            total_amount += tier5_amount
+
+    # Calculate average rate per cubic meter
+    if consumption > 0:
+        average_rate = (total_amount / Decimal(consumption)).quantize(
+            Decimal('0.01'), rounding=ROUND_HALF_UP
+        )
+    else:
+        average_rate = Decimal('0.00')
+
+    breakdown['total_amount'] = total_amount
+    breakdown['average_rate'] = average_rate
+
+    return (total_amount, average_rate, breakdown)
 
 
 def calculate_penalty(bill, settings=None) -> Tuple[Decimal, int, str]:

@@ -538,27 +538,110 @@ class SystemSetting(models.Model):
     - Penalty: Late payment charges applied after due date
 
     Bills are created INSTANTLY when admin confirms a reading.
+
+    TIERED RATE STRUCTURE:
+    - Tier 1 (1-5 m³): Minimum charge (flat rate)
+    - Tier 2 (6-10 m³): Rate per cubic meter
+    - Tier 3 (11-20 m³): Rate per cubic meter
+    - Tier 4 (21-50 m³): Rate per cubic meter
+    - Tier 5 (51+ m³): Rate per cubic meter
     """
     # -------------------------
-    # WATER CONSUMPTION RATES
+    # RESIDENTIAL TIERED RATES
     # -------------------------
+    # Tier 1: 1-5 cubic meters (minimum charge)
+    residential_minimum_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('75.00'),
+        help_text="Minimum charge for 1-5 m³ consumption (₱)"
+    )
+    # Tier 2: 6-10 cubic meters
+    residential_tier2_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('15.00'),
+        help_text="Rate for 6-10 m³ consumption (₱/m³)"
+    )
+    # Tier 3: 11-20 cubic meters
+    residential_tier3_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('16.00'),
+        help_text="Rate for 11-20 m³ consumption (₱/m³)"
+    )
+    # Tier 4: 21-50 cubic meters
+    residential_tier4_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('17.00'),
+        help_text="Rate for 21-50 m³ consumption (₱/m³)"
+    )
+    # Tier 5: 51+ cubic meters
+    residential_tier5_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('18.00'),
+        help_text="Rate for 51+ m³ consumption (₱/m³)"
+    )
+
+    # -------------------------
+    # COMMERCIAL TIERED RATES
+    # -------------------------
+    # Tier 1: 1-5 cubic meters (minimum charge)
+    commercial_minimum_charge = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('100.00'),
+        help_text="Minimum charge for 1-5 m³ consumption (₱)"
+    )
+    # Tier 2: 6-10 cubic meters
+    commercial_tier2_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('18.00'),
+        help_text="Rate for 6-10 m³ consumption (₱/m³)"
+    )
+    # Tier 3: 11-20 cubic meters
+    commercial_tier3_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('20.00'),
+        help_text="Rate for 11-20 m³ consumption (₱/m³)"
+    )
+    # Tier 4: 21-50 cubic meters
+    commercial_tier4_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('22.00'),
+        help_text="Rate for 21-50 m³ consumption (₱/m³)"
+    )
+    # Tier 5: 51+ cubic meters
+    commercial_tier5_rate = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        default=Decimal('24.00'),
+        help_text="Rate for 51+ m³ consumption (₱/m³)"
+    )
+
+    # Legacy fields (kept for backward compatibility, not used in new calculation)
     residential_rate_per_cubic = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal('22.50'),
-        help_text="Rate for residential consumers (₱ / m³)"
+        help_text="[LEGACY] Rate for residential consumers (₱ / m³)"
     )
     commercial_rate_per_cubic = models.DecimalField(
         max_digits=10,
         decimal_places=2,
         default=Decimal('25.00'),
-        help_text="Rate for commercial consumers (₱ / m³)"
+        help_text="[LEGACY] Rate for commercial consumers (₱ / m³)"
     )
     fixed_charge = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('50.00'),
-        help_text="Fixed charge added to every bill (₱)"
+        default=Decimal('0.00'),
+        help_text="[LEGACY] Fixed charge - no longer used with tiered rates"
     )
 
     # -------------------------
