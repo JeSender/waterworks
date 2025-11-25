@@ -40,17 +40,13 @@
 
         <!-- Login Card -->
         <div class="bg-white rounded-2xl shadow-xl p-8">
-            
-
-            <!-- Error Messages -->
-            {% if messages %}
+            <!-- Login error only (passed from view as context, not Django messages) -->
+            {% if error %}
             <div class="mb-4">
-                {% for message in messages %}
                 <div class="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
                     <i class="bi bi-exclamation-circle"></i>
-                    {{ message }}
+                    {{ error }}
                 </div>
-                {% endfor %}
             </div>
             {% endif %}
 

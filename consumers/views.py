@@ -865,8 +865,16 @@ def smart_meter_webhook(request):
 # ======================
 
 def staff_login(request):
-    """Enhanced staff login with security tracking."""
+    """Enhanced staff login with security tracking. Clean login page - no messages."""
     from .decorators import get_client_ip, get_user_agent
+    from django.contrib.messages import get_messages
+
+    # Clear any pending messages to keep login page clean
+    storage = get_messages(request)
+    for _ in storage:
+        pass  # This clears all messages
+
+    error = None  # Login error to display
 
     if request.method == "POST":
         username = request.POST.get('username')
@@ -878,7 +886,7 @@ def staff_login(request):
         user_agent = get_user_agent(request)
 
         if user is not None and user.is_staff:
-            # Successful login
+            # Successful login - no welcome message, just redirect
             login(request, user)
 
             # Record login event
@@ -891,7 +899,6 @@ def staff_login(request):
                 session_key=request.session.session_key
             )
 
-            messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
             return redirect('consumers:home')
         else:
             # Failed login attempt
@@ -904,14 +911,14 @@ def staff_login(request):
                     login_method='web',
                     status='failed'
                 )
-            messages.error(request, "Invalid credentials or not staff member.")
+            error = "Invalid credentials or not staff member."
 
-    return render(request, 'consumers/login.html')
+    return render(request, 'consumers/login.html', {'error': error})
 
 
 @login_required
 def staff_logout(request):
-    """Enhanced logout with session tracking."""
+    """Enhanced logout with session tracking. Clean logout - no messages."""
     # Update the latest active session for this user
     try:
         latest_session = UserLoginEvent.objects.filter(
@@ -930,7 +937,7 @@ def staff_logout(request):
         logger.warning(f"Error updating logout timestamp: {e}")
 
     logout(request)
-    messages.info(request, "You have been logged out successfully.")
+    # No message - login page should always be clean
     return redirect("consumers:staff_login")
 
 
