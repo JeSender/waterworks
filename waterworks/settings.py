@@ -142,6 +142,9 @@ SESSION_COOKIE_AGE = 120  # 2 minutes in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True  # Reset session expiry on every request (activity)
 
+# Message storage - Use session only so messages are cleared on logout
+MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
+
 # CORS Settings for Android App
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
 

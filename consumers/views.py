@@ -746,6 +746,13 @@ def consumer_list_for_staff(request):
 # Example logout view (unused - staff_logout is used instead)
 
 def user_logout(request):
+    from django.contrib.messages import get_messages
+
+    # Clear any pending messages before logout
+    storage = get_messages(request)
+    for _ in storage:
+        pass  # Consume and discard all messages
+
     logout(request)
     # No message - login page should always be clean
     return redirect('consumers:staff_login')
@@ -919,6 +926,13 @@ def staff_login(request):
 @login_required
 def staff_logout(request):
     """Enhanced logout with session tracking. Clean logout - no messages."""
+    from django.contrib.messages import get_messages
+
+    # Clear any pending messages before logout
+    storage = get_messages(request)
+    for _ in storage:
+        pass  # Consume and discard all messages
+
     # Update the latest active session for this user
     try:
         latest_session = UserLoginEvent.objects.filter(
