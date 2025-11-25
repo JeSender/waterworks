@@ -44,30 +44,33 @@ def get_previous_reading(consumer):
     return latest_reading.reading_value if latest_reading else 0
 
 
-# Helper function to calculate water bill using tiered rates
+# Helper function to calculate water bill
 def calculate_water_bill(consumer, consumption):
-    """
-    Calculate water bill using tiered rate structure.
+    """Calculate water bill based on consumption and consumer type."""
+    # Get system settings for rates
+    settings = SystemSetting.objects.first()
 
-    TIERED RATE STRUCTURE:
-    - Tier 1 (1-5 m³): Minimum charge (flat rate)
-    - Tier 2 (6-10 m³): Rate per cubic meter
-    - Tier 3 (11-20 m³): Rate per cubic meter
-    - Tier 4 (21-50 m³): Rate per cubic meter
-    - Tier 5 (51+ m³): Rate per cubic meter
+    if not settings:
+        # Fallback to default rates if no settings exist
+        residential_rate = Decimal('22.50')
+        commercial_rate = Decimal('25.00')
+        fixed_charge = Decimal('50.00')
+    else:
+        residential_rate = settings.residential_rate_per_cubic
+        commercial_rate = settings.commercial_rate_per_cubic
+        fixed_charge = settings.fixed_charge
 
-    Returns:
-        tuple: (average_rate, total_amount) for backward compatibility
-    """
-    from .utils import calculate_tiered_water_bill
+    # Determine rate based on usage type
+    if consumer.usage_type == 'Commercial':
+        rate = commercial_rate
+    else:
+        rate = residential_rate
 
-    # Use the new tiered calculation utility
-    total_amount, average_rate, breakdown = calculate_tiered_water_bill(
-        consumption=consumption,
-        usage_type=consumer.usage_type
-    )
+    # Calculate total: (consumption × rate) + fixed charge
+    consumption_charge = Decimal(str(consumption)) * rate
+    total_amount = consumption_charge + fixed_charge
 
-    return float(average_rate), float(total_amount)
+    return float(rate), float(total_amount)
 
 
 # ============================================================================
@@ -342,6 +345,66 @@ def api_login(request):
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
+@csrf_exempt
+def api_logout(request):
+    """API logout for Android app with session tracking."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        # Get token from request body or Authorization header
+        token = None
+        if request.body:
+            try:
+                data = json.loads(request.body)
+                token = data.get('token')
+            except json.JSONDecodeError:
+                pass
+
+        if not token:
+            auth_header = request.headers.get('Authorization', '')
+            if auth_header.startswith('Bearer '):
+                token = auth_header[7:]
+
+        if token:
+            # Find and update the session
+            latest_session = UserLoginEvent.objects.filter(
+                session_key=token,
+                logout_timestamp__isnull=True
+            ).first()
+
+            if latest_session:
+                latest_session.logout_timestamp = timezone.now()
+                latest_session.save()
+
+                # Also logout from Django session if authenticated
+                if request.user.is_authenticated:
+                    logout(request)
+
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Logged out successfully',
+                    'logout_time': timezone.now().isoformat()
+                })
+            else:
+                # Session not found, might already be logged out
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Session already logged out or not found',
+                    'logout_time': timezone.now().isoformat()
+                })
+        else:
+            return JsonResponse({
+                'error': 'No token provided',
+                'message': 'Please provide token in request body or Authorization header'
+            }, status=400)
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error during API logout: {e}", exc_info=True)
+        return JsonResponse({'error': str(e)}, status=500)
+
 
 @csrf_exempt
 @login_required
@@ -432,76 +495,6 @@ def api_consumers(request):
         return JsonResponse({'error': 'No assigned barangay'}, status=403)
 
 
-@csrf_exempt
-def api_logout(request):
-    """API logout for Android app with session tracking."""
-    from .decorators import get_client_ip, get_user_agent
-
-    if request.method != 'POST':
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
-
-    try:
-        # Get token from request body or header
-        token = None
-
-        # Try to get token from request body
-        try:
-            data = json.loads(request.body)
-            token = data.get('token')
-        except (json.JSONDecodeError, ValueError):
-            pass
-
-        # If no token in body, try Authorization header
-        if not token:
-            auth_header = request.META.get('HTTP_AUTHORIZATION', '')
-            if auth_header.startswith('Bearer '):
-                token = auth_header[7:]
-            elif auth_header.startswith('Token '):
-                token = auth_header[6:]
-
-        # If still no token, try session key from current session
-        if not token and request.session.session_key:
-            token = request.session.session_key
-
-        if token:
-            # Update the logout timestamp for the session with this token
-            latest_session = UserLoginEvent.objects.filter(
-                session_key=token,
-                logout_timestamp__isnull=True,
-                login_method='mobile'
-            ).first()
-
-            if latest_session:
-                latest_session.logout_timestamp = timezone.now()
-                latest_session.save()
-
-                # Also logout from Django session if authenticated
-                if request.user.is_authenticated:
-                    logout(request)
-
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Logged out successfully',
-                    'logout_time': timezone.now().isoformat()
-                })
-            else:
-                # Session not found, might already be logged out
-                return JsonResponse({
-                    'status': 'success',
-                    'message': 'Session already logged out or not found',
-                    'logout_time': timezone.now().isoformat()
-                })
-        else:
-            return JsonResponse({
-                'error': 'No token provided',
-                'message': 'Please provide token in request body or Authorization header'
-            }, status=400)
-
-    except Exception as e:
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error during API logout: {e}", exc_info=True)
-        return JsonResponse({'error': str(e)}, status=500)
 
 # ... (other views remain the same) ...
 
@@ -558,37 +551,17 @@ def api_get_current_rates(request):
 @login_required
 def system_management(request):
     """
-    Manage system-wide settings: tiered water rates, reading schedule, billing schedule, and penalties.
-
-    TIERED RATE STRUCTURE:
-    - Tier 1 (1-5 m³): Minimum charge (flat rate)
-    - Tier 2 (6-10 m³): Rate per cubic meter
-    - Tier 3 (11-20 m³): Rate per cubic meter
-    - Tier 4 (21-50 m³): Rate per cubic meter
-    - Tier 5 (51+ m³): Rate per cubic meter
+    Manage system-wide settings: water rates, reading schedule, billing schedule, and penalties.
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
 
     if request.method == "POST":
         try:
-            # -------------------------
-            # RESIDENTIAL TIERED RATES
-            # -------------------------
-            res_minimum = Decimal(request.POST.get("residential_minimum_charge", "75"))
-            res_tier2 = Decimal(request.POST.get("residential_tier2_rate", "15"))
-            res_tier3 = Decimal(request.POST.get("residential_tier3_rate", "16"))
-            res_tier4 = Decimal(request.POST.get("residential_tier4_rate", "17"))
-            res_tier5 = Decimal(request.POST.get("residential_tier5_rate", "18"))
-
-            # -------------------------
-            # COMMERCIAL TIERED RATES
-            # -------------------------
-            comm_minimum = Decimal(request.POST.get("commercial_minimum_charge", "100"))
-            comm_tier2 = Decimal(request.POST.get("commercial_tier2_rate", "18"))
-            comm_tier3 = Decimal(request.POST.get("commercial_tier3_rate", "20"))
-            comm_tier4 = Decimal(request.POST.get("commercial_tier4_rate", "22"))
-            comm_tier5 = Decimal(request.POST.get("commercial_tier5_rate", "24"))
+            # Get water rate values
+            new_res_rate_str = request.POST.get("residential_rate_per_cubic")
+            new_comm_rate_str = request.POST.get("commercial_rate_per_cubic")
+            new_fixed_charge_str = request.POST.get("fixed_charge")
 
             # Get reading schedule values
             reading_start = request.POST.get("reading_start_day")
@@ -606,6 +579,11 @@ def system_management(request):
             grace_period_str = request.POST.get("penalty_grace_period_days", "0")
             max_penalty_str = request.POST.get("max_penalty_amount", "500")
 
+            # Validate and convert to Decimal
+            new_res_rate = Decimal(new_res_rate_str)
+            new_comm_rate = Decimal(new_comm_rate_str)
+            new_fixed_charge = Decimal(new_fixed_charge_str)
+
             # Validate and convert penalty values
             penalty_rate = Decimal(penalty_rate_str)
             fixed_penalty = Decimal(fixed_penalty_str)
@@ -618,22 +596,9 @@ def system_management(request):
             billing_day = int(billing_day)
             due_day = int(due_day)
 
-            # Validate tiered rates (must be positive)
-            rate_fields = [
-                (res_minimum, "Residential minimum charge"),
-                (res_tier2, "Residential Tier 2 rate"),
-                (res_tier3, "Residential Tier 3 rate"),
-                (res_tier4, "Residential Tier 4 rate"),
-                (res_tier5, "Residential Tier 5 rate"),
-                (comm_minimum, "Commercial minimum charge"),
-                (comm_tier2, "Commercial Tier 2 rate"),
-                (comm_tier3, "Commercial Tier 3 rate"),
-                (comm_tier4, "Commercial Tier 4 rate"),
-                (comm_tier5, "Commercial Tier 5 rate"),
-            ]
-            for rate, name in rate_fields:
-                if rate < 0:
-                    raise ValueError(f"{name} cannot be negative.")
+            # Validate rates
+            if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
+                raise ValueError("Rates must be positive and fixed charge cannot be negative.")
 
             # Validate penalty settings
             if penalty_rate < 0 or penalty_rate > 100:
@@ -657,21 +622,10 @@ def system_management(request):
             if reading_start > reading_end:
                 raise ValueError("Reading start day must be before or equal to reading end day.")
 
-            # Update residential tiered rates
-            setting.residential_minimum_charge = res_minimum
-            setting.residential_tier2_rate = res_tier2
-            setting.residential_tier3_rate = res_tier3
-            setting.residential_tier4_rate = res_tier4
-            setting.residential_tier5_rate = res_tier5
-
-            # Update commercial tiered rates
-            setting.commercial_minimum_charge = comm_minimum
-            setting.commercial_tier2_rate = comm_tier2
-            setting.commercial_tier3_rate = comm_tier3
-            setting.commercial_tier4_rate = comm_tier4
-            setting.commercial_tier5_rate = comm_tier5
-
-            # Update schedule settings
+            # Update the setting object
+            setting.residential_rate_per_cubic = new_res_rate
+            setting.commercial_rate_per_cubic = new_comm_rate
+            setting.fixed_charge = new_fixed_charge
             setting.reading_start_day = reading_start
             setting.reading_end_day = reading_end
             setting.billing_day_of_month = billing_day
@@ -692,7 +646,7 @@ def system_management(request):
                 UserActivity.objects.create(
                     user=request.user,
                     action='system_settings_updated',
-                    description=f"Updated system settings including tiered rate configuration",
+                    description=f"Updated system settings including penalty configuration",
                     ip_address=get_client_ip(request),
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
                     login_event=request.login_event
@@ -743,19 +697,12 @@ def consumer_list_for_staff(request):
     }
     return render(request, 'consumers/consumer_list_for_staff.html', context) # Create this template
 
-# Example logout view (unused - staff_logout is used instead)
+# Example logout view
 
 def user_logout(request):
-    from django.contrib.messages import get_messages
-
-    # Clear any pending messages before logout
-    storage = get_messages(request)
-    for _ in storage:
-        pass  # Consume and discard all messages
-
     logout(request)
-    # No message - login page should always be clean
-    return redirect('consumers:staff_login')
+    messages.info(request, "You have been logged out.")
+    return redirect('consumers:login') # Redirect to login page
 
 
 
@@ -872,16 +819,8 @@ def smart_meter_webhook(request):
 # ======================
 
 def staff_login(request):
-    """Enhanced staff login with security tracking. Clean login page - no messages."""
+    """Enhanced staff login with security tracking."""
     from .decorators import get_client_ip, get_user_agent
-    from django.contrib.messages import get_messages
-
-    # Clear any pending messages to keep login page clean
-    storage = get_messages(request)
-    for _ in storage:
-        pass  # This clears all messages
-
-    error = None  # Login error to display
 
     if request.method == "POST":
         username = request.POST.get('username')
@@ -893,7 +832,7 @@ def staff_login(request):
         user_agent = get_user_agent(request)
 
         if user is not None and user.is_staff:
-            # Successful login - no welcome message, just redirect
+            # Successful login
             login(request, user)
 
             # Record login event
@@ -906,6 +845,7 @@ def staff_login(request):
                 session_key=request.session.session_key
             )
 
+            messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
             return redirect('consumers:home')
         else:
             # Failed login attempt
@@ -918,21 +858,14 @@ def staff_login(request):
                     login_method='web',
                     status='failed'
                 )
-            error = "Invalid credentials or not staff member."
+            messages.error(request, "Invalid credentials or not staff member.")
 
-    return render(request, 'consumers/login.html', {'error': error})
+    return render(request, 'consumers/login.html')
 
 
 @login_required
 def staff_logout(request):
-    """Enhanced logout with session tracking. Clean logout - no messages."""
-    from django.contrib.messages import get_messages
-
-    # Clear any pending messages before logout
-    storage = get_messages(request)
-    for _ in storage:
-        pass  # Consume and discard all messages
-
+    """Enhanced logout with session tracking."""
     # Update the latest active session for this user
     try:
         latest_session = UserLoginEvent.objects.filter(
@@ -951,7 +884,7 @@ def staff_logout(request):
         logger.warning(f"Error updating logout timestamp: {e}")
 
     logout(request)
-    # No message - login page should always be clean
+    messages.info(request, "You have been logged out successfully.")
     return redirect("consumers:staff_login")
 
 
@@ -2426,23 +2359,25 @@ def confirm_all_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings and calculate using tiered rates
-            from .utils import calculate_tiered_water_bill
-
+            # Get system settings and determine rate based on usage type
             setting = SystemSetting.objects.first()
             if setting:
+                # Use appropriate rate based on consumer's usage type (case-insensitive)
+                if reading.consumer.usage_type and reading.consumer.usage_type.lower() == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:  # residential or default
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
+                # Fallback to defaults if no settings exist
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            # Calculate bill using tiered rates
-            total, average_rate, breakdown = calculate_tiered_water_bill(
-                consumption=cons,
-                usage_type=reading.consumer.usage_type,
-                settings=setting
-            )
+            total = (Decimal(cons) * rate) + fixed
 
             Bill.objects.create(
                 consumer=reading.consumer,
@@ -2451,8 +2386,8 @@ def confirm_all_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=average_rate,  # Store average rate for reference
-                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
+                rate_per_cubic=rate,
+                fixed_charge=fixed,
                 total_amount=total,
                 status='Pending'
             )
@@ -2509,23 +2444,23 @@ def confirm_all_readings_global(request):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings and calculate using tiered rates
-            from .utils import calculate_tiered_water_bill
-
+            # Get system settings
             setting = SystemSetting.objects.first()
             if setting:
+                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            # Calculate bill using tiered rates
-            total, average_rate, breakdown = calculate_tiered_water_bill(
-                consumption=cons,
-                usage_type=consumer.usage_type,
-                settings=setting
-            )
+            total = (Decimal(cons) * rate) + fixed
 
             Bill.objects.create(
                 consumer=consumer,
@@ -2534,8 +2469,8 @@ def confirm_all_readings_global(request):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=average_rate,  # Store average rate for reference
-                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
+                rate_per_cubic=rate,
+                fixed_charge=fixed,
                 total_amount=total,
                 status='Pending'
             )
@@ -2852,39 +2787,35 @@ def confirm_reading(request, reading_id):
         consumption = current.reading_value - baseline
 
     # ========================================================================
-    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM (TIERED RATES)
+    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM
     # ========================================================================
     # Bill is created RIGHT NOW, not on a schedule.
     # billing_day_of_month: Only affects billing_period date on the bill
     # due_day_of_month: Only affects due_date on the bill
     # These do NOT control WHEN bills are generated - that's instant on confirm.
-    #
-    # TIERED RATE STRUCTURE:
-    # - Tier 1 (1-5 m³): Minimum charge (flat rate)
-    # - Tier 2 (6-10 m³): Rate per cubic meter
-    # - Tier 3 (11-20 m³): Rate per cubic meter
-    # - Tier 4 (21-50 m³): Rate per cubic meter
-    # - Tier 5 (51+ m³): Rate per cubic meter
     # ========================================================================
     try:
-        from .utils import calculate_tiered_water_bill
-
         setting = SystemSetting.objects.first()
 
-        # Get billing schedule dates
+        # Apply correct rate based on consumer usage type (Residential vs Commercial)
         if setting:
+            if consumer.usage_type == 'Residential':
+                rate = setting.residential_rate_per_cubic
+            else:  # Commercial
+                rate = setting.commercial_rate_per_cubic
+            fixed_charge = setting.fixed_charge
+            # These only set the DATE values on the bill, not when it's created
             billing_day = setting.billing_day_of_month
             due_day = setting.due_day_of_month
         else:
+            # Fallback rates if SystemSetting doesn't exist
+            rate = Decimal('22.50') if consumer.usage_type == 'Residential' else Decimal('25.00')
+            fixed_charge = Decimal('50.00')
             billing_day = 1
             due_day = 20
 
-        # Calculate bill using tiered rates
-        total_amount, average_rate, breakdown = calculate_tiered_water_bill(
-            consumption=consumption,
-            usage_type=consumer.usage_type,
-            settings=setting
-        )
+        # Calculate total: (consumption × rate) + fixed_charge
+        total_amount = (Decimal(consumption) * rate) + fixed_charge
 
         # CREATE BILL IMMEDIATELY - This is the key action
         Bill.objects.create(
@@ -2896,8 +2827,8 @@ def confirm_reading(request, reading_id):
             # due_date: When payment is due (just for display/records)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            rate_per_cubic=average_rate,  # Store average rate for reference
-            fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
+            rate_per_cubic=rate,
+            fixed_charge=fixed_charge,
             total_amount=total_amount,
             status='Pending'
         )
@@ -2960,23 +2891,24 @@ def confirm_selected_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings and calculate using tiered rates
-            from .utils import calculate_tiered_water_bill
-
+            # Get system settings
             setting = SystemSetting.objects.first()
             if setting:
+                # Use appropriate rate based on consumer's usage type (case-insensitive)
+                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
+                    rate = setting.commercial_rate_per_cubic
+                else:
+                    rate = setting.residential_rate_per_cubic
+                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
+                rate = Decimal('22.50')
+                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            # Calculate bill using tiered rates
-            total, average_rate, breakdown = calculate_tiered_water_bill(
-                consumption=cons,
-                usage_type=consumer.usage_type,
-                settings=setting
-            )
+            total = (Decimal(cons) * rate) + fixed
 
             Bill.objects.create(
                 consumer=consumer,
@@ -2985,8 +2917,8 @@ def confirm_selected_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=average_rate,  # Store average rate for reference
-                fixed_charge=Decimal('0.00'),  # No longer used with tiered rates
+                rate_per_cubic=rate,
+                fixed_charge=fixed,
                 total_amount=total,
                 status='Pending'
             )
