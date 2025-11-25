@@ -981,19 +981,8 @@
             if (warningTimer) clearTimeout(warningTimer);
             if (countdownInterval) clearInterval(countdownInterval);
 
-            // Show logout message
-            Swal.fire({
-                title: 'Session Expired',
-                text: 'You have been logged out due to inactivity.',
-                icon: 'info',
-                confirmButtonText: 'OK',
-                confirmButtonColor: '#4f46e5',
-                allowOutsideClick: false,
-                allowEscapeKey: false
-            }).then(() => {
-                // Redirect to logout URL
-                window.location.href = '{% url "consumers:staff_logout" %}';
-            });
+            // Redirect directly to logout - no message for clean login page
+            window.location.href = '{% url "consumers:staff_logout" %}';
         }
     </script>
 

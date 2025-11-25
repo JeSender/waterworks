@@ -743,12 +743,12 @@ def consumer_list_for_staff(request):
     }
     return render(request, 'consumers/consumer_list_for_staff.html', context) # Create this template
 
-# Example logout view
+# Example logout view (unused - staff_logout is used instead)
 
 def user_logout(request):
     logout(request)
-    messages.info(request, "You have been logged out.")
-    return redirect('consumers:login') # Redirect to login page
+    # No message - login page should always be clean
+    return redirect('consumers:staff_login')
 
 
 
