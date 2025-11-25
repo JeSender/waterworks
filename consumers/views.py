@@ -2,6 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.conf import settings
+from .decorators import get_client_ip, get_user_agent
 from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value
 from django.db.models.functions import Concat, TruncMonth
 from django.http import JsonResponse, HttpResponse
