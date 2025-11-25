@@ -691,8 +691,8 @@ class SystemSetting(models.Model):
     penalty_rate = models.DecimalField(
         max_digits=5,
         decimal_places=2,
-        default=Decimal('10.00'),
-        help_text="Penalty rate in percentage (e.g., 10 for 10%)"
+        default=Decimal('25.00'),
+        help_text="Penalty rate in percentage (default: 25% of bill amount)"
     )
     fixed_penalty_amount = models.DecimalField(
         max_digits=10,
@@ -702,13 +702,13 @@ class SystemSetting(models.Model):
     )
     penalty_grace_period_days = models.IntegerField(
         default=0,
-        help_text="Number of days after due date before penalty is applied (0 = immediate)"
+        help_text="Number of days after due date before penalty is applied (0 = immediate, penalty starts day after due date)"
     )
     max_penalty_amount = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('500.00'),
-        help_text="Maximum penalty cap (0 = no cap)"
+        default=Decimal('0.00'),
+        help_text="Maximum penalty cap (0 = no cap, penalty is full percentage of bill)"
     )
 
     # -------------------------
