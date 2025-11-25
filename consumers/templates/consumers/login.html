@@ -28,6 +28,9 @@
     </style>
 </head>
 <body class="flex items-center justify-center p-4">
+    <!-- Consume and discard all Django messages - login page must be clean -->
+    {% if messages %}{% for message in messages %}{% endfor %}{% endif %}
+
     <div class="w-full max-w-sm">
         <!-- Logo & Title -->
         <div class="text-center mb-8">
