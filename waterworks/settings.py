@@ -137,9 +137,10 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login URL
 LOGIN_URL = '/login/'
 
-# Session settings
-SESSION_COOKIE_AGE = 3600
+# Session settings - Auto-logout after 2 minutes of inactivity
+SESSION_COOKIE_AGE = 120  # 2 minutes in seconds
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+SESSION_SAVE_EVERY_REQUEST = True  # Reset session expiry on every request (activity)
 
 # CORS Settings for Android App
 CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
