@@ -173,6 +173,21 @@ CORS_ALLOW_HEADERS = [
 # CSRF Settings for API endpoints
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
+# ============================================================================
+# EMAIL CONFIGURATION - Gmail SMTP for password reset tokens
+# ============================================================================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  # Gmail address
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # Gmail App Password
+DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Balilihan Waterworks <noreply@balilihan-waterworks.com>')
+SERVER_EMAIL = EMAIL_HOST_USER
+
+# Email timeout settings
+EMAIL_TIMEOUT = 10  # seconds
+
 # Add Railway domain to trusted origins
 if RAILWAY_ENVIRONMENT:
     railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default='')

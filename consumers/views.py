@@ -985,15 +985,23 @@ def edit_profile(request):
 def forgot_password_request(request):
     """
     Password reset request page for superuser/admin accounts.
-    Staff accounts are managed directly by admin through user management.
+    Sends secure reset token via email to the user's registered Gmail account.
     """
     from .decorators import get_client_ip, get_user_agent
+    from django.core.mail import EmailMultiAlternatives
+    from django.template.loader import render_to_string
+    from django.utils.html import strip_tags
 
     if request.method == "POST":
         username = request.POST.get('username')
 
         try:
             user = User.objects.get(username=username)
+
+            # Check if user has an email address
+            if not user.email:
+                messages.error(request, "No email address found for this account. Please contact your administrator.")
+                return redirect('consumers:forgot_password')
 
             # Only allow password reset for superuser and admin staff
             if not (user.is_superuser or (user.is_staff and user.groups.filter(name='Admin').exists())):
@@ -1017,39 +1025,67 @@ def forgot_password_request(request):
                     ip_address=get_client_ip(request)
                 )
 
-            # Log the activity
-            UserActivity.objects.create(
-                user=user,
-                action='password_reset_requested',
-                description=f'Password reset requested for {user.username}',
-                ip_address=get_client_ip(request),
-                user_agent=get_user_agent(request)
-            )
-
-            # For thesis project: Display the reset link directly instead of sending email
+            # Build reset URL
             reset_url = request.build_absolute_uri(
                 reverse('consumers:password_reset_confirm', kwargs={'token': token.token})
             )
 
-            # Store reset URL in session to display on next page
-            request.session['reset_url'] = reset_url
-            request.session['reset_username'] = user.username
+            # Prepare email context
+            email_context = {
+                'username': user.username,
+                'reset_url': reset_url,
+                'request_time': token.created_at.strftime('%B %d, %Y at %I:%M %p'),
+                'expiration_time': token.expires_at.strftime('%B %d, %Y at %I:%M %p'),
+                'ip_address': get_client_ip(request) or 'Unknown',
+            }
 
-            messages.success(request, "Password reset link generated successfully!")
-            return redirect('consumers:forgot_password')
+            # Render email templates
+            html_message = render_to_string('consumers/emails/password_reset_email.html', email_context)
+            plain_message = render_to_string('consumers/emails/password_reset_email.txt', email_context)
+
+            # Send email
+            try:
+                subject = '🔐 Password Reset Request - Balilihan Waterworks'
+                from_email = settings.DEFAULT_FROM_EMAIL
+                to_email = user.email
+
+                # Create email with both HTML and plain text versions
+                email = EmailMultiAlternatives(
+                    subject=subject,
+                    body=plain_message,
+                    from_email=from_email,
+                    to=[to_email]
+                )
+                email.attach_alternative(html_message, "text/html")
+                email.send(fail_silently=False)
+
+                # Log the activity
+                UserActivity.objects.create(
+                    user=user,
+                    action='password_reset_requested',
+                    description=f'Password reset email sent to {user.email}',
+                    ip_address=get_client_ip(request),
+                    user_agent=get_user_agent(request)
+                )
+
+                messages.success(request, f"Password reset link has been sent to your email: {user.email[:3]}***@{user.email.split('@')[1]}")
+                return redirect('consumers:forgot_password')
+
+            except Exception as e:
+                # Log the error
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.error(f"Error sending password reset email: {e}", exc_info=True)
+
+                messages.error(request, "Failed to send password reset email. Please contact your administrator.")
+                return redirect('consumers:forgot_password')
 
         except User.DoesNotExist:
-            messages.error(request, "No account found with that username.")
+            # For security, don't reveal if username exists or not
+            messages.success(request, "If an account with that username exists, a password reset link has been sent to the registered email.")
             return redirect('consumers:forgot_password')
 
-    # Get reset URL from session if available
-    reset_url = request.session.pop('reset_url', None)
-    reset_username = request.session.pop('reset_username', None)
-
-    return render(request, 'consumers/forgot_password.html', {
-        'reset_url': reset_url,
-        'reset_username': reset_username
-    })
+    return render(request, 'consumers/forgot_password.html')
 
 
 def forgot_username(request):
