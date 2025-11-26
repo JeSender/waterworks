@@ -1,8 +1,8 @@
 # APPENDIX D: User's Guide
 
-## Smart Meter Reading Application - Balilihan Waterworks
+## Balilihan Waterworks Management System
 
-This guide provides detailed steps to set up and deploy the Smart Meter Reading Application in Balilihan, developed using the **Laravel framework** and **MySQL database**.
+This guide provides detailed steps to set up and deploy the Balilihan Waterworks Management System, developed using the **Django 5.2.7 framework** and **Neon PostgreSQL database**, deployed on **Vercel**.
 
 ---
 
@@ -14,8 +14,9 @@ This guide provides detailed steps to set up and deploy the Smart Meter Reading 
 4. [Deploying the Application](#4-deploying-the-application)
 5. [Configuring the Database](#5-configuring-the-database)
 6. [Running the Application](#6-running-the-application)
-7. [Troubleshooting](#7-troubleshooting)
-8. [Support](#8-support)
+7. [User Roles and Permissions](#7-user-roles-and-permissions)
+8. [Troubleshooting](#8-troubleshooting)
+9. [Support](#9-support)
 
 ---
 
@@ -25,380 +26,427 @@ Before proceeding, ensure you have the following:
 
 | Requirement | Description |
 |-------------|-------------|
-| **Source Code** | Complete project files for the Smart Meter Reading Application |
-| **Access to a Server** | Local server or live hosting server (Apache or Nginx) |
-| **Domain or IP Address** | Required for live deployment |
-| **Technical Knowledge** | Familiarity with PHP, Laravel, and MySQL is recommended |
+| **Source Code** | Complete project files from GitHub repository |
+| **Vercel Account** | Free account at https://vercel.com |
+| **Neon Account** | Free PostgreSQL database at https://neon.tech |
+| **GitHub Account** | For repository hosting and Vercel integration |
+| **Technical Knowledge** | Familiarity with Python, Django, and PostgreSQL is recommended |
 
 ---
 
 ## 2. System Requirements
 
-### 2.1 Hardware Requirements
+### 2.1 Hardware Requirements (Local Development)
 
 | Component | Minimum Specification |
 |-----------|----------------------|
 | **Processor** | Intel Core i3 or higher |
 | **RAM** | 4GB or more |
-| **Storage** | 120GB HDD or larger |
+| **Storage** | 10GB available space |
 
-### 2.2 Software Requirements
+### 2.2 Software Requirements (Local Development)
 
 | Software | Version/Specification |
 |----------|----------------------|
-| **Operating System** | Windows 7 or newer |
-| **Web Server** | Apache (XAMPP, WAMP) or Nginx |
-| **PHP** | Version 8.0 or higher |
-| **Composer** | Dependency manager for PHP |
-| **Database** | MySQL 5.7 or higher |
+| **Operating System** | Windows 10/11, macOS, or Linux |
+| **Python** | Version 3.11 or higher |
+| **pip** | Latest version (comes with Python) |
+| **Git** | For version control |
+| **Node.js** | For Vercel CLI (optional) |
+
+### 2.3 Cloud Services (Production)
+
+| Service | Purpose |
+|---------|---------|
+| **Vercel** | Application hosting and deployment |
+| **Neon PostgreSQL** | Serverless PostgreSQL database |
+| **Gmail SMTP** | Email notifications and password reset |
 
 ---
 
 ## 3. Setting Up the Environment
 
-### 3.1 Server Setup
+### 3.1 Local Development Setup
 
-#### Local Deployment
+#### Install Python
 
-1. Install **XAMPP** or **WAMP** for Apache
-2. Ensure PHP and MySQL modules are enabled
-3. Start Apache and MySQL services from the control panel
-
-#### Live Server Deployment
-
-1. Prepare a VPS or shared hosting with PHP 8.0+ and MySQL support
-2. Install Apache or Nginx as the web server
-3. Configure SSL certificate for secure connections (recommended)
-
-### 3.2 Installing Required Software
-
-#### Install Composer
-
-1. Download Composer from: https://getcomposer.org/
-2. Run the installer and follow the setup wizard
-3. Verify installation by running:
+1. Download Python 3.11+ from: https://www.python.org/downloads/
+2. During installation, check "Add Python to PATH"
+3. Verify installation:
 
 ```cmd
-composer --version
+python --version
+pip --version
 ```
 
-#### Install Laravel (if not included in the source code)
+#### Clone the Repository
 
 ```cmd
-composer global require laravel/installer
+git clone https://github.com/your-username/balilihan-waterworks.git
+cd balilihan-waterworks
+```
+
+#### Create Virtual Environment
+
+```cmd
+# Create virtual environment
+python -m venv venv
+
+# Activate virtual environment
+# Windows:
+venv\Scripts\activate
+
+# macOS/Linux:
+source venv/bin/activate
+```
+
+#### Install Dependencies
+
+```cmd
+pip install -r requirements.txt
+```
+
+### 3.2 Environment Configuration
+
+1. Create a `.env` file in the project root:
+
+```cmd
+copy .env.example .env
+```
+
+2. Configure the `.env` file with your settings:
+
+```env
+# Django Settings
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+ALLOWED_HOSTS=localhost,127.0.0.1
+
+# Database (Neon PostgreSQL)
+DATABASE_URL=postgresql://username:password@host.neon.tech/dbname?sslmode=require
+
+# Email Configuration (Gmail SMTP)
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_HOST_USER=your-email@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+
+# CSRF Configuration
+CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
 ```
 
 ---
 
 ## 4. Deploying the Application
 
-### 4.1 Extract the Source Code
+### 4.1 Neon PostgreSQL Setup
 
-1. Download the Smart Meter Reading Application source code (ZIP or via Git)
-2. Extract the project files into the server's document root:
+1. **Create Neon Account**
+   - Go to https://neon.tech and sign up
+   - Create a new project named "balilihan-waterworks"
 
-| Environment | Directory Path |
-|-------------|----------------|
-| **XAMPP** | `C:/xampp/htdocs/smart-meter-app/` |
-| **WAMP** | `C:/wamp64/www/smart-meter-app/` |
-| **Live Server** | `/var/www/html/smart-meter-app/` |
+2. **Get Connection String**
+   - Navigate to your project dashboard
+   - Copy the connection string from the "Connection Details" section
+   - Format: `postgresql://user:password@ep-xxx.region.aws.neon.tech/neondb?sslmode=require`
 
-### 4.2 Install Dependencies
+3. **Configure Database**
+   - The database is serverless and auto-scales
+   - No manual server management required
 
-1. Open Command Prompt or Terminal
-2. Navigate to the project directory:
+### 4.2 Vercel Deployment
 
-```cmd
-cd C:/xampp/htdocs/smart-meter-app
-```
+#### Connect GitHub Repository
 
-3. Run Composer to install required PHP packages:
+1. **Push Code to GitHub**
+   ```cmd
+   git add .
+   git commit -m "Initial commit"
+   git push origin main
+   ```
 
-```cmd
-composer install
-```
+2. **Import to Vercel**
+   - Go to https://vercel.com/new
+   - Click "Import Git Repository"
+   - Select your GitHub repository
+   - Vercel will auto-detect Django project
 
-### 4.3 Set Up the Environment File
+#### Configure Environment Variables
 
-1. Locate the `.env.example` file in the project root
-2. Duplicate and rename it to `.env`:
+In the Vercel dashboard, add the following environment variables:
 
-```cmd
-copy .env.example .env
-```
+| Variable | Value |
+|----------|-------|
+| `SECRET_KEY` | Your Django secret key |
+| `DEBUG` | `False` |
+| `DATABASE_URL` | Your Neon PostgreSQL connection string |
+| `EMAIL_HOST` | `smtp.gmail.com` |
+| `EMAIL_PORT` | `587` |
+| `EMAIL_USE_TLS` | `True` |
+| `EMAIL_HOST_USER` | Your Gmail address |
+| `EMAIL_HOST_PASSWORD` | Your Gmail App Password |
+| `CSRF_TRUSTED_ORIGINS` | `https://your-app.vercel.app` |
+| `ALLOWED_HOSTS` | `your-app.vercel.app,.vercel.app` |
 
-3. Open the `.env` file and configure the following settings:
+#### Deploy
 
-```env
-APP_NAME="Smart Meter Reading Application"
-APP_ENV=local
-APP_KEY=
-APP_DEBUG=true
-APP_URL=http://localhost:8000
+1. Click "Deploy" in Vercel dashboard
+2. Vercel automatically builds and deploys on every git push
+3. Access your app at: `https://your-app.vercel.app`
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=smr_balilihan
-DB_USERNAME=root
-DB_PASSWORD=your_password
-```
+### 4.3 Gmail App Password Setup
 
-4. Generate the application key:
+For email functionality (password reset, notifications):
 
-```cmd
-php artisan key:generate
-```
+1. Go to Google Account settings: https://myaccount.google.com/
+2. Navigate to Security > 2-Step Verification (must be enabled)
+3. Scroll to "App passwords"
+4. Create a new app password for "Mail"
+5. Copy the 16-character password (no spaces)
+6. Use this as `EMAIL_HOST_PASSWORD` in Vercel
 
 ---
 
 ## 5. Configuring the Database
 
-### 5.1 Create the Database
+### 5.1 Run Migrations
 
-1. Open **phpMyAdmin** or any MySQL management tool
-2. Create a new database matching the name in your `.env` file
-
-```sql
-CREATE DATABASE smr_balilihan CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-```
-
-### 5.2 Run Migrations
-
-Execute the following command in the terminal to create database tables:
+#### Local Development
 
 ```cmd
-php artisan migrate
+python manage.py migrate
 ```
 
-### 5.3 Seed the Database (Optional)
+#### Production (Vercel)
 
-If seeders are available for initial data:
+Migrations run automatically during deployment via `build_files.sh`, or you can run manually:
 
 ```cmd
-php artisan db:seed
+# Using Vercel CLI
+vercel env pull .env.local
+python manage.py migrate
 ```
 
-To run both migrations and seeders together:
+### 5.2 Create Superuser
 
 ```cmd
-php artisan migrate --seed
+python manage.py createsuperuser
+```
+
+Follow the prompts to create an admin account.
+
+### 5.3 Set Up Admin Group (Optional)
+
+To create a restricted Admin role:
+
+```cmd
+python manage.py setup_admin_group
+```
+
+This creates an "Admin" group with limited permissions (billing and reports only).
+
+### 5.4 Load Initial Data (Optional)
+
+If seed data is available:
+
+```cmd
+python manage.py loaddata initial_data.json
 ```
 
 ---
 
 ## 6. Running the Application
 
-### 6.1 Local Server
-
-1. Start Apache and MySQL in XAMPP or WAMP Control Panel
-2. Run the Laravel development server:
+### 6.1 Local Development Server
 
 ```cmd
-php artisan serve
+python manage.py runserver
 ```
 
-3. Open your browser and navigate to:
+Access the application at: `http://127.0.0.1:8000`
 
-```
-http://127.0.0.1:8000
-```
+### 6.2 Production Access
 
-### 6.2 Live Server
+After Vercel deployment, access at your assigned domain:
+- `https://your-app.vercel.app`
+- Or your custom domain if configured
 
-#### Apache Configuration
+### 6.3 Admin Panel
 
-1. Set the document root to the `public` directory of the Laravel project
-2. Configure VirtualHost in `httpd.conf` or create a new file in `sites-available`:
-
-```apache
-<VirtualHost *:80>
-    ServerName your-domain.com
-    DocumentRoot /var/www/html/smart-meter-app/public
-
-    <Directory /var/www/html/smart-meter-app/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
-
-    ErrorLog ${APACHE_LOG_DIR}/error.log
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>
-```
-
-3. Enable the site and restart Apache:
-
-```bash
-sudo a2ensite your-domain.conf
-sudo systemctl restart apache2
-```
-
-#### Nginx Configuration
-
-1. Create a server block configuration:
-
-```nginx
-server {
-    listen 80;
-    server_name your-domain.com;
-    root /var/www/html/smart-meter-app/public;
-
-    index index.php index.html;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.0-fpm.sock;
-        fastcgi_index index.php;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.ht {
-        deny all;
-    }
-}
-```
-
-2. Restart Nginx:
-
-```bash
-sudo systemctl restart nginx
-```
-
-3. Access the application using your assigned domain or IP address
+Access the Django admin at:
+- Local: `http://127.0.0.1:8000/admin/`
+- Production: `https://your-app.vercel.app/admin/`
 
 ---
 
-## 7. Troubleshooting
+## 7. User Roles and Permissions
 
-### 7.1 Common Issues
+### 7.1 Role Overview
 
-#### Permission Denied Errors
+| Role | Description |
+|------|-------------|
+| **Superuser** | Full system access - can manage all features |
+| **Admin** | Limited access - billing and reports only |
 
-**Problem:** Unable to write to storage or cache directories
+### 7.2 Superuser Capabilities
 
-**Solution:** Set proper permissions for the `storage` and `bootstrap/cache` directories:
+- Manage consumer accounts (create, edit, delete)
+- Disconnect/reconnect consumers
+- Manage user accounts
+- Access system settings
+- Full billing and reporting access
+- All admin capabilities
 
-```bash
-# Linux/macOS
-chmod -R 775 storage
-chmod -R 775 bootstrap/cache
-chown -R www-data:www-data storage bootstrap/cache
-```
+### 7.3 Admin Capabilities
 
-```cmd
-# Windows (Run as Administrator)
-icacls storage /grant Everyone:F /T
-icacls bootstrap\cache /grant Everyone:F /T
+| Can Do | Cannot Do |
+|--------|-----------|
+| View consumer data (read-only) | Edit consumer information |
+| Manage billing (create bills, process payments) | Create new consumers |
+| Generate and download reports | Delete consumers |
+| View meter readings | Disconnect/reconnect consumers |
+| View payment records | Manage user accounts |
+| | Access system settings |
+
+### 7.4 Creating Admin Users
+
+1. Create a user account (Superuser only)
+2. Run the admin group setup command:
+   ```cmd
+   python manage.py setup_admin_group
+   ```
+3. In Django Admin, assign the user to the "Admin" group
+
+---
+
+## 8. Troubleshooting
+
+### 8.1 Common Issues
+
+#### Database Connection Error
+
+**Problem:** `Connection refused` or `timeout` errors
+
+**Solution:**
+1. Verify `DATABASE_URL` in environment variables
+2. Ensure Neon database is active (not suspended)
+3. Check SSL mode is set to `require`
+4. Verify IP is not blocked in Neon settings
+
+```env
+DATABASE_URL=postgresql://user:pass@host.neon.tech/db?sslmode=require
 ```
 
 ---
 
-#### Missing Encryption Key
+#### Static Files Not Loading
 
-**Problem:** `No application encryption key has been specified`
+**Problem:** CSS/JS files return 404 errors
 
-**Solution:** Generate a new application key:
+**Solution:**
+1. Run collectstatic:
+   ```cmd
+   python manage.py collectstatic --noinput
+   ```
+2. Verify `STATIC_URL` and `STATIC_ROOT` in settings
+3. Check Vercel's `vercel.json` configuration
 
-```cmd
-php artisan key:generate
-```
+---
+
+#### CSRF Verification Failed
+
+**Problem:** 403 Forbidden on form submissions
+
+**Solution:**
+1. Add your domain to `CSRF_TRUSTED_ORIGINS`:
+   ```env
+   CSRF_TRUSTED_ORIGINS=https://your-app.vercel.app
+   ```
+2. Ensure the protocol (https) matches your deployment
+
+---
+
+#### Email Not Sending
+
+**Problem:** Password reset or notifications fail
+
+**Solution:**
+1. Verify Gmail App Password (not regular password)
+2. Check 2-Step Verification is enabled on Gmail
+3. Confirm `EMAIL_HOST_USER` matches the Gmail account
+4. Test email configuration:
+   ```cmd
+   python manage.py shell
+   >>> from django.core.mail import send_mail
+   >>> send_mail('Test', 'Test message', 'from@gmail.com', ['to@email.com'])
+   ```
 
 ---
 
 #### 500 Internal Server Error
 
-**Problem:** Application returns a 500 error page
+**Problem:** Application returns 500 error
 
 **Solution:**
-1. Check server error logs:
-   - Apache: `/var/log/apache2/error.log`
-   - Nginx: `/var/log/nginx/error.log`
-   - Laravel: `storage/logs/laravel.log`
-
-2. Ensure the `.env` file is configured correctly
-
-3. Verify file permissions on storage directories
-
-4. Clear application cache:
-
-```cmd
-php artisan config:clear
-php artisan cache:clear
-php artisan view:clear
-```
+1. Check Vercel deployment logs
+2. Set `DEBUG=True` temporarily to see detailed errors
+3. Verify all environment variables are set correctly
+4. Check database migrations are up to date
 
 ---
 
-#### Database Connection Error
+#### Migration Errors
 
-**Problem:** `SQLSTATE[HY000] [2002] Connection refused`
+**Problem:** Database migration fails
 
 **Solution:**
-1. Verify database credentials in the `.env` file
-2. Ensure MySQL server is running:
-
-```cmd
-# Windows (XAMPP)
-Check XAMPP Control Panel - MySQL should show "Running"
-
-# Linux
-sudo systemctl status mysql
-sudo systemctl start mysql
-```
-
-3. Test database connection:
-
-```cmd
-php artisan tinker
->>> DB::connection()->getPdo();
-```
+1. Check database connectivity
+2. Review migration files for conflicts:
+   ```cmd
+   python manage.py showmigrations
+   ```
+3. Reset migrations if needed (development only):
+   ```cmd
+   python manage.py migrate --fake-initial
+   ```
 
 ---
 
-#### Composer Memory Limit Error
+### 8.2 Vercel-Specific Issues
 
-**Problem:** `Allowed memory size exhausted`
+#### Build Failures
 
-**Solution:** Increase PHP memory limit:
+1. Check `build_files.sh` exists and is executable
+2. Verify `requirements.txt` has all dependencies
+3. Review Vercel build logs for specific errors
 
-```cmd
-php -d memory_limit=-1 composer install
-```
+#### Cold Starts
 
----
-
-#### Route Not Found (404 Error)
-
-**Problem:** Pages return 404 errors
-
-**Solution:**
-1. Ensure `mod_rewrite` is enabled (Apache)
-2. Verify `.htaccess` file exists in `public` directory
-3. Clear route cache:
-
-```cmd
-php artisan route:clear
-php artisan route:cache
-```
+- Serverless functions may have initial delay
+- First request after inactivity may be slower
+- This is normal behavior for serverless deployments
 
 ---
 
-## 8. Support
+## 9. Support
 
 ### Documentation Resources
 
-For additional assistance, refer to the following resources:
-
 | Resource | URL |
 |----------|-----|
-| **Laravel Documentation** | https://laravel.com/docs |
-| **PHP Documentation** | https://www.php.net/docs.php |
-| **MySQL Documentation** | https://dev.mysql.com/doc/ |
-| **Composer Documentation** | https://getcomposer.org/doc/ |
+| **Django Documentation** | https://docs.djangoproject.com/ |
+| **Vercel Documentation** | https://vercel.com/docs |
+| **Neon PostgreSQL Docs** | https://neon.tech/docs |
+| **Python Documentation** | https://docs.python.org/3/ |
+
+### Project Documentation
+
+| Document | Description |
+|----------|-------------|
+| `README.md` | Project overview and quick start |
+| `VERCEL_DEPLOYMENT_GUIDE.md` | Detailed Vercel deployment steps |
+| `ANDROID_APP_VERCEL_SETUP.md` | Android app configuration |
 
 ### Contact
 
@@ -410,14 +458,29 @@ For technical assistance specific to this application, contact the development t
 
 | Task | Command |
 |------|---------|
-| Install dependencies | `composer install` |
-| Generate app key | `php artisan key:generate` |
-| Run migrations | `php artisan migrate` |
-| Seed database | `php artisan db:seed` |
-| Start development server | `php artisan serve` |
-| Clear all cache | `php artisan optimize:clear` |
-| Create storage link | `php artisan storage:link` |
-| Check Laravel version | `php artisan --version` |
+| Install dependencies | `pip install -r requirements.txt` |
+| Run migrations | `python manage.py migrate` |
+| Create superuser | `python manage.py createsuperuser` |
+| Setup admin group | `python manage.py setup_admin_group` |
+| Start dev server | `python manage.py runserver` |
+| Collect static files | `python manage.py collectstatic` |
+| Check Django version | `python manage.py --version` |
+| Run tests | `python manage.py test` |
+| Create migrations | `python manage.py makemigrations` |
+| Shell access | `python manage.py shell` |
+
+---
+
+## Vercel CLI Commands (Optional)
+
+| Task | Command |
+|------|---------|
+| Install Vercel CLI | `npm i -g vercel` |
+| Login to Vercel | `vercel login` |
+| Deploy to preview | `vercel` |
+| Deploy to production | `vercel --prod` |
+| Pull env variables | `vercel env pull .env.local` |
+| View deployment logs | `vercel logs` |
 
 ---
 
