@@ -89,6 +89,251 @@ class UserLoginEvent(models.Model):
         return []
 
 
+class LoginAttemptTracker(models.Model):
+    """
+    Tracks login attempts for rate limiting and account lockout.
+    Implements brute-force protection.
+    """
+    ip_address = models.GenericIPAddressField(db_index=True)
+    username = models.CharField(max_length=150, db_index=True)
+    attempt_time = models.DateTimeField(default=timezone.now, db_index=True)
+    was_successful = models.BooleanField(default=False)
+
+    class Meta:
+        ordering = ['-attempt_time']
+        indexes = [
+            models.Index(fields=['ip_address', 'attempt_time']),
+            models.Index(fields=['username', 'attempt_time']),
+        ]
+        verbose_name = "Login Attempt"
+        verbose_name_plural = "Login Attempts"
+
+    def __str__(self):
+        status = "Success" if self.was_successful else "Failed"
+        return f"{self.username} from {self.ip_address} - {status} at {self.attempt_time}"
+
+    @classmethod
+    def get_recent_failed_attempts(cls, ip_address=None, username=None, minutes=15):
+        """Get count of failed attempts in the last N minutes."""
+        cutoff_time = timezone.now() - timezone.timedelta(minutes=minutes)
+        queryset = cls.objects.filter(
+            attempt_time__gte=cutoff_time,
+            was_successful=False
+        )
+        if ip_address:
+            queryset = queryset.filter(ip_address=ip_address)
+        if username:
+            queryset = queryset.filter(username=username)
+        return queryset.count()
+
+    @classmethod
+    def cleanup_old_attempts(cls, hours=24):
+        """Remove attempts older than N hours."""
+        cutoff_time = timezone.now() - timezone.timedelta(hours=hours)
+        deleted, _ = cls.objects.filter(attempt_time__lt=cutoff_time).delete()
+        return deleted
+
+
+class AccountLockout(models.Model):
+    """
+    Tracks account lockouts after too many failed login attempts.
+    """
+    user = models.ForeignKey(User, on_delete=models.CASCADE, null=True, blank=True)
+    username = models.CharField(max_length=150, db_index=True)
+    ip_address = models.GenericIPAddressField(db_index=True)
+    locked_at = models.DateTimeField(default=timezone.now)
+    locked_until = models.DateTimeField()
+    reason = models.CharField(max_length=255, default="Too many failed login attempts")
+    failed_attempts = models.IntegerField(default=0)
+    is_active = models.BooleanField(default=True, help_text="Is this lockout still in effect?")
+
+    class Meta:
+        ordering = ['-locked_at']
+        indexes = [
+            models.Index(fields=['username', 'is_active']),
+            models.Index(fields=['ip_address', 'is_active']),
+        ]
+        verbose_name = "Account Lockout"
+        verbose_name_plural = "Account Lockouts"
+
+    def __str__(self):
+        return f"{self.username} locked until {self.locked_until}"
+
+    @property
+    def is_locked(self):
+        """Check if lockout is still in effect."""
+        if not self.is_active:
+            return False
+        if timezone.now() >= self.locked_until:
+            self.is_active = False
+            self.save(update_fields=['is_active'])
+            return False
+        return True
+
+    @property
+    def time_remaining(self):
+        """Get remaining lockout time in seconds."""
+        if not self.is_locked:
+            return 0
+        return max(0, int((self.locked_until - timezone.now()).total_seconds()))
+
+    @property
+    def time_remaining_formatted(self):
+        """Get human-readable remaining time."""
+        seconds = self.time_remaining
+        if seconds <= 0:
+            return "Unlocked"
+        minutes, secs = divmod(seconds, 60)
+        if minutes > 0:
+            return f"{minutes}m {secs}s"
+        return f"{secs}s"
+
+    @classmethod
+    def is_account_locked(cls, username=None, ip_address=None):
+        """Check if account or IP is currently locked."""
+        now = timezone.now()
+        queryset = cls.objects.filter(is_active=True, locked_until__gt=now)
+
+        if username:
+            lockout = queryset.filter(username=username).first()
+            if lockout:
+                return True, lockout
+
+        if ip_address:
+            lockout = queryset.filter(ip_address=ip_address).first()
+            if lockout:
+                return True, lockout
+
+        return False, None
+
+    @classmethod
+    def create_lockout(cls, username, ip_address, failed_attempts, lockout_minutes=15):
+        """Create a new lockout record."""
+        user = None
+        try:
+            user = User.objects.get(username=username)
+        except User.DoesNotExist:
+            pass
+
+        lockout = cls.objects.create(
+            user=user,
+            username=username,
+            ip_address=ip_address,
+            locked_until=timezone.now() + timezone.timedelta(minutes=lockout_minutes),
+            failed_attempts=failed_attempts
+        )
+        return lockout
+
+
+class TwoFactorAuth(models.Model):
+    """
+    Two-Factor Authentication settings for admin accounts.
+    Uses TOTP (Time-based One-Time Password).
+    """
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='two_factor')
+    secret_key = models.CharField(max_length=32, help_text="Base32 encoded secret key")
+    is_enabled = models.BooleanField(default=False)
+    is_verified = models.BooleanField(default=False, help_text="Has the user verified their 2FA setup?")
+    backup_codes = models.TextField(blank=True, help_text="JSON list of backup codes")
+    created_at = models.DateTimeField(default=timezone.now)
+    last_used_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Two-Factor Authentication"
+        verbose_name_plural = "Two-Factor Authentications"
+
+    def __str__(self):
+        status = "Enabled" if self.is_enabled else "Disabled"
+        return f"{self.user.username} - 2FA {status}"
+
+    def generate_secret(self):
+        """Generate a new secret key."""
+        import secrets
+        import base64
+        # Generate 20 random bytes and encode as base32
+        random_bytes = secrets.token_bytes(20)
+        self.secret_key = base64.b32encode(random_bytes).decode('utf-8')
+        return self.secret_key
+
+    def get_totp_uri(self):
+        """Generate TOTP URI for QR code."""
+        return f"otpauth://totp/Waterworks:{self.user.username}?secret={self.secret_key}&issuer=Balilihan%20Waterworks"
+
+    def verify_token(self, token):
+        """Verify a TOTP token."""
+        import hmac
+        import struct
+        import time
+        import base64
+        import hashlib
+
+        try:
+            token = int(token)
+        except (ValueError, TypeError):
+            return False
+
+        # Get current time step (30-second intervals)
+        current_time = int(time.time())
+
+        # Check current and adjacent time windows for clock drift
+        for time_offset in [-1, 0, 1]:
+            time_step = (current_time // 30) + time_offset
+            expected_token = self._generate_totp(time_step)
+            if token == expected_token:
+                self.last_used_at = timezone.now()
+                self.save(update_fields=['last_used_at'])
+                return True
+        return False
+
+    def _generate_totp(self, time_step):
+        """Generate TOTP for a given time step."""
+        import hmac
+        import struct
+        import base64
+        import hashlib
+
+        key = base64.b32decode(self.secret_key, casefold=True)
+        msg = struct.pack('>Q', time_step)
+        hmac_hash = hmac.new(key, msg, hashlib.sha1).digest()
+        offset = hmac_hash[-1] & 0x0f
+        code = struct.unpack('>I', hmac_hash[offset:offset + 4])[0]
+        code = (code & 0x7fffffff) % 1000000
+        return code
+
+    def generate_backup_codes(self, count=8):
+        """Generate backup codes for account recovery."""
+        import secrets
+        import json
+        codes = [secrets.token_hex(4).upper() for _ in range(count)]
+        self.backup_codes = json.dumps(codes)
+        self.save(update_fields=['backup_codes'])
+        return codes
+
+    def verify_backup_code(self, code):
+        """Verify and consume a backup code."""
+        import json
+        if not self.backup_codes:
+            return False
+
+        codes = json.loads(self.backup_codes)
+        code = code.upper().replace('-', '').replace(' ', '')
+
+        if code in codes:
+            codes.remove(code)
+            self.backup_codes = json.dumps(codes)
+            self.save(update_fields=['backup_codes'])
+            return True
+        return False
+
+    @property
+    def remaining_backup_codes(self):
+        """Get count of remaining backup codes."""
+        import json
+        if not self.backup_codes:
+            return 0
+        return len(json.loads(self.backup_codes))
+
+
 class PasswordResetToken(models.Model):
     """
     Stores password reset tokens for secure password recovery.

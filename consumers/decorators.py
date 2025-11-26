@@ -2,13 +2,33 @@
 """
 Custom decorators for enhanced security and access control.
 Used for protecting sensitive views in the thesis/research project.
+
+Security Features:
+- Rate limiting for login endpoints
+- Account lockout after failed attempts
+- Two-factor authentication support
+- Activity logging and audit trail
 """
 from functools import wraps
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.shortcuts import render
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.utils import timezone
+import logging
+
+logger = logging.getLogger(__name__)
+
+# ======================
+# SECURITY CONFIGURATION
+# ======================
+RATE_LIMIT_CONFIG = {
+    'MAX_LOGIN_ATTEMPTS': 5,           # Max failed attempts before lockout
+    'LOCKOUT_DURATION_MINUTES': 15,    # Duration of lockout in minutes
+    'ATTEMPT_WINDOW_MINUTES': 15,      # Time window to count attempts
+    'API_RATE_LIMIT_PER_MINUTE': 30,   # Max API requests per minute
+}
 
 
 def superuser_required(view_func):
@@ -141,3 +161,172 @@ def check_password_strength(password):
         return False, "Password must contain uppercase, lowercase, and numbers."
 
     return True, "Password is strong."
+
+
+# ======================
+# RATE LIMITING DECORATORS
+# ======================
+
+def check_login_allowed(username, ip_address):
+    """
+    Check if login is allowed for the given username/IP.
+    Returns: (is_allowed: bool, lockout_info: dict or None)
+    """
+    from .models import LoginAttemptTracker, AccountLockout
+
+    # Check for active lockout
+    is_locked, lockout = AccountLockout.is_account_locked(username=username, ip_address=ip_address)
+    if is_locked:
+        return False, {
+            'reason': 'Account temporarily locked due to too many failed attempts.',
+            'time_remaining': lockout.time_remaining_formatted,
+            'locked_until': lockout.locked_until
+        }
+
+    return True, None
+
+
+def record_login_attempt(username, ip_address, was_successful):
+    """
+    Record a login attempt and create lockout if necessary.
+    Returns: (lockout_created: bool, lockout_info: dict or None)
+    """
+    from .models import LoginAttemptTracker, AccountLockout
+
+    # Record the attempt
+    LoginAttemptTracker.objects.create(
+        username=username,
+        ip_address=ip_address,
+        was_successful=was_successful
+    )
+
+    # If successful, no need to check for lockout
+    if was_successful:
+        return False, None
+
+    # Check failed attempts count
+    failed_count = LoginAttemptTracker.get_recent_failed_attempts(
+        username=username,
+        minutes=RATE_LIMIT_CONFIG['ATTEMPT_WINDOW_MINUTES']
+    )
+
+    # Create lockout if threshold exceeded
+    if failed_count >= RATE_LIMIT_CONFIG['MAX_LOGIN_ATTEMPTS']:
+        lockout = AccountLockout.create_lockout(
+            username=username,
+            ip_address=ip_address,
+            failed_attempts=failed_count,
+            lockout_minutes=RATE_LIMIT_CONFIG['LOCKOUT_DURATION_MINUTES']
+        )
+        logger.warning(f"Account locked: {username} from {ip_address} after {failed_count} failed attempts")
+        return True, {
+            'reason': 'Too many failed login attempts. Account temporarily locked.',
+            'time_remaining': lockout.time_remaining_formatted,
+            'locked_until': lockout.locked_until
+        }
+
+    # Return remaining attempts info
+    remaining = RATE_LIMIT_CONFIG['MAX_LOGIN_ATTEMPTS'] - failed_count
+    return False, {'remaining_attempts': remaining}
+
+
+def rate_limit_login(view_func):
+    """
+    Decorator to apply rate limiting to login views.
+    Blocks login attempts if account is locked due to too many failures.
+
+    Usage:
+        @rate_limit_login
+        def login_view(request):
+            # Login logic here
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if request.method == 'POST':
+            username = request.POST.get('username', '').strip()
+            ip_address = get_client_ip(request)
+
+            # Check if login is allowed
+            is_allowed, lockout_info = check_login_allowed(username, ip_address)
+            if not is_allowed:
+                messages.error(
+                    request,
+                    f"Account temporarily locked. Try again in {lockout_info['time_remaining']}."
+                )
+                logger.warning(f"Blocked login attempt for locked account: {username} from {ip_address}")
+                return redirect('consumers:staff_login')
+
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def require_2fa(view_func):
+    """
+    Decorator that requires two-factor authentication for sensitive views.
+    User must have 2FA enabled and verified to access the view.
+
+    Usage:
+        @login_required
+        @require_2fa
+        def sensitive_view(request):
+            # Only accessible with 2FA
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Check if user has 2FA enabled
+        try:
+            from .models import TwoFactorAuth
+            two_factor = TwoFactorAuth.objects.get(user=request.user)
+            if two_factor.is_enabled and two_factor.is_verified:
+                # Check if 2FA was verified in this session
+                if not request.session.get('2fa_verified', False):
+                    messages.warning(request, "Please verify your two-factor authentication.")
+                    return redirect('consumers:verify_2fa')
+        except TwoFactorAuth.DoesNotExist:
+            # User doesn't have 2FA set up - allow access (2FA is optional)
+            pass
+
+        return view_func(request, *args, **kwargs)
+    return wrapper
+
+
+def api_rate_limit(view_func):
+    """
+    Decorator to apply rate limiting to API endpoints.
+    Limits requests per minute per IP address.
+
+    Usage:
+        @api_rate_limit
+        def api_endpoint(request):
+            # API logic here
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        from django.core.cache import cache
+
+        ip_address = get_client_ip(request)
+        cache_key = f"api_rate_limit:{ip_address}"
+
+        # Get current request count
+        request_count = cache.get(cache_key, 0)
+
+        if request_count >= RATE_LIMIT_CONFIG['API_RATE_LIMIT_PER_MINUTE']:
+            logger.warning(f"API rate limit exceeded for IP: {ip_address}")
+            return JsonResponse({
+                'error': 'Rate limit exceeded',
+                'message': 'Too many requests. Please try again later.',
+                'retry_after': 60
+            }, status=429)
+
+        # Increment counter (expires after 60 seconds)
+        cache.set(cache_key, request_count + 1, 60)
+
+        return view_func(request, *args, **kwargs)
+    return wrapper
