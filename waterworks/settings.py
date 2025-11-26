@@ -192,6 +192,17 @@ CORS_ALLOW_HEADERS = [
 # CSRF Settings for API endpoints
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
 
+# Always add Vercel production domain to trusted origins
+CSRF_TRUSTED_ORIGINS.extend([
+    'https://waterworks-rose.vercel.app',
+    'https://*.vercel.app',
+])
+
+# Also add to CORS for API access
+CORS_ALLOWED_ORIGINS.extend([
+    'https://waterworks-rose.vercel.app',
+])
+
 # ============================================================================
 # EMAIL CONFIGURATION - Gmail SMTP for password reset tokens
 # ============================================================================

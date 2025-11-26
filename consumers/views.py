@@ -457,10 +457,11 @@ def api_consumers(request):
         data = []
         for consumer in consumers:
             # Find the latest confirmed reading for this specific consumer
+            # FIX: Added -created_at for consistent ordering with get_previous_reading()
             latest_confirmed_reading_obj = MeterReading.objects.filter(
                 consumer=consumer,
                 is_confirmed=True
-            ).order_by('-reading_date').first()
+            ).order_by('-reading_date', '-created_at').first()
 
             # Extract the reading value, or default to 0 if no confirmed reading exists
             latest_confirmed_reading_value = latest_confirmed_reading_obj.reading_value if latest_confirmed_reading_obj else 0
@@ -487,6 +488,7 @@ def api_consumers(request):
                 'status': consumer.status,  # 'active' or 'disconnected'
                 'is_active': consumer.status == 'active',
                 'latest_confirmed_reading': latest_confirmed_reading_value,
+                'previous_reading': latest_confirmed_reading_value,  # Alias for Android app compatibility
                 # Delinquent status for Android app
                 'is_delinquent': has_overdue_bills,
                 'pending_bills_count': pending_bills_count
@@ -496,6 +498,46 @@ def api_consumers(request):
     except StaffProfile.DoesNotExist:
         return JsonResponse({'error': 'No assigned barangay'}, status=403)
 
+
+@login_required
+def api_get_previous_reading(request, consumer_id):
+    """
+    API endpoint to get the previous confirmed reading for a specific consumer.
+
+    This provides a dedicated endpoint for the Android app to fetch just the
+    previous reading without needing to load all consumers.
+
+    URL: /api/consumers/<consumer_id>/previous-reading/
+    Method: GET
+
+    Returns:
+        - consumer_id: int
+        - account_number: str
+        - consumer_name: str
+        - previous_reading: int (0 if no confirmed reading exists)
+        - last_reading_date: str or null
+    """
+    try:
+        consumer = Consumer.objects.get(id=consumer_id)
+
+        # Get previous reading using the same logic as get_previous_reading()
+        latest_reading = MeterReading.objects.filter(
+            consumer=consumer,
+            is_confirmed=True
+        ).order_by('-reading_date', '-created_at').first()
+
+        previous_reading_value = latest_reading.reading_value if latest_reading else 0
+        last_reading_date = latest_reading.reading_date.isoformat() if latest_reading else None
+
+        return JsonResponse({
+            'consumer_id': consumer.id,
+            'account_number': consumer.account_number,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'previous_reading': previous_reading_value,
+            'last_reading_date': last_reading_date
+        })
+    except Consumer.DoesNotExist:
+        return JsonResponse({'error': 'Consumer not found'}, status=404)
 
 
 # ... (other views remain the same) ...
