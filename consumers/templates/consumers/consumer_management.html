@@ -5,14 +5,9 @@
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
-    <!-- Page Header -->
-    <div class="mb-3">
+    <!-- Page Header with Add Consumer Button -->
+    <div class="flex items-center justify-between mb-3">
         <h2 class="text-xl font-bold text-dark-900">Consumer Management</h2>
-        <p class="text-dark-500 text-sm">Manage, Search, and Filter All Consumers</p>
-    </div>
-
-    <!-- Add Consumer Button -->
-    <div class="mb-3">
         <a href="{% url 'consumers:add_consumer' %}" class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-1.5">
             <i class="bi bi-plus-circle"></i>Add Consumer
         </a>
