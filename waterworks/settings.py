@@ -161,7 +161,11 @@ SESSION_SAVE_EVERY_REQUEST = True  # Reset session expiry on every request (acti
 MESSAGE_STORAGE = 'django.contrib.messages.storage.session.SessionStorage'
 
 # CORS Settings for Android App
-CORS_ALLOWED_ORIGINS = config('CORS_ALLOWED_ORIGINS', default='', cast=Csv())
+# Initialize as empty list, then add from config if provided
+CORS_ALLOWED_ORIGINS = []
+_cors_config = config('CORS_ALLOWED_ORIGINS', default='')
+if _cors_config:
+    CORS_ALLOWED_ORIGINS.extend([origin.strip() for origin in _cors_config.split(',') if origin.strip()])
 
 # Allow credentials (for session-based auth from mobile app)
 CORS_ALLOW_CREDENTIALS = True
@@ -190,7 +194,11 @@ CORS_ALLOW_HEADERS = [
 ]
 
 # CSRF Settings for API endpoints
-CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='', cast=Csv())
+# Initialize as empty list, then add from config if provided
+CSRF_TRUSTED_ORIGINS = []
+_csrf_config = config('CSRF_TRUSTED_ORIGINS', default='')
+if _csrf_config:
+    CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in _csrf_config.split(',') if origin.strip()])
 
 # Always add Vercel production domain to trusted origins
 CSRF_TRUSTED_ORIGINS.extend([
@@ -202,6 +210,16 @@ CSRF_TRUSTED_ORIGINS.extend([
 CORS_ALLOWED_ORIGINS.extend([
     'https://waterworks-rose.vercel.app',
 ])
+
+# CSRF and Session Cookie Configuration
+CSRF_COOKIE_SECURE = not DEBUG
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+CSRF_COOKIE_SAMESITE = 'Lax'
+CSRF_USE_SESSIONS = False
+
+SESSION_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = 'Lax'
 
 # ============================================================================
 # EMAIL CONFIGURATION - Gmail SMTP for password reset tokens
@@ -244,10 +262,9 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # Railway handles SSL termination at the load balancer, so we don't need Django to redirect
+    # Vercel/Railway handles SSL termination at the load balancer, so we don't need Django to redirect
     # SECURE_SSL_REDIRECT = True
-    CSRF_COOKIE_SECURE = True
-    SESSION_COOKIE_SECURE = True
+    # Note: CSRF_COOKIE_SECURE and SESSION_COOKIE_SECURE are set above based on DEBUG
 
     # Logging configuration for production - Reduced to prevent rate limiting
     LOGGING = {
