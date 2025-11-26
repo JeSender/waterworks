@@ -8,9 +8,15 @@
     <!-- Page Header with Add Consumer Button -->
     <div class="flex items-center justify-between mb-3">
         <h2 class="text-xl font-bold text-dark-900">Consumer Management</h2>
+        {% if user.is_superuser %}
         <a href="{% url 'consumers:add_consumer' %}" class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white text-sm font-medium rounded-lg transition-colors inline-flex items-center gap-1.5">
             <i class="bi bi-plus-circle"></i>Add Consumer
         </a>
+        {% else %}
+        <span class="px-4 py-2 bg-light-200 text-dark-500 text-sm font-medium rounded-lg inline-flex items-center gap-1.5" title="Only superusers can add consumers">
+            <i class="bi bi-lock"></i>View Only
+        </span>
+        {% endif %}
     </div>
 
     <!-- Search + Filter Form - Compact Single Row -->
@@ -87,11 +93,13 @@
                                    title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                {% if user.is_superuser %}
                                 <a href="{% url 'consumers:edit_consumer' consumer.pk %}"
                                    class="p-1.5 text-warning-600 hover:bg-warning-50 rounded-lg transition-colors"
                                    title="Edit Consumer">
                                     <i class="bi bi-pencil"></i>
                                 </a>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>

@@ -607,7 +607,30 @@ class Consumer(models.Model):
     def __str__(self):
         return f"{self.account_number} - {self.full_name}"
 
-    # ... (rest of your model, if any) ...
+    class Meta:
+        ordering = ['-created_at']
+        permissions = [
+            # Consumer Management Permissions
+            ("view_consumer_data", "Can view consumer data (read-only)"),
+            ("edit_consumer_data", "Can edit consumer information"),
+            ("create_consumer", "Can create new consumers"),
+            ("delete_consumer", "Can delete consumers"),
+            ("disconnect_consumer", "Can disconnect/reconnect consumers"),
+
+            # Billing Permissions
+            ("manage_billing", "Can manage billing (create bills, process payments)"),
+            ("view_billing", "Can view billing records"),
+
+            # Reports Permissions
+            ("generate_reports", "Can generate and download reports"),
+            ("view_reports", "Can view reports"),
+
+            # User Management Permissions
+            ("manage_users", "Can manage user accounts"),
+
+            # System Settings Permissions
+            ("manage_settings", "Can access system settings"),
+        ]
 
 # ----------------------------
 # Meter Reading Model

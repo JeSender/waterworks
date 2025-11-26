@@ -3,7 +3,12 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.conf import settings
-from .decorators import get_client_ip, get_user_agent
+from .decorators import (
+    get_client_ip, get_user_agent, is_admin_user, is_superuser_only,
+    consumer_edit_permission_required, disconnect_permission_required,
+    user_management_permission_required, system_settings_permission_required,
+    billing_permission_required, reports_permission_required, view_only_for_admin
+)
 from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value
 from django.db.models.functions import Concat, TruncMonth
 from django.http import JsonResponse, HttpResponse
@@ -593,9 +598,11 @@ def api_get_current_rates(request):
 # ... (other imports remain the same) ...
 
 @login_required
+@system_settings_permission_required
 def system_management(request):
     """
     Manage system-wide settings: water rates, reading schedule, billing schedule, and penalties.
+    RESTRICTED: Superuser only - Admins cannot access.
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
@@ -1581,7 +1588,9 @@ def disconnected_consumers_list(request):
 
 # 2. ACTION VIEW: Disconnect a specific consumer (requires ID)
 @login_required
+@disconnect_permission_required
 def disconnect_consumer(request, consumer_id):
+    """RESTRICTED: Superuser only - Admins cannot disconnect consumers."""
     consumer = get_object_or_404(Consumer, id=consumer_id)
     if request.method == 'POST':
         consumer.status = 'disconnected'
@@ -1610,7 +1619,9 @@ def disconnect_consumer(request, consumer_id):
     return render(request, 'consumers/confirm_disconnect.html', {'consumer': consumer})
 
 @login_required
+@disconnect_permission_required
 def reconnect_consumer(request, consumer_id):
+    """RESTRICTED: Superuser only - Admins cannot reconnect consumers."""
     consumer = get_object_or_404(Consumer, id=consumer_id)
     if request.method == 'POST':
         consumer.status = 'active'
@@ -1747,8 +1758,12 @@ def consumer_management(request):
 
 
 @login_required
+@consumer_edit_permission_required
 def add_consumer(request):
-    """Handle adding a new consumer via full page form"""
+    """
+    Handle adding a new consumer via full page form.
+    RESTRICTED: Superuser only - Admins cannot create consumers.
+    """
     if request.method == "POST":
         form = ConsumerForm(request.POST)
         if form.is_valid():
@@ -1782,7 +1797,12 @@ def add_consumer(request):
 
 
 @login_required
+@consumer_edit_permission_required
 def edit_consumer(request, consumer_id):
+    """
+    Edit consumer information.
+    RESTRICTED: Superuser only - Admins cannot edit consumers.
+    """
     consumer = get_object_or_404(Consumer, id=consumer_id)
     if request.method == 'POST':
         form = ConsumerForm(request.POST, instance=consumer)
@@ -3494,19 +3514,14 @@ def admin_verification(request):
 
 
 @login_required
+@user_management_permission_required
 def user_management(request):
     """
     Custom user management interface with enhanced security.
-    Only accessible by superusers with admin verification.
+    RESTRICTED: Superuser only - Admins cannot manage users.
     """
-    from .decorators import superuser_required, get_client_ip
     from django.db.models import Count, Q
     from django.core.paginator import Paginator
-
-    # Security check - only superusers and admins
-    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
-        messages.error(request, "Access Denied: Administrative privileges required to manage users.")
-        return render(request, 'consumers/403.html', status=403)
 
     # Check if admin verification is required and not expired
     admin_verified = request.session.get('admin_verified', False)
@@ -3602,14 +3617,14 @@ def user_management(request):
 
 
 @login_required
+@user_management_permission_required
 def create_user(request):
-    """Create a new user with security validations."""
+    """
+    Create a new user with security validations.
+    RESTRICTED: Superuser only - Admins cannot create users.
+    """
     from .decorators import check_password_strength
     from django.contrib.auth.hashers import make_password
-
-    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
-        messages.error(request, "Access Denied: Administrative privileges required to create users.")
-        return redirect('consumers:user_management')
 
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
@@ -3689,12 +3704,12 @@ def create_user(request):
 
 
 @login_required
+@user_management_permission_required
 def edit_user(request, user_id):
-    """Edit user details with security checks."""
-    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
-        messages.error(request, "Access Denied: Administrative privileges required to edit users.")
-        return redirect('consumers:user_management')
-
+    """
+    Edit user details with security checks.
+    RESTRICTED: Superuser only - Admins cannot edit users.
+    """
     user = get_object_or_404(User, id=user_id)
 
     if request.method == 'POST':
@@ -3728,12 +3743,12 @@ def edit_user(request, user_id):
 
 
 @login_required
+@user_management_permission_required
 def delete_user(request, user_id):
-    """Delete a user with confirmation."""
-    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
-        messages.error(request, "Access Denied: Administrative privileges required to delete users.")
-        return redirect('consumers:user_management')
-
+    """
+    Delete a user with confirmation.
+    RESTRICTED: Superuser only - Admins cannot delete users.
+    """
     user = get_object_or_404(User, id=user_id)
 
     # Prevent self-deletion

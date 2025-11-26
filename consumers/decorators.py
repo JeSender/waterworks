@@ -61,7 +61,7 @@ def superuser_required(view_func):
 def admin_or_superuser_required(view_func):
     """
     Decorator that requires the user to be either a superuser or have admin role in StaffProfile.
-    Provides more flexible access control.
+    NOTE: This allows FULL admin access. For restricted admin access, use specific permission decorators.
 
     Usage:
         @admin_or_superuser_required
@@ -90,6 +90,235 @@ def admin_or_superuser_required(view_func):
 
         # If neither superuser nor admin, deny access
         messages.error(request, "Access Denied: Administrative privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+# ======================
+# ROLE-BASED ACCESS CONTROL
+# ======================
+
+def is_admin_user(user):
+    """Check if user is an admin (has admin role in StaffProfile)."""
+    if not user.is_authenticated:
+        return False
+    if user.is_superuser:
+        return True
+    try:
+        from .models import StaffProfile
+        profile = StaffProfile.objects.get(user=user)
+        return profile.role == 'admin'
+    except:
+        return False
+
+
+def is_superuser_only(user):
+    """Check if user is a superuser (not just admin)."""
+    return user.is_authenticated and user.is_superuser
+
+
+def billing_permission_required(view_func):
+    """
+    Decorator for billing-related views.
+    Allows: Superuser, Admin
+    Denies: Field Staff, Regular Users
+
+    Usage:
+        @billing_permission_required
+        def process_payment(request):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Superusers always have access
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        # Check if admin
+        if is_admin_user(request.user):
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Billing privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def reports_permission_required(view_func):
+    """
+    Decorator for report-related views.
+    Allows: Superuser, Admin
+    Denies: Field Staff, Regular Users
+
+    Usage:
+        @reports_permission_required
+        def generate_report(request):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Superusers always have access
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        # Check if admin
+        if is_admin_user(request.user):
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Report privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def consumer_edit_permission_required(view_func):
+    """
+    Decorator for consumer editing views (create, edit, delete).
+    Allows: Superuser ONLY
+    Denies: Admin, Field Staff, Regular Users
+
+    Admin can VIEW consumers but NOT edit them.
+
+    Usage:
+        @consumer_edit_permission_required
+        def edit_consumer(request, consumer_id):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Only superusers can edit consumers
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Only superusers can modify consumer records.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def disconnect_permission_required(view_func):
+    """
+    Decorator for disconnect/reconnect consumer views.
+    Allows: Superuser ONLY
+    Denies: Admin, Field Staff, Regular Users
+
+    Usage:
+        @disconnect_permission_required
+        def disconnect_consumer(request, consumer_id):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Only superusers can disconnect/reconnect
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Only superusers can disconnect or reconnect consumers.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def user_management_permission_required(view_func):
+    """
+    Decorator for user management views.
+    Allows: Superuser ONLY
+    Denies: Admin, Field Staff, Regular Users
+
+    Usage:
+        @user_management_permission_required
+        def user_management(request):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Only superusers can manage users
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Only superusers can manage user accounts.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def system_settings_permission_required(view_func):
+    """
+    Decorator for system settings views.
+    Allows: Superuser ONLY
+    Denies: Admin, Field Staff, Regular Users
+
+    Usage:
+        @system_settings_permission_required
+        def system_settings(request):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Only superusers can access system settings
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Only superusers can access system settings.")
+        return render(request, 'consumers/403.html', status=403)
+
+    return wrapper
+
+
+def view_only_for_admin(view_func):
+    """
+    Decorator that allows admin read-only access.
+    Admin can view but POST requests (modifications) are blocked.
+    Superusers have full access.
+
+    Usage:
+        @view_only_for_admin
+        def consumer_detail(request, consumer_id):
+            pass
+    """
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+
+        # Superusers have full access
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+
+        # Admin can only GET (view), not POST (modify)
+        if is_admin_user(request.user):
+            if request.method == 'POST':
+                messages.error(request, "Access Denied: Admins cannot modify this data. View only.")
+                return render(request, 'consumers/403.html', status=403)
+            return view_func(request, *args, **kwargs)
+
+        messages.error(request, "Access Denied: Insufficient privileges.")
         return render(request, 'consumers/403.html', status=403)
 
     return wrapper
