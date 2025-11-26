@@ -2403,10 +2403,18 @@ def barangay_meter_readings(request, barangay_id):
             'display_id': get_consumer_display_id(consumer),
         })
 
+    # Calculate counts for summary statistics
+    pending_count = sum(1 for item in readings_with_data if item['reading'] and not item['reading'].is_confirmed)
+    confirmed_count = sum(1 for item in readings_with_data if item['reading'] and item['reading'].is_confirmed)
+    no_reading_count = sum(1 for item in readings_with_data if not item['reading'])
+
     return render(request, 'consumers/barangay_meter_readings.html', {
         'barangay': barangay,
         'readings': readings_with_data,
         'today': today,
+        'pending_count': pending_count,
+        'confirmed_count': confirmed_count,
+        'no_reading_count': no_reading_count,
     })
 
 
