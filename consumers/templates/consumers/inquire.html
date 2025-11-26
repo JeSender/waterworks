@@ -550,12 +550,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const waiveReason = document.getElementById('waive-reason')?.value || '';
 
             if (receivedAmount < billAmount) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Insufficient Payment',
-                    text: `Cash received must be at least ₱${billAmount.toFixed(2)}`,
-                    confirmButtonColor: '#ef4444'
-                });
+                showToast('error', `Cash received must be at least ₱${billAmount.toFixed(2)}`);
                 return;
             }
 

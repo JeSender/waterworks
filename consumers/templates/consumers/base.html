@@ -394,6 +394,109 @@
             color: #9ca3af;
         }
 
+        /* === HEADER TOAST NOTIFICATIONS === */
+        .header-toast-container {
+            position: fixed;
+            top: calc(var(--header-height) + 10px);
+            right: 20px;
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 400px;
+        }
+        .header-toast {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            animation: slideIn 0.3s ease-out;
+            min-width: 300px;
+        }
+        .header-toast.success {
+            background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+            border-left: 4px solid #10b981;
+        }
+        .header-toast.error {
+            background: linear-gradient(135deg, #fef2f2, #fee2e2);
+            border-left: 4px solid #ef4444;
+        }
+        .header-toast.warning {
+            background: linear-gradient(135deg, #fffbeb, #fef3c7);
+            border-left: 4px solid #f59e0b;
+        }
+        .header-toast.info {
+            background: linear-gradient(135deg, #eff6ff, #dbeafe);
+            border-left: 4px solid #3b82f6;
+        }
+        .header-toast-icon {
+            flex-shrink: 0;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+        .header-toast.success .header-toast-icon { color: #10b981; }
+        .header-toast.error .header-toast-icon { color: #ef4444; }
+        .header-toast.warning .header-toast-icon { color: #f59e0b; }
+        .header-toast.info .header-toast-icon { color: #3b82f6; }
+        .header-toast-content {
+            flex: 1;
+        }
+        .header-toast-title {
+            font-weight: 600;
+            font-size: 0.875rem;
+            margin-bottom: 2px;
+        }
+        .header-toast.success .header-toast-title { color: #065f46; }
+        .header-toast.error .header-toast-title { color: #991b1b; }
+        .header-toast.warning .header-toast-title { color: #92400e; }
+        .header-toast.info .header-toast-title { color: #1e40af; }
+        .header-toast-message {
+            font-size: 0.8125rem;
+            color: #4b5563;
+        }
+        .header-toast-close {
+            flex-shrink: 0;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            color: #9ca3af;
+            transition: color 0.15s;
+        }
+        .header-toast-close:hover {
+            color: #4b5563;
+        }
+        .header-toast-progress {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            border-radius: 0 0 0 10px;
+            animation: progressShrink linear forwards;
+        }
+        .header-toast.success .header-toast-progress { background: #10b981; }
+        .header-toast.error .header-toast-progress { background: #ef4444; }
+        .header-toast.warning .header-toast-progress { background: #f59e0b; }
+        .header-toast.info .header-toast-progress { background: #3b82f6; }
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+        @keyframes progressShrink {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
         /* Print Styles */
         @media print {
             .sidebar,
@@ -606,6 +709,9 @@
         </nav>
     </div>
 
+    <!-- Header Toast Container for Notifications -->
+    <div id="headerToastContainer" class="header-toast-container"></div>
+
     <!-- Main Content -->
     <div class="main-content min-h-screen p-5" style="margin-left: var(--sidebar-width); margin-top: var(--header-height); overflow-y: auto;" id="main-content">
         {% block main_content %}
@@ -756,24 +862,54 @@
             return cookieValue;
         }
 
-        // Toast notification using SweetAlert2
-        function showToast(type, message, duration = 3000) {
-            const Toast = Swal.mixin({
-                toast: true,
-                position: 'top-end',
-                showConfirmButton: false,
-                timer: duration,
-                timerProgressBar: true,
-                didOpen: (toast) => {
-                    toast.addEventListener('mouseenter', Swal.stopTimer)
-                    toast.addEventListener('mouseleave', Swal.resumeTimer)
-                }
-            });
+        // Header Toast Notification System (replaces SweetAlert toasts)
+        function showToast(type, message, duration = 4000) {
+            const container = document.getElementById('headerToastContainer');
+            if (!container) return;
 
-            Toast.fire({
-                icon: type,
-                title: message
-            });
+            // Map type to appropriate icon and title
+            const typeConfig = {
+                success: { icon: 'bi-check-circle-fill', title: 'Success' },
+                error: { icon: 'bi-x-circle-fill', title: 'Error' },
+                warning: { icon: 'bi-exclamation-triangle-fill', title: 'Warning' },
+                info: { icon: 'bi-info-circle-fill', title: 'Info' }
+            };
+
+            const config = typeConfig[type] || typeConfig.info;
+            const toastId = 'toast-' + Date.now();
+
+            const toastHTML = `
+                <div id="${toastId}" class="header-toast ${type}" style="position: relative;">
+                    <div class="header-toast-icon">
+                        <i class="bi ${config.icon} text-lg"></i>
+                    </div>
+                    <div class="header-toast-content">
+                        <div class="header-toast-title">${config.title}</div>
+                        <div class="header-toast-message">${message}</div>
+                    </div>
+                    <button class="header-toast-close" onclick="closeToast('${toastId}')">
+                        <i class="bi bi-x text-lg"></i>
+                    </button>
+                    <div class="header-toast-progress" style="animation-duration: ${duration}ms;"></div>
+                </div>
+            `;
+
+            container.insertAdjacentHTML('beforeend', toastHTML);
+
+            // Auto-remove after duration
+            setTimeout(() => {
+                closeToast(toastId);
+            }, duration);
+        }
+
+        function closeToast(toastId) {
+            const toast = document.getElementById(toastId);
+            if (toast) {
+                toast.style.animation = 'slideOut 0.3s ease-out forwards';
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }
         }
 
         // Confirmation dialog
@@ -815,7 +951,33 @@
         document.addEventListener('DOMContentLoaded', function() {
             setActiveNavLink();
             initAutoLogout(); // Initialize auto-logout system
+            showDjangoMessages(); // Show any Django flash messages
         });
+
+        // Display Django messages as header toasts
+        function showDjangoMessages() {
+            {% if messages %}
+            const djangoMessages = [
+                {% for message in messages %}
+                { type: '{{ message.tags }}', text: '{{ message|escapejs }}' }{% if not forloop.last %},{% endif %}
+                {% endfor %}
+            ];
+
+            djangoMessages.forEach((msg, index) => {
+                // Map Django message tags to toast types
+                let toastType = 'info';
+                if (msg.type.includes('success')) toastType = 'success';
+                else if (msg.type.includes('error') || msg.type.includes('danger')) toastType = 'error';
+                else if (msg.type.includes('warning')) toastType = 'warning';
+                else if (msg.type.includes('info')) toastType = 'info';
+
+                // Stagger the messages slightly
+                setTimeout(() => {
+                    showToast(toastType, msg.text, 5000);
+                }, index * 200);
+            });
+            {% endif %}
+        }
 
         // =====================================================
         // AUTO-LOGOUT SYSTEM - Security Feature

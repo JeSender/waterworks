@@ -361,23 +361,11 @@ function generateReport() {
     const monthNames = ['', 'January', 'February', 'March', 'April', 'May', 'June',
                        'July', 'August', 'September', 'October', 'November', 'December'];
 
-    Swal.fire({
-        title: 'Generating...',
-        text: `Creating ${monthNames[month]} ${year} report`,
-        allowOutsideClick: false,
-        showConfirmButton: false,
-        didOpen: () => { Swal.showLoading(); }
-    });
+    showToast('info', `Generating ${monthNames[month]} ${year} report...`, 2000);
 
     setTimeout(() => {
         window.open(`/delinquent-report/print/?month=${month}&year=${year}`, '_blank');
-        Swal.fire({
-            icon: 'success',
-            title: 'Ready!',
-            text: 'Report opened in new tab',
-            timer: 2000,
-            showConfirmButton: false
-        });
+        showToast('success', 'Report opened in new tab');
     }, 1000);
 }
 
@@ -396,12 +384,7 @@ function printBillStatus() {
     }
 
     if (filteredData.length === 0) {
-        Swal.fire({
-            icon: 'warning',
-            title: 'No Data',
-            text: 'No consumers found for the selected barangay.',
-            confirmButtonColor: '#6366f1'
-        });
+        showToast('warning', 'No consumers found for the selected barangay.');
         return;
     }
 
