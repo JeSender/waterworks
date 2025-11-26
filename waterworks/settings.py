@@ -22,12 +22,19 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # Railway.app provides RAILWAY_STATIC_URL, use it if available
 RAILWAY_ENVIRONMENT = config('RAILWAY_ENVIRONMENT', default='')
 
+# Vercel environment detection
+VERCEL_ENVIRONMENT = config('VERCEL', default='')
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,192.168.100.9', cast=Csv())
 
 # Add Railway domain if running on Railway
 if RAILWAY_ENVIRONMENT:
     ALLOWED_HOSTS.append('.railway.app')
     ALLOWED_HOSTS.append('.up.railway.app')
+
+# Add Vercel domain if running on Vercel
+if VERCEL_ENVIRONMENT:
+    ALLOWED_HOSTS.append('.vercel.app')
 
 # Application definition
 INSTALLED_APPS = [
@@ -78,16 +85,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'waterworks.wsgi.application'
 
 # Database
-# Railway provides DATABASE_URL automatically
-DATABASE_URL = config('DATABASE_URL', default=None)
+# Support DATABASE_URL from environment (Railway/Vercel) or use Neon as default
+NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_Y76UabeDPAKp@ep-wild-cell-a1g6fclm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
+DATABASE_URL = config('DATABASE_URL', default=NEON_DATABASE_URL)
 
 if DATABASE_URL:
-    # Use Railway's PostgreSQL database
+    # Use PostgreSQL database (Neon/Railway/Vercel)
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Local development database
+    # Local development database (fallback)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -199,6 +207,17 @@ if RAILWAY_ENVIRONMENT:
         CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
         if railway_domain not in CORS_ALLOWED_ORIGINS:
             CORS_ALLOWED_ORIGINS.append(f'https://{railway_domain}')
+
+# Add Vercel domain to trusted origins
+if VERCEL_ENVIRONMENT:
+    vercel_url = config('VERCEL_URL', default='')
+    if vercel_url:
+        # VERCEL_URL doesn't include protocol
+        CSRF_TRUSTED_ORIGINS.append(f'https://{vercel_url}')
+        if f'https://{vercel_url}' not in CORS_ALLOWED_ORIGINS:
+            CORS_ALLOWED_ORIGINS.append(f'https://{vercel_url}')
+    # Also add wildcard for all Vercel preview deployments
+    CSRF_TRUSTED_ORIGINS.append('https://*.vercel.app')
 
 # Security settings (for production)
 if not DEBUG:
