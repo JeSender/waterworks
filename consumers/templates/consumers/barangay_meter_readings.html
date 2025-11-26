@@ -90,7 +90,7 @@
             </thead>
             <tbody class="divide-y divide-gray-200">
                 {% for item in readings %}
-                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.consumption and item.consumption > 100 %}bg-red-50{% endif %}"
+                    <tr class="hover:bg-gray-50 transition-colors duration-100"
                         data-consumer-name="{{ item.consumer.first_name|lower }} {{ item.consumer.last_name|lower }}"
                         data-consumer-id="{{ item.display_id|lower }}">
                         <!-- ID Number -->
@@ -127,11 +127,6 @@
                         <td class="px-4 py-2 text-center">
                             {% if item.consumption is not none %}
                                 <span class="text-sm font-medium text-gray-800">{{ item.consumption }}</span>
-                                {% if item.consumption > 100 %}
-                                    <span class="ml-1 inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full bg-red-100 text-red-800">
-                                        High
-                                    </span>
-                                {% endif %}
                             {% else %}
                                 <span class="text-sm text-gray-400">—</span>
                             {% endif %}
