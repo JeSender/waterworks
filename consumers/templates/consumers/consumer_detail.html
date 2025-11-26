@@ -177,10 +177,13 @@
 
     <!-- Action Buttons -->
     <div class="flex flex-wrap items-center gap-2">
+        {% if user.is_superuser %}
+        <!-- Edit Consumer - Superuser Only -->
         <a href="{% url 'consumers:edit_consumer' consumer.id %}"
            class="px-4 py-2 bg-warning-500 text-white text-sm font-medium rounded hover:bg-warning-600 transition-colors shadow-sm">
             <i class="bi bi-pencil-square mr-1"></i>Edit Consumer
         </a>
+        {% endif %}
         <a href="{% url 'consumers:consumer_bill' consumer.id %}"
            class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
             <i class="bi bi-file-earmark-text mr-1"></i>View Bills
@@ -190,7 +193,8 @@
             <i class="bi bi-printer mr-1"></i>Print Water Bill
         </a>
 
-        <!-- Disconnect/Reconnect Button -->
+        {% if user.is_superuser %}
+        <!-- Disconnect/Reconnect Button - Superuser Only -->
         {% if consumer.status == 'active' %}
         <button onclick="confirmDisconnect('{{ consumer.id }}', '{{ consumer.first_name }} {{ consumer.last_name }}')"
                 class="px-4 py-2 bg-danger-600 text-white text-sm font-medium rounded hover:bg-danger-700 transition-colors shadow-sm ml-auto">
@@ -201,6 +205,7 @@
                 class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm ml-auto">
             <i class="bi bi-plug-fill mr-1"></i>Reconnect Service
         </button>
+        {% endif %}
         {% endif %}
     </div>
 </div>
