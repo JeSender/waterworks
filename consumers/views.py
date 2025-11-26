@@ -85,35 +85,30 @@ def calculate_water_bill(consumer, consumption):
 # ============================================================================
 # FLOW OVERVIEW:
 # 1. Mobile app (field staff) submits meter reading anytime
-# 2. Reading is saved with is_confirmed=FALSE (pending admin review)
-# 3. Admin manually clicks "Confirm" button in web portal
-# 4. Upon confirmation, Bill is generated with status='Pending'
-# 5. Bill appears in Inquire/Payment page for payment processing
+# 2. Reading is saved with is_confirmed=TRUE (auto-confirmed)
+# 3. Bill is automatically generated with status='Pending'
+# 4. Bill appears in Inquire/Payment page for payment processing
 #
-# TESTING vs PRODUCTION:
-# - For TESTING: Submit reading from app → Confirm in admin → Pay bill
-# - For PRODUCTION: Same flow, but with real meter readings
-# - The billing_day_of_month and due_day_of_month in SystemSettings
-#   only affect the DATES on the bill, not WHEN bills are generated
+# NOTE: Manual confirmation has been removed as it was redundant.
+# Bills are now generated immediately upon meter reading submission.
 # ============================================================================
 @csrf_exempt  # Be careful with CSRF in production, consider using proper tokens for mobile apps
 def api_submit_reading(request):
     """
     API endpoint for Android app to submit meter readings.
 
-    IMPORTANT: Readings submitted here are NOT auto-confirmed.
-    Admin must manually confirm each reading to generate a bill.
+    IMPORTANT: Readings are AUTO-CONFIRMED and bills are generated immediately.
 
     FLOW:
-    1. App submits reading → MeterReading created (is_confirmed=False)
-    2. Admin confirms → Bill generated → Bill status='Pending'
+    1. App submits reading → MeterReading created (is_confirmed=True)
+    2. Bill is automatically generated with status='Pending'
     3. Admin processes payment → Bill status='Paid'
 
-    Returns bill preview (not actual bill - bill created on confirm):
+    Returns bill details:
     - status, message
     - consumer_name, account_number, reading_date
     - previous_reading, current_reading, consumption
-    - rate, total_amount (estimated), field_staff_name
+    - rate, total_amount, field_staff_name
     """
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -207,26 +202,60 @@ def api_submit_reading(request):
 
         except MeterReading.DoesNotExist:
             # If no existing reading for the date, create a new one
-            # IMPORTANT: is_confirmed=False means admin must manually confirm
-            # this reading before a bill is generated
+            # AUTO-CONFIRM: Reading is confirmed immediately and bill is generated
             reading = MeterReading.objects.create(
                 consumer=consumer,
                 reading_date=reading_date,
                 reading_value=current_reading,
                 source='mobile_app',  # Mark source as coming from the mobile app
-                is_confirmed=False  # CHANGED: Require manual admin confirmation
+                is_confirmed=True  # Auto-confirm - no manual confirmation needed
             )
 
-            # Create notification for admins/superusers
+            # ================================================================
+            # AUTO-GENERATE BILL
+            # ================================================================
+            # Get previous confirmed reading for bill reference
+            prev_reading_obj = MeterReading.objects.filter(
+                consumer=consumer,
+                is_confirmed=True,
+                reading_date__lt=reading_date
+            ).order_by('-reading_date').first()
+
+            # Get system settings for billing
+            setting = SystemSetting.objects.first()
+            if setting:
+                fixed_charge = setting.fixed_charge
+                billing_day = setting.billing_day_of_month
+                due_day = setting.due_day_of_month
+            else:
+                fixed_charge = Decimal('50.00')
+                billing_day = 1
+                due_day = 20
+
+            # Create Bill automatically
+            Bill.objects.create(
+                consumer=consumer,
+                previous_reading=prev_reading_obj,
+                current_reading=reading,
+                billing_period=reading_date.replace(day=billing_day),
+                due_date=reading_date.replace(day=due_day),
+                consumption=consumption,
+                rate_per_cubic=Decimal(str(rate)),
+                fixed_charge=fixed_charge,
+                total_amount=Decimal(str(total_amount)),
+                status='Pending'
+            )
+
+            # Create notification for admins/superusers about new bill
             from .models import Notification
             from django.urls import reverse
             Notification.objects.create(
                 user=None,  # Notify all admins
-                notification_type='meter_reading',
-                title='New Meter Reading Submitted',
-                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Reading: {current_reading} m³',
+                notification_type='bill_generated',
+                title='New Bill Generated',
+                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Amount: ₱{total_amount:.2f}',
                 related_object_id=reading.id,
-                redirect_url=reverse('consumers:meter_readings')
+                redirect_url=reverse('consumers:inquire')
             )
 
         # Track activity for login session

@@ -30,8 +30,7 @@
                 <th>Current</th>
                 <th>Consumption (m³)</th>
                 <th>Date</th>
-                <th>Source</th> <!-- Added Source column to show where the reading came from -->
-                <th>Status</th>
+                <th>Source</th>
                 <th>Actions</th>
             </tr>
         </thead>
@@ -62,7 +61,7 @@
                     <td>{{ item.reading.reading_date|date:"Y-m-d" }}</td>
                     <td>
                         <!-- Display the source of the reading -->
-                        <span class="badge 
+                        <span class="badge
                             {% if item.reading.source == 'mobile_app' %}bg-primary
                             {% elif item.reading.source == 'manual' %}bg-secondary
                             {% elif item.reading.source == 'smart_meter' %}bg-success
@@ -70,33 +69,15 @@
                             {{ item.reading.get_source_display|default:item.reading.source }}
                         </span>
                     </td>
-                    <td>
-                        {% if item.reading.is_confirmed %}
-                            <span class="badge bg-success">Confirmed</span>
-                        {% else %}
-                            <span class="badge bg-warning text-dark">Pending</span>
-                        {% endif %}
-                    </td>
                     <td class="text-center">
-                        {% if not item.reading.is_confirmed %}
-                            <a href="{% url 'consumers:confirm_reading' item.reading.id %}"
-                            class="btn btn-success btn-sm"
-                            onclick="return confirm('Confirm and generate bill for {{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}?')">
-                                Confirm & Bill
-                            </a>
-                        {% else %}
-                            <span class="text-muted">Confirmed</span>
-                        {% endif %}
-                        <!-- Optional: Add a link to view all readings for this consumer -->
-                        <br/>
-                        <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}" class="btn btn-link btn-sm p-0 mt-1">
-                            View All Readings
+                        <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}" class="btn btn-link btn-sm p-0">
+                            View Details
                         </a>
                     </td>
                 </tr>
             {% empty %}
                 <tr>
-                    <td colspan="8" class="text-center text-muted">No meter readings found.</td>
+                    <td colspan="7" class="text-center text-muted">No meter readings found.</td>
                 </tr>
             {% endfor %}
         </tbody>
