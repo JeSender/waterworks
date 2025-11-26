@@ -53,31 +53,23 @@ def get_previous_reading(consumer):
 
 # Helper function to calculate water bill
 def calculate_water_bill(consumer, consumption):
-    """Calculate water bill based on consumption and consumer type."""
-    # Get system settings for rates
-    settings = SystemSetting.objects.first()
+    """
+    Calculate water bill using TIERED rate structure from System Settings.
 
-    if not settings:
-        # Fallback to default rates if no settings exist
-        residential_rate = Decimal('22.50')
-        commercial_rate = Decimal('25.00')
-        fixed_charge = Decimal('50.00')
-    else:
-        residential_rate = settings.residential_rate_per_cubic
-        commercial_rate = settings.commercial_rate_per_cubic
-        fixed_charge = settings.fixed_charge
+    Returns: (average_rate, total_amount, breakdown)
+    - average_rate: Effective rate per cubic meter
+    - total_amount: Total bill amount
+    - breakdown: Dict with tier-by-tier calculation details
+    """
+    from .utils import calculate_tiered_water_bill
 
-    # Determine rate based on usage type
-    if consumer.usage_type == 'Commercial':
-        rate = commercial_rate
-    else:
-        rate = residential_rate
+    # Use tiered calculation from utils
+    total_amount, average_rate, breakdown = calculate_tiered_water_bill(
+        consumption=consumption,
+        usage_type=consumer.usage_type
+    )
 
-    # Calculate total: (consumption × rate) + fixed charge
-    consumption_charge = Decimal(str(consumption)) * rate
-    total_amount = consumption_charge + fixed_charge
-
-    return float(rate), float(total_amount)
+    return float(average_rate), float(total_amount), breakdown
 
 
 # ============================================================================
@@ -175,8 +167,8 @@ def api_submit_reading(request):
                 'message': f'Current reading ({current_reading}) cannot be less than previous reading ({previous_reading})'
             }, status=400)
 
-        # Calculate bill
-        rate, total_amount = calculate_water_bill(consumer, consumption)
+        # Calculate bill using tiered rates
+        rate, total_amount, breakdown = calculate_water_bill(consumer, consumption)
 
         # Get field staff name
         field_staff_name = "System"  # Default
@@ -221,18 +213,18 @@ def api_submit_reading(request):
                 reading_date__lt=reading_date
             ).order_by('-reading_date').first()
 
-            # Get system settings for billing
+            # Get system settings for billing schedule
             setting = SystemSetting.objects.first()
             if setting:
-                fixed_charge = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                fixed_charge = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            # Create Bill automatically
+            # Create Bill automatically with tiered rate info
+            # Note: rate_per_cubic stores average rate, fixed_charge is 0 for tiered billing
+            # (minimum charge is included in tier 1)
             Bill.objects.create(
                 consumer=consumer,
                 previous_reading=prev_reading_obj,
@@ -240,8 +232,8 @@ def api_submit_reading(request):
                 billing_period=reading_date.replace(day=billing_day),
                 due_date=reading_date.replace(day=due_day),
                 consumption=consumption,
-                rate_per_cubic=Decimal(str(rate)),
-                fixed_charge=fixed_charge,
+                rate_per_cubic=Decimal(str(rate)),  # Average rate for display
+                fixed_charge=Decimal('0.00'),  # No separate fixed charge in tiered billing
                 total_amount=Decimal(str(total_amount)),
                 status='Pending'
             )
@@ -597,7 +589,9 @@ def api_get_previous_reading(request, consumer_id):
 @login_required # Ensure the user (app) is authenticated
 def api_get_current_rates(request):
     """
-    API endpoint for the Android app to fetch the current residential and commercial water rates.
+    API endpoint for the Android app to fetch all tiered water rates.
+
+    Returns complete tiered rate structure for both Residential and Commercial.
     """
     try:
         # Get the first (or only) SystemSetting object (singleton pattern)
@@ -606,17 +600,41 @@ def api_get_current_rates(request):
             # Handle the case where no SystemSetting exists
             return JsonResponse({'error': 'System settings not configured.'}, status=500)
 
-        # Return the rates as JSON
+        # Return all tiered rates as JSON
         return JsonResponse({
             'status': 'success',
-            # NEW: Return both residential and commercial rates
-            'residential_rate_per_cubic': float(setting.residential_rate_per_cubic), # Convert Decimal to float for JSON
-            'commercial_rate_per_cubic': float(setting.commercial_rate_per_cubic),   # Convert Decimal to float for JSON
-            'updated_at': setting.updated_at.isoformat() # Include the last update timestamp
+            # Residential Tiered Rates
+            'residential': {
+                'minimum_charge': float(setting.residential_minimum_charge),  # Tier 1: 1-5 m³
+                'tier2_rate': float(setting.residential_tier2_rate),  # 6-10 m³
+                'tier3_rate': float(setting.residential_tier3_rate),  # 11-20 m³
+                'tier4_rate': float(setting.residential_tier4_rate),  # 21-50 m³
+                'tier5_rate': float(setting.residential_tier5_rate),  # 51+ m³
+            },
+            # Commercial Tiered Rates
+            'commercial': {
+                'minimum_charge': float(setting.commercial_minimum_charge),  # Tier 1: 1-5 m³
+                'tier2_rate': float(setting.commercial_tier2_rate),  # 6-10 m³
+                'tier3_rate': float(setting.commercial_tier3_rate),  # 11-20 m³
+                'tier4_rate': float(setting.commercial_tier4_rate),  # 21-50 m³
+                'tier5_rate': float(setting.commercial_tier5_rate),  # 51+ m³
+            },
+            # Tier brackets info for reference
+            'tier_brackets': {
+                'tier1': '1-5 m³ (minimum charge)',
+                'tier2': '6-10 m³',
+                'tier3': '11-20 m³',
+                'tier4': '21-50 m³',
+                'tier5': '51+ m³'
+            },
+            # Legacy rates (for backward compatibility)
+            'residential_rate_per_cubic': float(setting.residential_rate_per_cubic),
+            'commercial_rate_per_cubic': float(setting.commercial_rate_per_cubic),
+            'updated_at': setting.updated_at.isoformat()
         })
 
     except Exception as e:
-        # Log unexpected errors (Railway will capture this in logs)
+        # Log unexpected errors
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error fetching rates: {e}", exc_info=True)
@@ -3249,7 +3267,10 @@ def payment_receipt(request, payment_id):
     """
     Display a printable official receipt for a payment.
     Ensures the payment exists and belongs to a valid bill/consumer.
+    Includes tiered rate breakdown for transparent billing.
     """
+    from .utils import calculate_tiered_water_bill
+
     payment = get_object_or_404(
         Payment.objects.select_related('bill__consumer', 'bill__previous_reading', 'bill__current_reading'),
         id=payment_id
@@ -3261,9 +3282,16 @@ def payment_receipt(request, payment_id):
     else:
         previous_reading_value = payment.bill.current_reading.reading_value - payment.bill.consumption
 
+    # Calculate tiered breakdown for receipt display
+    _, _, breakdown = calculate_tiered_water_bill(
+        consumption=payment.bill.consumption,
+        usage_type=payment.bill.consumer.usage_type
+    )
+
     return render(request, 'consumers/receipt.html', {
         'payment': payment,
-        'previous_reading_value': previous_reading_value
+        'previous_reading_value': previous_reading_value,
+        'breakdown': breakdown
     })
 
 
