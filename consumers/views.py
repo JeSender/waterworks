@@ -1079,9 +1079,15 @@ def forgot_password_request(request):
 
             # Send email
             try:
-                subject = '🔐 Password Reset Request - Balilihan Waterworks'
-                from_email = settings.DEFAULT_FROM_EMAIL
+                subject = 'Password Reset Request - Balilihan Waterworks'
+                # Gmail requires from_email to match EMAIL_HOST_USER
+                from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
                 to_email = user.email
+
+                # Log email attempt (for debugging)
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.info(f"Attempting to send password reset email to {to_email} from {from_email}")
 
                 # Create email with both HTML and plain text versions
                 email = EmailMultiAlternatives(
@@ -1091,6 +1097,8 @@ def forgot_password_request(request):
                     to=[to_email]
                 )
                 email.attach_alternative(html_message, "text/html")
+
+                # Send with explicit connection settings
                 email.send(fail_silently=False)
 
                 # Log the activity
@@ -3995,3 +4003,163 @@ def database_documentation(request):
         ]
 
     return render(request, 'consumers/database_documentation.html', context)
+
+
+# ======================
+# EMAIL TEST (Debug)
+# ======================
+
+@login_required
+def test_email(request):
+    """
+    Test email configuration - only accessible by superusers.
+    Provides detailed debugging information for SMTP issues.
+    """
+    if not request.user.is_superuser:
+        return JsonResponse({'error': 'Superuser access required'}, status=403)
+
+    import smtplib
+    import logging
+    from django.core.mail import send_mail, get_connection
+    from django.http import JsonResponse
+
+    logger = logging.getLogger(__name__)
+
+    # Collect configuration info (without password)
+    config_info = {
+        'EMAIL_BACKEND': settings.EMAIL_BACKEND,
+        'EMAIL_HOST': settings.EMAIL_HOST,
+        'EMAIL_PORT': settings.EMAIL_PORT,
+        'EMAIL_USE_TLS': settings.EMAIL_USE_TLS,
+        'EMAIL_USE_SSL': getattr(settings, 'EMAIL_USE_SSL', False),
+        'EMAIL_HOST_USER': settings.EMAIL_HOST_USER or '(not set)',
+        'EMAIL_HOST_PASSWORD': '***SET***' if settings.EMAIL_HOST_PASSWORD else '(not set)',
+        'DEFAULT_FROM_EMAIL': settings.DEFAULT_FROM_EMAIL,
+        'EMAIL_TIMEOUT': getattr(settings, 'EMAIL_TIMEOUT', 'default'),
+    }
+
+    result = {
+        'config': config_info,
+        'tests': [],
+        'success': False,
+        'error': None
+    }
+
+    # Test 1: Check if credentials are set
+    if not settings.EMAIL_HOST_USER:
+        result['tests'].append({
+            'name': 'Check EMAIL_HOST_USER',
+            'status': 'FAIL',
+            'message': 'EMAIL_HOST_USER is empty. Set it in Vercel environment variables.'
+        })
+        result['error'] = 'EMAIL_HOST_USER not configured'
+        return JsonResponse(result)
+    else:
+        result['tests'].append({
+            'name': 'Check EMAIL_HOST_USER',
+            'status': 'PASS',
+            'message': f'Set to: {settings.EMAIL_HOST_USER}'
+        })
+
+    if not settings.EMAIL_HOST_PASSWORD:
+        result['tests'].append({
+            'name': 'Check EMAIL_HOST_PASSWORD',
+            'status': 'FAIL',
+            'message': 'EMAIL_HOST_PASSWORD is empty. Set it in Vercel environment variables.'
+        })
+        result['error'] = 'EMAIL_HOST_PASSWORD not configured'
+        return JsonResponse(result)
+    else:
+        result['tests'].append({
+            'name': 'Check EMAIL_HOST_PASSWORD',
+            'status': 'PASS',
+            'message': f'Set (length: {len(settings.EMAIL_HOST_PASSWORD)} chars)'
+        })
+
+    # Test 2: Try SMTP connection
+    try:
+        result['tests'].append({
+            'name': 'SMTP Connection Test',
+            'status': 'TESTING',
+            'message': f'Connecting to {settings.EMAIL_HOST}:{settings.EMAIL_PORT}...'
+        })
+
+        # Create SMTP connection
+        if settings.EMAIL_USE_TLS:
+            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=30)
+            server.starttls()
+        else:
+            server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=30)
+
+        result['tests'][-1]['status'] = 'PASS'
+        result['tests'][-1]['message'] = 'Connected to Gmail SMTP server'
+
+        # Test 3: Try authentication
+        result['tests'].append({
+            'name': 'SMTP Authentication',
+            'status': 'TESTING',
+            'message': 'Authenticating...'
+        })
+
+        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+
+        result['tests'][-1]['status'] = 'PASS'
+        result['tests'][-1]['message'] = 'Authentication successful!'
+
+        server.quit()
+
+        # Test 4: Try sending a test email
+        if request.GET.get('send') == 'true':
+            to_email = request.GET.get('to', request.user.email)
+            result['tests'].append({
+                'name': 'Send Test Email',
+                'status': 'TESTING',
+                'message': f'Sending to {to_email}...'
+            })
+
+            try:
+                send_mail(
+                    subject='Test Email - Balilihan Waterworks',
+                    message='This is a test email from Balilihan Waterworks. If you received this, email is working correctly!',
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[to_email],
+                    fail_silently=False,
+                )
+                result['tests'][-1]['status'] = 'PASS'
+                result['tests'][-1]['message'] = f'Email sent successfully to {to_email}'
+                result['success'] = True
+            except Exception as e:
+                result['tests'][-1]['status'] = 'FAIL'
+                result['tests'][-1]['message'] = f'Send failed: {str(e)}'
+                result['error'] = str(e)
+        else:
+            result['success'] = True
+            result['tests'].append({
+                'name': 'Ready to Send',
+                'status': 'INFO',
+                'message': 'Add ?send=true&to=email@example.com to send a test email'
+            })
+
+    except smtplib.SMTPAuthenticationError as e:
+        result['tests'][-1]['status'] = 'FAIL'
+        result['tests'][-1]['message'] = f'Authentication failed: {str(e)}'
+        result['error'] = 'Gmail authentication failed. Make sure you are using an App Password, not your regular Gmail password.'
+        result['help'] = [
+            '1. Go to https://myaccount.google.com/security',
+            '2. Enable 2-Step Verification if not already enabled',
+            '3. Go to App passwords (https://myaccount.google.com/apppasswords)',
+            '4. Generate a new App Password for "Mail"',
+            '5. Use that 16-character password (without spaces) as EMAIL_HOST_PASSWORD'
+        ]
+    except smtplib.SMTPConnectError as e:
+        result['tests'][-1]['status'] = 'FAIL'
+        result['tests'][-1]['message'] = f'Connection failed: {str(e)}'
+        result['error'] = 'Could not connect to Gmail SMTP server'
+    except Exception as e:
+        if result['tests']:
+            result['tests'][-1]['status'] = 'FAIL'
+            result['tests'][-1]['message'] = f'Error: {str(e)}'
+        result['error'] = str(e)
+        logger.error(f"Email test error: {e}", exc_info=True)
+
+    return JsonResponse(result, json_dumps_params={'indent': 2})

@@ -89,4 +89,7 @@ urlpatterns = [
     # Notifications
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
     path('notifications/mark-all-read/', views.mark_all_notifications_read, name='mark_all_notifications_read'),
+
+    # Debug/Admin Tools
+    path('test-email/', views.test_email, name='test_email'),
 ]

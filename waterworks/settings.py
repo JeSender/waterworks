@@ -228,13 +228,29 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')  # Gmail address
-EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')  # Gmail App Password
-DEFAULT_FROM_EMAIL = config('DEFAULT_FROM_EMAIL', default='Balilihan Waterworks <noreply@balilihan-waterworks.com>')
+EMAIL_USE_SSL = False  # Important: Use TLS, not SSL
+
+# Gmail credentials - strip whitespace to avoid auth errors
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='').strip()
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='').strip()
+
+# IMPORTANT: Gmail requires from_email to match the authenticated user
+# Use EMAIL_HOST_USER as the from address for Gmail SMTP
+DEFAULT_FROM_EMAIL = EMAIL_HOST_USER if EMAIL_HOST_USER else 'noreply@balilihan-waterworks.com'
 SERVER_EMAIL = EMAIL_HOST_USER
 
-# Email timeout settings
-EMAIL_TIMEOUT = 10  # seconds
+# Email timeout settings (increased for reliability)
+EMAIL_TIMEOUT = 30  # seconds
+
+# Debug logging for email configuration (only logs non-sensitive info)
+import logging
+_email_logger = logging.getLogger('email_config')
+if EMAIL_HOST_USER:
+    _email_logger.info(f"Email configured with user: {EMAIL_HOST_USER}")
+else:
+    _email_logger.warning("EMAIL_HOST_USER is not configured!")
+if not EMAIL_HOST_PASSWORD:
+    _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
 # Add Railway domain to trusted origins
 if RAILWAY_ENVIRONMENT:
