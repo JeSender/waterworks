@@ -1106,12 +1106,28 @@ def forgot_password_request(request):
                 return redirect('consumers:forgot_password')
 
             except Exception as e:
-                # Log the error
+                # Log the error with detailed information
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.error(f"Error sending password reset email: {e}", exc_info=True)
+                error_msg = str(e)
+                logger.error(f"Error sending password reset email to {user.email}: {error_msg}", exc_info=True)
 
-                messages.error(request, "Failed to send password reset email. Please contact your administrator.")
+                # Check for common email configuration issues
+                if not settings.EMAIL_HOST_USER:
+                    logger.error("EMAIL_HOST_USER is not configured!")
+                    messages.error(request, "Email service is not configured. Please contact your administrator to set up EMAIL_HOST_USER.")
+                elif not settings.EMAIL_HOST_PASSWORD:
+                    logger.error("EMAIL_HOST_PASSWORD is not configured!")
+                    messages.error(request, "Email service is not configured. Please contact your administrator to set up EMAIL_HOST_PASSWORD.")
+                elif "authentication" in error_msg.lower() or "535" in error_msg:
+                    logger.error("Gmail authentication failed - check EMAIL_HOST_PASSWORD (must be App Password)")
+                    messages.error(request, "Email authentication failed. Please ensure Gmail App Password is configured correctly.")
+                elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
+                    logger.error("Connection to Gmail SMTP failed")
+                    messages.error(request, "Could not connect to email server. Please try again later.")
+                else:
+                    messages.error(request, f"Failed to send password reset email. Error: {error_msg[:100]}")
+
                 return redirect('consumers:forgot_password')
 
         except User.DoesNotExist:

@@ -4,20 +4,22 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Railway](https://img.shields.io/badge/Deployed%20on-Railway-purple.svg)](https://railway.app/)
+[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black.svg)](https://vercel.com/)
+[![Database](https://img.shields.io/badge/Database-Neon%20PostgreSQL-green.svg)](https://neon.tech/)
 
 ---
 
-## 🎯 Project Overview
+## Project Overview
 
 **Type:** Water Utility Management System
-**Technology Stack:** Django (Backend) + PostgreSQL (Database) + Android (Mobile)
-**Deployment:** Railway.app (Cloud Platform)
+**Technology Stack:** Django (Backend) + Neon PostgreSQL (Database) + Android (Mobile)
+**Deployment:** Vercel (PaaS) + Neon (Serverless PostgreSQL)
 **Security Level:** Enterprise-Grade
+**Live URL:** https://waterworks-rose.vercel.app
 
 ---
 
-## ✨ Features
+## Features
 
 ### Core Functionality
 - **Consumer Management** - CRUD operations for water consumers
@@ -51,14 +53,14 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 ---
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Local Development
 
 1. **Clone Repository**
    ```bash
-   git clone https://github.com/YOUR_USERNAME/balilihan-waterworks.git
-   cd balilihan-waterworks
+   git clone https://github.com/JeSender/waterworks.git
+   cd waterworks
    ```
 
 2. **Create Virtual Environment**
@@ -101,32 +103,55 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 ---
 
-## ☁️ Railway Deployment
+## Vercel + Neon Deployment
 
 ### Prerequisites
 - GitHub account
-- Railway.app account (sign up for free)
+- Vercel account (sign up for free at https://vercel.com)
+- Neon account (sign up for free at https://neon.tech)
 - Your project code ready
 
 ### Deployment Steps
 
-See **[RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)** for complete step-by-step instructions.
+See **[VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)** for complete step-by-step instructions.
 
 **Quick Overview:**
-1. Push code to GitHub
-2. Create Railway project from GitHub repo
-3. Add PostgreSQL database
-4. Set environment variables
+1. Create Neon PostgreSQL database
+2. Push code to GitHub
+3. Import project to Vercel from GitHub repo
+4. Set environment variables in Vercel dashboard
 5. Deploy automatically
-6. Migrate data from SQLite to PostgreSQL
+6. Run migrations via Vercel CLI or locally
 7. Test and verify
+
+### Environment Variables (Vercel Dashboard)
+
+```bash
+# Security
+SECRET_KEY=your-secret-key-here
+DEBUG=False
+
+# Hosts
+ALLOWED_HOSTS=.vercel.app,waterworks-rose.vercel.app
+
+# Database (from Neon dashboard)
+DATABASE_URL=postgresql://user:password@host/database?sslmode=require
+
+# CORS (for Android app)
+CORS_ALLOWED_ORIGINS=https://waterworks-rose.vercel.app
+CSRF_TRUSTED_ORIGINS=https://waterworks-rose.vercel.app
+
+# Email (for password reset)
+EMAIL_HOST_USER=your-gmail@gmail.com
+EMAIL_HOST_PASSWORD=your-app-password
+```
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-balilihan_waterworks/
+waterworks/
 ├── consumers/              # Main Django app
 │   ├── models.py          # Database models
 │   ├── views.py           # Business logic (3200+ lines)
@@ -141,17 +166,15 @@ balilihan_waterworks/
 │   ├── urls.py            # Main URL config
 │   └── wsgi.py            # WSGI config
 ├── requirements.txt       # Python dependencies
-├── Procfile              # Railway start command
-├── runtime.txt           # Python version
-├── railway.json          # Railway configuration
+├── vercel.json           # Vercel configuration
+├── build_files.sh        # Vercel build script
 ├── .gitignore            # Git ignore rules
-├── migrate_to_postgres.py # Database migration script
 └── README.md             # This file
 ```
 
 ---
 
-## 🗄️ Database Models
+## Database Models
 
 - **Consumer** - Water consumer information
 - **Bill** - Monthly water bills
@@ -165,7 +188,7 @@ balilihan_waterworks/
 
 ---
 
-## 🔐 User Roles
+## User Roles
 
 | Role | Access Level | Capabilities |
 |------|--------------|--------------|
@@ -176,14 +199,14 @@ balilihan_waterworks/
 
 ---
 
-## 🌐 API Endpoints
+## API Endpoints
 
 ### Authentication
 - `POST /api/login/` - Mobile login with tracking
 
 ### Data Access
 - `GET /api/consumers/` - Get consumers for assigned barangay
-- `POST /api/submit-reading/` - Submit meter reading
+- `POST /api/meter-readings/` - Submit meter reading
 - `GET /api/rates/` - Get current water rates
 
 ### Response Format
@@ -201,47 +224,27 @@ balilihan_waterworks/
 
 ---
 
-## 🔧 Environment Variables
-
-Required variables for Railway deployment:
-
-```bash
-# Security
-SECRET_KEY=your-secret-key-here
-DEBUG=False
-
-# Hosts
-ALLOWED_HOSTS=.railway.app,.up.railway.app
-
-# CORS (for Android app)
-CORS_ALLOWED_ORIGINS=https://your-app.up.railway.app
-CSRF_TRUSTED_ORIGINS=https://your-app.up.railway.app
-
-# Database (auto-set by Railway)
-DATABASE_URL=postgresql://...
-```
-
----
-
-## 📱 Android App Integration
+## Android App Integration
 
 1. Update base URL in your Android app:
    ```java
-   String BASE_URL = "https://your-app-name.up.railway.app";
+   String BASE_URL = "https://waterworks-rose.vercel.app";
    ```
 
 2. Update all API endpoints to use HTTPS
 
-3. Test connectivity:
+3. **Note:** Vercel free tier has cold start delays (3-10 seconds on first request after inactivity)
+
+4. Test connectivity:
    - Login API
    - Consumer list
    - Meter reading submission
 
-See **[ANDROID_APP_CHANGES_REQUIRED.md](ANDROID_APP_CHANGES_REQUIRED.md)** for details.
+See **[ANDROID_APP_VERCEL_SETUP.md](ANDROID_APP_VERCEL_SETUP.md)** for details.
 
 ---
 
-## 🧪 Testing
+## Testing
 
 ### Run Tests
 ```bash
@@ -263,7 +266,7 @@ python manage.py test consumers
 
 ---
 
-## 📊 Reports
+## Reports
 
 ### Available Reports
 1. **Revenue Report** - All payments for a period
@@ -277,7 +280,7 @@ python manage.py test consumers
 
 ---
 
-## 🛡️ Security Features
+## Security Features
 
 ### Authentication & Authorization
 - Session-based authentication
@@ -301,95 +304,100 @@ python manage.py test consumers
 
 ---
 
-## 📖 Documentation
+## Documentation
 
 - **[docs/PROGRAM_HIERARCHY.md](docs/PROGRAM_HIERARCHY.md)** - Complete system hierarchy and architecture
 - **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)** - Technical architecture documentation
 - **[docs/SYSTEM_FLOW.md](docs/SYSTEM_FLOW.md)** - Business process workflows
 - **[DATABASE_DOCUMENTATION.md](DATABASE_DOCUMENTATION.md)** - Database schema and models
-- **[RAILWAY_DEPLOYMENT_GUIDE.md](RAILWAY_DEPLOYMENT_GUIDE.md)** - Complete deployment guide
+- **[VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment guide
 - **[DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)** - Changes and configuration summary
 - **[FINAL_IMPLEMENTATION_SUMMARY.md](FINAL_IMPLEMENTATION_SUMMARY.md)** - Feature overview
 - **[SECURITY_FEATURES_THESIS_DEFENSE.md](SECURITY_FEATURES_THESIS_DEFENSE.md)** - Security documentation
-- **[ANDROID_APP_CHANGES_REQUIRED.md](ANDROID_APP_CHANGES_REQUIRED.md)** - Mobile app guide
+- **[ANDROID_APP_VERCEL_SETUP.md](ANDROID_APP_VERCEL_SETUP.md)** - Mobile app guide
 
 ---
 
-## 🔧 Maintenance
+## Maintenance
 
-### View Logs (Railway)
-```bash
-railway logs --tail
-```
+### View Logs (Vercel)
+- Go to Vercel Dashboard → Your Project → Deployments → View Logs
+- Or use Vercel CLI: `vercel logs`
 
-### Database Backup
-```bash
-railway shell
-python manage.py dumpdata --indent 2 > backup.json
-```
+### Database Access (Neon)
+- Go to Neon Dashboard → Your Project → SQL Editor
+- Or connect via psql with your connection string
 
 ### Update Application
 ```bash
 git add .
 git commit -m "Update: description"
-git push  # Railway auto-deploys
+git push  # Vercel auto-deploys from main branch
 ```
 
 ---
 
-## 🚨 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
-**Build Fails on Railway**
+**Build Fails on Vercel**
 - Check `requirements.txt` syntax
-- View build logs in Railway dashboard
+- View build logs in Vercel dashboard
 - Ensure Python 3.11 compatibility
 
 **Static Files Not Loading**
-```bash
-railway shell
-python manage.py collectstatic --noinput
-```
+- Verify `build_files.sh` runs collectstatic
+- Check WhiteNoise middleware configuration
 
 **Database Connection Error**
-- Ensure PostgreSQL is linked in Railway
-- Verify `DATABASE_URL` variable exists
+- Verify `DATABASE_URL` in Vercel environment variables
+- Ensure Neon database is active (check for sleep mode)
+- Add `?sslmode=require` to connection string
 
 **CORS Errors from Mobile**
-- Add Railway domain to `CORS_ALLOWED_ORIGINS`
+- Add Vercel domain to `CORS_ALLOWED_ORIGINS`
 - Check `corsheaders` in `INSTALLED_APPS`
 
-See **RAILWAY_DEPLOYMENT_GUIDE.md** for more troubleshooting.
+**Cold Start Delays**
+- Expected behavior on Vercel free tier (3-10 seconds)
+- Consider upgrading for always-on performance
+
+See **VERCEL_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 
 ---
 
-## 💰 Cost (Railway.app)
+## Cost
 
-### Free Tier
-- **$5 credit per month**
-- 500 hours execution time
-- 100 GB bandwidth
+### Vercel Free Tier (Hobby)
+- **Unlimited deployments**
+- **100 GB bandwidth/month**
+- **Serverless function execution limits**
 - Perfect for testing and demos
 
+### Neon Free Tier
+- **0.5 GB storage**
+- **Branching and autoscaling**
+- **Auto-suspend after 5 minutes of inactivity**
+- Perfect for development and small projects
+
 ### Upgrade When Needed
-- Hobby plan: $5/month
-- Unlimited execution time
-- More resources
+- Vercel Pro: $20/month (team features, more resources)
+- Neon Pro: Starting at $19/month (more storage, no auto-suspend)
 
 ---
 
-## 🎓 For Thesis Defense
+## For Thesis Defense
 
 ### Demo Preparation
-1. Ensure Railway app is running
-2. Test all features beforehand
+1. Ensure Vercel app is deployed and running
+2. Test all features beforehand (account for cold starts)
 3. Prepare live demo script
 4. Have backup screenshots/video
 5. Test from multiple devices
 
 ### Key Highlights
-- Cloud-based deployment
+- Cloud-based deployment (Vercel + Neon)
 - Enterprise-grade security
 - Mobile integration
 - Real-time data sync
@@ -397,36 +405,37 @@ See **RAILWAY_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 
 ---
 
-## 📞 Support
+## Support
 
 ### Project Documentation
 - See `/docs` folder for detailed guides
 - Check `DEPLOYMENT_SUMMARY.md` for changes
 - Read `SECURITY_FEATURES_THESIS_DEFENSE.md` for security details
 
-### Railway Resources
-- [Railway Documentation](https://docs.railway.app/)
-- [Django on Railway Guide](https://docs.railway.app/guides/django)
+### Platform Resources
+- [Vercel Documentation](https://vercel.com/docs)
+- [Neon Documentation](https://neon.tech/docs)
+- [Django on Vercel Guide](https://vercel.com/templates/python/django-hello-world)
 
 ---
 
-## 📜 License
+## License
 
 This project is developed for educational purposes as part of a thesis/research project.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Django Framework
-- Railway.app Platform
-- PostgreSQL Database
+- Vercel Platform
+- Neon PostgreSQL
 - WhiteNoise (Static Files)
 - OpenPyXL (Excel Export)
 
 ---
 
-## 📈 Project Statistics
+## Project Statistics
 
 - **Total Code:** ~3,500 lines Python + templates
 - **Database Models:** 11
@@ -439,22 +448,23 @@ This project is developed for educational purposes as part of a thesis/research 
 
 ---
 
-## ✅ Status
+## Status
 
-**Development:** ✅ Complete
-**Testing:** ✅ Verified
-**Documentation:** ✅ Complete
-**Deployment:** ✅ Production Ready
-**Security:** 🔒 Enterprise-Grade
-**Thesis Defense:** 🎓 Ready
+**Development:** Complete
+**Testing:** Verified
+**Documentation:** Complete
+**Deployment:** Production Ready
+**Security:** Enterprise-Grade
+**Thesis Defense:** Ready
 
 ---
 
-**System Status:** 🟢 **PRODUCTION READY**
-**Platform:** ☁️ **Railway.app**
+**System Status:** PRODUCTION READY
+**Platform:** Vercel + Neon PostgreSQL
+**Live URL:** https://waterworks-rose.vercel.app
 **Last Updated:** November 2025
 
 ---
 
 *Developed for Balilihan Waterworks Management*
-*Built with Django • Deployed on Railway • Secured for Production*
+*Built with Django - Deployed on Vercel - Powered by Neon PostgreSQL*
