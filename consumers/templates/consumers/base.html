@@ -819,9 +819,10 @@
 
         // =====================================================
         // AUTO-LOGOUT SYSTEM - Security Feature
-        // Automatically logs out user after 2 minutes of inactivity
+        // Automatically logs out user after 3 minutes of inactivity
+        // Countdown requires explicit button click to dismiss
         // =====================================================
-        const AUTO_LOGOUT_TIME = 2 * 60 * 1000;  // 2 minutes in milliseconds
+        const AUTO_LOGOUT_TIME = 3 * 60 * 1000;  // 3 minutes in milliseconds
         const WARNING_TIME = 30 * 1000;           // Show warning 30 seconds before logout
         let inactivityTimer = null;
         let warningTimer = null;
@@ -845,7 +846,7 @@
             // Start the inactivity timer
             resetInactivityTimer();
 
-            console.log('Auto-logout system initialized (2 minutes timeout)');
+            console.log('Auto-logout system initialized (3 minutes timeout)');
         }
 
         function createWarningModal() {
@@ -907,9 +908,10 @@
         }
 
         function resetInactivityTimer() {
-            // If warning is shown and user is active, hide it and reset
+            // If warning/countdown is showing, do NOT reset - user must click buttons
+            // This prevents mouse movement from cancelling the countdown
             if (warningShown) {
-                hideWarningModal();
+                return; // Ignore activity while countdown is active
             }
 
             // Clear existing timers
