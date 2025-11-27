@@ -239,17 +239,18 @@ def api_submit_reading(request):
                 status='Pending'
             )
 
-            # Create notification for admins/superusers about new bill
-            from .models import Notification
-            from django.urls import reverse
-            Notification.objects.create(
-                user=None,  # Notify all admins
-                notification_type='bill_generated',
-                title='New Bill Generated',
-                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Amount: ₱{total_amount:.2f}',
-                related_object_id=reading.id,
-                redirect_url=reverse('consumers:inquire')
-            )
+            # Notification removed - manual confirmation workflow deprecated
+            # Bills are now generated through bulk confirmation at barangay level
+            # from .models import Notification
+            # from django.urls import reverse
+            # Notification.objects.create(
+            #     user=None,  # Notify all admins
+            #     notification_type='bill_generated',
+            #     title='New Bill Generated',
+            #     message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Amount: ₱{total_amount:.2f}',
+            #     related_object_id=reading.id,
+            #     redirect_url=reverse('consumers:inquire')
+            # )
 
         # Track activity for login session
         if request.user.is_authenticated:
@@ -2404,6 +2405,220 @@ def get_consumer_display_id(consumer):
 
 
 @login_required
+def meter_readings_unified(request):
+    """
+    Unified Meter Reading Management Page with Two Views:
+    1. Barangay Overview Tab - Summary by barangay with progress tracking
+    2. All Readings Tab - Detailed list with advanced filtering
+
+    Combines functionality from meter_reading_overview and meter_readings
+    """
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
+    from datetime import datetime
+
+    today = date.today()
+    current_month = today.replace(day=1)
+
+    # Get view mode (barangay or all)
+    view_mode = request.GET.get('view', 'barangay')
+    export_excel = request.GET.get('export', '')
+
+    # ===== BARANGAY DATA (for overview tab and stats) =====
+    barangays = Barangay.objects.annotate(
+        total_consumers=Count('consumer', distinct=True)
+    ).order_by('name')
+
+    barangay_data = []
+    for b in barangays:
+        consumer_ids = list(Consumer.objects.filter(barangay=b, status='active').values_list('id', flat=True))
+        total_consumers_count = len(consumer_ids)
+
+        if not consumer_ids:
+            updated = not_updated = 0
+            completion_percentage = 0
+        else:
+            updated_consumers = MeterReading.objects.filter(
+                consumer_id__in=consumer_ids,
+                reading_date__gte=current_month
+            ).values_list('consumer_id', flat=True).distinct()
+            updated = len(set(updated_consumers))
+            not_updated = total_consumers_count - updated
+            completion_percentage = (updated / total_consumers_count * 100) if total_consumers_count > 0 else 0
+
+        barangay_data.append({
+            'barangay': b,
+            'not_yet_updated': not_updated,
+            'updated_count': updated,
+            'total_consumers': total_consumers_count,
+            'completion_percentage': round(completion_percentage, 1),
+        })
+
+    # Calculate summary statistics
+    total_barangays = len(barangay_data)
+    total_consumers_sum = sum(item['total_consumers'] for item in barangay_data)
+    total_updated_sum = sum(item['updated_count'] for item in barangay_data)
+    total_pending_sum = sum(item['not_yet_updated'] for item in barangay_data)
+    overall_completion_percentage = (total_updated_sum / total_consumers_sum * 100) if total_consumers_sum > 0 else 0
+
+    # ===== ALL READINGS DATA (for detailed tab) =====
+    readings_with_data = []
+    page_obj = None
+    is_paginated = False
+
+    if view_mode == 'all' or export_excel == 'excel':
+        # Get filter parameters
+        search_query = request.GET.get('search', '').strip()
+        selected_barangay = request.GET.get('barangay', '')
+        selected_source = request.GET.get('source', '')
+
+        # Build query
+        readings_query = MeterReading.objects.select_related(
+            'consumer', 'consumer__barangay', 'consumer__purok'
+        ).order_by('-reading_date', '-created_at')
+
+        # Apply filters
+        if search_query:
+            readings_query = readings_query.filter(
+                Q(consumer__first_name__icontains=search_query) |
+                Q(consumer__last_name__icontains=search_query) |
+                Q(consumer__account_number__icontains=search_query)
+            )
+        if selected_barangay:
+            readings_query = readings_query.filter(consumer__barangay_id=selected_barangay)
+        if selected_source:
+            readings_query = readings_query.filter(source=selected_source)
+
+        # Process readings
+        for r in readings_query:
+            prev_confirmed = MeterReading.objects.filter(
+                consumer=r.consumer,
+                is_confirmed=True,
+                reading_date__lt=r.reading_date
+            ).order_by('-reading_date').first()
+
+            if prev_confirmed:
+                consumption = r.reading_value - prev_confirmed.reading_value if r.reading_value >= prev_confirmed.reading_value else 0
+            else:
+                baseline = r.consumer.first_reading if r.consumer.first_reading else 0
+                consumption = r.reading_value - baseline
+
+            readings_with_data.append({
+                'reading': r,
+                'prev_reading': prev_confirmed,
+                'consumption': consumption
+            })
+
+        # Excel Export for All Readings
+        if export_excel == 'excel' and view_mode == 'all':
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            ws.title = "All Readings"
+
+            header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+            header_font = Font(bold=True, color="FFFFFF", size=12)
+
+            headers = ['Consumer', 'Account #', 'Barangay', 'Previous', 'Current', 'Consumption', 'Date', 'Source', 'Status']
+            for col, header in enumerate(headers, 1):
+                cell = ws.cell(row=1, column=col, value=header)
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal='center')
+
+            for idx, item in enumerate(readings_with_data, 2):
+                r = item['reading']
+                ws.cell(row=idx, column=1, value=f"{r.consumer.first_name} {r.consumer.last_name}")
+                ws.cell(row=idx, column=2, value=r.consumer.account_number)
+                ws.cell(row=idx, column=3, value=r.consumer.barangay.name if r.consumer.barangay else "—")
+                ws.cell(row=idx, column=4, value=item['prev_reading'].reading_value if item['prev_reading'] else "—")
+                ws.cell(row=idx, column=5, value=r.reading_value)
+                ws.cell(row=idx, column=6, value=f"{item['consumption']} m³" if item['consumption'] is not None else "—")
+                ws.cell(row=idx, column=7, value=r.reading_date.strftime('%Y-%m-%d'))
+                ws.cell(row=idx, column=8, value=r.get_source_display())
+                ws.cell(row=idx, column=9, value="Confirmed" if r.is_confirmed else "Pending")
+
+            for col in range(1, 10):
+                ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+
+            response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            response['Content-Disposition'] = f'attachment; filename=meter_readings_all_{datetime.now().strftime("%Y%m%d")}.xlsx'
+            wb.save(response)
+            return response
+
+        # Pagination for all readings view
+        paginator = Paginator(readings_with_data, 50)
+        page_number = request.GET.get('page', 1)
+        page_obj = paginator.get_page(page_number)
+        is_paginated = paginator.num_pages > 1
+
+    # Excel Export for Barangay Overview
+    if export_excel == 'excel' and view_mode != 'all':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Barangay Overview"
+
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+
+        ws.merge_cells('A1:E1')
+        title_cell = ws['A1']
+        title_cell.value = f"Meter Reading Overview - {current_month.strftime('%B %Y')}"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center')
+
+        headers = ['Barangay', 'Total Consumers', 'Readings This Month', 'Not Updated', 'Progress %']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center')
+
+        for idx, item in enumerate(barangay_data, 4):
+            ws.cell(row=idx, column=1, value=item['barangay'].name)
+            ws.cell(row=idx, column=2, value=item['total_consumers'])
+            ws.cell(row=idx, column=3, value=item['updated_count'])
+            ws.cell(row=idx, column=4, value=item['not_yet_updated'])
+            ws.cell(row=idx, column=5, value=f"{item['completion_percentage']}%")
+
+        summary_row = len(barangay_data) + 5
+        ws.cell(row=summary_row, column=1, value="TOTAL").font = Font(bold=True)
+        ws.cell(row=summary_row, column=2, value=total_consumers_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=3, value=total_updated_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=4, value=total_pending_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=5, value=f"{round(overall_completion_percentage, 1)}%").font = Font(bold=True)
+
+        ws.column_dimensions['A'].width = 25
+        for col in ['B', 'C', 'D', 'E']:
+            ws.column_dimensions[col].width = 18
+
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=meter_reading_overview_{today.strftime("%Y%m%d")}.xlsx'
+        wb.save(response)
+        return response
+
+    context = {
+        'barangay_data': barangay_data,
+        'barangays': Barangay.objects.all().order_by('name'),
+        'current_month': current_month,
+        'total_barangays': total_barangays,
+        'total_consumers_sum': total_consumers_sum,
+        'total_updated_sum': total_updated_sum,
+        'total_pending_sum': total_pending_sum,
+        'overall_completion_percentage': round(overall_completion_percentage, 1),
+        'page_obj': page_obj,
+        'is_paginated': is_paginated,
+        'search_query': request.GET.get('search', ''),
+        'selected_barangay': request.GET.get('barangay', ''),
+        'selected_source': request.GET.get('source', ''),
+        'view_mode': view_mode,
+    }
+
+    return render(request, 'consumers/meter_readings_unified.html', context)
+
+
 def meter_reading_overview(request):
     """
     Meter Reading Overview with Enhanced Statistics and Progress Tracking.
