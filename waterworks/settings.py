@@ -77,17 +77,18 @@ TEMPLATES = [
 WSGI_APPLICATION = 'waterworks.wsgi.application'
 
 # Database
-# Support DATABASE_URL from environment (Vercel) or use Neon as default
-NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_Y76UabeDPAKp@ep-wild-cell-a1g6fclm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
-DATABASE_URL = config('DATABASE_URL', default=NEON_DATABASE_URL)
+# DATABASE_URL must be provided via environment variable
+# For local development, use SQLite by not setting DATABASE_URL
+# For production (Vercel/Neon), set DATABASE_URL in environment
+DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
-    # Use PostgreSQL database (Neon/Vercel)
+    # Use PostgreSQL database (Neon/Vercel) from environment variable
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
 else:
-    # Local development database (fallback)
+    # Local development database (fallback to SQLite)
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
@@ -144,8 +145,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login URL
 LOGIN_URL = '/login/'
 
-# Session settings - Auto-logout after 2 minutes of inactivity
-SESSION_COOKIE_AGE = 120  # 2 minutes in seconds
+# Session settings - Auto-logout after 30 minutes of inactivity
+SESSION_COOKIE_AGE = 1800  # 30 minutes in seconds (more practical for real usage)
 SESSION_EXPIRE_AT_BROWSER_CLOSE = True
 SESSION_SAVE_EVERY_REQUEST = True  # Reset session expiry on every request (activity)
 

@@ -7,7 +7,8 @@ from .decorators import (
     get_client_ip, get_user_agent, is_admin_user, is_superuser_only,
     consumer_edit_permission_required, disconnect_permission_required,
     user_management_permission_required, system_settings_permission_required,
-    billing_permission_required, reports_permission_required, view_only_for_admin
+    billing_permission_required, reports_permission_required, view_only_for_admin,
+    rate_limit_login
 )
 from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value
 from django.db.models.functions import Concat, TruncMonth
@@ -475,37 +476,54 @@ def api_create_reading(request):
 
 @login_required
 def api_consumers(request):
-    """Get consumers for the staff's assigned barangay, including the latest confirmed reading value and delinquent status."""
+    """
+    Get consumers for the staff's assigned barangay.
+    OPTIMIZED: Uses prefetch_related and annotations to avoid N+1 queries.
+    """
     try:
+        from django.db.models import Prefetch, Exists, OuterRef
+
         profile = StaffProfile.objects.select_related('assigned_barangay').get(user=request.user)
-        consumers = Consumer.objects.filter(barangay=profile.assigned_barangay).select_related('barangay')
+
+        # PERFORMANCE FIX: Prefetch latest reading and annotate bill counts
+        # This reduces 300+ queries to just 3 queries for 100 consumers
+        consumers = Consumer.objects.filter(
+            barangay=profile.assigned_barangay
+        ).select_related(
+            'barangay', 'purok'
+        ).prefetch_related(
+            # Prefetch only the latest confirmed reading per consumer
+            Prefetch(
+                'meter_readings',
+                queryset=MeterReading.objects.filter(
+                    is_confirmed=True
+                ).order_by('-reading_date', '-created_at'),
+                to_attr='latest_readings_list'
+            )
+        ).annotate(
+            # Annotate pending bills count (1 query for all consumers)
+            pending_bills_count_db=Count(
+                'bills',
+                filter=Q(bills__status='Pending')
+            ),
+            # Annotate delinquent status (no separate query needed)
+            has_overdue_db=Exists(
+                Bill.objects.filter(
+                    consumer=OuterRef('pk'),
+                    status='Pending',
+                    due_date__lt=timezone.now().date()
+                )
+            )
+        )
 
         data = []
         for consumer in consumers:
-            # Find the latest confirmed reading for this specific consumer
-            # FIX: Added -created_at for consistent ordering with get_previous_reading()
-            latest_confirmed_reading_obj = MeterReading.objects.filter(
-                consumer=consumer,
-                is_confirmed=True
-            ).order_by('-reading_date', '-created_at').first()
+            # Get latest reading from prefetched data
+            latest_reading_value = 0
+            if consumer.latest_readings_list:
+                latest_reading_value = consumer.latest_readings_list[0].reading_value
 
-            # Extract the reading value, or default to 0 if no confirmed reading exists
-            latest_confirmed_reading_value = latest_confirmed_reading_obj.reading_value if latest_confirmed_reading_obj else 0
-
-            # Check for delinquent status (has unpaid bills past due date)
-            has_overdue_bills = Bill.objects.filter(
-                consumer=consumer,
-                status='Pending',
-                due_date__lt=timezone.now().date()
-            ).exists()
-
-            # Count pending bills
-            pending_bills_count = Bill.objects.filter(
-                consumer=consumer,
-                status='Pending'
-            ).count()
-
-            # Append consumer data including the latest confirmed reading value and delinquent status
+            # Append consumer data using annotated fields
             data.append({
                 'id': consumer.id,
                 'account_number': consumer.account_number,
@@ -514,11 +532,11 @@ def api_consumers(request):
                 'status': consumer.status,  # 'active' or 'disconnected'
                 'is_active': consumer.status == 'active',
                 'usage_type': consumer.usage_type,  # 'Residential' or 'Commercial' - needed for accurate rate calculation
-                'latest_confirmed_reading': latest_confirmed_reading_value,
-                'previous_reading': latest_confirmed_reading_value,  # Alias for Android app compatibility
-                # Delinquent status for Android app
-                'is_delinquent': has_overdue_bills,
-                'pending_bills_count': pending_bills_count
+                'latest_confirmed_reading': latest_reading_value,
+                'previous_reading': latest_reading_value,  # Alias for Android app compatibility
+                # Delinquent status from annotated field (no extra query!)
+                'is_delinquent': consumer.has_overdue_db,
+                'pending_bills_count': consumer.pending_bills_count_db
             })
 
         return JsonResponse(data, safe=False)
@@ -918,8 +936,9 @@ def smart_meter_webhook(request):
 # AUTH VIEWS
 # ======================
 
+@rate_limit_login
 def staff_login(request):
-    """Enhanced staff login with security tracking."""
+    """Enhanced staff login with security tracking and rate limiting."""
     from .decorators import get_client_ip, get_user_agent
 
     if request.method == "POST":
