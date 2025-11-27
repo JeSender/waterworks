@@ -1812,10 +1812,43 @@ def add_consumer(request):
     """
     Handle adding a new consumer via full page form.
     RESTRICTED: Superuser only - Admins cannot create consumers.
+    Includes duplicate detection to prevent accidental double-submission.
     """
     if request.method == "POST":
         form = ConsumerForm(request.POST)
         if form.is_valid():
+            # ============================================================
+            # DUPLICATE DETECTION - Prevent accidental double submission
+            # ============================================================
+            # Check if a consumer with same name, birth date, and barangay already exists
+            # This catches duplicates from double-clicking the submit button
+            first_name = form.cleaned_data.get('first_name')
+            last_name = form.cleaned_data.get('last_name')
+            birth_date = form.cleaned_data.get('birth_date')
+            barangay = form.cleaned_data.get('barangay')
+
+            # Check for duplicate within the last 2 minutes (likely double-click)
+            from datetime import timedelta
+            from django.utils import timezone
+            two_minutes_ago = timezone.now() - timedelta(minutes=2)
+
+            duplicate = Consumer.objects.filter(
+                first_name=first_name,
+                last_name=last_name,
+                birth_date=birth_date,
+                barangay=barangay,
+                created_at__gte=two_minutes_ago
+            ).first()
+
+            if duplicate:
+                messages.warning(
+                    request,
+                    f"Consumer '{duplicate.first_name} {duplicate.last_name}' was already added (Account #: {duplicate.account_number}). "
+                    "This may be a duplicate submission."
+                )
+                return redirect('consumers:consumer_management')
+
+            # No duplicate found, proceed with creation
             consumer = form.save()
 
             # Track activity
@@ -1835,7 +1868,7 @@ def add_consumer(request):
             except Exception:
                 pass  # Don't fail consumer creation if activity logging fails
 
-            messages.success(request, "Consumer added successfully!")
+            messages.success(request, f"Consumer added successfully! Account Number: {consumer.account_number}")
             return redirect('consumers:consumer_management')
         else:
             messages.error(request, "Please correct the errors below.")
