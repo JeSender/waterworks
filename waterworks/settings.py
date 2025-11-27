@@ -19,18 +19,10 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-' + get_random_secret
 # SECURITY WARNING: Don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Railway.app provides RAILWAY_STATIC_URL, use it if available
-RAILWAY_ENVIRONMENT = config('RAILWAY_ENVIRONMENT', default='')
-
 # Vercel environment detection
 VERCEL_ENVIRONMENT = config('VERCEL', default='')
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,192.168.100.9', cast=Csv())
-
-# Add Railway domain if running on Railway
-if RAILWAY_ENVIRONMENT:
-    ALLOWED_HOSTS.append('.railway.app')
-    ALLOWED_HOSTS.append('.up.railway.app')
 
 # Add Vercel domain if running on Vercel
 if VERCEL_ENVIRONMENT:
@@ -85,12 +77,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'waterworks.wsgi.application'
 
 # Database
-# Support DATABASE_URL from environment (Railway/Vercel) or use Neon as default
+# Support DATABASE_URL from environment (Vercel) or use Neon as default
 NEON_DATABASE_URL = 'postgresql://neondb_owner:npg_Y76UabeDPAKp@ep-wild-cell-a1g6fclm-pooler.ap-southeast-1.aws.neon.tech/neondb?sslmode=require'
 DATABASE_URL = config('DATABASE_URL', default=NEON_DATABASE_URL)
 
 if DATABASE_URL:
-    # Use PostgreSQL database (Neon/Railway/Vercel)
+    # Use PostgreSQL database (Neon/Vercel)
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
@@ -252,14 +244,6 @@ else:
 if not EMAIL_HOST_PASSWORD:
     _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
-# Add Railway domain to trusted origins
-if RAILWAY_ENVIRONMENT:
-    railway_domain = config('RAILWAY_PUBLIC_DOMAIN', default='')
-    if railway_domain:
-        CSRF_TRUSTED_ORIGINS.append(f'https://{railway_domain}')
-        if railway_domain not in CORS_ALLOWED_ORIGINS:
-            CORS_ALLOWED_ORIGINS.append(f'https://{railway_domain}')
-
 # Add Vercel domain to trusted origins
 if VERCEL_ENVIRONMENT:
     vercel_url = config('VERCEL_URL', default='')
@@ -278,7 +262,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # Vercel/Railway handles SSL termination at the load balancer, so we don't need Django to redirect
+    # Vercel handles SSL termination at the load balancer, so we don't need Django to redirect
     # SECURE_SSL_REDIRECT = True
     # Note: CSRF_COOKIE_SECURE and SESSION_COOKIE_SECURE are set above based on DEBUG
 
