@@ -613,8 +613,8 @@ class Consumer(models.Model):
             # Consumer Management Permissions
             ("view_consumer_data", "Can view consumer data (read-only)"),
             ("edit_consumer_data", "Can edit consumer information"),
-            ("create_consumer", "Can create new consumers"),
-            ("delete_consumer", "Can delete consumers"),
+            ("create_consumer_account", "Can create new consumers"),
+            ("remove_consumer", "Can delete/remove consumers"),
             ("disconnect_consumer", "Can disconnect/reconnect consumers"),
 
             # Billing Permissions
