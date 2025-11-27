@@ -2485,14 +2485,14 @@ def meter_reading_overview(request):
         header_font = Font(bold=True, color="FFFFFF", size=12)
 
         # Title
-        ws.merge_cells('A1:F1')
+        ws.merge_cells('A1:E1')
         title_cell = ws['A1']
         title_cell.value = f"Meter Reading Overview - {current_month.strftime('%B %Y')}"
         title_cell.font = Font(bold=True, size=14)
         title_cell.alignment = Alignment(horizontal='center', vertical='center')
 
         # Headers
-        headers = ['Barangay', 'Total Consumers', 'Updated', 'Ready to Confirm', 'Not Updated', 'Progress %']
+        headers = ['Barangay', 'Total Consumers', 'Readings This Month', 'Not Updated', 'Progress %']
         for col, header in enumerate(headers, 1):
             cell = ws.cell(row=3, column=col, value=header)
             cell.fill = header_fill
@@ -2504,23 +2504,21 @@ def meter_reading_overview(request):
             ws.cell(row=idx, column=1, value=item['barangay'].name)
             ws.cell(row=idx, column=2, value=item['total_consumers'])
             ws.cell(row=idx, column=3, value=item['updated_count'])
-            ws.cell(row=idx, column=4, value=item['ready_to_confirm'])
-            ws.cell(row=idx, column=5, value=item['not_yet_updated'])
-            ws.cell(row=idx, column=6, value=f"{item['completion_percentage']}%")
+            ws.cell(row=idx, column=4, value=item['not_yet_updated'])
+            ws.cell(row=idx, column=5, value=f"{item['completion_percentage']}%")
 
         # Summary row
         summary_row = len(barangay_data) + 5
         ws.cell(row=summary_row, column=1, value="TOTAL").font = Font(bold=True)
         ws.cell(row=summary_row, column=2, value=total_consumers_sum).font = Font(bold=True)
         ws.cell(row=summary_row, column=3, value=total_updated_sum).font = Font(bold=True)
-        ws.cell(row=summary_row, column=4, value=total_ready_sum).font = Font(bold=True)
-        ws.cell(row=summary_row, column=5, value=total_pending_sum).font = Font(bold=True)
-        ws.cell(row=summary_row, column=6, value=f"{round(overall_completion_percentage, 1)}%").font = Font(bold=True)
+        ws.cell(row=summary_row, column=4, value=total_pending_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=5, value=f"{round(overall_completion_percentage, 1)}%").font = Font(bold=True)
 
         # Adjust column widths
-        ws.column_dimensions['A'].width = 20
-        for col in ['B', 'C', 'D', 'E', 'F']:
-            ws.column_dimensions[col].width = 15
+        ws.column_dimensions['A'].width = 25
+        for col in ['B', 'C', 'D', 'E']:
+            ws.column_dimensions[col].width = 18
 
         # Create response
         response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')

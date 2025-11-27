@@ -55,11 +55,11 @@
         <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-success-500">
             <div class="flex items-center justify-between">
                 <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide">Ready to Confirm</p>
-                    <p class="text-3xl font-bold text-success-600 mt-2">{{ total_ready_sum }}</p>
+                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide">Readings This Month</p>
+                    <p class="text-3xl font-bold text-success-600 mt-2">{{ total_updated_sum }}</p>
                 </div>
                 <div class="w-14 h-14 bg-success-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-check-circle-fill text-success-600 text-2xl"></i>
+                    <i class="bi bi-calendar-check-fill text-success-600 text-2xl"></i>
                 </div>
             </div>
         </div>
@@ -90,12 +90,12 @@
             <div class="bg-gradient-to-r from-success-500 to-success-600 h-6 rounded-full flex items-center justify-end pr-3 transition-all duration-500"
                  style="width: {{ overall_completion_percentage }}%">
                 {% if overall_completion_percentage > 20 %}
-                <span class="text-white text-xs font-bold">{{ total_ready_sum }} / {{ total_consumers_sum }}</span>
+                <span class="text-white text-xs font-bold">{{ total_updated_sum }} / {{ total_consumers_sum }}</span>
                 {% endif %}
             </div>
         </div>
         <div class="mt-2 flex justify-between text-xs text-dark-500">
-            <span>{{ total_ready_sum }} consumers with readings ready</span>
+            <span>{{ total_updated_sum }} consumers updated this month</span>
             <span>{{ total_pending_sum }} still pending</span>
         </div>
     </div>
@@ -145,7 +145,7 @@
                             Progress
                         </th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Ready to Confirm
+                            Readings This Month
                         </th>
                         <th class="px-6 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
                             Not Updated
@@ -196,12 +196,12 @@
                             </div>
                         </td>
 
-                        <!-- Ready to Confirm -->
+                        <!-- Readings This Month -->
                         <td class="px-6 py-4 text-center">
-                            {% if item.ready_to_confirm > 0 %}
+                            {% if item.updated_count > 0 %}
                             <span class="inline-flex items-center gap-1 px-3 py-1.5 bg-success-100 text-success-700 font-bold rounded-full border border-success-300">
-                                <i class="bi bi-check-circle-fill"></i>
-                                {{ item.ready_to_confirm }}
+                                <i class="bi bi-calendar-check-fill"></i>
+                                {{ item.updated_count }}
                             </span>
                             {% else %}
                             <span class="text-dark-400">—</span>
@@ -257,8 +257,8 @@
                     <p class="text-2xl font-bold text-dark-900">{{ total_consumers_sum }}</p>
                 </div>
                 <div class="text-center md:text-left">
-                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide mb-1">Ready</p>
-                    <p class="text-2xl font-bold text-success-600">{{ total_ready_sum }}</p>
+                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide mb-1">Updated</p>
+                    <p class="text-2xl font-bold text-success-600">{{ total_updated_sum }}</p>
                 </div>
                 <div class="text-center md:text-left">
                     <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide mb-1">Pending</p>
