@@ -2405,8 +2405,22 @@ def get_consumer_display_id(consumer):
 
 @login_required
 def meter_reading_overview(request):
+    """
+    Meter Reading Overview with Enhanced Statistics and Progress Tracking.
+
+    Features:
+    - Barangay-level summary with progress bars
+    - Overall completion percentage
+    - Excel export for summary report
+    - Updated vs pending consumer counts
+    """
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
+
     today = date.today()
     current_month = today.replace(day=1)
+    export_excel = request.GET.get('export', '')
 
     # Get all barangays, annotate total consumers, and ORDER BY name for alphabetical sorting
     barangays = Barangay.objects.annotate(
@@ -2417,8 +2431,11 @@ def meter_reading_overview(request):
     for b in barangays:
         # Only count active (connected) consumers
         consumer_ids = list(Consumer.objects.filter(barangay=b, status='active').values_list('id', flat=True))
+        total_consumers_count = len(consumer_ids)
+
         if not consumer_ids:
-            ready = not_updated = 0
+            ready = not_updated = updated = 0
+            completion_percentage = 0
         else:
             # Count ALL unconfirmed readings (not just current month)
             # This matches what barangay_meter_readings shows
@@ -2432,13 +2449,19 @@ def meter_reading_overview(request):
                 consumer_id__in=consumer_ids,
                 reading_date__gte=current_month
             ).values_list('consumer_id', flat=True).distinct()
-            not_updated = len(consumer_ids) - len(set(updated_consumers))
+            updated = len(set(updated_consumers))
+            not_updated = total_consumers_count - updated
+
+            # Calculate completion percentage (based on updated readings)
+            completion_percentage = (updated / total_consumers_count * 100) if total_consumers_count > 0 else 0
 
         barangay_data.append({
             'barangay': b,
             'ready_to_confirm': ready,
             'not_yet_updated': not_updated,
-            'total_consumers': b.total_consumers,
+            'updated_count': updated,
+            'total_consumers': total_consumers_count,
+            'completion_percentage': round(completion_percentage, 1),
         })
 
     # Calculate summary statistics for the overview page
@@ -2446,15 +2469,76 @@ def meter_reading_overview(request):
     total_consumers_sum = sum(item['total_consumers'] for item in barangay_data)
     total_ready_sum = sum(item['ready_to_confirm'] for item in barangay_data)
     total_pending_sum = sum(item['not_yet_updated'] for item in barangay_data)
+    total_updated_sum = sum(item['updated_count'] for item in barangay_data)
 
-    return render(request, 'consumers/meter_reading_overview.html', {
+    # Calculate overall completion percentage
+    overall_completion_percentage = (total_updated_sum / total_consumers_sum * 100) if total_consumers_sum > 0 else 0
+
+    # Excel Export
+    if export_excel == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Reading Overview"
+
+        # Header styling
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+
+        # Title
+        ws.merge_cells('A1:F1')
+        title_cell = ws['A1']
+        title_cell.value = f"Meter Reading Overview - {current_month.strftime('%B %Y')}"
+        title_cell.font = Font(bold=True, size=14)
+        title_cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # Headers
+        headers = ['Barangay', 'Total Consumers', 'Updated', 'Ready to Confirm', 'Not Updated', 'Progress %']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=3, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # Data rows
+        for idx, item in enumerate(barangay_data, 4):
+            ws.cell(row=idx, column=1, value=item['barangay'].name)
+            ws.cell(row=idx, column=2, value=item['total_consumers'])
+            ws.cell(row=idx, column=3, value=item['updated_count'])
+            ws.cell(row=idx, column=4, value=item['ready_to_confirm'])
+            ws.cell(row=idx, column=5, value=item['not_yet_updated'])
+            ws.cell(row=idx, column=6, value=f"{item['completion_percentage']}%")
+
+        # Summary row
+        summary_row = len(barangay_data) + 5
+        ws.cell(row=summary_row, column=1, value="TOTAL").font = Font(bold=True)
+        ws.cell(row=summary_row, column=2, value=total_consumers_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=3, value=total_updated_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=4, value=total_ready_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=5, value=total_pending_sum).font = Font(bold=True)
+        ws.cell(row=summary_row, column=6, value=f"{round(overall_completion_percentage, 1)}%").font = Font(bold=True)
+
+        # Adjust column widths
+        ws.column_dimensions['A'].width = 20
+        for col in ['B', 'C', 'D', 'E', 'F']:
+            ws.column_dimensions[col].width = 15
+
+        # Create response
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=meter_reading_overview_{today.strftime("%Y%m%d")}.xlsx'
+        wb.save(response)
+        return response
+
+    context = {
         'barangay_data': barangay_data,
         'current_month': current_month,
         'total_barangays': total_barangays,
         'total_consumers_sum': total_consumers_sum,
         'total_ready_sum': total_ready_sum,
         'total_pending_sum': total_pending_sum,
-    })
+        'overall_completion_percentage': round(overall_completion_percentage, 1),
+    }
+
+    return render(request, 'consumers/meter_reading_overview.html', context)
 
 # ───────────────────────────────────────
 # NEW: Barangay-Specific Readings (Enhanced)
@@ -2784,125 +2868,181 @@ def export_barangay_readings(request, barangay_id):
 @login_required
 def meter_readings(request):
     """
-    Display the most recent meter reading for each consumer.
-    Calculates consumption based on the latest *confirmed* previous reading
-    for the *same consumer* that occurred *before* the current reading's date.
+    Display recent meter readings with advanced filtering, search, and pagination.
+    Shows readings from web, mobile app, and smart meters with full statistics.
+
+    Features:
+    - Search by consumer name or account number
+    - Filter by barangay, source, status, date range
+    - Pagination (50 per page)
+    - Statistics cards (total, confirmed, pending, avg consumption)
+    - Excel export
     """
-    if request.method == "POST":
-        consumer_id = request.POST.get('consumer')
-        reading_value = request.POST.get('reading_value')
-        reading_date_str = request.POST.get('reading_date')
-        source = request.POST.get('source', 'manual')
+    from django.core.paginator import Paginator
+    from django.db.models import Q, Avg
+    from datetime import datetime
+    import openpyxl
+    from openpyxl.styles import Font, Alignment, PatternFill
+    from django.http import HttpResponse
 
-        # 🔒 Validate required fields
-        if not all([consumer_id, reading_value, reading_date_str]):
-            messages.error(request, "All fields are required.")
-            return redirect('consumers:meter_readings')
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    selected_barangay = request.GET.get('barangay', '')
+    selected_source = request.GET.get('source', '')
+    selected_status = request.GET.get('status', '')
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+    export_excel = request.GET.get('export', '')
 
-        try:
-            reading_date = date.fromisoformat(reading_date_str)
-            if reading_date > date.today():
-                messages.error(request, "Reading date cannot be in the future.")
-                return redirect('consumers:meter_readings')
-
-            reading_value = int(reading_value)
-            if reading_value < 0:
-                messages.error(request, "Reading value must be a non-negative number.")
-                return redirect('consumers:meter_readings')
-
-            consumer = Consumer.objects.get(id=consumer_id)
-
-            # 🔒 Prevent duplicate on same date
-            existing = MeterReading.objects.filter(
-                consumer=consumer,
-                reading_date=reading_date
-            ).first()
-
-            if existing:
-                if existing.is_confirmed:
-                    messages.error(request, f"Reading on {reading_date} is already confirmed and cannot be updated.")
-                    return redirect('consumers:meter_readings')
-                existing.reading_value = reading_value
-                existing.source = source
-                existing.save()
-                messages.success(request, f"✅ Reading updated for {consumer} on {reading_date}.")
-            else:
-                # ➕ Create new reading
-                MeterReading.objects.create(
-                    consumer=consumer,
-                    reading_date=reading_date,
-                    reading_value=reading_value,
-                    source=source,
-                    is_confirmed=False
-                )
-                messages.success(request, f"✅ New meter reading added for {consumer}!")
-
-        except ValueError:
-            messages.error(request, "Invalid date or reading value.")
-        except Consumer.DoesNotExist:
-            messages.error(request, "Selected consumer does not exist.")
-        except Exception as e:
-            messages.error(request, f"An error occurred: {str(e)}")
-
-        return redirect('consumers:meter_readings')
-
-    # ✅ GET: Fetch the most recent reading for each consumer
-    # Use a subquery to get the maximum reading_date for each consumer
-    # This query gets the most recent reading for each consumer
-    latest_readings = MeterReading.objects.select_related(
+    # Start with all readings, ordered by most recent first
+    readings_query = MeterReading.objects.select_related(
         'consumer',
         'consumer__barangay',
         'consumer__purok'
-    ).order_by('consumer', '-reading_date') # Order by consumer first, then date descending
+    ).order_by('-reading_date', '-created_at')
 
-    # Use a list to store the processed readings with their calculated data
+    # Apply filters
+    if search_query:
+        readings_query = readings_query.filter(
+            Q(consumer__first_name__icontains=search_query) |
+            Q(consumer__last_name__icontains=search_query) |
+            Q(consumer__account_number__icontains=search_query)
+        )
+
+    if selected_barangay:
+        readings_query = readings_query.filter(consumer__barangay_id=selected_barangay)
+
+    if selected_source:
+        readings_query = readings_query.filter(source=selected_source)
+
+    if selected_status:
+        if selected_status == 'confirmed':
+            readings_query = readings_query.filter(is_confirmed=True)
+        elif selected_status == 'pending':
+            readings_query = readings_query.filter(is_confirmed=False)
+
+    if from_date:
+        try:
+            from_date_obj = datetime.strptime(from_date, '%Y-%m-%d').date()
+            readings_query = readings_query.filter(reading_date__gte=from_date_obj)
+        except ValueError:
+            pass
+
+    if to_date:
+        try:
+            to_date_obj = datetime.strptime(to_date, '%Y-%m-%d').date()
+            readings_query = readings_query.filter(reading_date__lte=to_date_obj)
+        except ValueError:
+            pass
+
+    # Calculate statistics
+    total_count = readings_query.count()
+    confirmed_count = readings_query.filter(is_confirmed=True).count()
+    pending_count = readings_query.filter(is_confirmed=False).count()
+
+    # Process readings with consumption calculation
     readings_with_data = []
+    consumption_values = []
 
-    # Dictionary to keep track of the latest confirmed reading seen for each consumer
-    # Key: consumer.id, Value: MeterReading object (the last confirmed one found so far while iterating)
-    latest_confirmed_per_consumer = {}
-
-    for r in latest_readings:
-        # Check if the current reading (r) is confirmed. If so, update the dictionary.
-        if r.is_confirmed:
-            latest_confirmed_per_consumer[r.consumer.id] = r
-
-        # Find the PREVIOUS confirmed reading specifically for THIS reading (r)
-        # Look for the latest confirmed reading for the same consumer that happened BEFORE r.reading_date
-        prev_confirmed_for_current = MeterReading.objects.filter(
+    for r in readings_query:
+        # Find previous confirmed reading
+        prev_confirmed = MeterReading.objects.filter(
             consumer=r.consumer,
             is_confirmed=True,
             reading_date__lt=r.reading_date
         ).order_by('-reading_date').first()
 
-        consumption = None
-        if prev_confirmed_for_current:
-            # Calculate consumption based on the specific previous confirmed reading found
-            if r.reading_value >= prev_confirmed_for_current.reading_value:
-                consumption = r.reading_value - prev_confirmed_for_current.reading_value
+        # Calculate consumption
+        if prev_confirmed:
+            if r.reading_value >= prev_confirmed.reading_value:
+                consumption = r.reading_value - prev_confirmed.reading_value
             else:
-                # This should ideally not happen if readings are non-decreasing, but handle gracefully
-                consumption = 0 # Or set to None and display an error/warning if needed
+                consumption = 0
         else:
-            # If no previous confirmed reading exists, treat it as the first reading.
-            # Consumption is the current reading value itself (since previous is 0).
-            # This handles the case where the Android app sends the very first reading for a consumer.
-            consumption = r.reading_value
+            # First reading - use consumer's first_reading or treat as baseline
+            baseline = r.consumer.first_reading if r.consumer.first_reading else 0
+            consumption = r.reading_value - baseline
 
-        # Append the reading object along with its calculated previous reading and consumption
+        if consumption is not None and consumption > 0:
+            consumption_values.append(consumption)
+
         readings_with_data.append({
             'reading': r,
-            'prev_reading': prev_confirmed_for_current, # This is the reading object itself
+            'prev_reading': prev_confirmed,
             'consumption': consumption
         })
 
-    # Fetch consumers for the dropdown in the form (if you add the form back later)
-    consumers = Consumer.objects.select_related('barangay', 'purok').all()
-    return render(request, 'consumers/meter_readings.html', {
-        'readings': readings_with_data,
-        'consumers': consumers,
-        'today': date.today(),  # ✅ For max date in form (if form is added back)
-    })
+    # Calculate average consumption
+    avg_consumption = sum(consumption_values) / len(consumption_values) if consumption_values else 0
+
+    # Excel Export
+    if export_excel == 'excel':
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Meter Readings"
+
+        # Header styling
+        header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+        header_font = Font(bold=True, color="FFFFFF", size=12)
+
+        # Headers
+        headers = ['Consumer', 'Account #', 'Barangay', 'Previous', 'Current', 'Consumption', 'Date', 'Source', 'Status']
+        for col, header in enumerate(headers, 1):
+            cell = ws.cell(row=1, column=col, value=header)
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal='center', vertical='center')
+
+        # Data rows
+        for idx, item in enumerate(readings_with_data, 2):
+            r = item['reading']
+            ws.cell(row=idx, column=1, value=f"{r.consumer.first_name} {r.consumer.last_name}")
+            ws.cell(row=idx, column=2, value=r.consumer.account_number)
+            ws.cell(row=idx, column=3, value=r.consumer.barangay.name if r.consumer.barangay else "—")
+            ws.cell(row=idx, column=4, value=item['prev_reading'].reading_value if item['prev_reading'] else "—")
+            ws.cell(row=idx, column=5, value=r.reading_value)
+            ws.cell(row=idx, column=6, value=f"{item['consumption']} m³" if item['consumption'] is not None else "—")
+            ws.cell(row=idx, column=7, value=r.reading_date.strftime('%Y-%m-%d'))
+            ws.cell(row=idx, column=8, value=r.get_source_display())
+            ws.cell(row=idx, column=9, value="Confirmed" if r.is_confirmed else "Pending")
+
+        # Adjust column widths
+        for col in range(1, 10):
+            ws.column_dimensions[openpyxl.utils.get_column_letter(col)].width = 15
+
+        # Create response
+        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+        response['Content-Disposition'] = f'attachment; filename=meter_readings_{datetime.now().strftime("%Y%m%d_%H%M%S")}.xlsx'
+        wb.save(response)
+        return response
+
+    # Pagination (50 per page)
+    paginator = Paginator(readings_with_data, 50)
+    page_number = request.GET.get('page', 1)
+    page_obj = paginator.get_page(page_number)
+
+    # Get all barangays for filter dropdown
+    barangays = Barangay.objects.all().order_by('name')
+
+    context = {
+        'readings': page_obj,
+        'barangays': barangays,
+        'search_query': search_query,
+        'selected_barangay': selected_barangay,
+        'selected_source': selected_source,
+        'selected_status': selected_status,
+        'from_date': from_date,
+        'to_date': to_date,
+        'total_count': total_count,
+        'confirmed_count': confirmed_count,
+        'pending_count': pending_count,
+        'avg_consumption': avg_consumption,
+        'is_paginated': paginator.num_pages > 1,
+        'page_obj': page_obj,
+        'paginator': paginator,
+    }
+
+    return render(request, 'consumers/meter_readings.html', context)
 
 
 # ============================================================================
