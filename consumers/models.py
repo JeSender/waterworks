@@ -609,6 +609,10 @@ class Consumer(models.Model):
 
     class Meta:
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['status'], name='consumer_status_idx'),
+            models.Index(fields=['barangay', 'status'], name='consumer_brgy_status_idx'),
+        ]
         permissions = [
             # Consumer Management Permissions
             ("view_consumer_data", "Can view consumer data (read-only)"),
@@ -649,6 +653,11 @@ class MeterReading(models.Model):
 
     class Meta:
         ordering = ['-reading_date', '-created_at']
+        indexes = [
+            models.Index(fields=['consumer', 'is_confirmed'], name='reading_consumer_conf_idx'),
+            models.Index(fields=['reading_date'], name='reading_date_idx'),
+            models.Index(fields=['consumer', 'is_confirmed', '-reading_date'], name='reading_latest_idx'),
+        ]
         # Removed unique_together to allow multiple readings on same date for testing/demo
 
     def __str__(self):
@@ -740,6 +749,11 @@ class Bill(models.Model):
 
     class Meta:
         ordering = ['-billing_period']
+        indexes = [
+            models.Index(fields=['consumer', 'status'], name='bill_consumer_status_idx'),
+            models.Index(fields=['due_date'], name='bill_due_date_idx'),
+            models.Index(fields=['status', 'due_date'], name='bill_status_due_idx'),
+        ]
         verbose_name = "Utility Bill"
         verbose_name_plural = "Utility Bills"
 
@@ -1086,6 +1100,10 @@ class Payment(models.Model):
         verbose_name = "Payment"
         verbose_name_plural = "Payments"
         ordering = ['-payment_date']
+        indexes = [
+            models.Index(fields=['payment_date'], name='payment_date_idx'),
+            models.Index(fields=['bill'], name='payment_bill_idx'),
+        ]
 
     def clean(self):
         """Validate business logic before saving."""
