@@ -513,6 +513,7 @@ def api_consumers(request):
                 'serial_number': consumer.serial_number,
                 'status': consumer.status,  # 'active' or 'disconnected'
                 'is_active': consumer.status == 'active',
+                'usage_type': consumer.usage_type,  # 'Residential' or 'Commercial' - needed for accurate rate calculation
                 'latest_confirmed_reading': latest_confirmed_reading_value,
                 'previous_reading': latest_confirmed_reading_value,  # Alias for Android app compatibility
                 # Delinquent status for Android app
@@ -559,6 +560,7 @@ def api_get_previous_reading(request, consumer_id):
             'consumer_id': consumer.id,
             'account_number': consumer.account_number,
             'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'usage_type': consumer.usage_type,  # 'Residential' or 'Commercial' - needed for accurate rate calculation
             'previous_reading': previous_reading_value,
             'last_reading_date': last_reading_date
         })
