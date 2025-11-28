@@ -22,11 +22,18 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # Vercel environment detection
 VERCEL_ENVIRONMENT = config('VERCEL', default='')
 
+# Render environment detection
+RENDER_ENVIRONMENT = config('RENDER', default='')
+
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,192.168.100.9', cast=Csv())
 
 # Add Vercel domain if running on Vercel
 if VERCEL_ENVIRONMENT:
     ALLOWED_HOSTS.append('.vercel.app')
+
+# Add Render domain if running on Render
+if RENDER_ENVIRONMENT or '.onrender.com' not in str(ALLOWED_HOSTS):
+    ALLOWED_HOSTS.append('.onrender.com')
 
 # Application definition
 INSTALLED_APPS = [
@@ -196,10 +203,11 @@ _csrf_config = config('CSRF_TRUSTED_ORIGINS', default='')
 if _csrf_config:
     CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in _csrf_config.split(',') if origin.strip()])
 
-# Always add Vercel production domain to trusted origins
+# Always add Vercel and Render production domains to trusted origins
 CSRF_TRUSTED_ORIGINS.extend([
     'https://waterworks-rose.vercel.app',
     'https://*.vercel.app',
+    'https://*.onrender.com',
 ])
 
 # Also add to CORS for API access
