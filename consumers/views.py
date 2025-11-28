@@ -528,7 +528,14 @@ def api_consumers(request):
                 'id': consumer.id,
                 'account_number': consumer.account_number,
                 'name': f"{consumer.first_name} {consumer.last_name}",
+                'first_name': consumer.first_name,
+                'last_name': consumer.last_name,
                 'serial_number': consumer.serial_number,
+                'household_number': consumer.household_number,
+                'barangay': consumer.barangay.name if consumer.barangay else '',
+                'purok': consumer.purok.name if consumer.purok else '',
+                'address': f"{consumer.purok.name if consumer.purok else ''}, {consumer.barangay.name if consumer.barangay else ''}",
+                'phone_number': consumer.phone_number,
                 'status': consumer.status,  # 'active' or 'disconnected'
                 'is_active': consumer.status == 'active',
                 'usage_type': consumer.usage_type,  # 'Residential' or 'Commercial' - needed for accurate rate calculation

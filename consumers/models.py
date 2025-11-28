@@ -567,41 +567,27 @@ class Consumer(models.Model):
     # Methods
     # ========================
     def save(self, *args, **kwargs):
-        # Auto-generate ID Number if not set
-        # Format: YYYYMM0001 (Year + Month + 4-digit sequence)
-        # Example: 2024110001 (November 2024, consumer #1)
+        # Auto-generate Account Number if not set
+        # Format: 5-digit sequential (00001-99999)
+        # Example: 00001, 00002, 00003, etc.
         if not self.account_number:
-            from django.utils import timezone
-
-            # Get current year and month
-            now = timezone.now()
-            year_month = now.strftime('%Y%m')  # e.g., "202411"
-
-            # Find existing ID numbers for this month
-            # Pattern: starts with current YYYYMM
-            existing_ids = Consumer.objects.filter(
-                account_number__startswith=year_month
-            ).exclude(
+            # Find the highest existing account number
+            latest_consumer = Consumer.objects.exclude(
                 pk=self.pk  # Exclude self if updating
-            ).values_list('account_number', flat=True)
+            ).exclude(
+                account_number=''  # Exclude empty account numbers
+            ).order_by('-account_number').first()
 
-            # Extract sequence numbers and find max
-            sequences = []
-            for id_num in existing_ids:
-                try:
-                    # Extract last 4 digits (sequence part)
-                    if len(id_num) == 10 and id_num.isdigit():
-                        seq = int(id_num[6:])  # Get digits after YYYYMM
-                        sequences.append(seq)
-                except (ValueError, IndexError):
-                    continue
+            if latest_consumer and latest_consumer.account_number.isdigit():
+                # Get next sequence number
+                last_num = int(latest_consumer.account_number)
+                new_num = last_num + 1
+            else:
+                # Start from 1 if no consumers exist
+                new_num = 1
 
-            # Get next sequence number
-            last_seq = max(sequences) if sequences else 0
-            new_seq = last_seq + 1
-
-            # Generate ID Number: YYYYMM + 4-digit sequence
-            self.account_number = f'{year_month}{new_seq:04d}'
+            # Generate 5-digit Account Number (00001-99999)
+            self.account_number = f'{new_num:05d}'
         super().save(*args, **kwargs)
 
     def __str__(self):

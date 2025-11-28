@@ -319,10 +319,10 @@
         <!-- Payor Section -->
         <div class="payor-section">
             <div class="payor-row">
-                <span>PAYOR</span>
+                <span>ACCOUNT CODE</span>
                 <span>FUND</span>
             </div>
-            <p class="payor-name">{{ payment.bill.consumer.last_name }}, {{ payment.bill.consumer.first_name }}</p>
+            <p class="payor-name">{{ payment.bill.consumer.account_number }}</p>
             <p class="payor-address">{{ payment.bill.consumer.barangay.name|default:"" }}, BALILIHAN, BOHOL</p>
         </div>
 
@@ -356,42 +356,6 @@
                     <td></td>
                     <td></td>
                 </tr>
-                <!-- Tiered Rate Breakdown -->
-                {% if breakdown.tier1_units > 0 %}
-                <tr>
-                    <td style="font-size:8px; padding-left:10px;">Tier 1 (1-5m³): Min charge</td>
-                    <td></td>
-                    <td style="font-size:8px; text-align:right;">₱{{ breakdown.tier1_amount }}</td>
-                </tr>
-                {% endif %}
-                {% if breakdown.tier2_units > 0 %}
-                <tr>
-                    <td style="font-size:8px; padding-left:10px;">Tier 2 (6-10m³): {{ breakdown.tier2_units }}m³ × ₱{{ breakdown.tier2_rate }}</td>
-                    <td></td>
-                    <td style="font-size:8px; text-align:right;">₱{{ breakdown.tier2_amount }}</td>
-                </tr>
-                {% endif %}
-                {% if breakdown.tier3_units > 0 %}
-                <tr>
-                    <td style="font-size:8px; padding-left:10px;">Tier 3 (11-20m³): {{ breakdown.tier3_units }}m³ × ₱{{ breakdown.tier3_rate }}</td>
-                    <td></td>
-                    <td style="font-size:8px; text-align:right;">₱{{ breakdown.tier3_amount }}</td>
-                </tr>
-                {% endif %}
-                {% if breakdown.tier4_units > 0 %}
-                <tr>
-                    <td style="font-size:8px; padding-left:10px;">Tier 4 (21-50m³): {{ breakdown.tier4_units }}m³ × ₱{{ breakdown.tier4_rate }}</td>
-                    <td></td>
-                    <td style="font-size:8px; text-align:right;">₱{{ breakdown.tier4_amount }}</td>
-                </tr>
-                {% endif %}
-                {% if breakdown.tier5_units > 0 %}
-                <tr>
-                    <td style="font-size:8px; padding-left:10px;">Tier 5 (51+m³): {{ breakdown.tier5_units }}m³ × ₱{{ breakdown.tier5_rate }}</td>
-                    <td></td>
-                    <td style="font-size:8px; text-align:right;">₱{{ breakdown.tier5_amount }}</td>
-                </tr>
-                {% endif %}
                 {% if payment.penalty_amount > 0 %}
                 <!-- Penalty Row -->
                 <tr style="background-color: #fff5f5;">
