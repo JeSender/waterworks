@@ -2551,6 +2551,7 @@ def meter_reading_overview(request):
         'total_consumers_sum': total_consumers_sum,
         'total_ready_sum': total_ready_sum,
         'total_pending_sum': total_pending_sum,
+        'total_updated_sum': total_updated_sum,
         'overall_completion_percentage': round(overall_completion_percentage, 1),
     }
 
