@@ -15,11 +15,7 @@
                 </h2>
                 <p class="text-sm text-dark-500 mt-1">Track meter reading progress by barangay - {{ current_month|date:"F Y" }}</p>
             </div>
-            <div class="flex gap-3">
-                <a href="{% url 'consumers:meter_readings' %}"
-                   class="btn-secondary btn-sm">
-                    <i class="bi bi-list-ul"></i> View All Readings
-                </a>
+            <div>
                 <a href="?export=excel"
                    class="btn-success btn-sm">
                     <i class="bi bi-file-earmark-excel"></i> Export Summary
