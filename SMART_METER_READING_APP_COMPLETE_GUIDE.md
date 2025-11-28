@@ -88,7 +88,7 @@ This guide provides everything needed to build the Smart Meter Reading Android A
 [
   {
     "id": 1,
-    "account_number": "00001",
+    "account_number": "BW-00001",
     "name": "Juan Dela Cruz",
     "first_name": "Juan",
     "last_name": "Dela Cruz",
@@ -108,7 +108,7 @@ This guide provides everything needed to build the Smart Meter Reading Android A
   },
   {
     "id": 2,
-    "account_number": "00002",
+    "account_number": "BW-00002",
     "name": "Maria Santos",
     "first_name": "Maria",
     "last_name": "Santos",
@@ -130,7 +130,7 @@ This guide provides everything needed to build the Smart Meter Reading Android A
 ```
 
 **Key Fields for Meter Reading**:
-- `account_number` - Consumer's account code (display on app)
+- `account_number` - Consumer's account code in BW-##### format (e.g., BW-00001)
 - `name` - Full name (display to identify consumer)
 - `serial_number` - Physical meter serial number (verify you're reading correct meter)
 - `address` - Location to find the consumer
@@ -211,7 +211,7 @@ This guide provides everything needed to build the Smart Meter Reading Android A
   "message": "Meter reading submitted and bill generated successfully",
   "data": {
     "consumer_name": "Juan Dela Cruz",
-    "account_number": "00001",
+    "account_number": "BW-00001",
     "serial_number": "MTR-12345",
     "reading_date": "2025-01-15",
     "previous_reading": 150,
@@ -388,7 +388,7 @@ Total Bill: ₱75.00
 1. **Select Consumer**
    ```
    → Show Consumer Details:
-      - Account Code: 00001
+      - Account Code: BW-00001
       - Name: Juan Dela Cruz
       - Address: Purok 1, San Isidro
       - Serial Number: MTR-12345
@@ -431,7 +431,7 @@ Total Bill: ₱75.00
            BILL STATEMENT
    ═══════════════════════════════════
 
-   Account Code: 00001
+   Account Code: BW-00001
    Consumer: JUAN DELA CRUZ
    Address: Purok 1, San Isidro
    Meter No: MTR-12345
@@ -712,7 +712,7 @@ curl -X POST http://localhost:8000/api/meter-readings/ \
 2. ✓ Current water rates (residential and commercial)
 
 **Must Display to Field Staff**:
-1. ✓ Account Code (for identification)
+1. ✓ Account Code in BW-##### format (for identification, e.g., BW-00001)
 2. ✓ Consumer Name (to verify correct household)
 3. ✓ Address (to locate the household)
 4. ✓ Serial Number (to verify correct physical meter)

@@ -4,6 +4,9 @@ Usage: python manage.py assign_account_numbers
 
 This command safely assigns account codes to old consumers without duplicates.
 The Consumer model's save() method handles duplicate prevention automatically.
+
+Format: BW-00001, BW-00002, BW-00003, etc.
+(BW = Balilihan Waterworks)
 """
 from django.core.management.base import BaseCommand
 from django.db import transaction
@@ -11,7 +14,7 @@ from consumers.models import Consumer
 
 
 class Command(BaseCommand):
-    help = 'Assigns 5-digit account numbers to all consumers without one'
+    help = 'Assigns account numbers in BW-##### format to all consumers without one'
 
     def add_arguments(self, parser):
         parser.add_argument(
