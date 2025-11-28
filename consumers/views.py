@@ -1108,6 +1108,11 @@ def forgot_password_request(request):
     from django.template.loader import render_to_string
     from django.utils.html import strip_tags
 
+    # Check if email is configured before processing any requests
+    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
+        messages.error(request, "Password reset via email is currently unavailable. Please contact your system administrator for password assistance.")
+        return render(request, 'consumers/forgot_password.html', {'email_disabled': True})
+
     if request.method == "POST":
         username = request.POST.get('username')
 
