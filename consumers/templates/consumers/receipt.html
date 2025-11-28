@@ -319,10 +319,11 @@
         <!-- Payor Section -->
         <div class="payor-section">
             <div class="payor-row">
-                <span>ACCOUNT CODE</span>
+                <span>PAYOR</span>
                 <span>FUND</span>
             </div>
-            <p class="payor-name">{{ payment.bill.consumer.account_number }}</p>
+            <p class="payor-name">{{ payment.bill.consumer.last_name }}, {{ payment.bill.consumer.first_name }}</p>
+            <p style="text-align:center; font-size:10px; color:#666; margin-top:2px;">Account Code: {{ payment.bill.consumer.account_number }}</p>
             <p class="payor-address">{{ payment.bill.consumer.barangay.name|default:"" }}, BALILIHAN, BOHOL</p>
         </div>
 
@@ -330,30 +331,25 @@
         <table class="collection-table">
             <thead>
                 <tr>
-                    <th style="width:45%;">NATURE OF COLLECTION</th>
-                    <th style="width:25%;">ACCOUNT<br>CODE</th>
+                    <th style="width:70%;">NATURE OF COLLECTION</th>
                     <th style="width:30%;">AMOUNT</th>
                 </tr>
             </thead>
             <tbody>
                 <tr>
                     <td>WATER BILL</td>
-                    <td class="text-center">639</td>
                     <td class="amount">{{ payment.original_bill_amount|default:payment.bill.total_amount }}</td>
                 </tr>
                 <tr>
                     <td style="font-size:9px;">{{ payment.bill.billing_period|date:"F Y" }} ({{ breakdown.usage_type }})</td>
                     <td></td>
-                    <td></td>
                 </tr>
                 <tr>
                     <td style="font-size:9px;">Prev: {{ previous_reading_value }}m³ → Curr: {{ payment.bill.current_reading.reading_value }}m³</td>
                     <td></td>
-                    <td></td>
                 </tr>
                 <tr>
                     <td style="font-size:9px; font-weight:bold;">Consumption: {{ payment.bill.consumption }}m³</td>
-                    <td></td>
                     <td></td>
                 </tr>
                 {% if payment.penalty_amount > 0 %}
@@ -365,7 +361,6 @@
                         <span style="color: #059669;">(WAIVED)</span>
                         {% endif %}
                     </td>
-                    <td class="text-center">640</td>
                     <td class="amount" style="color: #c00;">
                         {% if payment.penalty_waived %}
                         <span style="text-decoration: line-through;">{{ payment.penalty_amount }}</span>
@@ -383,11 +378,9 @@
                         {% endif %}
                     </td>
                     <td></td>
-                    <td></td>
                 </tr>
                 {% else %}
                 <tr class="empty-row">
-                    <td></td>
                     <td></td>
                     <td></td>
                 </tr>
