@@ -30,10 +30,9 @@ urlpatterns = [
     path('consumer/<int:consumer_id>/edit/', views.edit_consumer, name='edit_consumer'),
     path('consumer/<int:consumer_id>/bills/', views.consumer_bill, name='consumer_bill'),
 
-    # Meter Readings - Unified Page
-    path('meter-readings/', views.meter_readings_unified, name='meter_readings'),
+    # Meter Readings
     path('meter-reading-overview/', views.meter_reading_overview, name='meter_reading_overview'),
-    path('meter-readings-list/', views.meter_readings, name='meter_readings_list'),
+    path('meter-readings/', views.meter_readings, name='meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/', views.barangay_meter_readings, name='barangay_meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/confirm-all/', views.confirm_all_readings, name='confirm_all_readings'),
     path('meter-readings/confirm-all-global/', views.confirm_all_readings_global, name='confirm_all_readings_global'),
