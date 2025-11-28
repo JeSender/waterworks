@@ -3019,7 +3019,7 @@ def meter_readings(request):
             ws.cell(row=idx, column=5, value=r.reading_value)
             ws.cell(row=idx, column=6, value=f"{item['consumption']} m³" if item['consumption'] is not None else "—")
             ws.cell(row=idx, column=7, value=r.reading_date.strftime('%Y-%m-%d'))
-            ws.cell(row=idx, column=8, value=r.get_source_display())
+            ws.cell(row=idx, column=8, value=r.source.title() if r.source else "Manual")
             ws.cell(row=idx, column=9, value="Confirmed" if r.is_confirmed else "Pending")
 
         # Adjust column widths
