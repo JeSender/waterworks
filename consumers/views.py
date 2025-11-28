@@ -239,18 +239,17 @@ def api_submit_reading(request):
                 status='Pending'
             )
 
-            # Notification removed - manual confirmation workflow deprecated
-            # Bills are now generated through bulk confirmation at barangay level
-            # from .models import Notification
-            # from django.urls import reverse
-            # Notification.objects.create(
-            #     user=None,  # Notify all admins
-            #     notification_type='bill_generated',
-            #     title='New Bill Generated',
-            #     message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Amount: ₱{total_amount:.2f}',
-            #     related_object_id=reading.id,
-            #     redirect_url=reverse('consumers:inquire')
-            # )
+            # Create notification for new bill
+            from .models import Notification
+            from django.urls import reverse
+            Notification.objects.create(
+                user=None,  # Notify all admins
+                notification_type='bill_generated',
+                title='New Bill Generated',
+                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - Amount: ₱{total_amount:.2f}',
+                related_object_id=reading.id,
+                redirect_url=reverse('consumers:inquire')
+            )
 
         # Track activity for login session
         if request.user.is_authenticated:
