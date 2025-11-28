@@ -179,9 +179,29 @@
                                 <i class="bi bi-shield-fill-check mr-1"></i>Superuser
                             </span>
                             {% elif user.is_staff %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
-                                <i class="bi bi-person-badge-fill mr-1"></i>Staff
-                            </span>
+                                {% if user.staffprofile %}
+                                    {% if user.staffprofile.role == 'admin' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                                        <i class="bi bi-briefcase-fill mr-1"></i>Admin
+                                    </span>
+                                    {% elif user.staffprofile.role == 'cashier' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
+                                        <i class="bi bi-cash-coin mr-1"></i>Cashier
+                                    </span>
+                                    {% elif user.staffprofile.role == 'field_staff' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-info-100 text-info-800">
+                                        <i class="bi bi-geo-alt-fill mr-1"></i>Field Staff
+                                    </span>
+                                    {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">
+                                        <i class="bi bi-person-badge-fill mr-1"></i>Staff
+                                    </span>
+                                    {% endif %}
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">
+                                    <i class="bi bi-person-badge-fill mr-1"></i>Staff
+                                </span>
+                                {% endif %}
                             {% else %}
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">Regular</span>
                             {% endif %}
@@ -259,6 +279,7 @@
                                             <label class="block text-xs font-medium text-dark-700 mb-1">Role</label>
                                             <select name="role" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
                                                 <option value="field_staff" {% if user.staffprofile and user.staffprofile.role == 'field_staff' %}selected{% endif %}>Field Staff</option>
+                                                <option value="cashier" {% if user.staffprofile and user.staffprofile.role == 'cashier' %}selected{% endif %}>Cashier</option>
                                                 <option value="admin" {% if user.staffprofile and user.staffprofile.role == 'admin' %}selected{% endif %}>Admin</option>
                                             </select>
                                         </div>
@@ -407,6 +428,7 @@
                         <label class="block text-xs font-medium text-dark-700 mb-1">Role</label>
                         <select name="role" id="createUserRole" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="toggleBarangayField()">
                             <option value="field_staff">Field Staff</option>
+                            <option value="cashier">Cashier</option>
                             <option value="admin">Admin</option>
                         </select>
                     </div>
@@ -469,14 +491,16 @@ function toggleBarangayField() {
     const barangayRequired = document.getElementById('barangayRequired');
     const barangaySelect = document.getElementById('createUserBarangay');
 
-    if (role === 'admin') {
-        barangayContainer.style.opacity = '0.5';
-        barangayRequired.style.display = 'none';
-        barangaySelect.removeAttribute('required');
-    } else {
+    // Only field staff needs barangay assignment
+    if (role === 'field_staff') {
         barangayContainer.style.opacity = '1';
         barangayRequired.style.display = 'inline';
         barangaySelect.setAttribute('required', 'required');
+    } else {
+        // Admin and Cashier don't need barangay
+        barangayContainer.style.opacity = '0.5';
+        barangayRequired.style.display = 'none';
+        barangaySelect.removeAttribute('required');
     }
 }
 
