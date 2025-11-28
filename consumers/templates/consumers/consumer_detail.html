@@ -9,7 +9,7 @@
     <div class="mb-5 flex items-start justify-between">
         <div>
             <h2 class="text-xl font-bold text-dark-900">Consumer Profile</h2>
-            <p class="text-dark-500 text-xs mt-1">ID Number: {{ consumer.account_number }}</p>
+            <p class="text-dark-500 text-xs mt-1">ID Number: {{ consumer.id_number|default:"—" }}</p>
         </div>
         <a href="{% url 'consumers:consumer_management' %}"
            class="px-4 py-1.5 border border-light-400 text-dark-700 text-sm font-medium rounded hover:bg-light-100 transition-colors">
