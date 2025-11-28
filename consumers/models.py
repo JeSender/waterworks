@@ -571,23 +571,36 @@ class Consumer(models.Model):
         # Format: 5-digit sequential (00001-99999)
         # Example: 00001, 00002, 00003, etc.
         if not self.account_number:
-            # Find the highest existing account number
-            latest_consumer = Consumer.objects.exclude(
-                pk=self.pk  # Exclude self if updating
-            ).exclude(
-                account_number=''  # Exclude empty account numbers
-            ).order_by('-account_number').first()
+            from django.db import transaction
 
-            if latest_consumer and latest_consumer.account_number.isdigit():
-                # Get next sequence number
-                last_num = int(latest_consumer.account_number)
-                new_num = last_num + 1
-            else:
-                # Start from 1 if no consumers exist
-                new_num = 1
+            # Use atomic transaction to prevent race conditions
+            with transaction.atomic():
+                # Find the highest existing account number with row lock
+                latest_consumer = Consumer.objects.select_for_update().exclude(
+                    pk=self.pk  # Exclude self if updating
+                ).exclude(
+                    account_number=''  # Exclude empty account numbers
+                ).order_by('-account_number').first()
 
-            # Generate 5-digit Account Number (00001-99999)
-            self.account_number = f'{new_num:05d}'
+                if latest_consumer and latest_consumer.account_number.isdigit():
+                    # Get next sequence number
+                    last_num = int(latest_consumer.account_number)
+                    new_num = last_num + 1
+                else:
+                    # Start from 1 if no consumers exist
+                    new_num = 1
+
+                # Keep incrementing until we find an unused number (handles gaps)
+                while True:
+                    account_num = f'{new_num:05d}'
+                    # Check if this account number already exists
+                    if not Consumer.objects.filter(account_number=account_num).exclude(pk=self.pk).exists():
+                        self.account_number = account_num
+                        break
+                    new_num += 1
+                    if new_num > 99999:
+                        raise ValueError("Account number limit reached (99999)")
+
         super().save(*args, **kwargs)
 
     def __str__(self):
