@@ -145,9 +145,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 # Login URL
 LOGIN_URL = '/login/'
 
-# Session settings - Auto-logout after 30 minutes of inactivity
-SESSION_COOKIE_AGE = 1800  # 30 minutes in seconds (more practical for real usage)
-SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+# Session settings - Auto-logout after 3 minutes of inactivity
+# Session persists across page refreshes and browser tabs
+# JavaScript handles the inactivity timeout with 30-second countdown warning
+# Server session is set to 4 minutes to prevent race conditions with JS timeout
+SESSION_COOKIE_AGE = 240  # 4 minutes in seconds (buffer for JavaScript auto-logout)
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # Allow session to persist on refresh
 SESSION_SAVE_EVERY_REQUEST = True  # Reset session expiry on every request (activity)
 
 # Message storage - Use session only so messages are cleared on logout
