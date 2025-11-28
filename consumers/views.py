@@ -2621,6 +2621,72 @@ def barangay_meter_readings(request, barangay_id):
 
 
 # ───────────────────────────────────────
+# PRINT: Barangay Meter Readings Report
+# ───────────────────────────────────────
+@login_required
+def barangay_meter_readings_print(request, barangay_id):
+    """Printable barangay meter readings report with 2 logos"""
+    from django.utils import timezone
+
+    barangay = get_object_or_404(Barangay, id=barangay_id)
+    today = date.today()
+    current_month = today.replace(day=1)
+
+    # Get all active consumers in this barangay
+    consumers = Consumer.objects.filter(barangay=barangay, status='active').select_related('barangay').order_by('id')
+
+    readings_with_data = []
+    for consumer in consumers:
+        # Get latest reading for this consumer
+        latest_reading = MeterReading.objects.filter(consumer=consumer).order_by('-reading_date', '-created_at').first()
+
+        if latest_reading:
+            # Find previous confirmed reading
+            prev = MeterReading.objects.filter(
+                consumer=consumer,
+                is_confirmed=True,
+                reading_date__lt=latest_reading.reading_date
+            ).order_by('-reading_date').first()
+
+            # Calculate consumption
+            if prev:
+                consumption = latest_reading.reading_value - prev.reading_value
+            else:
+                # First reading - use consumer's first_reading as baseline
+                baseline = consumer.first_reading if consumer.first_reading else 0
+                consumption = latest_reading.reading_value - baseline
+        else:
+            latest_reading = None
+            prev = None
+            consumption = None
+
+        readings_with_data.append({
+            'consumer': consumer,
+            'reading': latest_reading,
+            'prev_reading': prev,
+            'consumption': consumption,
+            'display_id': get_consumer_display_id(consumer),
+        })
+
+    # Calculate summary statistics
+    total_consumers = len(readings_with_data)
+    with_readings = sum(1 for item in readings_with_data if item['reading'])
+    no_readings = sum(1 for item in readings_with_data if not item['reading'])
+
+    context = {
+        'barangay': barangay,
+        'readings': readings_with_data,
+        'total_consumers': total_consumers,
+        'with_readings': with_readings,
+        'no_readings': no_readings,
+        'current_month': current_month,
+        'generated_date': timezone.now(),
+    }
+
+    return render(request, 'consumers/barangay_meter_readings_print.html', context)
+
+
+# ───────────────────────────────────────
 # NEW: Confirm All Readings in Barangay
 # ───────────────────────────────────────
 @login_required

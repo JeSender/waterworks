@@ -18,8 +18,12 @@
         {{ barangay.name }} – Meter Readings
     </h1>
 
-    <!-- Spacer for Balance (Hidden) -->
-    <div class="w-24"></div>
+    <!-- Print Button: Right Side -->
+    <a href="{% url 'consumers:barangay_meter_readings_print' barangay.id %}"
+       target="_blank"
+       class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
+        <i class="bi bi-printer mr-2"></i>Print Report
+    </a>
 </div>
 
 <!-- Messages -->
