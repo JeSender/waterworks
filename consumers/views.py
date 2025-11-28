@@ -526,7 +526,8 @@ def api_consumers(request):
             # Append consumer data using annotated fields
             data.append({
                 'id': consumer.id,
-                'account_number': consumer.account_number,
+                'id_number': consumer.id_number,  # Numeric ID format: 2025110001
+                'account_number': consumer.account_number,  # Account code format: BW-00001
                 'name': f"{consumer.first_name} {consumer.last_name}",
                 'first_name': consumer.first_name,
                 'last_name': consumer.last_name,

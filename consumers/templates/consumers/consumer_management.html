@@ -63,18 +63,21 @@
                 <thead class="bg-light-100 border-b border-light-300">
                     <tr>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">ID Number</th>
+                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Account Code</th>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Name</th>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Phone</th>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Barangay</th>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Purok</th>
-                        <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-left uppercase tracking-wider">Serial No.</th>
                         <th class="px-3 py-2 text-xs font-semibold text-dark-700 text-center uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-light-200">
                     {% for consumer in consumers.object_list %}
                     <tr class="hover:bg-light-50 transition-colors">
-                        <td class="px-3 py-2 font-semibold text-primary-600">
+                        <td class="px-3 py-2 font-semibold text-dark-700">
+                            {{ consumer.id_number|default:"—" }}
+                        </td>
+                        <td class="px-3 py-2 text-sm text-primary-600">
                             {{ consumer.account_number }}
                         </td>
                         <td class="px-3 py-2 font-medium text-dark-900">

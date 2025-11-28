@@ -583,8 +583,9 @@ class Consumer(models.Model):
     first_reading = models.IntegerField()
     registration_date = models.DateField()
 
-    # 🔑 Auto-generated Account Number
-    account_number = models.CharField(max_length=20, unique=True, blank=True)
+    # 🔑 Auto-generated Account Number & ID Number
+    account_number = models.CharField(max_length=20, unique=True, blank=True)  # Format: BW-00001
+    id_number = models.CharField(max_length=20, unique=True, blank=True, null=True)  # Format: 2025110001 (YYYYMM + sequential)
 
     # Status & Disconnection
     status = models.CharField(
@@ -679,6 +680,50 @@ class Consumer(models.Model):
                     new_num += 1
                     if new_num > 99999:
                         raise ValueError("Account number limit reached (BW-99999)")
+
+        # Auto-generate ID Number if not set
+        # Format: YYYYMM + 4-digit sequential (e.g., 2025110001, 2025110002)
+        if not self.id_number:
+            from django.db import transaction
+            from datetime import datetime
+            import re
+
+            with transaction.atomic():
+                # Get current year and month
+                now = datetime.now()
+                year_month_prefix = now.strftime('%Y%m')  # e.g., '202511'
+
+                # Find all existing ID numbers with the same year-month prefix
+                all_ids = Consumer.objects.select_for_update().exclude(
+                    pk=self.pk
+                ).exclude(
+                    id_number__isnull=True
+                ).exclude(
+                    id_number=''
+                ).values_list('id_number', flat=True)
+
+                # Extract the highest sequential number for this month
+                max_seq = 0
+                pattern = f'^{year_month_prefix}(\\d{{4}})$'
+                for id_num in all_ids:
+                    match = re.match(pattern, str(id_num))
+                    if match:
+                        seq = int(match.group(1))
+                        if seq > max_seq:
+                            max_seq = seq
+
+                # Generate next ID number
+                new_seq = max_seq + 1
+
+                # Keep incrementing until we find an unused ID (handles gaps)
+                while True:
+                    id_num = f'{year_month_prefix}{new_seq:04d}'
+                    if not Consumer.objects.filter(id_number=id_num).exclude(pk=self.pk).exists():
+                        self.id_number = id_num
+                        break
+                    new_seq += 1
+                    if new_seq > 9999:
+                        raise ValueError(f"ID number limit reached for {year_month_prefix} (max 9999 per month)")
 
         super().save(*args, **kwargs)
 
