@@ -63,7 +63,7 @@
                 <a href="?consumer={{ consumer.id }}"
                    class="consumer-card group flex items-center justify-between p-3 bg-light-50 hover:bg-primary-50 border border-light-200 hover:border-primary-300 rounded-lg transition-all duration-200"
                    data-name="{{ consumer.first_name|lower }} {{ consumer.last_name|lower }}"
-                   data-id="{{ consumer.account_number|lower }}">
+                   data-id="{{ consumer.id_number|lower }}">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0 group-hover:bg-primary-200 transition-colors">
                             <i class="bi bi-person-fill text-primary-600"></i>
@@ -73,7 +73,7 @@
                                 {{ consumer.last_name }}, {{ consumer.first_name }}
                             </h6>
                             <div class="flex items-center gap-2 text-xs text-dark-500 mt-0.5">
-                                <span class="font-mono font-semibold text-primary-600">{{ consumer.account_number }}</span>
+                                <span class="font-mono font-semibold text-primary-600">{{ consumer.id_number }}</span>
                                 <span class="text-dark-300">|</span>
                                 <span>{{ consumer.barangay.name|default:"—" }}</span>
                             </div>

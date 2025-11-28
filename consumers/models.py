@@ -636,50 +636,8 @@ class Consumer(models.Model):
     # Methods
     # ========================
     def save(self, *args, **kwargs):
-        # Auto-generate Account Number if not set
-        # Format: BW-00001 (BW = Balilihan Waterworks + 5-digit sequential)
-        # Example: BW-00001, BW-00002, BW-00003, etc.
-        if not self.account_number:
-            from django.db import transaction
-            import re
-
-            # Use atomic transaction to prevent race conditions
-            with transaction.atomic():
-                # Find all existing account numbers with row lock
-                all_consumers = Consumer.objects.select_for_update().exclude(
-                    pk=self.pk  # Exclude self if updating
-                ).exclude(
-                    account_number=''  # Exclude empty account numbers
-                ).values_list('account_number', flat=True)
-
-                # Extract numeric parts from all account codes (handles both old and new formats)
-                max_num = 0
-                for acc_num in all_consumers:
-                    # Try to extract number from BW-##### format
-                    match = re.match(r'^BW-(\d+)$', acc_num)
-                    if match:
-                        num = int(match.group(1))
-                        if num > max_num:
-                            max_num = num
-                    # Also check for old numeric-only format (00001, 00002, etc.)
-                    elif acc_num.isdigit():
-                        num = int(acc_num)
-                        if num > max_num:
-                            max_num = num
-
-                # Start from next number
-                new_num = max_num + 1
-
-                # Keep incrementing until we find an unused number (handles gaps)
-                while True:
-                    account_num = f'BW-{new_num:05d}'
-                    # Check if this account number already exists
-                    if not Consumer.objects.filter(account_number=account_num).exclude(pk=self.pk).exists():
-                        self.account_number = account_num
-                        break
-                    new_num += 1
-                    if new_num > 99999:
-                        raise ValueError("Account number limit reached (BW-99999)")
+        # NOTE: Account Number (BW-format) is no longer used
+        # Only ID Number (YYYYMMXXXX format) is used as primary identifier
 
         # Auto-generate ID Number if not set
         # Format: YYYYMM + 4-digit sequential (e.g., 2025110001, 2025110002)

@@ -2,7 +2,7 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}Bill Statement - {{ consumer.account_number }}{% endblock %}
+{% block title %}Bill Statement - {{ consumer.id_number }}{% endblock %}
 
 {% block main_content %}
 <div class="max-w-6xl mx-auto">
@@ -51,7 +51,7 @@
                     <div class="space-y-2">
                         <div>
                             <p class="text-xs text-dark-500">ID Number</p>
-                            <p class="text-base font-bold text-primary-600 font-mono">{{ consumer.account_number }}</p>
+                            <p class="text-base font-bold text-primary-600 font-mono">{{ consumer.id_number }}</p>
                         </div>
                         <div>
                             <p class="text-xs text-dark-500">Consumer Name</p>
