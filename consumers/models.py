@@ -409,24 +409,92 @@ class UserActivity(models.Model):
 # ... (rest of your existing models) ...
 
 class StaffProfile(models.Model):
+    """
+    Staff Profile with Role-Based Access Control
+    Supports 4 distinct roles: Superadmin, Admin, Cashier, Field Staff
+    """
+    ROLE_CHOICES = [
+        ('superadmin', 'Superadmin'),
+        ('admin', 'Admin'),
+        ('cashier', 'Cashier'),
+        ('field_staff', 'Field Staff'),
+    ]
+
     user = models.OneToOneField(User, on_delete=models.CASCADE)
-    assigned_barangay = models.ForeignKey('Barangay', on_delete=models.CASCADE, null=True, blank=True, help_text="Required for field staff only")
-    role = models.CharField(max_length=20, default='field_staff')  # field_staff, admin
-    profile_photo = models.ImageField(upload_to='profile_photos/', null=True, blank=True, help_text="Profile photo for admin users")
+    assigned_barangay = models.ForeignKey(
+        'Barangay',
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
+        help_text="Required for Field Staff only"
+    )
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default='field_staff',
+        help_text="User role determines dashboard access and permissions"
+    )
+    phone_number = models.CharField(
+        max_length=15,
+        blank=True,
+        null=True,
+        help_text="Contact phone number"
+    )
+    profile_photo = models.ImageField(
+        upload_to='profile_photos/',
+        null=True,
+        blank=True,
+        help_text="Profile photo for admin users"
+    )
 
     def __str__(self):
         if self.assigned_barangay:
-            return f"{self.user.username} - {self.assigned_barangay.name}"
-        return f"{self.user.username} - {self.role.title()}"
+            return f"{self.user.username} ({self.get_role_display()}) - {self.assigned_barangay.name}"
+        return f"{self.user.username} ({self.get_role_display()})"
 
     @property
     def role_display(self):
         """Return a short display name for the role"""
         role_map = {
+            'superadmin': 'Superadmin',
             'admin': 'Admin',
-            'field_staff': 'Staff',
+            'cashier': 'Cashier',
+            'field_staff': 'Field Staff',
         }
         return role_map.get(self.role, 'Staff')
+
+    @property
+    def is_superadmin(self):
+        """Check if user is superadmin"""
+        return self.role == 'superadmin'
+
+    @property
+    def is_admin(self):
+        """Check if user is admin"""
+        return self.role == 'admin'
+
+    @property
+    def is_cashier(self):
+        """Check if user is cashier"""
+        return self.role == 'cashier'
+
+    @property
+    def is_field_staff(self):
+        """Check if user is field staff"""
+        return self.role == 'field_staff'
+
+    def has_permission(self, permission):
+        """Check if user has specific permission based on role"""
+        permissions = {
+            'superadmin': ['all'],
+            'admin': ['view_consumers', 'manage_consumers', 'view_readings', 'manage_readings',
+                     'view_bills', 'manage_bills', 'view_payments', 'view_reports', 'manage_users_limited'],
+            'cashier': ['view_consumers', 'view_bills', 'accept_payment', 'view_payments', 'print_receipt'],
+            'field_staff': ['view_assigned_consumers', 'submit_reading', 'view_own_readings'],
+        }
+
+        role_perms = permissions.get(self.role, [])
+        return 'all' in role_perms or permission in role_perms
 
 # ----------------------------
 # Choice Fields

@@ -641,24 +641,44 @@
             <!-- Consumer Operations -->
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Consumer Ops</div>
+
+                <!-- Consumers: Superuser, Admin only -->
+                {% if user.is_superuser or user.staffprofile.role == 'admin' %}
                 <a href="{% url 'consumers:consumer_management' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-people-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Consumers</span>
                 </a>
+                {% endif %}
+
+                <!-- Bill Inquiry: All roles can access (Cashier's main function) -->
                 <a href="{% url 'consumers:inquire' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <span class="me-2.5 text-base font-bold" style="width: 20px; text-align: center;">₱</span>
                     <span class="font-medium">Bill Inquiry</span>
                 </a>
+
+                <!-- Payment History: Superuser, Admin, Cashier -->
+                {% if user.is_superuser or user.staffprofile.role == 'admin' or user.staffprofile.role == 'cashier' %}
+                <a href="{% url 'consumers:payment_history' %}"
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-clock-history me-2.5 text-base" style="width: 20px;"></i>
+                    <span class="font-medium">Payment History</span>
+                </a>
+                {% endif %}
+
+                <!-- Meter Readings: Superuser, Admin, Field Staff only -->
+                {% if user.is_superuser or user.staffprofile.role == 'admin' or user.staffprofile.role == 'field_staff' %}
                 <a href="{% url 'consumers:meter_reading_overview' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-speedometer2 me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Meter Readings</span>
                 </a>
+                {% endif %}
             </div>
 
-            <!-- Reports -->
+            <!-- Reports: Superuser, Admin only -->
+            {% if user.is_superuser or user.staffprofile.role == 'admin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Reports</div>
                 <a href="{% url 'consumers:reports' %}"
@@ -667,6 +687,7 @@
                     <span class="font-medium">Reports</span>
                 </a>
             </div>
+            {% endif %}
 
             <!-- System Settings (Superuser Only) -->
             {% if user.is_superuser %}

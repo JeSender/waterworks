@@ -559,3 +559,157 @@ def api_rate_limit(view_func):
 
         return view_func(request, *args, **kwargs)
     return wrapper
+
+# ========================================================================================
+# ROLE-BASED ACCESS CONTROL DECORATORS - User Management & Dashboard System
+# ========================================================================================
+
+def role_required(*allowed_roles):
+    """
+    Decorator to restrict access based on user role(s).
+    
+    Usage:
+        @role_required('superadmin')
+        def system_settings(request):
+            pass
+        
+        @role_required('superadmin', 'admin')
+        def consumer_management(request):
+            pass
+    
+    Allowed roles: 'superadmin', 'admin', 'cashier', 'field_staff'
+    """
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                messages.error(request, "You must be logged in to access this page.")
+                return redirect('consumers:staff_login')
+            
+            # Superuser always has access (backward compatibility)
+            if request.user.is_superuser:
+                return view_func(request, *args, **kwargs)
+            
+            # Check StaffProfile role
+            try:
+                from .models import StaffProfile
+                profile = StaffProfile.objects.get(user=request.user)
+                
+                if profile.role in allowed_roles:
+                    return view_func(request, *args, **kwargs)
+                else:
+                    messages.error(
+                        request,
+                        f"Access Denied: This page requires {' or '.join(allowed_roles).title()} role."
+                    )
+                    return render(request, 'consumers/403.html', status=403)
+                    
+            except StaffProfile.DoesNotExist:
+                messages.error(request, "Access Denied: No staff profile found.")
+                return redirect('consumers:staff_login')
+        
+        return wrapper
+    return decorator
+
+
+def superadmin_only(view_func):
+    """Decorator to restrict access to Superadmin only."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+        
+        # Check superuser
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        
+        # Check superadmin role
+        try:
+            from .models import StaffProfile
+            profile = StaffProfile.objects.get(user=request.user)
+            
+            if profile.role == 'superadmin':
+                return view_func(request, *args, **kwargs)
+        except StaffProfile.DoesNotExist:
+            pass
+        
+        messages.error(request, "Access Denied: Superadmin privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+    
+    return wrapper
+
+
+def admin_or_higher(view_func):
+    """Decorator to allow Superadmin or Admin access."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+        
+        # Superuser always has access
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        
+        # Check role
+        try:
+            from .models import StaffProfile
+            profile = StaffProfile.objects.get(user=request.user)
+            
+            if profile.role in ['superadmin', 'admin']:
+                return view_func(request, *args, **kwargs)
+        except StaffProfile.DoesNotExist:
+            pass
+        
+        messages.error(request, "Access Denied: Admin privileges required.")
+        return render(request, 'consumers/403.html', status=403)
+    
+    return wrapper
+
+
+def cashier_access(view_func):
+    """Decorator to allow Superadmin, Admin, or Cashier access."""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_authenticated:
+            messages.error(request, "You must be logged in to access this page.")
+            return redirect('consumers:staff_login')
+        
+        # Superuser always has access
+        if request.user.is_superuser:
+            return view_func(request, *args, **kwargs)
+        
+        # Check role
+        try:
+            from .models import StaffProfile
+            profile = StaffProfile.objects.get(user=request.user)
+            
+            if profile.role in ['superadmin', 'admin', 'cashier']:
+                return view_func(request, *args, **kwargs)
+        except StaffProfile.DoesNotExist:
+            pass
+        
+        messages.error(request, "Access Denied: Cashier access required.")
+        return render(request, 'consumers/403.html', status=403)
+    
+    return wrapper
+
+
+def get_user_role(user):
+    """
+    Helper function to get user's role.
+    Returns: 'superadmin', 'admin', 'cashier', 'field_staff', or None
+    """
+    if not user.is_authenticated:
+        return None
+    
+    if user.is_superuser:
+        return 'superadmin'
+    
+    try:
+        from .models import StaffProfile
+        profile = StaffProfile.objects.get(user=user)
+        return profile.role
+    except StaffProfile.DoesNotExist:
+        return None
