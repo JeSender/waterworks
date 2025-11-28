@@ -84,7 +84,6 @@
                         <td class="px-3 py-2 text-dark-600">{{ consumer.phone_number|default:"n/a" }}</td>
                         <td class="px-3 py-2 text-dark-600">{{ consumer.barangay.name|default:"—" }}</td>
                         <td class="px-3 py-2 text-dark-600">{{ consumer.purok.name|default:"—" }}</td>
-                        <td class="px-3 py-2 text-dark-600">{{ consumer.serial_number|default:"—" }}</td>
                         <td class="px-3 py-2 text-center">
                             <div class="flex items-center justify-center gap-1">
                                 <a href="{% url 'consumers:consumer_detail' consumer.id %}"
