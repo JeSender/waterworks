@@ -345,6 +345,12 @@ def api_login(request):
 
                 login(request, user)
 
+                # Ensure session is created (for API requests)
+                if not request.session.session_key:
+                    request.session.create()
+
+                session_key = request.session.session_key
+
                 # Record successful mobile login event
                 UserLoginEvent.objects.create(
                     user=user,
@@ -352,12 +358,12 @@ def api_login(request):
                     user_agent=user_agent,
                     login_method='mobile',
                     status='success',
-                    session_key=request.session.session_key
+                    session_key=session_key
                 )
 
                 return JsonResponse({
                     'status': 'success',
-                    'token': request.session.session_key,
+                    'token': session_key,
                     'barangay_id': profile.assigned_barangay.id,
                     'barangay': profile.assigned_barangay.name,
                     'user': {
