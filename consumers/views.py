@@ -958,7 +958,20 @@ def staff_login(request):
         user_agent = get_user_agent(request)
 
         if user is not None and user.is_staff:
-            # Successful login
+            # Check if user is Field Staff - they can only login via mobile app
+            if hasattr(user, 'staffprofile') and user.staffprofile.role == 'field_staff':
+                # Record blocked login attempt
+                UserLoginEvent.objects.create(
+                    user=user,
+                    ip_address=ip_address,
+                    user_agent=user_agent,
+                    login_method='web',
+                    status='failed'
+                )
+                messages.error(request, "Field Staff accounts can only access the system through the Smart Meter Reader mobile application.")
+                return render(request, 'consumers/login.html')
+
+            # Successful login for Superadmin and Cashier
             login(request, user)
 
             # Record login event

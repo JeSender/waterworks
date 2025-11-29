@@ -628,7 +628,8 @@
          style="width: var(--sidebar-width); top: var(--header-height); z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
          id="sidebar">
         <nav class="flex-grow overflow-y-auto scrollbar-thin">
-            <!-- Main Section -->
+            <!-- Main Section: Superadmin and Cashier only (Field Staff uses mobile app) -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Main</div>
                 <a href="{% url 'consumers:home' %}"
@@ -637,6 +638,7 @@
                     <span class="font-medium">Dashboard</span>
                 </a>
             </div>
+            {% endif %}
 
             <!-- Consumer Operations: Superadmin and Cashier -->
             {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
@@ -673,17 +675,7 @@
             </div>
             {% endif %}
 
-            <!-- Meter Readings: Field Staff Only (limited to assigned barangay) -->
-            {% if user.staffprofile.role == 'field_staff' %}
-            <div class="nav-section mb-2">
-                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">My Tasks</div>
-                <a href="{% url 'consumers:meter_reading_overview' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
-                    <i class="bi bi-speedometer2 me-2.5 text-base" style="width: 20px;"></i>
-                    <span class="font-medium">Meter Readings</span>
-                </a>
-            </div>
-            {% endif %}
+            <!-- Note: Field Staff can only access via Smart Meter Reader mobile app -->
 
             <!-- Reports: Superadmin and Cashier -->
             {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
