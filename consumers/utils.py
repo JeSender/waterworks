@@ -446,7 +446,7 @@ def get_payment_breakdown(bill, settings=None) -> dict:
     breakdown = {
         'bill_id': bill.id,
         'consumer_name': bill.consumer.full_name,
-        'account_number': bill.consumer.account_number,
+        'id_number': bill.consumer.id_number,
         'billing_period': bill.billing_period,
         'due_date': bill.due_date,
 

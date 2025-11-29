@@ -99,7 +99,7 @@ def api_submit_reading(request):
 
     Returns bill details:
     - status, message
-    - consumer_name, account_number, reading_date
+    - consumer_name, id_number, reading_date
     - previous_reading, current_reading, consumption
     - rate, total_amount, field_staff_name
     """
@@ -564,7 +564,7 @@ def api_get_previous_reading(request, consumer_id):
 
     Returns:
         - consumer_id: int
-        - account_number: str
+        - id_number: str
         - consumer_name: str
         - previous_reading: int (0 if no confirmed reading exists)
         - last_reading_date: str or null
@@ -2170,7 +2170,7 @@ def export_report_excel(request):
         ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
 
         # Headers
-        headers = ['OR Number', 'Consumer Name', 'Account Number', 'Payment Date', 'Amount Paid', 'Change Given', 'Total Received']
+        headers = ['OR Number', 'Consumer Name', 'ID Number', 'Payment Date', 'Amount Paid', 'Change Given', 'Total Received']
         ws.append([])  # Empty row
         ws.append(headers)
 
@@ -2239,7 +2239,7 @@ def export_report_excel(request):
         ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
 
         # Headers
-        headers = ['Account Number', 'Consumer Name', 'Barangay', 'Billing Period', 'Due Date', 'Amount Due', 'Status']
+        headers = ['ID Number', 'Consumer Name', 'Barangay', 'Billing Period', 'Due Date', 'Amount Due', 'Status']
         ws.append([])
         ws.append(headers)
 
@@ -2303,7 +2303,7 @@ def export_report_excel(request):
         ws['A3'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
 
         # Headers
-        headers = ['Account Number', 'Consumer Name', 'Total Amount Paid', 'Number of Payments']
+        headers = ['ID Number', 'Consumer Name', 'Total Amount Paid', 'Number of Payments']
         ws.append([])
         ws.append(headers)
 
@@ -4117,7 +4117,7 @@ def database_documentation(request):
                 'description': 'Main consumer information table with personal, household, and meter details',
                 'fields': [
                     {'name': 'id', 'type': 'INTEGER', 'constraints': 'PRIMARY KEY', 'description': 'Auto-increment ID'},
-                    {'name': 'account_number', 'type': 'VARCHAR(20)', 'constraints': 'UNIQUE, AUTO', 'description': 'Format: BW-XXXXX'},
+                    {'name': 'id_number', 'type': 'VARCHAR(20)', 'constraints': 'UNIQUE, AUTO', 'description': 'Format: YYYYMMXXXX'},
                     {'name': 'first_name', 'type': 'VARCHAR(50)', 'constraints': 'NOT NULL', 'description': 'First name'},
                     {'name': 'middle_name', 'type': 'VARCHAR(50)', 'constraints': 'NULL', 'description': 'Middle name'},
                     {'name': 'last_name', 'type': 'VARCHAR(50)', 'constraints': 'NOT NULL', 'description': 'Last name'},

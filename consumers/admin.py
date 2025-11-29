@@ -137,7 +137,7 @@ class MeterBrandAdmin(admin.ModelAdmin):
 class MeterReadingAdmin(admin.ModelAdmin):
     list_display = ['consumer_account', 'reading_date', 'reading_value', 'source', 'is_confirmed_status']
     list_filter = ['is_confirmed', 'reading_date', 'source', 'consumer__barangay']
-    search_fields = ['consumer__first_name', 'consumer__last_name', 'consumer__account_number']
+    search_fields = ['consumer__first_name', 'consumer__last_name', 'consumer__id_number']
     date_hierarchy = 'reading_date'
     ordering = ['-reading_date']
     readonly_fields = ['is_confirmed']
@@ -145,7 +145,7 @@ class MeterReadingAdmin(admin.ModelAdmin):
     def consumer_account(self, obj):
         return format_html(
             '<strong>{}</strong><br>{} {}',
-            obj.consumer.account_number,
+            obj.consumer.id_number or '—',
             obj.consumer.first_name,
             obj.consumer.last_name
         )
@@ -167,9 +167,9 @@ class MeterReadingAdmin(admin.ModelAdmin):
 # ----------------------------
 @admin.register(Consumer)
 class ConsumerAdmin(admin.ModelAdmin):
-    list_display = ['account_number_tag', 'full_name', 'contact_info', 'location_info', 'meter_info', 'status_tag']
+    list_display = ['id_number_tag', 'full_name', 'contact_info', 'location_info', 'meter_info', 'status_tag']
     list_filter = ['barangay', 'purok', 'usage_type', 'meter_brand', 'status', 'registration_date']
-    search_fields = ['first_name', 'middle_name', 'last_name', 'phone_number', 'serial_number', 'account_number']
+    search_fields = ['first_name', 'middle_name', 'last_name', 'phone_number', 'serial_number', 'id_number']
     list_per_page = 50
 
     fieldsets = (
@@ -186,22 +186,13 @@ class ConsumerAdmin(admin.ModelAdmin):
             'fields': ('usage_type', 'meter_brand', 'serial_number', 'first_reading', 'registration_date')
         }),
         ('System', {
-            'fields': ('status', 'account_number'),
+            'fields': ('status', 'id_number'),
             'classes': ('collapse',)
         }),
     )
 
     def save_model(self, request, obj, form, change):
-        if not change and not obj.account_number:
-            last_consumer = Consumer.objects.order_by('-id').first()
-            next_num = 1
-            if last_consumer and last_consumer.account_number:
-                try:
-                    num = int(last_consumer.account_number.split('-')[-1])
-                    next_num = num + 1
-                except (ValueError, IndexError):
-                    pass
-            obj.account_number = f"BW-{next_num:04d}"
+        # ID number is auto-generated in the model's save() method
         super().save_model(request, obj, form, change)
 
     def full_name(self, obj):
@@ -228,12 +219,12 @@ class ConsumerAdmin(admin.ModelAdmin):
         )
     meter_info.short_description = 'Meter'
 
-    def account_number_tag(self, obj):
+    def id_number_tag(self, obj):
         return format_html(
             '<code style="background:#f0f0f0; padding:2px 6px; border-radius:3px;">{}</code>',
-            obj.account_number or "—"
+            obj.id_number or "—"
         )
-    account_number_tag.short_description = 'Account #'
+    id_number_tag.short_description = 'ID Number'
 
     def status_tag(self, obj):
         color = "success" if obj.status == "active" else "warning" if obj.status == "pending" else "danger"
@@ -256,14 +247,14 @@ class ConsumerAdmin(admin.ModelAdmin):
 class BillAdmin(admin.ModelAdmin):
     list_display = ['consumer_account', 'billing_period', 'total_amount', 'status', 'due_date']
     list_filter = ['status', 'billing_period', 'due_date', 'consumer__barangay']
-    search_fields = ['consumer__account_number', 'consumer__first_name', 'consumer__last_name']
+    search_fields = ['consumer__id_number', 'consumer__first_name', 'consumer__last_name']
     ordering = ['-billing_period']
     readonly_fields = ['total_amount']
 
     def consumer_account(self, obj):
         return format_html(
             '<strong>{}</strong><br>{} {}',
-            obj.consumer.account_number,
+            obj.consumer.id_number or '—',
             obj.consumer.first_name,
             obj.consumer.last_name
         )
@@ -276,13 +267,13 @@ class BillAdmin(admin.ModelAdmin):
 class PaymentAdmin(admin.ModelAdmin):
     list_display = ['or_number', 'consumer_account', 'amount_paid', 'received_amount', 'payment_date']
     list_filter = ['payment_date', 'bill__consumer__barangay']
-    search_fields = ['or_number', 'bill__consumer__account_number']
+    search_fields = ['or_number', 'bill__consumer__id_number']
     ordering = ['-payment_date']
     readonly_fields = ['or_number', 'payment_date']
 
     def consumer_account(self, obj):
-        return obj.bill.consumer.account_number
-    consumer_account.short_description = 'Account #'
+        return obj.bill.consumer.id_number or '—'
+    consumer_account.short_description = 'ID Number'
 
     def get_queryset(self, request):
         return super().get_queryset(request).select_related('bill__consumer')

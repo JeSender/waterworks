@@ -66,5 +66,5 @@ class Command(BaseCommand):
         self.stdout.write('Examples of assigned ID numbers:')
         for consumer in Consumer.objects.filter(id_number__isnull=False).order_by('id_number')[:5]:
             self.stdout.write(
-                f'  {consumer.id_number} - {consumer.account_number} - {consumer.first_name} {consumer.last_name}'
+                f'  {consumer.id_number} - {consumer.first_name} {consumer.last_name}'
             )

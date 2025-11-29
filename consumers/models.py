@@ -583,9 +583,9 @@ class Consumer(models.Model):
     first_reading = models.IntegerField()
     registration_date = models.DateField()
 
-    # 🔑 Auto-generated Account Number & ID Number
-    account_number = models.CharField(max_length=20, unique=True, blank=True)  # Format: BW-00001
-    id_number = models.CharField(max_length=20, unique=True, blank=True, null=True)  # Format: 2025110001 (YYYYMM + sequential)
+    # 🔑 ID Number (Primary Identifier)
+    account_number = models.CharField(max_length=20, unique=True, blank=True)  # DEPRECATED - kept for database compatibility
+    id_number = models.CharField(max_length=20, unique=True, blank=True, null=True)  # PRIMARY - Format: YYYYMMXXXX (e.g., 2025110001)
 
     # Status & Disconnection
     status = models.CharField(
@@ -636,8 +636,8 @@ class Consumer(models.Model):
     # Methods
     # ========================
     def save(self, *args, **kwargs):
-        # NOTE: Account Number (BW-format) is no longer used
-        # Only ID Number (YYYYMMXXXX format) is used as primary identifier
+        # ID Number (YYYYMMXXXX format) is the primary identifier
+        # account_number field is deprecated and kept only for database compatibility
 
         # Auto-generate ID Number if not set
         # Format: YYYYMM + 4-digit sequential (e.g., 2025110001, 2025110002)
@@ -686,7 +686,7 @@ class Consumer(models.Model):
         super().save(*args, **kwargs)
 
     def __str__(self):
-        return f"{self.account_number} - {self.full_name}"
+        return f"{self.id_number} - {self.full_name}"
 
     class Meta:
         ordering = ['-created_at']
@@ -1213,7 +1213,7 @@ class Payment(models.Model):
 
     def __str__(self):
         penalty_info = f" (incl. ₱{self.penalty_amount} penalty)" if self.penalty_amount > 0 else ""
-        return f"OR#{self.or_number} - {self.bill.consumer.account_number}{penalty_info}"
+        return f"OR#{self.or_number} - {self.bill.consumer.id_number}{penalty_info}"
 
 
 # ============================================================================
