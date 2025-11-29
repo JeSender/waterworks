@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Meter Reading Overview - {{ current_month|date:"F Y" }}</title>
+    {% load static %}
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background: white;
+        }
+        .report {
+            border: 2px solid #000;
+            padding: 30px;
+            position: relative;
+        }
+        /* Unified Header - Logo + Text + Logo in single row */
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #003366;
+        }
+        .logo {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            flex-shrink: 0;
+        }
+        .logo--circle {
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #003366;
+        }
+        .header-text {
+            text-align: center;
+            padding: 0 10px;
+        }
+        .header-text p {
+            margin: 2px 0;
+            line-height: 1.3;
+        }
+        .header-text .republic {
+            font-size: 12px;
+            font-weight: bold;
+            color: #003366;
+        }
+        .header-text .province,
+        .header-text .municipality {
+            font-size: 11px;
+            font-weight: 600;
+            color: #0055aa;
+        }
+        .header-text .waterworks {
+            font-size: 14px;
+            font-weight: bold;
+            color: #003366;
+            margin-top: 3px;
+        }
+        .header-text .report-title {
+            font-size: 13px;
+            font-weight: bold;
+            color: #1a1a1a;
+            margin-top: 5px;
+            text-transform: uppercase;
+            background: #f0f0f0;
+            padding: 3px 12px;
+            border-radius: 15px;
+            display: inline-block;
+        }
+        .header-text .report-period {
+            font-size: 11px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .summary-cards {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .summary-card {
+            flex: 1;
+            background: #f9fafb;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .summary-card p {
+            margin: 0;
+            font-size: 11px;
+            color: #666;
+        }
+        .summary-card .value {
+            margin: 5px 0 0 0;
+            font-size: 22px;
+            font-weight: bold;
+            color: #1a1a1a;
+        }
+        .summary-card.success .value { color: #16a34a; }
+        .summary-card.warning .value { color: #d97706; }
+        .summary-card.primary .value { color: #2563eb; }
+
+        /* Progress bar */
+        .progress-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f0f8ff;
+            border: 1px solid #cce5ff;
+            border-radius: 5px;
+        }
+        .progress-section h4 {
+            margin: 0 0 10px 0;
+            font-size: 12px;
+            color: #003366;
+        }
+        .progress-bar-container {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            background: linear-gradient(to right, #16a34a, #22c55e);
+            height: 100%;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 10px;
+            color: white;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            font-size: 11px;
+            color: #666;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        thead {
+            background: #003366;
+        }
+        th {
+            padding: 10px;
+            text-align: left;
+            font-weight: bold;
+            font-size: 11px;
+            color: white;
+            border-right: 1px solid #004080;
+        }
+        th:last-child {
+            border-right: none;
+        }
+        td {
+            padding: 8px;
+            border-bottom: 1px solid #ddd;
+            font-size: 11px;
+        }
+        tbody tr:nth-child(even) {
+            background: #f9fafb;
+        }
+        tbody tr:hover {
+            background: #f0f8ff;
+        }
+        .text-right {
+            text-align: right;
+        }
+        .text-center {
+            text-align: center;
+        }
+        .progress-cell {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .mini-progress {
+            flex: 1;
+            background: #e0e0e0;
+            border-radius: 3px;
+            height: 8px;
+            overflow: hidden;
+        }
+        .mini-progress-bar {
+            height: 100%;
+            border-radius: 3px;
+        }
+        .mini-progress-bar.high { background: #16a34a; }
+        .mini-progress-bar.medium { background: #0ea5e9; }
+        .mini-progress-bar.low { background: #d97706; }
+        .mini-progress-bar.very-low { background: #dc2626; }
+
+        tfoot {
+            background: #f0f0f0;
+            font-weight: bold;
+        }
+        tfoot td {
+            border-top: 2px solid #003366;
+            padding: 10px 8px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            font-size: 11px;
+            color: #666;
+        }
+        .no-print {
+            background: #fef3c7;
+            border: 2px solid #f59e0b;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .no-print h3 {
+            margin: 0 0 10px 0;
+            color: #92400e;
+            font-size: 16px;
+        }
+        .no-print p {
+            margin: 0;
+            font-size: 14px;
+            color: #78350f;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 5px;
+            background: #0055aa;
+            color: white;
+            text-decoration: none;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background: #003d7a;
+        }
+        .btn-secondary {
+            background: #6b7280;
+        }
+        .btn-secondary:hover {
+            background: #4b5563;
+        }
+        @media print {
+            body {
+                margin: 0;
+                padding: 10px;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .report {
+                border: 2px solid #000;
+                page-break-inside: avoid;
+            }
+            table {
+                page-break-inside: auto;
+            }
+            tr {
+                page-break-inside: avoid;
+                page-break-after: auto;
+            }
+            thead {
+                display: table-header-group;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Print Instructions (Hidden on Print) -->
+    <div class="no-print">
+        <h3>Meter Reading Overview - {{ current_month|date:"F Y" }}</h3>
+        <p>
+            <strong>Instructions:</strong> Press <kbd>Ctrl+P</kbd> or click the "Print Report" button below.
+            This yellow box will disappear in the print view.
+        </p>
+    </div>
+
+    <div class="report">
+        <!-- Unified Header: Logo + Text + Logo in single row -->
+        <div class="header-row">
+            <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" class="logo">
+            <div class="header-text">
+                <p class="republic">REPUBLIC OF THE PHILIPPINES</p>
+                <p class="province">PROVINCE OF BOHOL</p>
+                <p class="municipality">MUNICIPALITY OF BALILIHAN</p>
+                <p class="waterworks">BALILIHAN WATERWORKS</p>
+                <p class="report-title">Meter Reading Overview Report</p>
+                <p class="report-period">{{ current_month|date:"F Y" }}</p>
+            </div>
+            <img src="{% static 'consumers/images/logo.jpg' %}" alt="Waterworks Logo" class="logo logo--circle">
+        </div>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards">
+            <div class="summary-card primary">
+                <p>Total Barangays</p>
+                <p class="value">{{ total_barangays }}</p>
+            </div>
+            <div class="summary-card">
+                <p>Total Consumers</p>
+                <p class="value">{{ total_consumers_sum }}</p>
+            </div>
+            <div class="summary-card success">
+                <p>Readings This Month</p>
+                <p class="value">{{ total_updated_sum }}</p>
+            </div>
+            <div class="summary-card warning">
+                <p>Pending Updates</p>
+                <p class="value">{{ total_pending_sum }}</p>
+            </div>
+        </div>
+
+        <!-- Overall Progress -->
+        <div class="progress-section">
+            <h4>Overall Completion: {{ overall_completion_percentage }}%</h4>
+            <div class="progress-bar-container">
+                <div class="progress-bar" style="width: {{ overall_completion_percentage }}%">
+                    {% if overall_completion_percentage > 20 %}
+                    {{ total_updated_sum }} / {{ total_consumers_sum }}
+                    {% endif %}
+                </div>
+            </div>
+            <div class="progress-text">
+                <span>{{ total_updated_sum }} consumers updated this month</span>
+                <span>{{ total_pending_sum }} still pending</span>
+            </div>
+        </div>
+
+        <!-- Barangay Table -->
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Barangay</th>
+                    <th class="text-center" style="width: 15%;">Total Consumers</th>
+                    <th style="width: 25%;">Progress</th>
+                    <th class="text-center" style="width: 15%;">Readings</th>
+                    <th class="text-center" style="width: 15%;">Pending</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in barangay_data %}
+                <tr>
+                    <td><strong>{{ item.barangay.name }}</strong></td>
+                    <td class="text-center">{{ item.total_consumers }}</td>
+                    <td>
+                        <div class="progress-cell">
+                            <div class="mini-progress">
+                                <div class="mini-progress-bar {% if item.completion_percentage >= 80 %}high{% elif item.completion_percentage >= 50 %}medium{% elif item.completion_percentage >= 20 %}low{% else %}very-low{% endif %}"
+                                     style="width: {{ item.completion_percentage }}%"></div>
+                            </div>
+                            <span style="width: 35px; text-align: right;">{{ item.completion_percentage|floatformat:0 }}%</span>
+                        </div>
+                    </td>
+                    <td class="text-center">{{ item.updated_count }}</td>
+                    <td class="text-center">{{ item.not_yet_updated }}</td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" class="text-center" style="padding: 30px;">No barangays found</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>TOTAL</strong></td>
+                    <td class="text-center"><strong>{{ total_consumers_sum }}</strong></td>
+                    <td>
+                        <div class="progress-cell">
+                            <div class="mini-progress">
+                                <div class="mini-progress-bar high" style="width: {{ overall_completion_percentage }}%"></div>
+                            </div>
+                            <span style="width: 35px; text-align: right;"><strong>{{ overall_completion_percentage }}%</strong></span>
+                        </div>
+                    </td>
+                    <td class="text-center"><strong>{{ total_updated_sum }}</strong></td>
+                    <td class="text-center"><strong>{{ total_pending_sum }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+
+        <!-- Footer -->
+        <div class="footer">
+            <p>Generated on: {{ generated_date|date:"F d, Y g:i A" }}</p>
+            <p style="margin-top: 10px; font-size: 10px;">This is a computer-generated report from Balilihan Waterworks System</p>
+        </div>
+
+        <!-- Print Button (Hidden on Print) -->
+        <div class="footer no-print" style="margin-top: 30px;">
+            <button onclick="window.print()" class="btn">
+                Print Report
+            </button>
+            <a href="{% url 'consumers:meter_reading_overview' %}" class="btn btn-secondary">
+                Back to Overview
+            </a>
+        </div>
+    </div>
+</body>
+</html>

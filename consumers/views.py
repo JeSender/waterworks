@@ -2492,6 +2492,20 @@ def meter_reading_overview(request):
     # Calculate overall completion percentage
     overall_completion_percentage = (total_updated_sum / total_consumers_sum * 100) if total_consumers_sum > 0 else 0
 
+    # Print Report Export (HTML with 2 logos)
+    if export_excel == 'print':
+        context = {
+            'barangay_data': barangay_data,
+            'current_month': current_month,
+            'total_barangays': total_barangays,
+            'total_consumers_sum': total_consumers_sum,
+            'total_updated_sum': total_updated_sum,
+            'total_pending_sum': total_pending_sum,
+            'overall_completion_percentage': round(overall_completion_percentage, 1),
+            'generated_date': timezone.now(),
+        }
+        return render(request, 'consumers/meter_reading_overview_print.html', context)
+
     # Excel Export
     if export_excel == 'excel':
         wb = openpyxl.Workbook()
