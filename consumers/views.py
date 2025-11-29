@@ -185,7 +185,7 @@ def api_submit_reading(request):
             # If an existing reading is found for the same date
             if existing_reading.is_confirmed:
                 # If it's already confirmed, don't allow updates
-                error_msg = f"Reading for {consumer.account_number} on {reading_date} is already confirmed and cannot be updated via API."
+                error_msg = f"Reading for {consumer.id_number} on {reading_date} is already confirmed and cannot be updated via API."
                 return JsonResponse({'error': error_msg}, status=400)
             else:
                 # If it's unconfirmed, update the existing record
@@ -246,7 +246,7 @@ def api_submit_reading(request):
                 user=None,  # Notify all admins
                 notification_type='meter_reading',
                 title='New Meter Reading Submitted',
-                message=f'{consumer.first_name} {consumer.last_name} ({consumer.account_number}) - {consumer.barangay.name} | Bill: ₱{total_amount:.2f}',
+                message=f'{consumer.first_name} {consumer.last_name} ({consumer.id_number}) - {consumer.barangay.name} | Bill: ₱{total_amount:.2f}',
                 related_object_id=reading.id,
                 redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id})
             )
@@ -265,7 +265,7 @@ def api_submit_reading(request):
                 UserActivity.objects.create(
                     user=request.user,
                     action='meter_reading_submitted',
-                    description=f"Meter reading submitted for {consumer.first_name} {consumer.last_name} ({consumer.account_number}). Reading: {current_reading}, Consumption: {consumption} m³",
+                    description=f"Meter reading submitted for {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reading: {current_reading}, Consumption: {consumption} m³",
                     login_event=current_session
                 )
             except Exception:
@@ -276,7 +276,7 @@ def api_submit_reading(request):
             'status': 'success',
             'message': 'Reading submitted successfully',
             'consumer_name': f"{consumer.first_name} {consumer.last_name}",
-            'account_number': consumer.account_number,
+            'id_number': consumer.id_number,
             'reading_date': str(reading_date),
             'previous_reading': int(previous_reading),
             'current_reading': int(current_reading),
@@ -527,7 +527,6 @@ def api_consumers(request):
             data.append({
                 'id': consumer.id,
                 'id_number': consumer.id_number,  # Numeric ID format: 2025110001
-                'account_number': consumer.account_number,  # Account code format: BW-00001
                 'name': f"{consumer.first_name} {consumer.last_name}",
                 'first_name': consumer.first_name,
                 'last_name': consumer.last_name,
@@ -584,7 +583,7 @@ def api_get_previous_reading(request, consumer_id):
 
         return JsonResponse({
             'consumer_id': consumer.id,
-            'account_number': consumer.account_number,
+            'id_number': consumer.id_number,
             'consumer_name': f"{consumer.first_name} {consumer.last_name}",
             'usage_type': consumer.usage_type,  # 'Residential' or 'Commercial' - needed for accurate rate calculation
             'previous_reading': previous_reading_value,
@@ -1567,7 +1566,7 @@ def home(request):
             try:
                 latest_bill = Bill.objects.get(id=consumer.latest_bill_id)
                 consumer_bill_status.append({
-                    'account_number': consumer.account_number,
+                    'id_number': consumer.id_number,
                     'consumer_name': consumer.full_name,
                     'barangay': consumer.barangay.name if consumer.barangay else 'N/A',
                     'barangay_id': consumer.barangay.id if consumer.barangay else None,
@@ -1579,7 +1578,7 @@ def home(request):
                 pass
         else:
             consumer_bill_status.append({
-                'account_number': consumer.account_number,
+                'id_number': consumer.id_number,
                 'consumer_name': consumer.full_name,
                 'barangay': consumer.barangay.name if consumer.barangay else 'N/A',
                 'barangay_id': consumer.barangay.id if consumer.barangay else None,
@@ -1696,7 +1695,7 @@ def disconnect_consumer(request, consumer_id):
             UserActivity.objects.create(
                 user=request.user,
                 action='consumer_disconnected',
-                description=f"Disconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number}). Reason: {consumer.disconnect_reason or 'Not specified'}",
+                description=f"Disconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reason: {consumer.disconnect_reason or 'Not specified'}",
                 login_event=current_session
             )
         except Exception:
@@ -1727,7 +1726,7 @@ def reconnect_consumer(request, consumer_id):
             UserActivity.objects.create(
                 user=request.user,
                 action='consumer_reconnected',
-                description=f"Reconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number})",
+                description=f"Reconnected consumer: {consumer.first_name} {consumer.last_name} ({consumer.id_number})",
                 login_event=current_session
             )
         except Exception:
@@ -1781,7 +1780,7 @@ def delinquent_report_printable(request):
         'consumer__purok',
         'previous_reading',
         'current_reading'
-    ).order_by('consumer__account_number')
+    ).order_by('consumer__id_number')
 
     # Calculate totals
     total_amount = sum(bill.total_amount for bill in bills)
@@ -1817,11 +1816,11 @@ def consumer_management(request):
     # Optimize query with select_related to avoid N+1 queries
     consumers = Consumer.objects.select_related('barangay', 'purok', 'meter_brand').all()
     if search_query:
-        # Search by name, account number, or serial number
+        # Search by name, ID number, or serial number
         consumers = consumers.filter(
             Q(first_name__icontains=search_query) |
             Q(last_name__icontains=search_query) |
-            Q(account_number__icontains=search_query) |
+            Q(id_number__icontains=search_query) |
             Q(serial_number__icontains=search_query)
         )
     if barangay_filter:
@@ -1882,7 +1881,7 @@ def add_consumer(request):
             if duplicate:
                 messages.warning(
                     request,
-                    f"Consumer '{duplicate.first_name} {duplicate.last_name}' was already added (Account #: {duplicate.account_number}). "
+                    f"Consumer '{duplicate.first_name} {duplicate.last_name}' was already added (ID #: {duplicate.id_number}). "
                     "This may be a duplicate submission."
                 )
                 return redirect('consumers:consumer_management')
@@ -1901,13 +1900,13 @@ def add_consumer(request):
                 UserActivity.objects.create(
                     user=request.user,
                     action='consumer_created',
-                    description=f"Created new consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number}) in {consumer.barangay.name}",
+                    description=f"Created new consumer: {consumer.first_name} {consumer.last_name} ({consumer.id_number}) in {consumer.barangay.name}",
                     login_event=current_session
                 )
             except Exception:
                 pass  # Don't fail consumer creation if activity logging fails
 
-            messages.success(request, f"Consumer added successfully! Account Number: {consumer.account_number}")
+            messages.success(request, f"Consumer added successfully! ID Number: {consumer.id_number}")
             return redirect('consumers:consumer_management')
         else:
             messages.error(request, "Please correct the errors below.")
@@ -1941,7 +1940,7 @@ def edit_consumer(request, consumer_id):
                 UserActivity.objects.create(
                     user=request.user,
                     action='consumer_updated',
-                    description=f"Updated consumer: {consumer.first_name} {consumer.last_name} ({consumer.account_number})",
+                    description=f"Updated consumer: {consumer.first_name} {consumer.last_name} ({consumer.id_number})",
                     login_event=current_session
                 )
             except Exception:
@@ -1980,7 +1979,7 @@ def consumer_list(request):
         consumers = consumers.filter(
             Q(first_name__icontains=query) |
             Q(last_name__icontains=query) |
-            Q(account_number__icontains=query) |
+            Q(id_number__icontains=query) |
             Q(phone_number__icontains=query)
         )
 
@@ -2082,7 +2081,7 @@ def reports(request):
             billing_period__year=selected_year,
             billing_period__month=selected_month,
             status__in=['Pending', 'Overdue']
-        ).select_related('consumer', 'consumer__barangay').order_by('consumer__account_number')
+        ).select_related('consumer', 'consumer__barangay').order_by('consumer__id_number')
 
         total_amount = report_data.aggregate(total=Sum('total_amount'))['total'] or 0
         record_count = report_data.count()
@@ -2092,7 +2091,7 @@ def reports(request):
         report_data = Payment.objects.filter(
             payment_date__year=selected_year,
             payment_date__month=selected_month
-        ).values('bill__consumer__account_number').annotate(
+        ).values('bill__consumer__id_number').annotate(
             bill__consumer__full_name=Concat(
                 'bill__consumer__first_name',
                 Value(' '),
@@ -2102,7 +2101,7 @@ def reports(request):
             ),
             total_paid=Sum('amount_paid'),
             payment_count=Count('id')
-        ).order_by('bill__consumer__account_number')
+        ).order_by('bill__consumer__id_number')
 
         total_amount = report_data.aggregate(total=Sum('total_paid'))['total'] or 0
         record_count = report_data.count()
@@ -2197,7 +2196,7 @@ def export_report_excel(request):
             ws.append([
                 payment.or_number,
                 consumer.full_name,
-                consumer.account_number,
+                consumer.id_number or '—',
                 payment.payment_date.strftime('%Y-%m-%d'),
                 float(payment.amount_paid),
                 float(payment.change),
@@ -2256,14 +2255,14 @@ def export_report_excel(request):
             billing_period__year=selected_year,
             billing_period__month=selected_month,
             status__in=['Pending', 'Overdue']
-        ).select_related('consumer__barangay').order_by('consumer__account_number')
+        ).select_related('consumer__barangay').order_by('consumer__id_number')
 
         total_due = 0
 
         for bill in bills:
             consumer = bill.consumer
             ws.append([
-                consumer.account_number,
+                consumer.id_number or '—',
                 consumer.full_name,
                 consumer.barangay.name if consumer.barangay else 'N/A',
                 bill.billing_period.strftime('%B %Y'),
@@ -2319,7 +2318,7 @@ def export_report_excel(request):
         summary_data = Payment.objects.filter(
             payment_date__year=selected_year,
             payment_date__month=selected_month
-        ).values('bill__consumer__account_number').annotate(
+        ).values('bill__consumer__id_number').annotate(
             bill__consumer__full_name=Concat(
                 'bill__consumer__first_name',
                 Value(' '),
@@ -2329,14 +2328,14 @@ def export_report_excel(request):
             ),
             total_paid=Sum('amount_paid'),
             count=Count('id')
-        ).order_by('bill__consumer__account_number')
+        ).order_by('bill__consumer__id_number')
 
         total_amount = 0
         total_count = 0
 
         for item in summary_data:
             ws.append([
-                item['bill__consumer__account_number'],
+                item['bill__consumer__id_number'] or '—',
                 item['bill__consumer__full_name'],
                 float(item['total_paid']),
                 item['count']
@@ -2418,8 +2417,8 @@ def load_puroks(request):
 
 
 def get_consumer_display_id(consumer):
-    """Returns the consumer's account number as the display ID"""
-    return consumer.account_number or f"bw-{consumer.id:05d}"
+    """Returns the consumer's ID number as the display ID"""
+    return consumer.id_number or f"id-{consumer.id:05d}"
 
 
 
@@ -3417,7 +3416,7 @@ def payment_history(request):
         payments = payments.filter(
             Q(bill__consumer__first_name__icontains=search_query) |
             Q(bill__consumer__last_name__icontains=search_query) |
-            Q(bill__consumer__account_number__icontains=search_query) |
+            Q(bill__consumer__id_number__icontains=search_query) |
             Q(or_number__icontains=search_query)
         )
 

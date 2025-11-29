@@ -65,7 +65,7 @@
 
                 <div>
                     <p class="text-xs text-dark-500 font-medium mb-1">ID Number</p>
-                    <p class="text-lg font-mono font-bold text-primary-700">{{ consumer.account_number }}</p>
+                    <p class="text-lg font-mono font-bold text-primary-700">{{ consumer.id_number|default:"—" }}</p>
                 </div>
 
                 <div>
@@ -232,7 +232,7 @@ function selectReason(reason) {
 function showConfirmation() {
     const reason = document.getElementById('reason').value.trim();
     const consumerName = '{{ consumer.first_name }} {{ consumer.last_name }}';
-    const accountNumber = '{{ consumer.account_number }}';
+    const idNumber = '{{ consumer.id_number|default:"N/A" }}';
 
     Swal.fire({
         title: 'Confirm Disconnection',

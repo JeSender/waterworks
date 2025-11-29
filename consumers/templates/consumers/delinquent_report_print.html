@@ -276,7 +276,7 @@
             <tbody>
                 {% for bill in bills %}
                 <tr>
-                    <td>{{ bill.consumer.account_number }}</td>
+                    <td>{{ bill.consumer.id_number|default:"—" }}</td>
                     <td>{{ bill.consumer.first_name }} {{ bill.consumer.last_name }}</td>
                     <td>{{ bill.consumer.barangay.name|default:"—" }}</td>
                     <td class="text-right">{{ bill.previous_reading.reading_value|floatformat:0 }} m³</td>

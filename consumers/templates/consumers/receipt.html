@@ -323,7 +323,7 @@
                 <span>FUND</span>
             </div>
             <p class="payor-name">{{ payment.bill.consumer.last_name }}, {{ payment.bill.consumer.first_name }}</p>
-            <p style="text-align:center; font-size:10px; color:#666; margin-top:2px;">Account Code: {{ payment.bill.consumer.account_number }}</p>
+            <p style="text-align:center; font-size:10px; color:#666; margin-top:2px;">ID Number: {{ payment.bill.consumer.id_number|default:"—" }}</p>
             <p class="payor-address">{{ payment.bill.consumer.barangay.name|default:"" }}, BALILIHAN, BOHOL</p>
         </div>
 

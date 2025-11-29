@@ -54,7 +54,7 @@
                         <tbody>
                             {% for consumer in consumers %}
                             <tr class="table-row">
-                                <td class="table-cell">{{ consumer.account_number }}</td>
+                                <td class="table-cell">{{ consumer.id_number|default:"—" }}</td>
                                 <td class="table-cell">{{ consumer.first_name }} {{ consumer.last_name }}</td>
                                 <td class="table-cell">{{ consumer.serial_number }}</td>
                                 <td class="table-cell">

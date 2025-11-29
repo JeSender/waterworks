@@ -133,7 +133,7 @@
                     <tr class="hover:bg-light-50 transition-colors duration-150">
                         <td class="px-4 py-3">
                             <span class="font-mono text-xs font-semibold text-primary-600 bg-primary-50 px-2 py-1 rounded">
-                                {{ consumer.account_number }}
+                                {{ consumer.id_number|default:"—" }}
                             </span>
                         </td>
                         <td class="px-4 py-3">
