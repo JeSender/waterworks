@@ -2418,7 +2418,7 @@ def load_puroks(request):
 
 def get_consumer_display_id(consumer):
     """Returns the consumer's ID number as the display ID"""
-    return consumer.id_number or f"id-{consumer.id:05d}"
+    return consumer.id_number or "—"
 
 
 
