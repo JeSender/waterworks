@@ -188,10 +188,6 @@
            class="px-4 py-2 bg-success-600 text-white text-sm font-medium rounded hover:bg-success-700 transition-colors shadow-sm">
             <i class="bi bi-file-earmark-text mr-1"></i>View Bills
         </a>
-        <a href="{% url 'consumers:consumer_bill' consumer.id %}" target="_blank"
-           class="px-4 py-2 bg-primary-600 text-white text-sm font-medium rounded hover:bg-primary-700 transition-colors shadow-sm">
-            <i class="bi bi-printer mr-1"></i>Print Water Bill
-        </a>
 
         {% if user.is_superuser %}
         <!-- Disconnect/Reconnect Button - Superuser Only -->
