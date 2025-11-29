@@ -584,17 +584,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 confirmButtonColor: '#10b981',
                 cancelButtonColor: '#6b7280',
                 confirmButtonText: 'Confirm Payment',
-                cancelButtonText: 'Cancel'
+                cancelButtonText: 'Cancel',
+                allowOutsideClick: false,
+                allowEscapeKey: true
             });
 
             if (result.isConfirmed) {
+                // Show processing spinner only when confirmed
                 Swal.fire({
-                    title: 'Processing...',
+                    title: 'Processing Payment...',
+                    text: 'Please wait...',
                     allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    showConfirmButton: false,
                     didOpen: () => Swal.showLoading()
                 });
                 paymentForm.submit();
             }
+            // If cancelled, dialog closes immediately - no additional action needed
         });
     }
 });
