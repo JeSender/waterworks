@@ -1,15 +1,6 @@
 """
-FAST AI Water Meter Reading with Anti-Cheat Protection
-Uses Claude Vision API to read REAL water meters only
-
-SPEED OPTIMIZATIONS:
-- Shorter prompt (faster AI response)
-- Response caching (instant for same image)
-- Max 300 tokens response
-- Optimized JSON parsing
-- Cached Anthropic client
-
-Target: < 2 seconds server processing
+IMPROVED AI Water Meter Reading with Anti-Cheat Protection
+Better digit recognition for mechanical odometer wheels
 
 @author Jest - CS Thesis 2025
 Smart Meter Reading Application for Balilihan Waterworks
@@ -30,7 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# ANTHROPIC CLIENT SETUP (Cached for speed)
+# ANTHROPIC CLIENT SETUP
 # ═══════════════════════════════════════════════════════════════════════════
 
 _client = None
@@ -55,49 +46,86 @@ def get_anthropic_client():
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FAST ANTI-CHEAT PROMPT (Shorter = Faster Response)
+# IMPROVED METER READING PROMPT (Better digit recognition)
 # ═══════════════════════════════════════════════════════════════════════════
 
-FAST_PROMPT = """Read this water meter image. FIRST verify it's a REAL physical meter.
+METER_READING_PROMPT = """You are reading a water meter for Balilihan Waterworks billing system.
 
-REAL METER has: round metal housing, glass dome cover, 5 mechanical digit wheels, red circular dials, center star indicator, pipe connections, brand markings, physical wear/dirt.
+## STEP 1: VERIFY REAL METER
 
-REJECT if you see: handwritten numbers on paper, printed numbers, phone/tablet/screen display, drawing/sketch, photocopy, digital LCD display, or partial image without meter housing.
+Check for: round housing, glass dome, mechanical odometer wheels, red dials, pipes.
+If NOT a real meter (handwritten, printed, screen, drawing), return:
+{"success":false,"is_real_meter":false,"detected_as":"TYPE","rejection_reason":"REASON"}
 
-If NOT a real meter, return:
-{"success":false,"is_real_meter":false,"detected_as":"handwritten/printed/screen/drawing/photocopy/digital/partial","rejection_reason":"what you see","error":"Only real meters accepted","suggestion":"Take photo of actual water meter"}
+## STEP 2: READ DIGITS CAREFULLY
 
-If REAL meter, read the 5 mechanical digit wheels left-to-right. If digit is between two numbers (half-digit), use the bottom one. Ignore red dials.
+The odometer has 5 WHITE boxes with BLACK numbers on rotating wheels.
+Read LEFT to RIGHT, one digit at a time.
 
-Return:
-{"success":true,"is_real_meter":true,"reading":"XXXXX","numeric_value":N,"confidence":"high/medium/low","notes":"any issues"}
+CRITICAL RULES:
+1. Each wheel shows numbers 0-9
+2. Look at the CENTER of each white box for the main digit
+3. If a wheel is BETWEEN two numbers (transitioning):
+   - Look which number takes MORE space in the window
+   - If exactly half, use the LOWER number
+4. Numbers on wheels are: 0,1,2,3,4,5,6,7,8,9
+5. Be careful with similar-looking digits:
+   - 1 vs 7 (1 has no top bar)
+   - 6 vs 8 (6 is open at top)
+   - 6 vs 0 (6 has tail at bottom)
+   - 4 vs 9 (4 has open top)
 
-JSON only, no other text."""
+## STEP 3: VERIFY YOUR READING
+
+After reading all 5 digits, double-check:
+- Does each digit look correct?
+- Are any digits transitioning (between numbers)?
+- Read again to confirm
+
+## STEP 4: CHECK ORIENTATION
+
+If image is rotated, look for "m³" symbol to find correct orientation.
+The "m³" should be on the RIGHT side of the digits.
+
+## RESPONSE FORMAT
+
+Return JSON only:
+{
+  "success": true,
+  "is_real_meter": true,
+  "reading": "XXXXX",
+  "numeric_value": XXXXX,
+  "confidence": "high/medium/low",
+  "digit_details": [
+    {"position": 1, "value": X, "certainty": "clear/transitioning/unclear"},
+    {"position": 2, "value": X, "certainty": "clear/transitioning/unclear"},
+    {"position": 3, "value": X, "certainty": "clear/transitioning/unclear"},
+    {"position": 4, "value": X, "certainty": "clear/transitioning/unclear"},
+    {"position": 5, "value": X, "certainty": "clear/transitioning/unclear"}
+  ],
+  "rotation_applied": 0,
+  "notes": "any observations"
+}
+
+IMPORTANT: Take your time. Read each digit carefully. Billing depends on accuracy."""
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FAST AI METER READING VIEW
+# MAIN AI METER READING VIEW
 # ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_POST
 def read_meter_ai(request):
     """
-    FAST AI-powered water meter reading with Anti-Cheat.
-    Target: < 2 seconds server processing.
+    AI-powered water meter reading with improved accuracy.
 
     POST /api/read-meter/
-
-    Body (JSON): {"image": "base64...", "previous_reading": 123}
-    Or multipart: image file + previous_reading
     """
     start_time = time.time()
 
     try:
-        # ─────────────────────────────────────────────────────────────
-        # CHECK API KEY
-        # ─────────────────────────────────────────────────────────────
-
+        # Check API key
         client = get_anthropic_client()
         if not client:
             return JsonResponse({
@@ -107,22 +135,17 @@ def read_meter_ai(request):
                 'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
-        # ─────────────────────────────────────────────────────────────
-        # PARSE REQUEST
-        # ─────────────────────────────────────────────────────────────
-
+        # Parse request
         image_data = None
         media_type = "image/jpeg"
         previous_reading = None
 
-        # Handle file upload
         if 'image' in request.FILES:
             image_file = request.FILES['image']
             image_data = base64.b64encode(image_file.read()).decode('utf-8')
             media_type = image_file.content_type or 'image/jpeg'
             previous_reading = request.POST.get('previous_reading')
 
-        # Handle JSON body
         elif request.content_type and 'application/json' in request.content_type:
             try:
                 data = json.loads(request.body)
@@ -130,7 +153,6 @@ def read_meter_ai(request):
                 media_type = data.get('media_type', 'image/jpeg')
                 previous_reading = data.get('previous_reading')
 
-                # Remove data URL prefix
                 if image_data.startswith('data:'):
                     parts = image_data.split(',', 1)
                     if len(parts) == 2:
@@ -150,31 +172,23 @@ def read_meter_ai(request):
                 'error': 'No image provided'
             }, status=400)
 
-        # ─────────────────────────────────────────────────────────────
-        # CHECK CACHE (Instant if found)
-        # ─────────────────────────────────────────────────────────────
-
-        # Use first 500 chars of base64 for quick hash
-        image_hash = hashlib.md5(image_data[:500].encode()).hexdigest()
+        # Check cache
+        image_hash = hashlib.md5(image_data[:1000].encode()).hexdigest()
         cache_key = f'meter_ai_{image_hash}'
 
         cached_result = cache.get(cache_key)
         if cached_result:
             cached_result['from_cache'] = True
             cached_result['processing_time_ms'] = int((time.time() - start_time) * 1000)
-            logger.info(f"⚡ CACHE HIT: {cached_result['processing_time_ms']}ms")
             return JsonResponse(cached_result)
 
-        # ─────────────────────────────────────────────────────────────
-        # CALL CLAUDE AI (Fast settings)
-        # ─────────────────────────────────────────────────────────────
-
-        logger.info("⚡ Calling Claude AI...")
+        # Call Claude AI
+        logger.info("Calling Claude AI for meter reading...")
 
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=300,  # Short response = faster
+                max_tokens=500,
                 messages=[
                     {
                         "role": "user",
@@ -189,7 +203,7 @@ def read_meter_ai(request):
                             },
                             {
                                 "type": "text",
-                                "text": FAST_PROMPT
+                                "text": METER_READING_PROMPT
                             }
                         ]
                     }
@@ -204,22 +218,17 @@ def read_meter_ai(request):
                 'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
-        # ─────────────────────────────────────────────────────────────
-        # PARSE RESPONSE (Fast)
-        # ─────────────────────────────────────────────────────────────
-
+        # Parse response
         response_text = response.content[0].text.strip()
 
         try:
-            # Direct parse first (fastest)
             if response_text.startswith('{'):
                 result = json.loads(response_text)
             else:
-                # Find JSON in response
-                start = response_text.find('{')
-                end = response_text.rfind('}') + 1
-                if start >= 0 and end > start:
-                    result = json.loads(response_text[start:end])
+                start_idx = response_text.find('{')
+                end_idx = response_text.rfind('}') + 1
+                if start_idx >= 0 and end_idx > start_idx:
+                    result = json.loads(response_text[start_idx:end_idx])
                 else:
                     result = {
                         'success': False,
@@ -233,28 +242,22 @@ def read_meter_ai(request):
                 'error': 'Invalid AI response'
             }
 
-        # ─────────────────────────────────────────────────────────────
-        # ADD METADATA
-        # ─────────────────────────────────────────────────────────────
-
+        # Add metadata
         processing_time = int((time.time() - start_time) * 1000)
         result['processing_time_ms'] = processing_time
         result['from_cache'] = False
 
-        # ─────────────────────────────────────────────────────────────
-        # VALIDATION (Optional)
-        # ─────────────────────────────────────────────────────────────
-
+        # Validation against previous reading
         if result.get('success') and previous_reading:
             try:
                 prev = int(previous_reading)
                 curr = result.get('numeric_value', 0)
 
                 if curr < prev:
-                    result['validation_warning'] = f'Decreased: {prev} → {curr}'
+                    result['validation_warning'] = f'Reading decreased: {prev} → {curr}'
                     result['validation_status'] = 'decreased'
                 elif curr - prev > 100:
-                    result['validation_warning'] = f'High: +{curr - prev} m³'
+                    result['validation_warning'] = f'High consumption: +{curr - prev} m³'
                     result['validation_status'] = 'high_consumption'
                 else:
                     result['validation_status'] = 'normal'
@@ -262,17 +265,12 @@ def read_meter_ai(request):
             except (ValueError, TypeError):
                 pass
 
-        # ─────────────────────────────────────────────────────────────
-        # CACHE & LOG
-        # ─────────────────────────────────────────────────────────────
-
+        # Cache successful results
         if result.get('success'):
-            cache.set(cache_key, result, 300)  # Cache 5 minutes
-            logger.info(f"⚡ SUCCESS: {result.get('reading')} in {processing_time}ms")
-        elif not result.get('is_real_meter'):
-            logger.info(f"⚡ REJECTED: {result.get('detected_as')} in {processing_time}ms")
+            cache.set(cache_key, result, 300)
+            logger.info(f"SUCCESS: Reading {result.get('reading')} in {processing_time}ms")
         else:
-            logger.warning(f"⚡ ERROR in {processing_time}ms")
+            logger.info(f"REJECTED/ERROR in {processing_time}ms")
 
         return JsonResponse(result)
 
@@ -287,16 +285,13 @@ def read_meter_ai(request):
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# FAST HEALTH CHECK
+# HEALTH CHECK
 # ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_GET
 def ai_health_check(request):
-    """
-    Fast health check - no AI call needed.
-    GET /api/ai-health/
-    """
+    """Fast health check."""
     api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
 
     if not api_key:
@@ -306,7 +301,6 @@ def ai_health_check(request):
             'error': 'ANTHROPIC_API_KEY not configured'
         }, status=503)
 
-    # Just check if client can be created (no API call)
     client = get_anthropic_client()
     if client:
         return JsonResponse({
