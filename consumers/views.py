@@ -318,10 +318,32 @@ def api_login(request):
 
         user = authenticate(request, username=username, password=password)
         if user and user.is_staff:
-            login(request, user)
-            # Get staff's assigned barangay
+            # Check if user is Field Staff - only Field Staff can use mobile app
             try:
                 profile = StaffProfile.objects.get(user=user)
+
+                # Only allow field_staff role to login to mobile app
+                if profile.role != 'field_staff':
+                    UserLoginEvent.objects.create(
+                        user=user,
+                        ip_address=ip_address,
+                        user_agent=user_agent,
+                        login_method='mobile',
+                        status='failed'
+                    )
+                    return JsonResponse({
+                        'error': 'Access denied. Only Field Staff accounts can use this app.',
+                        'message': 'Superadmin and Cashier accounts should use the web portal.'
+                    }, status=403)
+
+                # Check if Field Staff has assigned barangay
+                if not profile.assigned_barangay:
+                    return JsonResponse({
+                        'error': 'No assigned barangay',
+                        'message': 'Please contact your administrator to assign a barangay.'
+                    }, status=403)
+
+                login(request, user)
 
                 # Record successful mobile login event
                 UserLoginEvent.objects.create(
@@ -336,22 +358,27 @@ def api_login(request):
                 return JsonResponse({
                     'status': 'success',
                     'token': request.session.session_key,
+                    'barangay_id': profile.assigned_barangay.id,
                     'barangay': profile.assigned_barangay.name,
                     'user': {
+                        'id': user.id,
                         'username': user.username,
-                        'full_name': user.get_full_name()
+                        'first_name': user.first_name,
+                        'last_name': user.last_name,
+                        'full_name': user.get_full_name(),
+                        'role': profile.role
                     }
                 })
             except StaffProfile.DoesNotExist:
-                # Still record the login even if there's no profile
+                # No profile means not a valid staff account
                 UserLoginEvent.objects.create(
                     user=user,
                     ip_address=ip_address,
                     user_agent=user_agent,
                     login_method='mobile',
-                    status='success'
+                    status='failed'
                 )
-                return JsonResponse({'error': 'No assigned barangay'}, status=403)
+                return JsonResponse({'error': 'Account not configured. Please contact administrator.'}, status=403)
         else:
             # Record failed login attempt
             if user:
