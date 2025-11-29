@@ -1137,12 +1137,12 @@ def forgot_password_request(request):
                 messages.error(request, "No email address found for this account. Please contact your administrator.")
                 return redirect('consumers:forgot_password')
 
-            # Only allow password reset for superadmin and cashier (not field_staff - they use mobile app)
+            # Only allow password reset for superadmin/superuser (built-in admin account)
+            # Cashier and Field Staff can have their passwords reset by the superadmin
             is_superadmin = user.is_superuser or (hasattr(user, 'staffprofile') and user.staffprofile.role == 'superadmin')
-            is_cashier = hasattr(user, 'staffprofile') and user.staffprofile.role == 'cashier'
 
-            if not (is_superadmin or is_cashier):
-                messages.error(request, "Password reset is only available for Superadmin and Cashier accounts. Field Staff should contact their administrator.")
+            if not is_superadmin:
+                messages.error(request, "Password reset is only available for Superadmin accounts. Please contact your administrator to reset your password.")
                 return redirect('consumers:forgot_password')
 
             # Check if user already has a valid token
