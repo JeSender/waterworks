@@ -1,13 +1,15 @@
 """
-AI Water Meter Reading with Anti-Cheat Protection
+FAST AI Water Meter Reading with Anti-Cheat Protection
 Uses Claude Vision API to read REAL water meters only
 
-Rejects:
-- Handwritten numbers
-- Printed numbers
-- Screen displays
-- Drawings/sketches
-- Photocopies
+SPEED OPTIMIZATIONS:
+- Shorter prompt (faster AI response)
+- Response caching (instant for same image)
+- Max 300 tokens response
+- Optimized JSON parsing
+- Cached Anthropic client
+
+Target: < 2 seconds server processing
 
 @author Jest - CS Thesis 2025
 Smart Meter Reading Application for Balilihan Waterworks
@@ -15,191 +17,82 @@ Smart Meter Reading Application for Balilihan Waterworks
 
 import base64
 import json
+import hashlib
+import time
 import logging
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST, require_GET
 from django.conf import settings
+from django.core.cache import cache
 
 logger = logging.getLogger(__name__)
 
+
 # ═══════════════════════════════════════════════════════════════════════════
-# ANTHROPIC CLIENT SETUP
+# ANTHROPIC CLIENT SETUP (Cached for speed)
 # ═══════════════════════════════════════════════════════════════════════════
 
+_client = None
+
+
 def get_anthropic_client():
-    """Get Anthropic client with API key from settings."""
+    """Get cached Anthropic client."""
+    global _client
+    if _client is not None:
+        return _client
+
     try:
         import anthropic
         api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
         if not api_key:
             return None
-        return anthropic.Anthropic(api_key=api_key)
+        _client = anthropic.Anthropic(api_key=api_key)
+        return _client
     except ImportError:
         logger.error("anthropic package not installed. Run: pip install anthropic")
         return None
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# THE ANTI-CHEAT PROMPT
+# FAST ANTI-CHEAT PROMPT (Shorter = Faster Response)
 # ═══════════════════════════════════════════════════════════════════════════
 
-METER_READING_PROMPT = """You are a SECURE water meter reading system for Balilihan Waterworks, Philippines.
+FAST_PROMPT = """Read this water meter image. FIRST verify it's a REAL physical meter.
 
-══════════════════════════════════════════════════════════════════════════════
-SECURITY VERIFICATION - MUST DO FIRST!
-══════════════════════════════════════════════════════════════════════════════
+REAL METER has: round metal housing, glass dome cover, 5 mechanical digit wheels, red circular dials, center star indicator, pipe connections, brand markings, physical wear/dirt.
 
-Your PRIMARY job is to verify this image shows a REAL PHYSICAL WATER METER.
-You must REJECT anything that is not an actual water meter device.
+REJECT if you see: handwritten numbers on paper, printed numbers, phone/tablet/screen display, drawing/sketch, photocopy, digital LCD display, or partial image without meter housing.
 
-CHARACTERISTICS OF A REAL WATER METER:
+If NOT a real meter, return:
+{"success":false,"is_real_meter":false,"detected_as":"handwritten/printed/screen/drawing/photocopy/digital/partial","rejection_reason":"what you see","error":"Only real meters accepted","suggestion":"Take photo of actual water meter"}
 
-Physical Structure (REQUIRED):
-- ROUND METAL/PLASTIC HOUSING - circular body, brass/blue/black/gray color
-- GLASS OR PLASTIC DOME COVER - protective transparent cover over display
-- PIPE CONNECTIONS - visible pipe fittings on the sides
-- 3D PHYSICAL DEPTH - display sits INSIDE housing, not flat surface
+If REAL meter, read the 5 mechanical digit wheels left-to-right. If digit is between two numbers (half-digit), use the bottom one. Ignore red dials.
 
-Display Components (REQUIRED):
-- MECHANICAL ODOMETER - 5 rotating number WHEELS (not printed digits)
-- RED CIRCULAR DIALS - 3-4 small dials with red triangular pointers
-- CENTER STAR/GEAR - rotating flow indicator in the middle
-- "m³" MARKING - cubic meter unit indicator
+Return:
+{"success":true,"is_real_meter":true,"reading":"XXXXX","numeric_value":N,"confidence":"high/medium/low","notes":"any issues"}
 
-Signs of Authenticity:
-- BRAND MARKINGS - text like "Class B", "ISO 4064", manufacturer name
-- SERIAL NUMBER - stamped or engraved ID number
-- WEATHERING/WEAR - real meters show dirt, scratches, water stains
-- OUTDOOR ENVIRONMENT - often surrounded by dirt, pipes, meter box
-
-══════════════════════════════════════════════════════════════════════════════
-MUST REJECT - These are NOT real meters:
-══════════════════════════════════════════════════════════════════════════════
-
-HANDWRITTEN NUMBERS
-- Numbers written with pen/pencil on paper, cardboard, whiteboard
-- Uneven spacing, varying line thickness, human writing style
-- Flat paper surface without 3D depth
-
-PRINTED NUMBERS
-- Laser or inkjet printed digits on paper
-- Perfect font-like characters
-- Flat printed surface
-
-SCREEN DISPLAYS
-- Numbers shown on phone, tablet, computer, TV screen
-- Visible pixels, screen bezel, backlight glow
-- Digital display characteristics
-
-DRAWINGS OR SKETCHES
-- Hand-drawn meter representation
-- Artistic rendering, not photographic
-
-PHOTOCOPIES
-- Photocopy or scan of a meter photo
-- Flat, no depth, possibly grainy
-
-DIGITAL METERS
-- LCD/LED electronic displays
-- Only accept MECHANICAL odometer meters
-
-PARTIAL OR CROPPED
-- Just numbers without meter housing
-- Zoomed in so much that meter body isn't visible
-
-══════════════════════════════════════════════════════════════════════════════
-RESPONSE FORMAT
-══════════════════════════════════════════════════════════════════════════════
-
-IF NOT A REAL WATER METER - Return this JSON:
-{
-    "success": false,
-    "is_real_meter": false,
-    "rejection_reason": "Detailed reason why this is not a real meter",
-    "detected_as": "handwritten/printed/screen/drawing/photocopy/digital/partial/unknown",
-    "what_i_see": "Brief description of what's actually in the image",
-    "error": "This system only accepts real water meter devices.",
-    "suggestion": "Please take a photo of an actual water meter installed on a pipe."
-}
-
-IF VERIFIED AS REAL METER - Then read and return this JSON:
-{
-    "success": true,
-    "is_real_meter": true,
-    "meter_verification": {
-        "has_round_housing": true,
-        "has_glass_cover": true,
-        "has_mechanical_odometer": true,
-        "has_red_dials": true,
-        "has_center_indicator": true,
-        "has_pipe_connections": true,
-        "has_brand_markings": true,
-        "shows_wear_or_dirt": true,
-        "verification_confidence": "high/medium"
-    },
-    "reading": "XXXXX",
-    "numeric_value": XXXXX,
-    "confidence": "high/medium/low",
-    "digits": [
-        {"position": 1, "value": X, "status": "clear/transitioning/unclear"},
-        {"position": 2, "value": X, "status": "clear/transitioning/unclear"},
-        {"position": 3, "value": X, "status": "clear/transitioning/unclear"},
-        {"position": 4, "value": X, "status": "clear/transitioning/unclear"},
-        {"position": 5, "value": X, "status": "clear/transitioning/unclear"}
-    ],
-    "issues_detected": ["fog", "rotation", "dirt", "none"],
-    "rotation_detected": 0,
-    "notes": "Description of meter condition"
-}
-
-══════════════════════════════════════════════════════════════════════════════
-READING INSTRUCTIONS (Only after verification passes)
-══════════════════════════════════════════════════════════════════════════════
-
-1. The main odometer has 5 white boxes with black mechanical wheels
-2. Read digits LEFT to RIGHT
-3. If image is rotated, look for "m³" to find correct orientation
-4. HALF-DIGIT RULE: When wheel shows two numbers, use the BOTTOM one
-5. Ignore the small red circular dials (they show decimals)
-
-══════════════════════════════════════════════════════════════════════════════
-REMEMBER: You protect a billing system. Be STRICT about verification.
-Reject ANYTHING that isn't clearly a real, physical water meter device.
-══════════════════════════════════════════════════════════════════════════════"""
+JSON only, no other text."""
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# MAIN AI METER READING VIEW
+# FAST AI METER READING VIEW
 # ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_POST
 def read_meter_ai(request):
     """
-    AI-powered water meter reading endpoint with Anti-Cheat Protection.
-
-    ONLY reads real water meter devices.
-    Rejects handwritten, printed, or displayed numbers.
-    Verifies physical meter characteristics.
+    FAST AI-powered water meter reading with Anti-Cheat.
+    Target: < 2 seconds server processing.
 
     POST /api/read-meter/
 
-    Request Body (JSON):
-    {
-        "image": "base64_encoded_image",
-        "media_type": "image/jpeg",  // optional, defaults to image/jpeg
-        "previous_reading": 12345    // optional, for validation
-    }
-
-    Or multipart/form-data:
-    - image: file upload
-    - previous_reading: optional integer
-
-    Returns:
-    - Success: reading, numeric_value, confidence, meter_verification
-    - Failure: rejection_reason, detected_as, suggestion
+    Body (JSON): {"image": "base64...", "previous_reading": 123}
+    Or multipart: image file + previous_reading
     """
+    start_time = time.time()
+
     try:
         # ─────────────────────────────────────────────────────────────
         # CHECK API KEY
@@ -211,7 +104,7 @@ def read_meter_ai(request):
                 'success': False,
                 'is_real_meter': False,
                 'error': 'AI service not configured',
-                'suggestion': 'Please contact administrator to configure ANTHROPIC_API_KEY'
+                'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
         # ─────────────────────────────────────────────────────────────
@@ -222,7 +115,7 @@ def read_meter_ai(request):
         media_type = "image/jpeg"
         previous_reading = None
 
-        # Handle file upload (multipart/form-data)
+        # Handle file upload
         if 'image' in request.FILES:
             image_file = request.FILES['image']
             image_data = base64.b64encode(image_file.read()).decode('utf-8')
@@ -237,70 +130,51 @@ def read_meter_ai(request):
                 media_type = data.get('media_type', 'image/jpeg')
                 previous_reading = data.get('previous_reading')
 
-                # Remove data URL prefix if present (data:image/jpeg;base64,...)
+                # Remove data URL prefix
                 if image_data.startswith('data:'):
                     parts = image_data.split(',', 1)
                     if len(parts) == 2:
-                        # Extract media type from data URL
-                        header = parts[0]
-                        if 'image/png' in header:
-                            media_type = 'image/png'
-                        elif 'image/webp' in header:
-                            media_type = 'image/webp'
                         image_data = parts[1]
 
             except json.JSONDecodeError:
                 return JsonResponse({
                     'success': False,
                     'is_real_meter': False,
-                    'error': 'Invalid JSON format'
+                    'error': 'Invalid JSON'
                 }, status=400)
 
         if not image_data:
             return JsonResponse({
                 'success': False,
                 'is_real_meter': False,
-                'error': 'No image provided',
-                'suggestion': 'Please include an image in the request'
-            }, status=400)
-
-        # Validate base64
-        try:
-            base64.b64decode(image_data)
-        except Exception:
-            return JsonResponse({
-                'success': False,
-                'is_real_meter': False,
-                'error': 'Invalid base64 image data'
+                'error': 'No image provided'
             }, status=400)
 
         # ─────────────────────────────────────────────────────────────
-        # BUILD PROMPT WITH VALIDATION
+        # CHECK CACHE (Instant if found)
         # ─────────────────────────────────────────────────────────────
 
-        prompt = METER_READING_PROMPT
+        # Use first 500 chars of base64 for quick hash
+        image_hash = hashlib.md5(image_data[:500].encode()).hexdigest()
+        cache_key = f'meter_ai_{image_hash}'
 
-        if previous_reading:
-            prompt += f"""
-
-══════════════════════════════════════════════════════════════════════════════
-VALIDATION CHECK
-══════════════════════════════════════════════════════════════════════════════
-Previous meter reading: {previous_reading} m³
-- New reading should be >= {previous_reading} (water consumption only increases)
-- Flag if reading appears to have decreased
-- Flag if consumption is unusually high (>100 m³ difference)"""
+        cached_result = cache.get(cache_key)
+        if cached_result:
+            cached_result['from_cache'] = True
+            cached_result['processing_time_ms'] = int((time.time() - start_time) * 1000)
+            logger.info(f"⚡ CACHE HIT: {cached_result['processing_time_ms']}ms")
+            return JsonResponse(cached_result)
 
         # ─────────────────────────────────────────────────────────────
-        # CALL CLAUDE VISION API
+        # CALL CLAUDE AI (Fast settings)
         # ─────────────────────────────────────────────────────────────
 
-        logger.info("Sending image to Claude for verification and reading...")
+        logger.info("⚡ Calling Claude AI...")
 
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=1500,
+                max_tokens=300,  # Short response = faster
                 messages=[
                     {
                         "role": "user",
@@ -315,7 +189,7 @@ Previous meter reading: {previous_reading} m³
                             },
                             {
                                 "type": "text",
-                                "text": prompt
+                                "text": FAST_PROMPT
                             }
                         ]
                     }
@@ -326,54 +200,49 @@ Previous meter reading: {previous_reading} m³
             return JsonResponse({
                 'success': False,
                 'is_real_meter': False,
-                'error': 'AI service temporarily unavailable',
-                'suggestion': 'Please try again in a moment'
+                'error': 'AI service unavailable',
+                'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
         # ─────────────────────────────────────────────────────────────
-        # PARSE RESPONSE
+        # PARSE RESPONSE (Fast)
         # ─────────────────────────────────────────────────────────────
 
-        response_text = response.content[0].text
-        logger.info(f"Claude response received (length: {len(response_text)})")
+        response_text = response.content[0].text.strip()
 
         try:
-            # Find JSON in response
-            json_start = response_text.find('{')
-            json_end = response_text.rfind('}') + 1
-
-            if json_start != -1 and json_end > json_start:
-                result = json.loads(response_text[json_start:json_end])
+            # Direct parse first (fastest)
+            if response_text.startswith('{'):
+                result = json.loads(response_text)
             else:
-                logger.error(f"No JSON found in response: {response_text[:200]}")
-                result = {
-                    'success': False,
-                    'is_real_meter': False,
-                    'error': 'Could not parse AI response',
-                    'raw_response': response_text[:500]
-                }
-
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON parse error: {e}")
+                # Find JSON in response
+                start = response_text.find('{')
+                end = response_text.rfind('}') + 1
+                if start >= 0 and end > start:
+                    result = json.loads(response_text[start:end])
+                else:
+                    result = {
+                        'success': False,
+                        'is_real_meter': False,
+                        'error': 'No JSON in AI response'
+                    }
+        except json.JSONDecodeError:
             result = {
                 'success': False,
                 'is_real_meter': False,
-                'error': 'Invalid AI response format'
+                'error': 'Invalid AI response'
             }
 
         # ─────────────────────────────────────────────────────────────
-        # LOG RESULT
+        # ADD METADATA
         # ─────────────────────────────────────────────────────────────
 
-        if result.get('success') and result.get('is_real_meter'):
-            logger.info(f"ACCEPTED - Real meter. Reading: {result.get('reading')}, Confidence: {result.get('confidence')}")
-        else:
-            reason = result.get('rejection_reason', result.get('error', 'Unknown'))
-            detected = result.get('detected_as', 'unknown')
-            logger.warning(f"REJECTED - {reason} (detected as: {detected})")
+        processing_time = int((time.time() - start_time) * 1000)
+        result['processing_time_ms'] = processing_time
+        result['from_cache'] = False
 
         # ─────────────────────────────────────────────────────────────
-        # VALIDATION AGAINST PREVIOUS READING
+        # VALIDATION (Optional)
         # ─────────────────────────────────────────────────────────────
 
         if result.get('success') and previous_reading:
@@ -382,48 +251,51 @@ Previous meter reading: {previous_reading} m³
                 curr = result.get('numeric_value', 0)
 
                 if curr < prev:
-                    result['validation_warning'] = f'Reading decreased from {prev} to {curr}'
+                    result['validation_warning'] = f'Decreased: {prev} → {curr}'
                     result['validation_status'] = 'decreased'
                 elif curr - prev > 100:
-                    result['validation_warning'] = f'High consumption: {curr - prev} m³'
+                    result['validation_warning'] = f'High: +{curr - prev} m³'
                     result['validation_status'] = 'high_consumption'
                 else:
                     result['validation_status'] = 'normal'
                     result['consumption'] = curr - prev
-
             except (ValueError, TypeError):
                 pass
+
+        # ─────────────────────────────────────────────────────────────
+        # CACHE & LOG
+        # ─────────────────────────────────────────────────────────────
+
+        if result.get('success'):
+            cache.set(cache_key, result, 300)  # Cache 5 minutes
+            logger.info(f"⚡ SUCCESS: {result.get('reading')} in {processing_time}ms")
+        elif not result.get('is_real_meter'):
+            logger.info(f"⚡ REJECTED: {result.get('detected_as')} in {processing_time}ms")
+        else:
+            logger.warning(f"⚡ ERROR in {processing_time}ms")
 
         return JsonResponse(result)
 
     except Exception as e:
-        logger.exception(f"Unexpected error in read_meter_ai: {e}")
+        logger.exception(f"Error: {e}")
         return JsonResponse({
             'success': False,
             'is_real_meter': False,
-            'error': 'Server error',
-            'suggestion': 'Please try again'
+            'error': str(e),
+            'processing_time_ms': int((time.time() - start_time) * 1000)
         }, status=500)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
-# HEALTH CHECK ENDPOINT
+# FAST HEALTH CHECK
 # ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_GET
 def ai_health_check(request):
     """
-    Check if AI meter reading service is available.
-
+    Fast health check - no AI call needed.
     GET /api/ai-health/
-
-    Returns:
-    {
-        "status": "healthy/unhealthy",
-        "ai_available": true/false,
-        "api_key_configured": true/false
-    }
     """
     api_key = getattr(settings, 'ANTHROPIC_API_KEY', None)
 
@@ -431,36 +303,19 @@ def ai_health_check(request):
         return JsonResponse({
             'status': 'unhealthy',
             'ai_available': False,
-            'api_key_configured': False,
             'error': 'ANTHROPIC_API_KEY not configured'
         }, status=503)
 
+    # Just check if client can be created (no API call)
     client = get_anthropic_client()
-    if not client:
-        return JsonResponse({
-            'status': 'unhealthy',
-            'ai_available': False,
-            'api_key_configured': True,
-            'error': 'Failed to initialize Anthropic client'
-        }, status=503)
-
-    try:
-        # Quick test call
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=10,
-            messages=[{"role": "user", "content": "OK"}]
-        )
+    if client:
         return JsonResponse({
             'status': 'healthy',
-            'ai_available': True,
-            'api_key_configured': True
+            'ai_available': True
         })
-    except Exception as e:
-        logger.error(f"AI health check failed: {e}")
+    else:
         return JsonResponse({
             'status': 'unhealthy',
             'ai_available': False,
-            'api_key_configured': True,
-            'error': str(e)
+            'error': 'Failed to create client'
         }, status=503)
