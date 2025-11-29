@@ -33,3 +33,6 @@ sqlparse==0.5.3
 tzdata==2025.2
 python-dateutil==2.8.2
 pytz==2023.3
+
+# AI Meter Reading (Claude Vision API)
+anthropic==0.40.0

@@ -246,6 +246,16 @@ else:
 if not EMAIL_HOST_PASSWORD:
     _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
+# ═══════════════════════════════════════════════════════════════════════════
+# ANTHROPIC API (Claude AI for Meter Reading)
+# ═══════════════════════════════════════════════════════════════════════════
+# Used for AI-powered water meter reading with anti-cheat protection
+# Get your API key from: https://console.anthropic.com/
+ANTHROPIC_API_KEY = config('ANTHROPIC_API_KEY', default='')
+
+if not ANTHROPIC_API_KEY:
+    _email_logger.warning("ANTHROPIC_API_KEY is not configured - AI meter reading disabled")
+
 # Add Render domain to trusted origins dynamically
 if RENDER_ENVIRONMENT:
     render_external_url = config('RENDER_EXTERNAL_URL', default='')
