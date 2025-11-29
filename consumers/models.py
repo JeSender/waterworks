@@ -1250,14 +1250,17 @@ class Notification(models.Model):
 
     # Status
     is_read = models.BooleanField(default=False, help_text="Has the user read this notification?")
+    is_archived = models.BooleanField(default=False, help_text="Archived after 30 days")
     created_at = models.DateTimeField(default=timezone.now, db_index=True)
     read_at = models.DateTimeField(null=True, blank=True, help_text="When was it marked as read")
+    archived_at = models.DateTimeField(null=True, blank=True, help_text="When was it archived")
 
     class Meta:
         ordering = ['-created_at']
         indexes = [
             models.Index(fields=['user', '-created_at']),
             models.Index(fields=['is_read', '-created_at']),
+            models.Index(fields=['is_archived', '-created_at']),
             models.Index(fields=['notification_type', '-created_at']),
         ]
         verbose_name = "Notification"
@@ -1274,8 +1277,41 @@ class Notification(models.Model):
             self.read_at = timezone.now()
             self.save()
 
+    def archive(self):
+        """Archive this notification"""
+        if not self.is_archived:
+            self.is_archived = True
+            self.archived_at = timezone.now()
+            self.save()
+
+    @property
+    def is_older_than_30_days(self):
+        """Check if notification is older than 30 days"""
+        from datetime import timedelta
+        return timezone.now() - self.created_at > timedelta(days=30)
+
     @property
     def time_ago(self):
         """Human-readable time ago string"""
         from django.utils.timesince import timesince
         return timesince(self.created_at)
+
+    @classmethod
+    def archive_old_notifications(cls):
+        """Archive all notifications older than 30 days"""
+        from datetime import timedelta
+        cutoff_date = timezone.now() - timedelta(days=30)
+        old_notifications = cls.objects.filter(
+            created_at__lt=cutoff_date,
+            is_archived=False
+        )
+        count = old_notifications.update(is_archived=True, archived_at=timezone.now())
+        return count
+
+    @classmethod
+    def get_active_notifications(cls, user=None):
+        """Get non-archived notifications for display"""
+        queryset = cls.objects.filter(is_archived=False)
+        if user:
+            queryset = queryset.filter(models.Q(user=user) | models.Q(user__isnull=True))
+        return queryset.order_by('-created_at')

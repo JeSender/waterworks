@@ -10,6 +10,7 @@ def notifications(request):
     """
     Add unread notifications to template context for authenticated users.
     Only shows notifications for admins and superusers.
+    Auto-archives notifications older than 30 days.
     """
     if request.user.is_authenticated:
         # Check if user is admin or superuser
@@ -19,14 +20,23 @@ def notifications(request):
         )
 
         if is_admin:
-            # Get notifications for this user or global notifications (user=None)
+            # Auto-archive old notifications (older than 30 days)
+            Notification.archive_old_notifications()
+
+            # Get unread, non-archived notifications for this user or global notifications
             unread_notifications = Notification.objects.filter(
-                is_read=False
+                is_read=False,
+                is_archived=False
             ).filter(
                 django_models.Q(user=request.user) | django_models.Q(user__isnull=True)
-            )[:10]  # Limit to 10 most recent
+            ).order_by('-created_at')[:10]  # Limit to 10 most recent
 
-            unread_count = unread_notifications.count()
+            unread_count = Notification.objects.filter(
+                is_read=False,
+                is_archived=False
+            ).filter(
+                django_models.Q(user=request.user) | django_models.Q(user__isnull=True)
+            ).count()
 
             return {
                 'unread_notifications': unread_notifications,
