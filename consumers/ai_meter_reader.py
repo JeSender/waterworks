@@ -20,10 +20,6 @@ from django.core.cache import cache
 logger = logging.getLogger(__name__)
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# ANTHROPIC CLIENT SETUP
-# ═══════════════════════════════════════════════════════════════════════════
-
 _client = None
 
 
@@ -41,23 +37,24 @@ def get_anthropic_client():
         _client = anthropic.Anthropic(api_key=api_key)
         return _client
     except ImportError:
-        logger.error("anthropic package not installed. Run: pip install anthropic")
+        logger.error("anthropic package not installed")
         return None
 
 
-# ═══════════════════════════════════════════════════════════════════════════
-# IMPROVED METER READING PROMPT (Better digit recognition)
-# ═══════════════════════════════════════════════════════════════════════════
-
-METER_READING_PROMPT = """You are reading a water meter for Balilihan Waterworks billing system.
+METER_READING_PROMPT = """You are reading a water meter for billing. Be VERY CAREFUL with each digit.
 
 ## STEP 1: VERIFY REAL METER
 
-Check for: round housing, glass dome, mechanical odometer wheels, red dials, pipes.
+Check for: round metal housing, glass dome, mechanical odometer wheels, red dials, pipes.
 If NOT a real meter (handwritten, printed, screen, drawing), return:
 {"success":false,"is_real_meter":false,"detected_as":"TYPE","rejection_reason":"REASON"}
 
-## STEP 2: READ DIGITS CAREFULLY
+## STEP 2: FIND ORIENTATION
+
+Look for "m³" symbol - it should be on the RIGHT side of the digits.
+If image is rotated, mentally rotate it so "m³" is on the right.
+
+## STEP 3: READ DIGITS CAREFULLY
 
 The odometer has 5 WHITE boxes with BLACK numbers on rotating wheels.
 Read LEFT to RIGHT, one digit at a time.
@@ -65,27 +62,23 @@ Read LEFT to RIGHT, one digit at a time.
 CRITICAL RULES:
 1. Each wheel shows numbers 0-9
 2. Look at the CENTER of each white box for the main digit
-3. If a wheel is BETWEEN two numbers (transitioning):
-   - Look which number takes MORE space in the window
-   - If exactly half, use the LOWER number
-4. Numbers on wheels are: 0,1,2,3,4,5,6,7,8,9
-5. Be careful with similar-looking digits:
-   - 1 vs 7 (1 has no top bar)
-   - 6 vs 8 (6 is open at top)
-   - 6 vs 0 (6 has tail at bottom)
-   - 4 vs 9 (4 has open top)
+3. If a wheel is BETWEEN two numbers (half-digit/transitioning):
+   - The wheel is rotating from lower to higher number
+   - Use the number that takes MORE space in the window
+   - If exactly half-half, use the LOWER number
+4. Common digit confusions to avoid:
+   - 1 vs 7 (1 has no top horizontal bar)
+   - 6 vs 8 (6 is open at top-right)
+   - 6 vs 0 (6 has a tail curving inward at bottom)
+   - 4 vs 9 (4 has an open top)
+   - 2 vs 7 (2 has a curved top and flat bottom)
 
-## STEP 3: VERIFY YOUR READING
+## STEP 4: DOUBLE-CHECK
 
-After reading all 5 digits, double-check:
-- Does each digit look correct?
-- Are any digits transitioning (between numbers)?
-- Read again to confirm
-
-## STEP 4: CHECK ORIENTATION
-
-If image is rotated, look for "m³" symbol to find correct orientation.
-The "m³" should be on the RIGHT side of the digits.
+After reading, verify:
+- Read each digit again from left to right
+- Make sure no digits were skipped
+- Confirm transitioning digits
 
 ## RESPONSE FORMAT
 
@@ -97,35 +90,25 @@ Return JSON only:
   "numeric_value": XXXXX,
   "confidence": "high/medium/low",
   "digit_details": [
-    {"position": 1, "value": X, "certainty": "clear/transitioning/unclear"},
-    {"position": 2, "value": X, "certainty": "clear/transitioning/unclear"},
-    {"position": 3, "value": X, "certainty": "clear/transitioning/unclear"},
-    {"position": 4, "value": X, "certainty": "clear/transitioning/unclear"},
-    {"position": 5, "value": X, "certainty": "clear/transitioning/unclear"}
+    {"position": 1, "value": X, "status": "clear/transitioning"},
+    {"position": 2, "value": X, "status": "clear/transitioning"},
+    {"position": 3, "value": X, "status": "clear/transitioning"},
+    {"position": 4, "value": X, "status": "clear/transitioning"},
+    {"position": 5, "value": X, "status": "clear/transitioning"}
   ],
-  "rotation_applied": 0,
-  "notes": "any observations"
+  "notes": "any observations about meter condition"
 }
 
-IMPORTANT: Take your time. Read each digit carefully. Billing depends on accuracy."""
+IMPORTANT: Accuracy is critical for billing. Read each digit carefully."""
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# MAIN AI METER READING VIEW
-# ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_POST
 def read_meter_ai(request):
-    """
-    AI-powered water meter reading with improved accuracy.
-
-    POST /api/read-meter/
-    """
+    """AI-powered water meter reading with improved accuracy."""
     start_time = time.time()
 
     try:
-        # Check API key
         client = get_anthropic_client()
         if not client:
             return JsonResponse({
@@ -135,7 +118,6 @@ def read_meter_ai(request):
                 'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
-        # Parse request
         image_data = None
         media_type = "image/jpeg"
         previous_reading = None
@@ -247,7 +229,7 @@ def read_meter_ai(request):
         result['processing_time_ms'] = processing_time
         result['from_cache'] = False
 
-        # Validation against previous reading
+        # Validation
         if result.get('success') and previous_reading:
             try:
                 prev = int(previous_reading)
@@ -265,12 +247,10 @@ def read_meter_ai(request):
             except (ValueError, TypeError):
                 pass
 
-        # Cache successful results
+        # Cache
         if result.get('success'):
             cache.set(cache_key, result, 300)
             logger.info(f"SUCCESS: Reading {result.get('reading')} in {processing_time}ms")
-        else:
-            logger.info(f"REJECTED/ERROR in {processing_time}ms")
 
         return JsonResponse(result)
 
@@ -283,10 +263,6 @@ def read_meter_ai(request):
             'processing_time_ms': int((time.time() - start_time) * 1000)
         }, status=500)
 
-
-# ═══════════════════════════════════════════════════════════════════════════
-# HEALTH CHECK
-# ═══════════════════════════════════════════════════════════════════════════
 
 @csrf_exempt
 @require_GET
