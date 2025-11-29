@@ -19,19 +19,12 @@ SECRET_KEY = config('SECRET_KEY', default='django-insecure-' + get_random_secret
 # SECURITY WARNING: Don't run with debug turned on in production!
 DEBUG = config('DEBUG', default=False, cast=bool)
 
-# Vercel environment detection
-VERCEL_ENVIRONMENT = config('VERCEL', default='')
-
 # Render environment detection
 RENDER_ENVIRONMENT = config('RENDER', default='')
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,192.168.100.9', cast=Csv())
 
-# Add Vercel domain if running on Vercel
-if VERCEL_ENVIRONMENT:
-    ALLOWED_HOSTS.append('.vercel.app')
-
-# Add Render domain if running on Render
+# Add Render domain for production deployment
 if RENDER_ENVIRONMENT or '.onrender.com' not in str(ALLOWED_HOSTS):
     ALLOWED_HOSTS.append('.onrender.com')
 
@@ -203,17 +196,14 @@ _csrf_config = config('CSRF_TRUSTED_ORIGINS', default='')
 if _csrf_config:
     CSRF_TRUSTED_ORIGINS.extend([origin.strip() for origin in _csrf_config.split(',') if origin.strip()])
 
-# Always add Vercel and Render production domains to trusted origins
+# Add Render production domain to trusted origins
 CSRF_TRUSTED_ORIGINS.extend([
-    'https://waterworks-rose.vercel.app',
-    'https://*.vercel.app',
     'https://*.onrender.com',
 ])
 
-# Also add to CORS for API access
-CORS_ALLOWED_ORIGINS.extend([
-    'https://waterworks-rose.vercel.app',
-])
+# CORS for mobile app - allow all origins for API endpoints
+# Mobile apps don't send Origin header the same way browsers do
+CORS_ALLOW_ALL_ORIGINS = True  # Allow mobile app connections
 
 # CSRF and Session Cookie Configuration
 CSRF_COOKIE_SECURE = not DEBUG
@@ -256,16 +246,11 @@ else:
 if not EMAIL_HOST_PASSWORD:
     _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
-# Add Vercel domain to trusted origins
-if VERCEL_ENVIRONMENT:
-    vercel_url = config('VERCEL_URL', default='')
-    if vercel_url:
-        # VERCEL_URL doesn't include protocol
-        CSRF_TRUSTED_ORIGINS.append(f'https://{vercel_url}')
-        if f'https://{vercel_url}' not in CORS_ALLOWED_ORIGINS:
-            CORS_ALLOWED_ORIGINS.append(f'https://{vercel_url}')
-    # Also add wildcard for all Vercel preview deployments
-    CSRF_TRUSTED_ORIGINS.append('https://*.vercel.app')
+# Add Render domain to trusted origins dynamically
+if RENDER_ENVIRONMENT:
+    render_external_url = config('RENDER_EXTERNAL_URL', default='')
+    if render_external_url:
+        CSRF_TRUSTED_ORIGINS.append(render_external_url)
 
 # Security settings (for production)
 if not DEBUG:
@@ -274,8 +259,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    # Vercel handles SSL termination at the load balancer, so we don't need Django to redirect
-    # SECURE_SSL_REDIRECT = True
+    # Render handles SSL termination at the load balancer
     # Note: CSRF_COOKIE_SECURE and SESSION_COOKIE_SECURE are set above based on DEBUG
 
     # Logging configuration for production - Reduced to prevent rate limiting
