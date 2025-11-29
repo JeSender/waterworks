@@ -1,0 +1,254 @@
+{% extends "consumers/base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Archived Users{% endblock %}
+
+{% block main_content %}
+<div class="max-w-7xl mx-auto">
+    <!-- Page Header -->
+    <div class="mb-6">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="w-12 h-12 bg-gradient-to-br from-secondary-500 to-secondary-700 rounded-xl flex items-center justify-center shadow-lg">
+                    <i class="bi bi-archive-fill text-white text-xl"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-dark-900">Archived Users</h2>
+                    <p class="text-dark-500 text-sm mt-0.5">View and manage deleted user accounts</p>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <a href="{% url 'consumers:user_management' %}" class="inline-flex items-center gap-2 px-4 py-2.5 bg-light-100 hover:bg-light-200 text-dark-700 text-sm font-medium rounded-xl transition-all duration-200 shadow-sm">
+                    <i class="bi bi-arrow-left"></i>
+                    Back to Users
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages -->
+    {% if messages %}
+    <div class="mb-6 space-y-2">
+        {% for message in messages %}
+        <div class="flex items-center justify-between p-4 rounded-lg border-l-4 {% if message.tags == 'success' %}bg-success-50 border-success-500 text-success-900{% elif message.tags == 'error' %}bg-danger-50 border-danger-500 text-danger-900{% elif message.tags == 'warning' %}bg-warning-50 border-warning-500 text-warning-900{% else %}bg-info-50 border-info-500 text-info-900{% endif %} shadow-sm">
+            <div class="flex items-center gap-3">
+                <i class="bi {% if message.tags == 'success' %}bi-check-circle-fill{% elif message.tags == 'error' %}bi-x-circle-fill{% elif message.tags == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %} text-xl"></i>
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-dark-500 hover:text-dark-700 transition-colors">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Statistics Card -->
+    <div class="bg-white rounded-xl border border-light-200 shadow-sm p-5 mb-6">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs font-semibold text-dark-500 uppercase tracking-wider mb-2">Total Archived Users</p>
+                <p class="text-3xl font-bold text-secondary-600">{{ total_archived }}</p>
+            </div>
+            <div class="w-14 h-14 bg-gradient-to-br from-secondary-100 to-secondary-200 rounded-xl flex items-center justify-center">
+                <i class="bi bi-archive-fill text-2xl text-secondary-600"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Search -->
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm p-5 mb-6">
+        <form method="GET" class="flex gap-4">
+            <div class="flex-1">
+                <label class="block text-xs font-medium text-dark-700 mb-1">Search</label>
+                <input type="text" name="search" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-secondary-500 focus:border-transparent" placeholder="Username, name, or email..." value="{{ search_query }}">
+            </div>
+            <div class="flex items-end">
+                <button type="submit" class="px-4 py-2 bg-secondary-600 text-white text-sm font-medium rounded hover:bg-secondary-700 transition-colors">
+                    <i class="bi bi-search mr-1"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Archived Users Table -->
+    <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead class="bg-light-50 border-b border-light-200">
+                    <tr>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Username</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Full Name</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Email</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Role</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Barangay</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Archived By</th>
+                        <th class="px-4 py-3 text-left text-xs font-semibold text-dark-700">Archived Date</th>
+                        <th class="px-4 py-3 text-center text-xs font-semibold text-dark-700">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-light-200">
+                    {% for user in archived_users %}
+                    <tr class="hover:bg-light-50">
+                        <td class="px-4 py-3 font-semibold text-dark-900">{{ user.username }}</td>
+                        <td class="px-4 py-3 text-dark-700">
+                            {% if user.first_name or user.last_name %}
+                                {{ user.first_name }} {{ user.last_name }}
+                            {% else %}
+                                <span class="text-dark-400">—</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-dark-700">{{ user.email|default:"—" }}</td>
+                        <td class="px-4 py-3">
+                            {% if user.was_superuser %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger-100 text-danger-800">
+                                <i class="bi bi-shield-fill-check mr-1"></i>Superuser
+                            </span>
+                            {% elif user.staff_role %}
+                                {% if user.staff_role == 'admin' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-primary-100 text-primary-800">
+                                    <i class="bi bi-briefcase-fill mr-1"></i>Admin
+                                </span>
+                                {% elif user.staff_role == 'cashier' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
+                                    <i class="bi bi-cash-coin mr-1"></i>Cashier
+                                </span>
+                                {% elif user.staff_role == 'field_staff' %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-info-100 text-info-800">
+                                    <i class="bi bi-geo-alt-fill mr-1"></i>Field Staff
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">
+                                    <i class="bi bi-person-badge-fill mr-1"></i>Staff
+                                </span>
+                                {% endif %}
+                            {% elif user.was_staff %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">
+                                <i class="bi bi-person-badge-fill mr-1"></i>Staff
+                            </span>
+                            {% else %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-700">Regular</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-dark-700">{{ user.assigned_barangay_name|default:"—" }}</td>
+                        <td class="px-4 py-3 text-dark-700">
+                            {% if user.archived_by %}
+                                {{ user.archived_by.username }}
+                            {% else %}
+                                <span class="text-dark-400">System</span>
+                            {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-dark-700">{{ user.archived_at|date:"M d, Y H:i" }}</td>
+                        <td class="px-4 py-3 text-center">
+                            <button onclick="confirmPermanentDelete('{{ user.id }}', '{{ user.username }}')" class="px-2 py-1 border border-danger-300 text-danger-700 text-xs font-medium rounded hover:bg-danger-50 transition-colors" title="Permanently Delete">
+                                <i class="bi bi-trash-fill"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="px-4 py-8 text-center">
+                            <i class="bi bi-archive text-6xl text-light-300 block mb-2"></i>
+                            <p class="text-sm text-dark-400">No archived users found.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if archived_users.has_other_pages %}
+        <div class="px-5 py-3 bg-light-50 border-t border-light-200">
+            <nav class="flex justify-center">
+                <ul class="flex items-center gap-1">
+                    {% if archived_users.has_previous %}
+                    <li><a href="?page={{ archived_users.previous_page_number }}&search={{ search_query }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Previous</a></li>
+                    {% endif %}
+
+                    {% for num in archived_users.paginator.page_range %}
+                    {% if archived_users.number == num %}
+                    <li><span class="px-3 py-1 text-sm bg-secondary-600 text-white rounded">{{ num }}</span></li>
+                    {% elif num > archived_users.number|add:'-3' and num < archived_users.number|add:'3' %}
+                    <li><a href="?page={{ num }}&search={{ search_query }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">{{ num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if archived_users.has_next %}
+                    <li><a href="?page={{ archived_users.next_page_number }}&search={{ search_query }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Next</a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Info Notice -->
+    <div class="mt-6 px-4 py-3 rounded-lg border bg-info-50 border-info-200 text-info-800">
+        <div class="flex items-start gap-2">
+            <i class="bi bi-info-circle text-lg"></i>
+            <div class="text-sm">
+                <strong class="font-semibold">Note:</strong> Archived users are preserved for audit purposes.
+                Permanently deleting an archived user will remove all records of that user from the system.
+            </div>
+        </div>
+    </div>
+</div>
+
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Permanent delete confirmation
+async function confirmPermanentDelete(archivedId, username) {
+    const result = await Swal.fire({
+        title: 'Permanently Delete?',
+        html: `
+            <div class="text-start">
+                <div class="p-3 bg-danger-50 border-l-4 border-danger-500 rounded mb-3">
+                    <p class="text-sm text-danger-800">
+                        <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                        <strong>Warning!</strong> This action cannot be undone.
+                    </p>
+                </div>
+                <p class="text-sm">Are you sure you want to permanently delete archived user <strong>${username}</strong>?</p>
+                <p class="text-xs text-gray-500 mt-1">All records of this user will be permanently removed.</p>
+            </div>
+        `,
+        icon: 'error',
+        showCancelButton: true,
+        confirmButtonColor: '#ef4444',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-trash-fill mr-1"></i> Delete Permanently',
+        cancelButtonText: 'Cancel',
+        focusCancel: true
+    });
+
+    if (result.isConfirmed) {
+        Swal.fire({
+            title: 'Deleting...',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/users/archived/${archivedId}/delete/`;
+
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

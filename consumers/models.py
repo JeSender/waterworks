@@ -406,6 +406,88 @@ class UserActivity(models.Model):
         return f"{self.user.username if self.user else 'System'} - {self.get_action_display()} - {self.created_at.strftime('%Y-%m-%d %H:%M')}"
 
 
+class ArchivedUser(models.Model):
+    """
+    Stores archived/deleted users instead of permanently deleting them.
+    Preserves user data for audit trail and potential restoration.
+    """
+    # Original user information
+    original_user_id = models.IntegerField(help_text="Original User ID before deletion")
+    username = models.CharField(max_length=150)
+    email = models.EmailField(blank=True)
+    first_name = models.CharField(max_length=150, blank=True)
+    last_name = models.CharField(max_length=150, blank=True)
+
+    # User status at time of archive
+    was_staff = models.BooleanField(default=False)
+    was_superuser = models.BooleanField(default=False)
+    was_active = models.BooleanField(default=True)
+
+    # Staff profile info (if existed)
+    staff_role = models.CharField(max_length=20, blank=True, null=True)
+    assigned_barangay_name = models.CharField(max_length=100, blank=True, null=True)
+
+    # Archive metadata
+    archived_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='archived_users',
+        help_text="Admin who archived this user"
+    )
+    archived_at = models.DateTimeField(default=timezone.now)
+    archive_reason = models.CharField(max_length=255, blank=True, default="User deleted by admin")
+
+    # Original timestamps
+    date_joined = models.DateTimeField(null=True, blank=True)
+    last_login = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-archived_at']
+        verbose_name = "Archived User"
+        verbose_name_plural = "Archived Users"
+        indexes = [
+            models.Index(fields=['username']),
+            models.Index(fields=['archived_at']),
+        ]
+
+    def __str__(self):
+        return f"{self.username} (archived {self.archived_at.strftime('%Y-%m-%d')})"
+
+    @classmethod
+    def archive_user(cls, user, archived_by=None, reason="User deleted by admin"):
+        """
+        Archive a user before deletion.
+        Returns the ArchivedUser instance.
+        """
+        # Get staff profile info if exists
+        staff_role = None
+        barangay_name = None
+        if hasattr(user, 'staffprofile') and user.staffprofile:
+            staff_role = user.staffprofile.role
+            if user.staffprofile.assigned_barangay:
+                barangay_name = user.staffprofile.assigned_barangay.name
+
+        archived = cls.objects.create(
+            original_user_id=user.id,
+            username=user.username,
+            email=user.email,
+            first_name=user.first_name,
+            last_name=user.last_name,
+            was_staff=user.is_staff,
+            was_superuser=user.is_superuser,
+            was_active=user.is_active,
+            staff_role=staff_role,
+            assigned_barangay_name=barangay_name,
+            archived_by=archived_by,
+            archive_reason=reason,
+            date_joined=user.date_joined,
+            last_login=user.last_login,
+        )
+        return archived
+
+
 # ... (rest of your existing models) ...
 
 class StaffProfile(models.Model):

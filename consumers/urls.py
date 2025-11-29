@@ -86,6 +86,8 @@ urlpatterns = [
     path('user/<int:user_id>/edit/', views.edit_user, name='edit_user'),
     path('user/<int:user_id>/delete/', views.delete_user, name='delete_user'),
     path('user/<int:user_id>/reset-password/', views.reset_user_password, name='reset_user_password'),
+    path('users/archived/', views.archived_users, name='archived_users'),
+    path('users/archived/<int:archived_id>/delete/', views.permanently_delete_archived_user, name='permanently_delete_archived_user'),
 
     # Notifications
     path('notifications/<int:notification_id>/mark-read/', views.mark_notification_read, name='mark_notification_read'),
