@@ -645,10 +645,22 @@ from django.db import models
 # Main Consumer Model
 # ----------------------------
 class Consumer(models.Model):
+    # Suffix choices for name
+    SUFFIX_CHOICES = [
+        ('', 'None'),
+        ('Jr.', 'Jr.'),
+        ('Sr.', 'Sr.'),
+        ('II', 'II'),
+        ('III', 'III'),
+        ('IV', 'IV'),
+        ('V', 'V'),
+    ]
+
     # Personal Information
     first_name = models.CharField(max_length=50)
     middle_name = models.CharField(max_length=50, blank=True, null=True)
     last_name = models.CharField(max_length=50)
+    suffix = models.CharField(max_length=10, choices=SUFFIX_CHOICES, blank=True, default='')
     birth_date = models.DateField()
     gender = models.CharField(max_length=10, choices=GENDER_CHOICES)
     phone_number = models.CharField(max_length=15)
@@ -689,9 +701,10 @@ class Consumer(models.Model):
     # ========================
     @property
     def full_name(self):
-        """Returns the full name with optional middle name."""
+        """Returns the full name with optional middle name and suffix."""
         middle = f" {self.middle_name}" if self.middle_name else ""
-        return f"{self.first_name}{middle} {self.last_name}".strip()
+        suffix = f" {self.suffix}" if self.suffix else ""
+        return f"{self.first_name}{middle} {self.last_name}{suffix}".strip()
 
     @property
     def is_delinquent(self):

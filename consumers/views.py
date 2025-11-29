@@ -3813,10 +3813,18 @@ def create_user(request):
     from .decorators import check_password_strength
     from django.contrib.auth.hashers import make_password
 
+    # Helper function for proper casing
+    def proper_case(value):
+        """Convert string to proper case (Title Case)."""
+        if not value:
+            return value
+        return ' '.join(word.capitalize() for word in value.strip().split())
+
     if request.method == 'POST':
         username = request.POST.get('username', '').strip()
-        first_name = request.POST.get('first_name', '').strip()
-        last_name = request.POST.get('last_name', '').strip()
+        # Apply proper casing to first name and last name
+        first_name = proper_case(request.POST.get('first_name', '').strip())
+        last_name = proper_case(request.POST.get('last_name', '').strip())
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
@@ -3824,6 +3832,11 @@ def create_user(request):
         is_superuser = request.POST.get('is_superuser') == 'on'
         assigned_barangay_id = request.POST.get('assigned_barangay')
         role = request.POST.get('role', 'field_staff')
+
+        # Validation - require first name and last name
+        if not first_name or not last_name:
+            messages.error(request, "First name and last name are required.")
+            return redirect('consumers:user_management')
 
         # Validation
         if not username or not password:
