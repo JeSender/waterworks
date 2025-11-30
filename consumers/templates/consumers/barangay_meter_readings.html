@@ -170,24 +170,30 @@
 
                         <!-- Actions -->
                         <td class="px-4 py-2 text-center">
-                            {% if item.reading and not item.reading.is_confirmed %}
-                                <div class="flex items-center justify-center gap-2">
+                            {% if item.reading %}
+                                <div class="flex items-center justify-center gap-1">
                                     {% if item.reading.proof_image_url %}
+                                        <!-- View Proof Button -->
                                         <button onclick="showProofAndConfirm({{ item.reading.id }}, '{{ item.reading.proof_image_url }}', {{ item.reading.reading_value }}, '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', {{ item.consumption|default:0 }})"
-                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
-                                                title="View Proof & Confirm">
-                                            <i class="bi bi-image mr-1"></i> View Proof
-                                        </button>
-                                    {% else %}
-                                        <button onclick="confirmReading({{ item.reading.id }})"
-                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-green-500 text-white hover:bg-green-600 transition-colors"
-                                                title="Confirm Reading">
-                                            <i class="bi bi-check-lg mr-1"></i> Confirm
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                                                title="View Proof Photo">
+                                            <i class="bi bi-image"></i>
                                         </button>
                                     {% endif %}
+                                    {% if not item.reading.is_confirmed %}
+                                        <!-- Confirm Button -->
+                                        <button onclick="confirmReading({{ item.reading.id }})"
+                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                                                title="Confirm Reading">
+                                            <i class="bi bi-check-lg"></i>
+                                        </button>
+                                    {% else %}
+                                        <!-- Already Confirmed -->
+                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </span>
+                                    {% endif %}
                                 </div>
-                            {% elif item.reading and item.reading.is_confirmed %}
-                                <span class="text-xs text-green-600"><i class="bi bi-check-all"></i> Done</span>
                             {% else %}
                                 <span class="text-sm text-gray-400">—</span>
                             {% endif %}
