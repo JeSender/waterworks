@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Retrofit API interface for Balilihan Waterworks Management System
  *
- * Base URL: https://waterworks-rose.vercel.app/
+ * Base URL: https://waterworks-sos3.onrender.com/
  */
 public interface WaterworksApiService {
 

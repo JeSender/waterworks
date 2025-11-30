@@ -16,8 +16,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class RetrofitClient {
 
-    // IMPORTANT: Change this to your production URL
-    private static final String BASE_URL = "https://waterworks-rose.vercel.app/";
+    // Production URL (Render)
+    private static final String BASE_URL = "https://waterworks-sos3.onrender.com/";
 
     // For local testing, use:
     // private static final String BASE_URL = "http://10.0.2.2:8000/";  // Android emulator
