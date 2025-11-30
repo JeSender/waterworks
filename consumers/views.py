@@ -719,6 +719,189 @@ def api_get_current_rates(request):
 
 
 # ============================================================================
+# API VIEW: GET BILL DETAILS FOR A CONSUMER
+# ============================================================================
+@csrf_exempt
+def api_get_consumer_bill(request, consumer_id):
+    """
+    API endpoint for Android app to get bill details for a specific consumer.
+
+    URL: /api/consumers/<consumer_id>/bill/
+
+    Returns the latest pending bill for the consumer with all details needed
+    for the Bill Details screen in the mobile app.
+    """
+    try:
+        # Get the consumer
+        consumer = Consumer.objects.select_related('barangay', 'purok').get(id=consumer_id)
+
+        # Get the latest bill for this consumer
+        bill = Bill.objects.filter(
+            consumer=consumer
+        ).select_related(
+            'current_reading', 'previous_reading'
+        ).order_by('-billing_period', '-created_at').first()
+
+        if not bill:
+            return JsonResponse({
+                'status': 'no_bill',
+                'message': 'No bill found for this consumer',
+                'consumer_id': consumer.id,
+                'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+                'id_number': consumer.id_number,
+            }, status=404)
+
+        # Get reader name from the meter reading source
+        reader_name = "System"
+        if bill.current_reading:
+            if bill.current_reading.source == 'mobile_app':
+                reader_name = "Field Staff (Mobile)"
+            elif bill.current_reading.source == 'manual':
+                reader_name = "Office Staff (Manual)"
+
+        return JsonResponse({
+            'status': 'success',
+
+            # Consumer Info
+            'consumer_id': consumer.id,
+            'id_number': consumer.id_number,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'address': f"{consumer.purok.name if consumer.purok else ''}, {consumer.barangay.name if consumer.barangay else ''}",
+            'account_type': consumer.usage_type,  # Residential or Commercial
+            'serial_number': consumer.serial_number,
+
+            # Bill Info
+            'bill_id': bill.id,
+            'billing_date': bill.billing_period.isoformat(),
+            'due_date': bill.due_date.isoformat(),
+            'bill_status': bill.status,
+
+            # Meter Readings
+            'previous_reading': bill.previous_reading.reading_value if bill.previous_reading else consumer.first_reading or 0,
+            'current_reading': bill.current_reading.reading_value if bill.current_reading else 0,
+            'reading_date': bill.current_reading.reading_date.isoformat() if bill.current_reading else None,
+            'consumption': bill.consumption,
+
+            # Tiered Rate Breakdown
+            'tier_breakdown': {
+                'tier1': {
+                    'range': '1-5 m³',
+                    'consumption': bill.tier1_consumption,
+                    'amount': float(bill.tier1_amount),
+                    'description': 'Minimum Charge'
+                },
+                'tier2': {
+                    'range': '6-10 m³',
+                    'consumption': bill.tier2_consumption,
+                    'rate': float(bill.tier2_rate),
+                    'amount': float(bill.tier2_amount)
+                },
+                'tier3': {
+                    'range': '11-20 m³',
+                    'consumption': bill.tier3_consumption,
+                    'rate': float(bill.tier3_rate),
+                    'amount': float(bill.tier3_amount)
+                },
+                'tier4': {
+                    'range': '21-50 m³',
+                    'consumption': bill.tier4_consumption,
+                    'rate': float(bill.tier4_rate),
+                    'amount': float(bill.tier4_amount)
+                },
+                'tier5': {
+                    'range': '51+ m³',
+                    'consumption': bill.tier5_consumption,
+                    'rate': float(bill.tier5_rate),
+                    'amount': float(bill.tier5_amount)
+                }
+            },
+
+            # Totals
+            'rate_per_cubic': float(bill.rate_per_cubic),  # Average rate
+            'total_amount': float(bill.total_amount),
+
+            # Penalty Info
+            'penalty_amount': float(bill.penalty_amount),
+            'penalty_waived': bill.penalty_waived,
+            'total_amount_due': float(bill.total_amount + bill.penalty_amount) if not bill.penalty_waived else float(bill.total_amount),
+
+            # Metadata
+            'reader_name': reader_name,
+            'printed_at': timezone.now().isoformat(),
+            'created_at': bill.created_at.isoformat(),
+        })
+
+    except Consumer.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Consumer not found'
+        }, status=404)
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching bill for consumer {consumer_id}: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET ALL BILLS FOR A CONSUMER (History)
+# ============================================================================
+@csrf_exempt
+def api_get_consumer_bills(request, consumer_id):
+    """
+    API endpoint for Android app to get all bills for a specific consumer.
+
+    URL: /api/consumers/<consumer_id>/bills/
+
+    Returns list of all bills (history) for the consumer.
+    """
+    try:
+        consumer = Consumer.objects.get(id=consumer_id)
+
+        bills = Bill.objects.filter(
+            consumer=consumer
+        ).select_related(
+            'current_reading', 'previous_reading'
+        ).order_by('-billing_period', '-created_at')
+
+        bills_list = []
+        for bill in bills:
+            bills_list.append({
+                'bill_id': bill.id,
+                'billing_date': bill.billing_period.isoformat(),
+                'due_date': bill.due_date.isoformat(),
+                'consumption': bill.consumption,
+                'total_amount': float(bill.total_amount),
+                'penalty_amount': float(bill.penalty_amount),
+                'status': bill.status,
+                'previous_reading': bill.previous_reading.reading_value if bill.previous_reading else 0,
+                'current_reading': bill.current_reading.reading_value if bill.current_reading else 0,
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'consumer_id': consumer.id,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'id_number': consumer.id_number,
+            'total_bills': len(bills_list),
+            'bills': bills_list
+        })
+
+    except Consumer.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Consumer not found'
+        }, status=404)
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching bills for consumer {consumer_id}: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
 # API VIEW: GET SYSTEM SETTINGS FOR MOBILE APP
 # ============================================================================
 @csrf_exempt

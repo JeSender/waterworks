@@ -1071,7 +1071,7 @@ class SystemSetting(models.Model):
     residential_tier5_rate = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('18.00'),
+        default=Decimal('50.00'),
         help_text="Rate for 51+ m³ consumption (₱/m³)"
     )
 
@@ -1110,7 +1110,7 @@ class SystemSetting(models.Model):
     commercial_tier5_rate = models.DecimalField(
         max_digits=10,
         decimal_places=2,
-        default=Decimal('24.00'),
+        default=Decimal('30.00'),
         help_text="Rate for 51+ m³ consumption (₱/m³)"
     )
 
