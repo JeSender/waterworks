@@ -18,7 +18,6 @@ Pillow>=10.0.0
 
 # Cloud Image Storage (for proof photos)
 cloudinary==1.36.0
-django-cloudinary-storage==0.3.0
 
 # CORS Headers (for Android app API)
 django-cors-headers==4.3.1

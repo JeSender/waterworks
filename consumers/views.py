@@ -400,7 +400,7 @@ def api_submit_manual_reading(request):
         if proof_image_base64:
             try:
                 # Check if Cloudinary is configured
-                if not settings.CLOUDINARY_CLOUD_NAME:
+                if not settings.CLOUDINARY_AVAILABLE:
                     return JsonResponse({'error': 'Image upload not configured'}, status=500)
 
                 # Upload to Cloudinary

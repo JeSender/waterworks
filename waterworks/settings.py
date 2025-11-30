@@ -41,14 +41,6 @@ INSTALLED_APPS = [
     'consumers',
 ]
 
-# Add Cloudinary apps if available (for proof image uploads)
-try:
-    import cloudinary_storage
-    INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles'), 'cloudinary_storage')
-    import cloudinary as cloudinary_module
-    INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'cloudinary')
-except ImportError:
-    pass  # Cloudinary not installed, skip
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -256,36 +248,30 @@ if not EMAIL_HOST_PASSWORD:
     _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
 # ============================================================================
-# CLOUDINARY CONFIGURATION - For proof image uploads
+# CLOUDINARY CONFIGURATION - For proof image uploads (API direct upload)
 # ============================================================================
 # Environment variables on Render:
 # - CLOUDINARY_CLOUD_NAME = dpuynl0ir
 # - CLOUDINARY_API_KEY = 164721132444788
 # - CLOUDINARY_API_SECRET = (configured)
-CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
-    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
-    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
-}
-
-# Configure cloudinary for API uploads
 CLOUDINARY_AVAILABLE = False
 try:
     import cloudinary
     import cloudinary.uploader
     CLOUDINARY_AVAILABLE = True
 
-    # Use Cloudinary for media file storage (proof photos)
-    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    _cloud_name = config('CLOUDINARY_CLOUD_NAME', default='')
+    _api_key = config('CLOUDINARY_API_KEY', default='')
+    _api_secret = config('CLOUDINARY_API_SECRET', default='')
 
-    if CLOUDINARY_STORAGE['CLOUD_NAME'] and CLOUDINARY_STORAGE['API_KEY'] and CLOUDINARY_STORAGE['API_SECRET']:
+    if _cloud_name and _api_key and _api_secret:
         cloudinary.config(
-            cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
-            api_key=CLOUDINARY_STORAGE['API_KEY'],
-            api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+            cloud_name=_cloud_name,
+            api_key=_api_key,
+            api_secret=_api_secret,
             secure=True
         )
-        _email_logger.info(f"Cloudinary configured with cloud: {CLOUDINARY_STORAGE['CLOUD_NAME']}")
+        _email_logger.info(f"Cloudinary configured with cloud: {_cloud_name}")
     else:
         _email_logger.warning("Cloudinary credentials not configured! Proof image uploads will fail.")
 except ImportError:
