@@ -38,7 +38,6 @@
             </div>
         {% endfor %}
     </div>
-    
 {% endif %}
 
 <!-- Search Filter -->
@@ -64,14 +63,12 @@
     </span>
 </div>
 
-<!-- Data Table: High-Density Professional Layout -->
-<div class=
-"bg-white rounded-lg shadow-md overflow-hidden">
+<!-- Data Table -->
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
     <div class="overflow-x-auto">
         <table class="w-full">
             <thead class="bg-gray-100 border-b border-gray-200">
                 <tr>
-                    <!-- Data Columns -->
                     <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                         ID Number
                     </th>
@@ -100,9 +97,12 @@
             </thead>
             <tbody class="divide-y divide-gray-200">
                 {% for item in readings %}
-                    <tr class="hover:bg-gray-50 transition-colors duration-100"
+                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.reading and item.reading.id|stringformat:'i' == request.GET.highlight %}bg-yellow-50{% endif %}"
+                        id="reading-row-{{ item.reading.id }}"
                         data-consumer-name="{{ item.consumer.first_name|lower }} {{ item.consumer.last_name|lower }}"
-                        data-consumer-id="{{ item.display_id|lower }}">
+                        data-consumer-id="{{ item.display_id|lower }}"
+                        data-reading-id="{{ item.reading.id|default:'' }}">
+
                         <!-- ID Number -->
                         <td class="px-4 py-2">
                             <span class="text-sm font-semibold text-gray-800">{{ item.display_id }}</span>
@@ -158,10 +158,6 @@
                                     <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                                         <i class="bi bi-check-circle-fill mr-1"></i> Confirmed
                                     </span>
-                                {% elif item.reading.is_rejected %}
-                                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                                        <i class="bi bi-x-circle-fill mr-1"></i> Rejected
-                                    </span>
                                 {% else %}
                                     <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                                         <i class="bi bi-clock-fill mr-1"></i> Pending
@@ -174,28 +170,24 @@
 
                         <!-- Actions -->
                         <td class="px-4 py-2 text-center">
-                            {% if item.reading %}
+                            {% if item.reading and not item.reading.is_confirmed %}
                                 <div class="flex items-center justify-center gap-2">
                                     {% if item.reading.proof_image_url %}
-                                        <button onclick="openImageModal('{{ item.reading.proof_image_url }}')"
-                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                                                title="View Proof Photo">
-                                            <i class="bi bi-image mr-1"></i> Photo
+                                        <button onclick="showProofAndConfirm({{ item.reading.id }}, '{{ item.reading.proof_image_url }}', {{ item.reading.reading_value }}, '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', {{ item.consumption|default:0 }})"
+                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                                                title="View Proof & Confirm">
+                                            <i class="bi bi-image mr-1"></i> View Proof
                                         </button>
-                                    {% endif %}
-                                    {% if not item.reading.is_confirmed and not item.reading.is_rejected %}
+                                    {% else %}
                                         <button onclick="confirmReading({{ item.reading.id }})"
-                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
+                                                class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-green-500 text-white hover:bg-green-600 transition-colors"
                                                 title="Confirm Reading">
                                             <i class="bi bi-check-lg mr-1"></i> Confirm
                                         </button>
-                                        <button onclick="showRejectModal({{ item.reading.id }})"
-                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors"
-                                                title="Reject Reading">
-                                            <i class="bi bi-x-lg mr-1"></i> Reject
-                                        </button>
                                     {% endif %}
                                 </div>
+                            {% elif item.reading and item.reading.is_confirmed %}
+                                <span class="text-xs text-green-600"><i class="bi bi-check-all"></i> Done</span>
                             {% else %}
                                 <span class="text-sm text-gray-400">—</span>
                             {% endif %}
@@ -222,23 +214,94 @@
                 <span class="ml-1">{{ readings|length }}</span>
             </div>
             <div>
-                <span class="font-semibold text-gray-700">With Readings:</span>
+                <span class="font-semibold text-gray-700">Confirmed:</span>
                 <span class="ml-1 text-green-700 font-semibold">{{ confirmed_count }}</span>
             </div>
             <div>
-                <span class="font-semibold text-gray-700">No Readings:</span>
-                <span class="ml-1 text-gray-500">{{ no_reading_count }}</span>
+                <span class="font-semibold text-gray-700">Pending:</span>
+                <span class="ml-1 text-yellow-700 font-semibold">{{ pending_count|default:0 }}</span>
             </div>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- JavaScript: Enhanced Functionality -->
+<!-- Proof Image & Confirm Modal -->
+<div id="proofModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-80" onclick="closeProofModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-white">
+                    <i class="bi bi-camera-fill mr-2"></i> Verify Meter Reading
+                </h3>
+                <button onclick="closeProofModal()" class="text-white hover:text-gray-200">
+                    <i class="bi bi-x-lg text-xl"></i>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="p-6">
+                <!-- Consumer Info -->
+                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
+                    <p class="text-sm text-gray-600">Consumer: <span id="modalConsumerName" class="font-bold text-gray-900"></span></p>
+                    <div class="flex gap-6 mt-2">
+                        <p class="text-sm text-gray-600">New Reading: <span id="modalReadingValue" class="font-bold text-blue-600 text-lg"></span></p>
+                        <p class="text-sm text-gray-600">Consumption: <span id="modalConsumption" class="font-bold text-green-600 text-lg"></span> m³</p>
+                    </div>
+                </div>
+
+                <!-- Proof Image -->
+                <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Proof Photo from Field Staff:</p>
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50">
+                        <img id="modalProofImage" src="" alt="Meter Reading Proof"
+                             class="w-full max-h-80 object-contain rounded cursor-pointer"
+                             onclick="openFullImage(this.src)">
+                        <p class="text-xs text-center text-gray-500 mt-2">Click image to view full size</p>
+                    </div>
+                </div>
+
+                <!-- Confirm Instructions -->
+                <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                    <p class="text-sm text-yellow-800">
+                        <i class="bi bi-info-circle-fill mr-1"></i>
+                        Please verify that the reading value <strong>matches</strong> the meter display in the photo, then click Confirm.
+                    </p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex gap-3">
+                    <button onclick="closeProofModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
+                        <i class="bi bi-arrow-left mr-2"></i> Back
+                    </button>
+                    <button onclick="confirmCurrentReading()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        <i class="bi bi-check-lg mr-2"></i> Confirm Reading
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Image Modal -->
+<div id="fullImageModal" class="fixed inset-0 z-[60] hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-95" onclick="closeFullImage()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="relative">
+            <button onclick="closeFullImage()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
+                <i class="bi bi-x-lg"></i>
+            </button>
+            <img id="fullImage" src="" alt="Full Size Proof" class="max-w-[95vw] max-h-[90vh] rounded-lg shadow-2xl">
+        </div>
+    </div>
+</div>
+
 <script>
-/**
- * Initialize on page load
- */
+let currentReadingId = null;
+
+// Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     // Search functionality
     const searchInput = document.getElementById('search-consumer');
@@ -251,11 +314,89 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Auto-open proof modal if highlight parameter is present
+    const urlParams = new URLSearchParams(window.location.search);
+    const highlightId = urlParams.get('highlight');
+    if (highlightId) {
+        const row = document.getElementById('reading-row-' + highlightId);
+        if (row) {
+            // Scroll to the row
+            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+            // Find and click the View Proof button
+            const viewProofBtn = row.querySelector('button[onclick^="showProofAndConfirm"]');
+            if (viewProofBtn) {
+                setTimeout(() => viewProofBtn.click(), 500);
+            }
+        }
+    }
 });
 
-/**
- * Filter consumers by name or ID
- */
+// Show proof image and confirm modal
+function showProofAndConfirm(readingId, imageUrl, readingValue, consumerName, consumption) {
+    currentReadingId = readingId;
+    document.getElementById('modalProofImage').src = imageUrl;
+    document.getElementById('modalReadingValue').textContent = readingValue;
+    document.getElementById('modalConsumerName').textContent = consumerName;
+    document.getElementById('modalConsumption').textContent = consumption;
+    document.getElementById('proofModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeProofModal() {
+    document.getElementById('proofModal').classList.add('hidden');
+    document.body.style.overflow = '';
+    currentReadingId = null;
+}
+
+// Open full size image
+function openFullImage(src) {
+    document.getElementById('fullImage').src = src;
+    document.getElementById('fullImageModal').classList.remove('hidden');
+}
+
+function closeFullImage() {
+    document.getElementById('fullImageModal').classList.add('hidden');
+}
+
+// Confirm reading from modal
+function confirmCurrentReading() {
+    if (currentReadingId) {
+        confirmReading(currentReadingId);
+    }
+}
+
+// Confirm reading directly
+function confirmReading(readingId) {
+    closeProofModal();
+    showLoading('Confirming reading & generating bill...');
+
+    fetch(`/meter-readings/${readingId}/confirm/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.status === 'success') {
+            showToast('success', data.message || 'Reading confirmed and bill generated!');
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('error', data.message || 'Failed to confirm reading');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        console.error('Error:', error);
+        showToast('error', 'An error occurred. Please try again.');
+    });
+}
+
+// Filter consumers by name or ID
 function filterConsumers() {
     const searchInput = document.getElementById('search-consumer');
     const filter = searchInput.value.toLowerCase().trim();
@@ -275,38 +416,18 @@ function filterConsumers() {
         }
     });
 
-    // Update visible count display
     updateVisibleCount(visibleCount, rows.length);
 }
 
-/**
- * Clear search and show all rows
- */
 function clearSearch() {
     document.getElementById('search-consumer').value = '';
     filterConsumers();
 }
 
-/**
- * Update visible count display
- */
 function updateVisibleCount(visible, total) {
     document.getElementById('visible-count').textContent = visible;
-
-    // Show/hide "no results" message
-    const tbody = document.querySelector('tbody');
-    const emptyRow = tbody.querySelector('tr:not([data-consumer-name])');
-
-    if (visible === 0 && emptyRow) {
-        emptyRow.style.display = '';
-    } else if (emptyRow) {
-        emptyRow.style.display = 'none';
-    }
 }
 
-/**
- * Debounce function for search input
- */
 function debounce(func, wait) {
     let timeout;
     return function executedFunction(...args) {
@@ -319,9 +440,6 @@ function debounce(func, wait) {
     };
 }
 
-/**
- * Helper function to get CSRF token
- */
 function getCookie(name) {
     let cookieValue = null;
     if (document.cookie && document.cookie !== '') {
@@ -337,177 +455,12 @@ function getCookie(name) {
     return cookieValue;
 }
 
-/**
- * Open image modal to view proof photo
- */
-function openImageModal(imageUrl) {
-    document.getElementById('modalImage').src = imageUrl;
-    document.getElementById('imageModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeImageModal() {
-    document.getElementById('imageModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-/**
- * Confirm reading and generate bill
- */
-function confirmReading(readingId) {
-    Swal.fire({
-        title: 'Confirm Reading?',
-        text: 'This will confirm the reading and generate the consumer\'s bill.',
-        icon: 'question',
-        showCancelButton: true,
-        confirmButtonColor: '#16a34a',
-        cancelButtonColor: '#6b7280',
-        confirmButtonText: 'Yes, Confirm',
-        cancelButtonText: 'Cancel'
-    }).then((result) => {
-        if (result.isConfirmed) {
-            showLoading('Confirming reading...');
-
-            fetch(`/meter-readings/${readingId}/confirm/`, {
-                method: 'POST',
-                headers: {
-                    'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                hideLoading();
-                if (data.status === 'success') {
-                    showToast('success', data.message || 'Reading confirmed and bill generated!');
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showToast('error', data.message || 'Failed to confirm reading');
-                }
-            })
-            .catch(error => {
-                hideLoading();
-                console.error('Error:', error);
-                showToast('error', 'An error occurred. Please try again.');
-            });
-        }
-    });
-}
-
-/**
- * Show reject modal
- */
-function showRejectModal(readingId) {
-    document.getElementById('rejectReadingId').value = readingId;
-    document.getElementById('rejectReason').value = '';
-    document.getElementById('rejectModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeRejectModal() {
-    document.getElementById('rejectModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-/**
- * Submit rejection
- */
-function submitReject(event) {
-    event.preventDefault();
-
-    const readingId = document.getElementById('rejectReadingId').value;
-    const reason = document.getElementById('rejectReason').value.trim();
-
-    if (!reason) {
-        showToast('error', 'Please provide a reason for rejection');
-        return;
-    }
-
-    closeRejectModal();
-    showLoading('Rejecting reading...');
-
-    fetch(`/meter-readings/${readingId}/reject/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.status === 'success') {
-            showToast('success', data.message || 'Reading rejected');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('error', data.message || 'Failed to reject reading');
-        }
-    })
-    .catch(error => {
-        hideLoading();
-        console.error('Error:', error);
-        showToast('error', 'An error occurred. Please try again.');
-    });
-}
-
 // Close modals on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
-        closeImageModal();
-        closeRejectModal();
+        closeProofModal();
+        closeFullImage();
     }
 });
 </script>
-
-<!-- Image Modal -->
-<div id="imageModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-80" onclick="closeImageModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="relative max-w-4xl max-h-[90vh]">
-            <button onclick="closeImageModal()"
-                    class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
-                <i class="bi bi-x-lg"></i>
-            </button>
-            <img id="modalImage" src="" alt="Proof Photo" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl">
-        </div>
-    </div>
-</div>
-
-<!-- Reject Modal -->
-<div id="rejectModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeRejectModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900">
-                    <i class="bi bi-x-circle text-red-600 mr-2"></i>
-                    Reject Reading
-                </h3>
-                <button onclick="closeRejectModal()" class="text-gray-400 hover:text-gray-600">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <form id="rejectForm" onsubmit="submitReject(event)">
-                <input type="hidden" id="rejectReadingId" value="">
-                <div class="mb-4">
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Reason for Rejection *</label>
-                    <textarea id="rejectReason"
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 resize-none"
-                              rows="3"
-                              placeholder="Please provide a reason for rejecting this reading..."
-                              required></textarea>
-                </div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeRejectModal()" class="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
-                        Cancel
-                    </button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                        <i class="bi bi-x-lg mr-2"></i> Reject Reading
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
 {% endblock %}
