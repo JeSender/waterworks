@@ -46,18 +46,23 @@ def get_anthropic_client():
 
 NATURAL_PROMPT = """Look at this water meter image.
 
-This is a real physical water meter. Please read the 5-digit display carefully.
+This is a MECHANICAL water meter with rotating odometer wheels. Please read the 5-digit BLACK number display.
 
-The meter has 5 white boxes with black numbers on rotating wheels. Read from left to right:
-- Digit 1 (leftmost): What number do you see?
+IMPORTANT - How mechanical meters work:
+- Each digit wheel rotates slowly as water flows
+- Digits are often BETWEEN two numbers (half-showing two digits)
+- When a digit is transitioning (showing parts of two numbers), read the LOWER number
+- Example: If wheel shows half "3" and half "4", read it as "3" (not yet fully turned to 4)
+- The rightmost digit moves fastest and is most likely to be mid-transition
+
+Read each of the 5 white windows from LEFT to RIGHT:
+- Digit 1 (leftmost): What number? (If between numbers, use lower)
 - Digit 2: What number?
 - Digit 3: What number?
 - Digit 4: What number?
-- Digit 5 (rightmost): What number?
+- Digit 5 (rightmost): What number? (Often mid-transition)
 
-Tips:
-- If any digit is between two numbers (transitioning), use the number that takes more space in the window.
-- Ignore the small red dials - those are decimals.
+IGNORE the small RED dials - those are decimal fractions.
 
 Tell me the complete 5-digit reading."""
 
@@ -261,7 +266,7 @@ def read_meter_ai(request):
 
         # Check cache
         image_hash = hashlib.md5(image_data[:2000].encode()).hexdigest()
-        cache_key = f'meter_natural_v2_{image_hash}'
+        cache_key = f'meter_mechanical_v3_{image_hash}'
 
         cached_result = cache.get(cache_key)
         if cached_result:
@@ -400,7 +405,7 @@ def ai_health_check(request):
         return JsonResponse({
             'status': 'healthy',
             'ai_available': True,
-            'mode': 'natural_conversation_v2'
+            'mode': 'mechanical_meter_v3'
         })
     else:
         return JsonResponse({
