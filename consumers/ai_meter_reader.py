@@ -1,6 +1,6 @@
 """
-HIGHLY ACCURATE AI Water Meter Reading System
-Optimized for Balilihan Waterworks - Maximum Accuracy
+MAXIMUM ACCURACY AI Water Meter Reading System
+Uses Claude's best model with extended thinking for browser-like performance
 
 @author Jest - CS Thesis 2025
 Smart Meter Reading Application for Balilihan Waterworks
@@ -40,73 +40,22 @@ def get_anthropic_client():
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HIGHLY ACCURATE METER READING PROMPT
+# SIMPLE, NATURAL PROMPT (Like talking to Claude in browser)
 # ═══════════════════════════════════════════════════════════════════════════════
 
-ACCURATE_METER_PROMPT = """You are reading a water meter. ACCURACY IS CRITICAL FOR BILLING.
+METER_PROMPT = """Look at this water meter image carefully.
 
-## STEP 1: VERIFY REAL METER
-Check for: metal housing, glass dome, mechanical wheels, red dials, pipes, m³ symbol.
-If NOT real (handwritten, printed, screen), return:
-{"success":false,"is_real_meter":false,"detected_as":"TYPE","rejection_reason":"REASON"}
+First, verify this is a real physical water meter (not a photo of paper, screen, or drawing).
 
-## STEP 2: FIND CORRECT ORIENTATION
-Find "m³" symbol - it should be on the RIGHT side of digits.
-Find "×0.0001" or "H" marking - should be near the dial area.
-The digits read LEFT to RIGHT.
+If it's a real meter, read the 5-digit display. The meter has 5 white boxes showing black numbers on rotating wheels. Read from left to right.
 
-## STEP 3: READ EACH DIGIT VERY CAREFULLY
+Important tips:
+- Focus on the CENTER of each digit window
+- If a digit is between two numbers, use the one taking more space
+- Ignore the small red dials (those are decimals)
+- Common confusions: 1 vs 7 (check for top bar), 6 vs 8 (check if top is open)
 
-The meter has 5 WHITE rectangular boxes. Each box shows ONE black digit (0-9).
-
-**READ SLOWLY - ONE DIGIT AT A TIME:**
-
-DIGIT 1 (leftmost): Look at the CENTER of the first white box. What number is shown?
-DIGIT 2: Look at the CENTER of the second white box. What number is shown?
-DIGIT 3: Look at the CENTER of the third white box. What number is shown?
-DIGIT 4: Look at the CENTER of the fourth white box. What number is shown?
-DIGIT 5 (rightmost): Look at the CENTER of the fifth white box. What number is shown?
-
-**CRITICAL RULES FOR ACCURACY:**
-
-1. FOCUS ON CENTER: Only read the number in the CENTER of each white box
-2. IGNORE EDGES: Ignore any partial numbers visible at top/bottom edges
-3. TRANSITIONING DIGITS: If a wheel is between two numbers:
-   - Look which number takes MORE space (more than 50%)
-   - Use that number
-   - If exactly 50/50, use the LOWER number
-
-**DIGIT IDENTIFICATION GUIDE:**
-
-- 0: Oval/round shape, completely closed
-- 1: Single vertical line, thin, no curves
-- 2: Curved top, diagonal middle, flat bottom
-- 3: Two curves on right side, open on left
-- 4: Angular, open top, vertical line on right
-- 5: Flat top, curved bottom
-- 6: Curved, closed loop at BOTTOM, open at top
-- 7: Flat top line, diagonal stroke down
-- 8: Two closed loops, like snowman
-- 9: Curved, closed loop at TOP, tail at bottom
-
-**COMMON MISTAKES TO AVOID:**
-
-- 1 vs 7: Check for top horizontal bar (7 has it, 1 doesn't)
-- 6 vs 0: Check bottom (6 has curved tail inside, 0 is plain oval)
-- 6 vs 8: Check top (6 is open, 8 is closed)
-- 5 vs 6: Check top (5 is flat, 6 is curved)
-- 2 vs 7: Check curve (2 has curved top, 7 is angular)
-
-## STEP 4: VERIFY YOUR READING
-
-After reading all 5 digits:
-1. Read them again from LEFT to RIGHT
-2. Say each digit out loud in your mind
-3. Check if any digit looks transitioning
-4. Confirm your final reading
-
-## RESPONSE FORMAT (JSON only):
-
+Return your answer as JSON:
 {
   "success": true,
   "is_real_meter": true,
@@ -120,16 +69,20 @@ After reading all 5 digits:
     {"position": 4, "value": X, "status": "clear/transitioning"},
     {"position": 5, "value": X, "status": "clear/transitioning"}
   ],
-  "notes": "observations"
+  "notes": "any observations"
 }
 
-IMPORTANT: Read each digit individually and carefully. Do not guess. Billing accuracy depends on you."""
+If NOT a real meter:
+{"success": false, "is_real_meter": false, "detected_as": "type", "rejection_reason": "reason"}"""
 
 
 @csrf_exempt
 @require_POST
 def read_meter_ai(request):
-    """AI-powered water meter reading with maximum accuracy."""
+    """
+    AI-powered water meter reading using Claude's best vision model.
+    Optimized for maximum accuracy like browser experience.
+    """
     start_time = time.time()
 
     try:
@@ -142,6 +95,7 @@ def read_meter_ai(request):
                 'processing_time_ms': int((time.time() - start_time) * 1000)
             }, status=503)
 
+        # Parse request
         image_data = None
         media_type = "image/jpeg"
         previous_reading = None
@@ -180,7 +134,7 @@ def read_meter_ai(request):
 
         # Check cache
         image_hash = hashlib.md5(image_data[:2000].encode()).hexdigest()
-        cache_key = f'meter_v3_{image_hash}'
+        cache_key = f'meter_v4_{image_hash}'
 
         cached_result = cache.get(cache_key)
         if cached_result:
@@ -188,13 +142,17 @@ def read_meter_ai(request):
             cached_result['processing_time_ms'] = int((time.time() - start_time) * 1000)
             return JsonResponse(cached_result)
 
-        # Call Claude AI with higher token limit for better accuracy
-        logger.info("Calling Claude AI for accurate meter reading...")
+        # Call Claude AI - Using claude-sonnet-4-20250514 (best for vision tasks)
+        logger.info("Calling Claude AI (Sonnet 4) for meter reading...")
 
         try:
             response = client.messages.create(
                 model="claude-sonnet-4-20250514",
-                max_tokens=800,
+                max_tokens=16000,  # Allow for extended thinking
+                thinking={
+                    "type": "enabled",
+                    "budget_tokens": 10000  # Let Claude think before answering
+                },
                 messages=[
                     {
                         "role": "user",
@@ -209,24 +167,72 @@ def read_meter_ai(request):
                             },
                             {
                                 "type": "text",
-                                "text": ACCURATE_METER_PROMPT
+                                "text": METER_PROMPT
                             }
                         ]
                     }
-                ]
+                ],
+                temperature=1  # Required for extended thinking
             )
         except Exception as api_error:
-            logger.error(f"Claude API error: {api_error}")
-            return JsonResponse({
-                'success': False,
-                'is_real_meter': False,
-                'error': 'AI service unavailable',
-                'processing_time_ms': int((time.time() - start_time) * 1000)
-            }, status=503)
+            error_str = str(api_error)
+            logger.error(f"Claude API error: {error_str}")
 
-        # Parse response
-        response_text = response.content[0].text.strip()
+            # If extended thinking fails, try without it
+            if "thinking" in error_str.lower() or "budget" in error_str.lower():
+                logger.info("Retrying without extended thinking...")
+                try:
+                    response = client.messages.create(
+                        model="claude-sonnet-4-20250514",
+                        max_tokens=1024,
+                        messages=[
+                            {
+                                "role": "user",
+                                "content": [
+                                    {
+                                        "type": "image",
+                                        "source": {
+                                            "type": "base64",
+                                            "media_type": media_type,
+                                            "data": image_data
+                                        }
+                                    },
+                                    {
+                                        "type": "text",
+                                        "text": METER_PROMPT
+                                    }
+                                ]
+                            }
+                        ]
+                    )
+                except Exception as retry_error:
+                    logger.error(f"Retry also failed: {retry_error}")
+                    return JsonResponse({
+                        'success': False,
+                        'is_real_meter': False,
+                        'error': 'AI service unavailable',
+                        'processing_time_ms': int((time.time() - start_time) * 1000)
+                    }, status=503)
+            else:
+                return JsonResponse({
+                    'success': False,
+                    'is_real_meter': False,
+                    'error': 'AI service unavailable',
+                    'processing_time_ms': int((time.time() - start_time) * 1000)
+                }, status=503)
 
+        # Extract response text (handle extended thinking response format)
+        response_text = ""
+        thinking_text = ""
+
+        for block in response.content:
+            if block.type == "thinking":
+                thinking_text = block.thinking
+                logger.info(f"Claude thinking: {thinking_text[:200]}...")
+            elif block.type == "text":
+                response_text = block.text.strip()
+
+        # Parse JSON response
         try:
             if response_text.startswith('{'):
                 result = json.loads(response_text)
@@ -239,21 +245,25 @@ def read_meter_ai(request):
                     result = {
                         'success': False,
                         'is_real_meter': False,
-                        'error': 'No JSON in response'
+                        'error': 'No JSON in response',
+                        'raw_response': response_text[:500]
                     }
         except json.JSONDecodeError:
             result = {
                 'success': False,
                 'is_real_meter': False,
-                'error': 'Invalid response format'
+                'error': 'Invalid response format',
+                'raw_response': response_text[:500]
             }
 
         # Add metadata
         processing_time = int((time.time() - start_time) * 1000)
         result['processing_time_ms'] = processing_time
         result['from_cache'] = False
+        result['model'] = 'claude-sonnet-4-20250514'
+        result['extended_thinking'] = bool(thinking_text)
 
-        # Validation
+        # Validation against previous reading
         if result.get('success') and previous_reading:
             try:
                 prev = int(float(previous_reading))
@@ -274,10 +284,10 @@ def read_meter_ai(request):
             except (ValueError, TypeError):
                 pass
 
-        # Cache for 5 minutes
+        # Cache successful results
         if result.get('success'):
             cache.set(cache_key, result, 300)
-            logger.info(f"SUCCESS: {result.get('reading')} in {processing_time}ms")
+            logger.info(f"SUCCESS: {result.get('reading')} (confidence: {result.get('confidence')}) in {processing_time}ms")
 
         return JsonResponse(result)
 
@@ -308,7 +318,9 @@ def ai_health_check(request):
     if client:
         return JsonResponse({
             'status': 'healthy',
-            'ai_available': True
+            'ai_available': True,
+            'model': 'claude-sonnet-4-20250514',
+            'features': ['vision', 'extended_thinking']
         })
     else:
         return JsonResponse({
