@@ -872,8 +872,38 @@ class Bill(models.Model):
     due_date = models.DateField()
 
     consumption = models.PositiveIntegerField(help_text="in cubic meters")
-    rate_per_cubic = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('22.50'))
-    fixed_charge = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('50.00'))
+
+    # -------------------------
+    # TIERED RATE BREAKDOWN
+    # -------------------------
+    # Tier 1: 1-5 m³ (minimum charge)
+    tier1_consumption = models.PositiveIntegerField(default=0, help_text="Units in Tier 1 (1-5 m³)")
+    tier1_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'), help_text="Minimum charge amount")
+
+    # Tier 2: 6-10 m³
+    tier2_consumption = models.PositiveIntegerField(default=0, help_text="Units in Tier 2 (6-10 m³)")
+    tier2_rate = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'), help_text="Rate per m³ for Tier 2")
+    tier2_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    # Tier 3: 11-20 m³
+    tier3_consumption = models.PositiveIntegerField(default=0, help_text="Units in Tier 3 (11-20 m³)")
+    tier3_rate = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'), help_text="Rate per m³ for Tier 3")
+    tier3_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    # Tier 4: 21-50 m³
+    tier4_consumption = models.PositiveIntegerField(default=0, help_text="Units in Tier 4 (21-50 m³)")
+    tier4_rate = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'), help_text="Rate per m³ for Tier 4")
+    tier4_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    # Tier 5: 51+ m³
+    tier5_consumption = models.PositiveIntegerField(default=0, help_text="Units in Tier 5 (51+ m³)")
+    tier5_rate = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'), help_text="Rate per m³ for Tier 5")
+    tier5_amount = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('0.00'))
+
+    # Legacy fields (kept for backward compatibility)
+    rate_per_cubic = models.DecimalField(max_digits=6, decimal_places=2, default=Decimal('0.00'), help_text="Average rate (for display only)")
+    fixed_charge = models.DecimalField(max_digits=8, decimal_places=2, default=Decimal('0.00'), help_text="Deprecated - use tier1_amount for minimum charge")
+
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
 
     # -------------------------

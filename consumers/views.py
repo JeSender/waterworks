@@ -224,9 +224,7 @@ def api_submit_reading(request):
                 billing_day = 1
                 due_day = 20
 
-            # Create Bill automatically with tiered rate info
-            # Note: rate_per_cubic stores average rate, fixed_charge is 0 for tiered billing
-            # (minimum charge is included in tier 1)
+            # Create Bill automatically with ACTUAL tier breakdown (not averages)
             Bill.objects.create(
                 consumer=consumer,
                 previous_reading=prev_reading_obj,
@@ -234,8 +232,23 @@ def api_submit_reading(request):
                 billing_period=reading_date.replace(day=billing_day),
                 due_date=reading_date.replace(day=due_day),
                 consumption=consumption,
-                rate_per_cubic=Decimal(str(rate)),  # Average rate for display
-                fixed_charge=Decimal('0.00'),  # No separate fixed charge in tiered billing
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
+                rate_per_cubic=Decimal(str(rate)),
+                fixed_charge=Decimal('0.00'),
                 total_amount=Decimal(str(total_amount)),
                 status='Pending'
             )
@@ -3033,11 +3046,26 @@ def confirm_all_readings(request, barangay_id):
 
             Bill.objects.create(
                 consumer=reading.consumer,
-                previous_reading=prev,  # Will be None for first reading
+                previous_reading=prev,
                 current_reading=reading,
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
@@ -3047,7 +3075,6 @@ def confirm_all_readings(request, barangay_id):
             reading.save()
             success_count += 1
         except Exception as e:
-            # Log the error for debugging
             import logging
             logging.error(f"Error confirming reading {reading.id}: {str(e)}")
             continue
@@ -3121,6 +3148,21 @@ def confirm_all_readings_global(request):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
@@ -3341,18 +3383,32 @@ def confirm_reading(request, reading_id):
             settings=setting
         )
 
-        # CREATE BILL IMMEDIATELY - This is the key action
+        # CREATE BILL IMMEDIATELY - Store actual tier rates, not averages
         Bill.objects.create(
             consumer=consumer,
             previous_reading=previous,  # Will be None if this is the first reading
             current_reading=current,
-            # billing_period: First day of billing month (just for display/records)
             billing_period=current.reading_date.replace(day=billing_day),
-            # due_date: When payment is due (from SystemSettings)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            rate_per_cubic=average_rate,  # Store average rate for reference
-            fixed_charge=Decimal('0.00'),  # No fixed charge with tiered rates
+            # Store ACTUAL tier breakdown (not averages)
+            tier1_consumption=breakdown['tier1_units'],
+            tier1_amount=breakdown['tier1_amount'],
+            tier2_consumption=breakdown['tier2_units'],
+            tier2_rate=breakdown['tier2_rate'],
+            tier2_amount=breakdown['tier2_amount'],
+            tier3_consumption=breakdown['tier3_units'],
+            tier3_rate=breakdown['tier3_rate'],
+            tier3_amount=breakdown['tier3_amount'],
+            tier4_consumption=breakdown['tier4_units'],
+            tier4_rate=breakdown['tier4_rate'],
+            tier4_amount=breakdown['tier4_amount'],
+            tier5_consumption=breakdown['tier5_units'],
+            tier5_rate=breakdown['tier5_rate'],
+            tier5_amount=breakdown['tier5_amount'],
+            # Legacy fields
+            rate_per_cubic=average_rate,
+            fixed_charge=Decimal('0.00'),
             total_amount=total_amount,
             status='Pending'
         )
@@ -3440,6 +3496,21 @@ def confirm_selected_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
