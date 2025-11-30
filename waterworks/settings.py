@@ -36,12 +36,19 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.humanize',
-    'cloudinary_storage',  # Must be before staticfiles
     'django.contrib.staticfiles',
-    'cloudinary',  # After staticfiles
     'corsheaders',  # For Android app API
     'consumers',
 ]
+
+# Add Cloudinary apps if available (for proof image uploads)
+try:
+    import cloudinary_storage
+    INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles'), 'cloudinary_storage')
+    import cloudinary as cloudinary_module
+    INSTALLED_APPS.insert(INSTALLED_APPS.index('django.contrib.staticfiles') + 1, 'cloudinary')
+except ImportError:
+    pass  # Cloudinary not installed, skip
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -261,15 +268,15 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
 }
 
-# Use Cloudinary for media file storage (proof photos)
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
-
-# Also configure cloudinary directly for API uploads
+# Configure cloudinary for API uploads
 CLOUDINARY_AVAILABLE = False
 try:
     import cloudinary
     import cloudinary.uploader
     CLOUDINARY_AVAILABLE = True
+
+    # Use Cloudinary for media file storage (proof photos)
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
     if CLOUDINARY_STORAGE['CLOUD_NAME'] and CLOUDINARY_STORAGE['API_KEY'] and CLOUDINARY_STORAGE['API_SECRET']:
         cloudinary.config(
