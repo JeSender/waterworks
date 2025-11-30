@@ -507,6 +507,7 @@ def api_create_reading(request):
 
 # ... (other imports remain the same) ...
 
+@csrf_exempt
 @login_required
 def api_consumers(request):
     """
@@ -584,6 +585,7 @@ def api_consumers(request):
         return JsonResponse({'error': 'No assigned barangay'}, status=403)
 
 
+@csrf_exempt
 @login_required
 def api_get_previous_reading(request, consumer_id):
     """
@@ -646,7 +648,8 @@ def api_get_previous_reading(request, consumer_id):
 # ... (your existing functions like api_login, api_consumers, api_submit_reading, system_management, etc.) ...
 
 # NEW: API View for fetching the current water rates (Residential & Commercial)
-@login_required # Ensure the user (app) is authenticated
+@csrf_exempt
+@login_required
 def api_get_current_rates(request):
     """
     API endpoint for the Android app to fetch all tiered water rates.
