@@ -4030,10 +4030,10 @@ def archived_users(request):
     search_query = request.GET.get('search', '')
     if search_query:
         archived_list = archived_list.filter(
-            models.Q(username__icontains=search_query) |
-            models.Q(first_name__icontains=search_query) |
-            models.Q(last_name__icontains=search_query) |
-            models.Q(email__icontains=search_query)
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
         )
 
     # Pagination
