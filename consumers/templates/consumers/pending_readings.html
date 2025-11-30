@@ -15,14 +15,14 @@
                 </h2>
                 <p class="text-sm text-dark-500 mt-1">Review and confirm meter readings submitted with proof photos</p>
             </div>
-            <a href="{% url 'consumers:meter_reading_overview' %}" class="btn-secondary">
-                <i class="bi bi-arrow-left"></i> Back to Overview
+            <a href="{% url 'consumers:meter_reading_overview' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
+                <i class="bi bi-arrow-left mr-2"></i> Back to Overview
             </a>
         </div>
     </div>
 
     <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-warning-500">
             <div class="flex items-center justify-between">
                 <div>
@@ -45,17 +45,6 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-danger-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide">Rejected Today</p>
-                    <p class="text-3xl font-bold text-danger-600 mt-2">{{ rejected_today_count }}</p>
-                </div>
-                <div class="w-14 h-14 bg-danger-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-x-circle-fill text-danger-600 text-2xl"></i>
-                </div>
-            </div>
-        </div>
     </div>
 
     <!-- Pending Readings List -->
@@ -67,62 +56,66 @@
                 <!-- Consumer Info Header -->
                 <div class="flex items-start justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-person-fill text-primary-600 text-xl"></i>
+                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-person-fill text-blue-600 text-xl"></i>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-dark-900">
+                            <h3 class="text-lg font-bold text-gray-900">
                                 {{ reading.consumer.first_name }} {{ reading.consumer.last_name }}
                             </h3>
-                            <p class="text-sm text-dark-500">
+                            <p class="text-sm text-gray-500">
                                 ID: {{ reading.consumer.id_number|default:reading.consumer.id }}
                                 • {{ reading.consumer.barangay.name }}
                             </p>
                         </div>
                     </div>
-                    <span class="badge badge-warning">
+                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
                         <i class="bi bi-clock-fill mr-1"></i> Pending
                     </span>
                 </div>
 
                 <!-- Reading Details -->
-                <div class="grid grid-cols-3 gap-4 mb-4 p-3 bg-light-100 rounded-lg">
+                <div class="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
                     <div class="text-center">
-                        <p class="text-xs text-dark-500 uppercase font-semibold">Reading Value</p>
-                        <p class="text-xl font-bold text-dark-900">{{ reading.reading_value }}</p>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">New Reading</p>
+                        <p class="text-xl font-bold text-gray-900">{{ reading.reading_value }}</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xs text-dark-500 uppercase font-semibold">Previous</p>
-                        <p class="text-xl font-bold text-dark-600">{{ reading.previous_reading|default:"N/A" }}</p>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Previous</p>
+                        <p class="text-xl font-bold text-gray-600">{{ reading.previous_reading|default:"0" }}</p>
                     </div>
                     <div class="text-center">
-                        <p class="text-xs text-dark-500 uppercase font-semibold">Consumption</p>
-                        <p class="text-xl font-bold text-primary-600">{{ reading.consumption|default:"—" }} m³</p>
+                        <p class="text-xs text-gray-500 uppercase font-semibold">Consumption</p>
+                        <p class="text-xl font-bold text-blue-600">{{ reading.consumption|default:"0" }} m³</p>
                     </div>
                 </div>
 
                 <!-- Submission Info -->
-                <div class="flex items-center justify-between text-sm text-dark-500 mb-4">
+                <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <span>
                         <i class="bi bi-person-badge mr-1"></i>
-                        Submitted by: {{ reading.submitted_by.get_full_name|default:reading.submitted_by.username }}
+                        {% if reading.submitted_by %}
+                            {{ reading.submitted_by.get_full_name|default:reading.submitted_by.username }}
+                        {% else %}
+                            Field Staff
+                        {% endif %}
                     </span>
                     <span>
                         <i class="bi bi-calendar3 mr-1"></i>
-                        {{ reading.reading_date|date:"M d, Y H:i" }}
+                        {{ reading.reading_date|date:"M d, Y" }}
                     </span>
                 </div>
 
                 <!-- Proof Image -->
                 {% if reading.proof_image_url %}
                 <div class="mb-4">
-                    <p class="text-sm font-semibold text-dark-700 mb-2">
+                    <p class="text-sm font-semibold text-gray-700 mb-2">
                         <i class="bi bi-image mr-1"></i> Proof Photo
                     </p>
                     <div class="relative group">
                         <img src="{{ reading.proof_image_url }}"
                              alt="Meter Reading Proof"
-                             class="w-full h-48 object-cover rounded-lg border border-light-300 cursor-pointer transition-transform hover:scale-[1.02]"
+                             class="w-full h-48 object-cover rounded-lg border border-gray-200 cursor-pointer transition-transform hover:scale-[1.02]"
                              onclick="openImageModal('{{ reading.proof_image_url }}')">
                         <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-lg flex items-center justify-center transition-all">
                             <i class="bi bi-zoom-in text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity"></i>
@@ -130,23 +123,17 @@
                     </div>
                 </div>
                 {% else %}
-                <div class="mb-4 p-4 bg-light-100 rounded-lg text-center">
-                    <i class="bi bi-image text-3xl text-dark-400 mb-2 block"></i>
-                    <p class="text-sm text-dark-500">No proof image attached</p>
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg text-center">
+                    <i class="bi bi-image text-3xl text-gray-400 mb-2 block"></i>
+                    <p class="text-sm text-gray-500">No proof image attached</p>
                 </div>
                 {% endif %}
 
-                <!-- Action Buttons -->
-                <div class="flex gap-3">
-                    <button onclick="confirmReading({{ reading.id }})"
-                            class="flex-1 btn-success py-3">
-                        <i class="bi bi-check-lg mr-2"></i> Confirm & Generate Bill
-                    </button>
-                    <button onclick="showRejectModal({{ reading.id }})"
-                            class="flex-1 btn-danger py-3">
-                        <i class="bi bi-x-lg mr-2"></i> Reject
-                    </button>
-                </div>
+                <!-- Confirm Button Only -->
+                <button onclick="confirmReading({{ reading.id }})"
+                        class="w-full py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
+                    <i class="bi bi-check-lg mr-2"></i> Confirm & Generate Bill
+                </button>
             </div>
         </div>
         {% endfor %}
@@ -154,12 +141,12 @@
     {% else %}
     <!-- Empty State -->
     <div class="bg-white rounded-xl shadow-md p-12 text-center">
-        <div class="w-20 h-20 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="bi bi-check-all text-success-600 text-4xl"></i>
+        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="bi bi-check-all text-green-600 text-4xl"></i>
         </div>
-        <h3 class="text-xl font-bold text-dark-900 mb-2">All Caught Up!</h3>
-        <p class="text-dark-500 mb-4">No pending meter readings require your review.</p>
-        <a href="{% url 'consumers:meter_reading_overview' %}" class="btn-primary">
+        <h3 class="text-xl font-bold text-gray-900 mb-2">All Caught Up!</h3>
+        <p class="text-gray-500 mb-4">No pending meter readings require your review.</p>
+        <a href="{% url 'consumers:meter_reading_overview' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
             <i class="bi bi-grid-3x3-gap-fill mr-2"></i> View Reading Overview
         </a>
     </div>
@@ -180,43 +167,6 @@
     </div>
 </div>
 
-<!-- Reject Modal -->
-<div id="rejectModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeRejectModal()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-dark-900">
-                    <i class="bi bi-x-circle text-danger-600 mr-2"></i>
-                    Reject Reading
-                </h3>
-                <button onclick="closeRejectModal()" class="text-dark-400 hover:text-dark-600">
-                    <i class="bi bi-x-lg"></i>
-                </button>
-            </div>
-            <form id="rejectForm" onsubmit="submitReject(event)">
-                <input type="hidden" id="rejectReadingId" value="">
-                <div class="mb-4">
-                    <label class="form-label">Reason for Rejection *</label>
-                    <textarea id="rejectReason"
-                              class="form-input resize-none"
-                              rows="3"
-                              placeholder="Please provide a reason for rejecting this reading..."
-                              required></textarea>
-                </div>
-                <div class="flex gap-3">
-                    <button type="button" onclick="closeRejectModal()" class="flex-1 btn-secondary">
-                        Cancel
-                    </button>
-                    <button type="submit" class="flex-1 btn-danger">
-                        <i class="bi bi-x-lg mr-2"></i> Reject Reading
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
 <script>
 // Image Modal Functions
 function openImageModal(imageUrl) {
@@ -227,19 +177,6 @@ function openImageModal(imageUrl) {
 
 function closeImageModal() {
     document.getElementById('imageModal').classList.add('hidden');
-    document.body.style.overflow = '';
-}
-
-// Reject Modal Functions
-function showRejectModal(readingId) {
-    document.getElementById('rejectReadingId').value = readingId;
-    document.getElementById('rejectReason').value = '';
-    document.getElementById('rejectModal').classList.remove('hidden');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeRejectModal() {
-    document.getElementById('rejectModal').classList.add('hidden');
     document.body.style.overflow = '';
 }
 
@@ -296,63 +233,10 @@ function confirmReading(readingId) {
     });
 }
 
-// Submit Reject
-function submitReject(event) {
-    event.preventDefault();
-
-    const readingId = document.getElementById('rejectReadingId').value;
-    const reason = document.getElementById('rejectReason').value.trim();
-
-    if (!reason) {
-        showToast('error', 'Please provide a reason for rejection');
-        return;
-    }
-
-    closeRejectModal();
-    showLoading('Rejecting reading...');
-
-    fetch(`/meter-readings/${readingId}/reject/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ reason: reason })
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.status === 'success') {
-            showToast('success', data.message || 'Reading rejected');
-            // Remove the card with animation
-            const card = document.getElementById(`reading-card-${readingId}`);
-            if (card) {
-                card.style.animation = 'fadeOut 0.3s ease forwards';
-                setTimeout(() => card.remove(), 300);
-            }
-            // Reload if no more pending readings
-            setTimeout(() => {
-                const remainingCards = document.querySelectorAll('[id^="reading-card-"]');
-                if (remainingCards.length === 0) {
-                    location.reload();
-                }
-            }, 400);
-        } else {
-            showToast('error', data.message || 'Failed to reject reading');
-        }
-    })
-    .catch(error => {
-        hideLoading();
-        console.error('Error:', error);
-        showToast('error', 'An error occurred. Please try again.');
-    });
-}
-
-// Close modals on Escape key
+// Close modal on Escape key
 document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') {
         closeImageModal();
-        closeRejectModal();
     }
 });
 </script>

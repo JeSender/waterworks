@@ -428,7 +428,7 @@ def api_submit_manual_reading(request):
             submitted_by=request.user if request.user.is_authenticated else None
         )
 
-        # Create notification for admin - redirect to barangay meter readings page
+        # Create notification for admin - redirect to pending readings page
         from django.urls import reverse
         Notification.objects.create(
             user=None,  # Notify all admins
@@ -436,7 +436,7 @@ def api_submit_manual_reading(request):
             title='Manual Reading - Needs Confirmation',
             message=f'{consumer.first_name} {consumer.last_name} ({consumer.id_number}) - {consumption} m³ | Proof image attached',
             related_object_id=reading.id,
-            redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id}) + f'?highlight={reading.id}'
+            redirect_url=reverse('consumers:pending_readings')
         )
 
         # Get field staff name
