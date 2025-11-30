@@ -1,7 +1,6 @@
 # consumers/urls.py
 from django.urls import path
 from . import views
-from . import ai_meter_reader
 
 app_name = 'consumers'  # Enables {% url 'consumers:view_name' %}
 
@@ -77,10 +76,6 @@ urlpatterns = [
     path('api/consumers/<int:consumer_id>/previous-reading/', views.api_get_previous_reading, name='api_get_previous_reading'),
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
-
-    # AI Meter Reading (Claude Vision with Anti-Cheat)
-    path('api/read-meter/', ai_meter_reader.read_meter_ai, name='api_read_meter'),
-    path('api/ai-health/', ai_meter_reader.ai_health_check, name='api_ai_health'),
 
     # User Management & Security
     path('admin-verification/', views.admin_verification, name='admin_verification'),
