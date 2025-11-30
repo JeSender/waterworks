@@ -36,7 +36,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.humanize',
+    'cloudinary_storage',  # Must be before staticfiles
     'django.contrib.staticfiles',
+    'cloudinary',  # After staticfiles
     'corsheaders',  # For Android app API
     'consumers',
 ]
@@ -249,33 +251,38 @@ if not EMAIL_HOST_PASSWORD:
 # ============================================================================
 # CLOUDINARY CONFIGURATION - For proof image uploads
 # ============================================================================
-# Sign up at https://cloudinary.com/ and get your credentials
-# Add these to your environment variables on Render:
-# - CLOUDINARY_CLOUD_NAME
-# - CLOUDINARY_API_KEY
-# - CLOUDINARY_API_SECRET
+# Environment variables on Render:
+# - CLOUDINARY_CLOUD_NAME = dpuynl0ir
+# - CLOUDINARY_API_KEY = 164721132444788
+# - CLOUDINARY_API_SECRET = (configured)
+CLOUDINARY_STORAGE = {
+    'CLOUD_NAME': config('CLOUDINARY_CLOUD_NAME', default=''),
+    'API_KEY': config('CLOUDINARY_API_KEY', default=''),
+    'API_SECRET': config('CLOUDINARY_API_SECRET', default=''),
+}
+
+# Use Cloudinary for media file storage (proof photos)
+DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+
+# Also configure cloudinary directly for API uploads
 CLOUDINARY_AVAILABLE = False
 try:
     import cloudinary
     import cloudinary.uploader
     CLOUDINARY_AVAILABLE = True
+
+    if CLOUDINARY_STORAGE['CLOUD_NAME'] and CLOUDINARY_STORAGE['API_KEY'] and CLOUDINARY_STORAGE['API_SECRET']:
+        cloudinary.config(
+            cloud_name=CLOUDINARY_STORAGE['CLOUD_NAME'],
+            api_key=CLOUDINARY_STORAGE['API_KEY'],
+            api_secret=CLOUDINARY_STORAGE['API_SECRET'],
+            secure=True
+        )
+        _email_logger.info(f"Cloudinary configured with cloud: {CLOUDINARY_STORAGE['CLOUD_NAME']}")
+    else:
+        _email_logger.warning("Cloudinary credentials not configured! Proof image uploads will fail.")
 except ImportError:
     _email_logger.warning("Cloudinary package not installed. Proof image uploads will not work.")
-
-CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
-CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY', default='')
-CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
-
-if CLOUDINARY_AVAILABLE and CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
-    cloudinary.config(
-        cloud_name=CLOUDINARY_CLOUD_NAME,
-        api_key=CLOUDINARY_API_KEY,
-        api_secret=CLOUDINARY_API_SECRET,
-        secure=True
-    )
-    _email_logger.info(f"Cloudinary configured with cloud: {CLOUDINARY_CLOUD_NAME}")
-elif CLOUDINARY_AVAILABLE:
-    _email_logger.warning("Cloudinary credentials not configured! Proof image uploads will fail.")
 
 # Add Render domain to trusted origins dynamically
 if RENDER_ENVIRONMENT:
