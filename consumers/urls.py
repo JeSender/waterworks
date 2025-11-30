@@ -76,6 +76,7 @@ urlpatterns = [
     path('api/consumers/<int:consumer_id>/previous-reading/', views.api_get_previous_reading, name='api_get_previous_reading'),
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
+    path('api/settings/', views.api_get_system_settings, name='api_get_system_settings'),
 
     # User Management & Security
     path('admin-verification/', views.admin_verification, name='admin_verification'),

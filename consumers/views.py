@@ -36,7 +36,8 @@ import openpyxl
 from openpyxl.styles import Font, PatternFill
 from .models import (
     Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment,
-    StaffProfile, UserLoginEvent, MeterBrand, PasswordResetToken, UserActivity
+    StaffProfile, UserLoginEvent, MeterBrand, PasswordResetToken, UserActivity,
+    SystemSettingChangeLog
 )
 from .forms import ConsumerForm
 
@@ -703,9 +704,97 @@ def api_get_current_rates(request):
         logger.error(f"Error fetching rates: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
-# ... (rest of your views) ...# consumers/views.py
 
-# ... (other imports remain the same) ...
+# ============================================================================
+# API VIEW: GET SYSTEM SETTINGS FOR MOBILE APP
+# ============================================================================
+@csrf_exempt
+def api_get_system_settings(request):
+    """
+    API endpoint for Android app to fetch all system settings.
+
+    Returns:
+    - Reading schedule (start/end days)
+    - Billing schedule (billing day, due day)
+    - Penalty settings (enabled, rate, type)
+    - All tiered water rates
+    - Last updated timestamp
+
+    This allows the mobile app to:
+    1. Show field staff the current reading period
+    2. Display billing information to users
+    3. Calculate estimated bills with current rates
+    """
+    try:
+        setting = SystemSetting.objects.first()
+        if not setting:
+            return JsonResponse({'error': 'System settings not configured.'}, status=500)
+
+        return JsonResponse({
+            'status': 'success',
+
+            # Reading Schedule - Controls when field staff should submit readings
+            'reading_schedule': {
+                'start_day': setting.reading_start_day,
+                'end_day': setting.reading_end_day,
+                'description': f'Day {setting.reading_start_day} to Day {setting.reading_end_day} of each month'
+            },
+
+            # Billing Schedule - Controls dates shown on bills
+            'billing_schedule': {
+                'billing_day': setting.billing_day_of_month,
+                'due_day': setting.due_day_of_month,
+                'description': f'Bills dated Day {setting.billing_day_of_month}, Due Day {setting.due_day_of_month}'
+            },
+
+            # Penalty Settings
+            'penalty': {
+                'enabled': setting.penalty_enabled,
+                'type': setting.penalty_type,
+                'rate': float(setting.penalty_rate) if setting.penalty_type == 'percentage' else None,
+                'fixed_amount': float(setting.fixed_penalty_amount) if setting.penalty_type == 'fixed' else None,
+                'grace_period_days': setting.penalty_grace_period_days,
+                'max_amount': float(setting.max_penalty_amount) if setting.max_penalty_amount > 0 else None,
+                'description': f'{setting.penalty_rate}% penalty applied after Day {setting.due_day_of_month}' if setting.penalty_enabled else 'Penalties disabled'
+            },
+
+            # Residential Tiered Rates
+            'residential_rates': {
+                'minimum_charge': float(setting.residential_minimum_charge),
+                'tier2_rate': float(setting.residential_tier2_rate),
+                'tier3_rate': float(setting.residential_tier3_rate),
+                'tier4_rate': float(setting.residential_tier4_rate),
+                'tier5_rate': float(setting.residential_tier5_rate),
+            },
+
+            # Commercial Tiered Rates
+            'commercial_rates': {
+                'minimum_charge': float(setting.commercial_minimum_charge),
+                'tier2_rate': float(setting.commercial_tier2_rate),
+                'tier3_rate': float(setting.commercial_tier3_rate),
+                'tier4_rate': float(setting.commercial_tier4_rate),
+                'tier5_rate': float(setting.commercial_tier5_rate),
+            },
+
+            # Tier brackets info
+            'tier_brackets': {
+                'tier1': '1-5 m³ (minimum charge)',
+                'tier2': '6-10 m³',
+                'tier3': '11-20 m³',
+                'tier4': '21-50 m³',
+                'tier5': '51+ m³'
+            },
+
+            # Metadata
+            'updated_at': setting.updated_at.isoformat(),
+        })
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching system settings: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
 
 @login_required
 @system_settings_permission_required
@@ -713,53 +802,116 @@ def system_management(request):
     """
     Manage system-wide settings: water rates, reading schedule, billing schedule, and penalties.
     RESTRICTED: Superuser only - Admins cannot access.
+
+    All changes take effect IMMEDIATELY:
+    - Reading schedule: Mobile app fetches via /api/settings/
+    - Billing schedule: Affects newly generated bills
+    - Tiered rates: Affects newly generated bills
+    - Penalty settings: Affects penalty calculations on all overdue bills
     """
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
 
+    # Get recent change logs for display
+    recent_changes = SystemSettingChangeLog.objects.all()[:10]
+
     if request.method == "POST":
         try:
-            # Get water rate values
-            new_res_rate_str = request.POST.get("residential_rate_per_cubic")
-            new_comm_rate_str = request.POST.get("commercial_rate_per_cubic")
-            new_fixed_charge_str = request.POST.get("fixed_charge")
+            # =====================================================
+            # CAPTURE PREVIOUS VALUES FOR CHANGE LOG
+            # =====================================================
+            previous_values = {
+                'reading_schedule': {
+                    'start_day': setting.reading_start_day,
+                    'end_day': setting.reading_end_day,
+                },
+                'billing_schedule': {
+                    'billing_day': setting.billing_day_of_month,
+                    'due_day': setting.due_day_of_month,
+                },
+                'residential_rates': {
+                    'minimum_charge': str(setting.residential_minimum_charge),
+                    'tier2_rate': str(setting.residential_tier2_rate),
+                    'tier3_rate': str(setting.residential_tier3_rate),
+                    'tier4_rate': str(setting.residential_tier4_rate),
+                    'tier5_rate': str(setting.residential_tier5_rate),
+                },
+                'commercial_rates': {
+                    'minimum_charge': str(setting.commercial_minimum_charge),
+                    'tier2_rate': str(setting.commercial_tier2_rate),
+                    'tier3_rate': str(setting.commercial_tier3_rate),
+                    'tier4_rate': str(setting.commercial_tier4_rate),
+                    'tier5_rate': str(setting.commercial_tier5_rate),
+                },
+                'penalty_settings': {
+                    'enabled': setting.penalty_enabled,
+                    'type': setting.penalty_type,
+                    'rate': str(setting.penalty_rate),
+                    'fixed_amount': str(setting.fixed_penalty_amount),
+                    'grace_period': setting.penalty_grace_period_days,
+                    'max_amount': str(setting.max_penalty_amount),
+                },
+            }
 
-            # Get reading schedule values
-            reading_start = request.POST.get("reading_start_day")
-            reading_end = request.POST.get("reading_end_day")
+            # =====================================================
+            # TIERED WATER RATES - Residential
+            # =====================================================
+            res_minimum = Decimal(request.POST.get("residential_minimum_charge", "75"))
+            res_tier2 = Decimal(request.POST.get("residential_tier2_rate", "15"))
+            res_tier3 = Decimal(request.POST.get("residential_tier3_rate", "16"))
+            res_tier4 = Decimal(request.POST.get("residential_tier4_rate", "17"))
+            res_tier5 = Decimal(request.POST.get("residential_tier5_rate", "18"))
 
-            # Get billing schedule values
-            billing_day = request.POST.get("billing_day_of_month")
-            due_day = request.POST.get("due_day_of_month")
+            # =====================================================
+            # TIERED WATER RATES - Commercial
+            # =====================================================
+            comm_minimum = Decimal(request.POST.get("commercial_minimum_charge", "100"))
+            comm_tier2 = Decimal(request.POST.get("commercial_tier2_rate", "18"))
+            comm_tier3 = Decimal(request.POST.get("commercial_tier3_rate", "20"))
+            comm_tier4 = Decimal(request.POST.get("commercial_tier4_rate", "22"))
+            comm_tier5 = Decimal(request.POST.get("commercial_tier5_rate", "24"))
 
-            # Get penalty settings
+            # =====================================================
+            # READING SCHEDULE
+            # =====================================================
+            reading_start = int(request.POST.get("reading_start_day", "1"))
+            reading_end = int(request.POST.get("reading_end_day", "10"))
+
+            # =====================================================
+            # BILLING SCHEDULE
+            # =====================================================
+            billing_day = int(request.POST.get("billing_day_of_month", "1"))
+            due_day = int(request.POST.get("due_day_of_month", "20"))
+
+            # =====================================================
+            # PENALTY SETTINGS
+            # =====================================================
             penalty_enabled = request.POST.get("penalty_enabled") == "on"
             penalty_type = request.POST.get("penalty_type", "percentage")
-            penalty_rate_str = request.POST.get("penalty_rate", "10")
-            fixed_penalty_str = request.POST.get("fixed_penalty_amount", "50")
-            grace_period_str = request.POST.get("penalty_grace_period_days", "0")
-            max_penalty_str = request.POST.get("max_penalty_amount", "500")
+            penalty_rate = Decimal(request.POST.get("penalty_rate", "25"))
+            fixed_penalty = Decimal(request.POST.get("fixed_penalty_amount", "50"))
+            grace_period = int(request.POST.get("penalty_grace_period_days", "0"))
+            max_penalty = Decimal(request.POST.get("max_penalty_amount", "0"))
 
-            # Validate and convert to Decimal
-            new_res_rate = Decimal(new_res_rate_str)
-            new_comm_rate = Decimal(new_comm_rate_str)
-            new_fixed_charge = Decimal(new_fixed_charge_str)
-
-            # Validate and convert penalty values
-            penalty_rate = Decimal(penalty_rate_str)
-            fixed_penalty = Decimal(fixed_penalty_str)
-            grace_period = int(grace_period_str)
-            max_penalty = Decimal(max_penalty_str)
-
-            # Validate and convert schedule days
-            reading_start = int(reading_start)
-            reading_end = int(reading_end)
-            billing_day = int(billing_day)
-            due_day = int(due_day)
-
-            # Validate rates
-            if new_res_rate <= 0 or new_comm_rate <= 0 or new_fixed_charge < 0:
-                raise ValueError("Rates must be positive and fixed charge cannot be negative.")
+            # =====================================================
+            # VALIDATION
+            # =====================================================
+            # Validate tiered rates (all must be positive)
+            tiered_rates = [
+                (res_minimum, "Residential minimum charge"),
+                (res_tier2, "Residential tier 2 rate"),
+                (res_tier3, "Residential tier 3 rate"),
+                (res_tier4, "Residential tier 4 rate"),
+                (res_tier5, "Residential tier 5 rate"),
+                (comm_minimum, "Commercial minimum charge"),
+                (comm_tier2, "Commercial tier 2 rate"),
+                (comm_tier3, "Commercial tier 3 rate"),
+                (comm_tier4, "Commercial tier 4 rate"),
+                (comm_tier5, "Commercial tier 5 rate"),
+            ]
+            for rate, name in tiered_rates:
+                if rate < 0:
+                    raise ValueError(f"{name} cannot be negative.")
 
             # Validate penalty settings
             if penalty_rate < 0 or penalty_rate > 100:
@@ -773,7 +925,7 @@ def system_management(request):
             if penalty_type not in ['percentage', 'fixed']:
                 raise ValueError("Invalid penalty type.")
 
-            # Validate all days are within 1-28
+            # Validate all schedule days are within 1-28
             for day, name in [(reading_start, "Reading start"), (reading_end, "Reading end"),
                               (billing_day, "Billing day"), (due_day, "Due day")]:
                 if day < 1 or day > 28:
@@ -783,16 +935,32 @@ def system_management(request):
             if reading_start > reading_end:
                 raise ValueError("Reading start day must be before or equal to reading end day.")
 
-            # Update the setting object
-            setting.residential_rate_per_cubic = new_res_rate
-            setting.commercial_rate_per_cubic = new_comm_rate
-            setting.fixed_charge = new_fixed_charge
+            # =====================================================
+            # UPDATE SETTINGS - All changes take effect immediately
+            # =====================================================
+            # Tiered Residential Rates
+            setting.residential_minimum_charge = res_minimum
+            setting.residential_tier2_rate = res_tier2
+            setting.residential_tier3_rate = res_tier3
+            setting.residential_tier4_rate = res_tier4
+            setting.residential_tier5_rate = res_tier5
+
+            # Tiered Commercial Rates
+            setting.commercial_minimum_charge = comm_minimum
+            setting.commercial_tier2_rate = comm_tier2
+            setting.commercial_tier3_rate = comm_tier3
+            setting.commercial_tier4_rate = comm_tier4
+            setting.commercial_tier5_rate = comm_tier5
+
+            # Reading Schedule (affects when mobile app shows reading period)
             setting.reading_start_day = reading_start
             setting.reading_end_day = reading_end
+
+            # Billing Schedule (affects dates on newly generated bills)
             setting.billing_day_of_month = billing_day
             setting.due_day_of_month = due_day
 
-            # Update penalty settings
+            # Penalty Settings (affects penalty calculation on overdue bills)
             setting.penalty_enabled = penalty_enabled
             setting.penalty_type = penalty_type
             setting.penalty_rate = penalty_rate
@@ -802,18 +970,73 @@ def system_management(request):
 
             setting.save()
 
-            # Log the activity
+            # =====================================================
+            # LOG THE CHANGE
+            # =====================================================
+            new_values = {
+                'reading_schedule': {
+                    'start_day': reading_start,
+                    'end_day': reading_end,
+                },
+                'billing_schedule': {
+                    'billing_day': billing_day,
+                    'due_day': due_day,
+                },
+                'residential_rates': {
+                    'minimum_charge': str(res_minimum),
+                    'tier2_rate': str(res_tier2),
+                    'tier3_rate': str(res_tier3),
+                    'tier4_rate': str(res_tier4),
+                    'tier5_rate': str(res_tier5),
+                },
+                'commercial_rates': {
+                    'minimum_charge': str(comm_minimum),
+                    'tier2_rate': str(comm_tier2),
+                    'tier3_rate': str(comm_tier3),
+                    'tier4_rate': str(comm_tier4),
+                    'tier5_rate': str(comm_tier5),
+                },
+                'penalty_settings': {
+                    'enabled': penalty_enabled,
+                    'type': penalty_type,
+                    'rate': str(penalty_rate),
+                    'fixed_amount': str(fixed_penalty),
+                    'grace_period': grace_period,
+                    'max_amount': str(max_penalty),
+                },
+            }
+
+            # Build change description
+            changes_summary = []
+            changes_summary.append(f"Reading schedule: Day {reading_start}-{reading_end}")
+            changes_summary.append(f"Billing: Day {billing_day}, Due: Day {due_day}")
+            if penalty_enabled:
+                changes_summary.append(f"Penalty: {penalty_rate}% ({penalty_type})")
+            else:
+                changes_summary.append("Penalty: Disabled")
+
+            # Create change log entry
+            SystemSettingChangeLog.log_change(
+                user=request.user,
+                change_type='multiple',
+                description=f"Updated system settings: {'; '.join(changes_summary)}",
+                previous_values=previous_values,
+                new_values=new_values,
+                ip_address=get_client_ip(request)
+            )
+
+            # Log to UserActivity for backward compatibility
             if hasattr(request, 'login_event') and request.login_event:
                 UserActivity.objects.create(
                     user=request.user,
                     action='system_settings_updated',
-                    description=f"Updated system settings including penalty configuration",
+                    description=f"Updated system settings: {'; '.join(changes_summary)}",
                     ip_address=get_client_ip(request),
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
                     login_event=request.login_event
                 )
 
-            messages.success(request, "System settings updated successfully!")
+            messages.success(request, "System settings updated successfully! Changes are now effective for all new bills and the mobile app.")
         except (InvalidOperation, ValueError, TypeError) as e:
             messages.error(request, f"Invalid input: {e}")
         except Exception as e:
@@ -824,6 +1047,7 @@ def system_management(request):
     # For GET requests, pass the setting object to the template
     context = {
         "setting": setting,
+        "recent_changes": recent_changes,
     }
     return render(request, "consumers/system_management.html", context)
 
@@ -2789,25 +3013,23 @@ def confirm_all_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings and determine rate based on usage type
+            # Get system settings and calculate using TIERED RATES
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                # Use appropriate rate based on consumer's usage type (case-insensitive)
-                if reading.consumer.usage_type and reading.consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:  # residential or default
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                # Fallback to defaults if no settings exist
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using TIERED RATES
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=reading.consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=reading.consumer,
@@ -2816,8 +3038,8 @@ def confirm_all_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,
+                fixed_charge=Decimal('0.00'),
                 total_amount=total,
                 status='Pending'
             )
@@ -2874,23 +3096,23 @@ def confirm_all_readings_global(request):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings
+            # Get system settings and calculate using TIERED RATES
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using TIERED RATES
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=consumer,
@@ -2899,8 +3121,8 @@ def confirm_all_readings_global(request):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,
+                fixed_charge=Decimal('0.00'),
                 total_amount=total,
                 status='Pending'
             )
@@ -3097,29 +3319,27 @@ def confirm_reading(request, reading_id):
     # billing_day_of_month: Only affects billing_period date on the bill
     # due_day_of_month: Only affects due_date on the bill
     # These do NOT control WHEN bills are generated - that's instant on confirm.
+    # Uses TIERED RATE calculation from current SystemSettings.
     # ========================================================================
     try:
+        from .utils import calculate_tiered_water_bill
+
         setting = SystemSetting.objects.first()
 
-        # Apply correct rate based on consumer usage type (Residential vs Commercial)
+        # Get schedule settings (for billing period and due date)
         if setting:
-            if consumer.usage_type == 'Residential':
-                rate = setting.residential_rate_per_cubic
-            else:  # Commercial
-                rate = setting.commercial_rate_per_cubic
-            fixed_charge = setting.fixed_charge
-            # These only set the DATE values on the bill, not when it's created
             billing_day = setting.billing_day_of_month
             due_day = setting.due_day_of_month
         else:
-            # Fallback rates if SystemSetting doesn't exist
-            rate = Decimal('22.50') if consumer.usage_type == 'Residential' else Decimal('25.00')
-            fixed_charge = Decimal('50.00')
             billing_day = 1
             due_day = 20
 
-        # Calculate total: (consumption × rate) + fixed_charge
-        total_amount = (Decimal(consumption) * rate) + fixed_charge
+        # Calculate bill using TIERED RATES (uses current SystemSettings)
+        total_amount, average_rate, breakdown = calculate_tiered_water_bill(
+            consumption=consumption,
+            usage_type=consumer.usage_type,
+            settings=setting
+        )
 
         # CREATE BILL IMMEDIATELY - This is the key action
         Bill.objects.create(
@@ -3128,11 +3348,11 @@ def confirm_reading(request, reading_id):
             current_reading=current,
             # billing_period: First day of billing month (just for display/records)
             billing_period=current.reading_date.replace(day=billing_day),
-            # due_date: When payment is due (just for display/records)
+            # due_date: When payment is due (from SystemSettings)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            rate_per_cubic=rate,
-            fixed_charge=fixed_charge,
+            rate_per_cubic=average_rate,  # Store average rate for reference
+            fixed_charge=Decimal('0.00'),  # No fixed charge with tiered rates
             total_amount=total_amount,
             status='Pending'
         )
@@ -3195,24 +3415,23 @@ def confirm_selected_readings(request, barangay_id):
                     continue
                 cons = reading.reading_value - baseline
 
-            # Get system settings
+            # Get system settings and calculate using TIERED RATES
+            from .utils import calculate_tiered_water_bill
+
             setting = SystemSetting.objects.first()
             if setting:
-                # Use appropriate rate based on consumer's usage type (case-insensitive)
-                if consumer.usage_type and consumer.usage_type.lower() == 'commercial':
-                    rate = setting.commercial_rate_per_cubic
-                else:
-                    rate = setting.residential_rate_per_cubic
-                fixed = setting.fixed_charge
                 billing_day = setting.billing_day_of_month
                 due_day = setting.due_day_of_month
             else:
-                rate = Decimal('22.50')
-                fixed = Decimal('50.00')
                 billing_day = 1
                 due_day = 20
 
-            total = (Decimal(cons) * rate) + fixed
+            # Calculate bill using TIERED RATES
+            total, average_rate, breakdown = calculate_tiered_water_bill(
+                consumption=cons,
+                usage_type=consumer.usage_type,
+                settings=setting
+            )
 
             Bill.objects.create(
                 consumer=consumer,
@@ -3221,8 +3440,8 @@ def confirm_selected_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
-                rate_per_cubic=rate,
-                fixed_charge=fixed,
+                rate_per_cubic=average_rate,
+                fixed_charge=Decimal('0.00'),
                 total_amount=total,
                 status='Pending'
             )
@@ -3989,6 +4208,7 @@ def delete_user(request, user_id):
     RESTRICTED: Superuser only - Admins cannot delete users.
     User data is preserved in ArchivedUser model.
     """
+    
     from .models import ArchivedUser
 
     user = get_object_or_404(User, id=user_id)
@@ -4028,16 +4248,7 @@ def archived_users(request):
 
     # Get all archived users
     archived_list = ArchivedUser.objects.all().order_by('-archived_at')
-
-    # Search functionality
-    search_query = request.GET.get('search', '')
-    if search_query:
-        archived_list = archived_list.filter(
-            Q(username__icontains=search_query) |
-            Q(first_name__icontains=search_query) |
-            Q(last_name__icontains=search_query) |
-            Q(email__icontains=search_query)
-        )
+ 
 
     # Pagination
     paginator = Paginator(archived_list, 20)

@@ -1177,7 +1177,7 @@ class SystemSetting(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
-        return f"Rates: Res ₱{self.residential_rate_per_cubic}, Comm ₱{self.commercial_rate_per_cubic}"
+        return f"Rates: Res ₱{self.residential_minimum_charge} min, Comm ₱{self.commercial_minimum_charge} min | Updated: {self.updated_at.strftime('%Y-%m-%d %H:%M') if self.updated_at else 'Never'}"
 
     # Optional: Override save to enforce singleton pattern (only one instance)
     def save(self, *args, **kwargs):
@@ -1186,12 +1186,104 @@ class SystemSetting(models.Model):
         super().save(*args, **kwargs)
 
     class Meta:
-        # Optional: Add constraints here if needed, e.g., to ensure only one row
-        # constraints = [
-        #     models.UniqueConstraint(fields=[], name='unique_system_setting_singleton')
-        # ]
-        # Or just ensure id=1 is always used implicitly as shown in the view
-        pass
+        verbose_name = "System Setting"
+        verbose_name_plural = "System Settings"
+
+
+# ============================================================================
+# SYSTEM SETTINGS CHANGE LOG - Track all changes to system settings
+# ============================================================================
+class SystemSettingChangeLog(models.Model):
+    """
+    Tracks changes to system settings for audit purposes.
+    Records who changed what and when, with before/after values.
+
+    Changes take effect IMMEDIATELY:
+    - Reading schedule: Affects mobile app display immediately
+    - Billing schedule: Affects newly generated bills
+    - Tiered rates: Affects newly generated bills
+    - Penalty settings: Affects penalty calculations on existing and new bills
+    """
+    CHANGE_TYPES = [
+        ('reading_schedule', 'Reading Schedule'),
+        ('billing_schedule', 'Billing Schedule'),
+        ('residential_rates', 'Residential Rates'),
+        ('commercial_rates', 'Commercial Rates'),
+        ('penalty_settings', 'Penalty Settings'),
+        ('multiple', 'Multiple Settings'),
+    ]
+
+    changed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='settings_changes',
+        help_text="User who made the change"
+    )
+    changed_at = models.DateTimeField(default=timezone.now, db_index=True)
+    change_type = models.CharField(max_length=30, choices=CHANGE_TYPES, default='multiple')
+
+    # Summary of changes
+    description = models.TextField(help_text="Human-readable description of changes")
+
+    # Store the actual values that were changed (JSON format)
+    previous_values = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="Previous settings values (JSON)"
+    )
+    new_values = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text="New settings values (JSON)"
+    )
+
+    # When changes take effect
+    effective_immediately = models.BooleanField(
+        default=True,
+        help_text="All changes take effect immediately"
+    )
+
+    # IP address for security audit
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+
+    class Meta:
+        ordering = ['-changed_at']
+        verbose_name = "Settings Change Log"
+        verbose_name_plural = "Settings Change Logs"
+        indexes = [
+            models.Index(fields=['-changed_at']),
+            models.Index(fields=['change_type', '-changed_at']),
+        ]
+
+    def __str__(self):
+        user_str = self.changed_by.username if self.changed_by else "System"
+        return f"{self.get_change_type_display()} by {user_str} at {self.changed_at.strftime('%Y-%m-%d %H:%M')}"
+
+    @classmethod
+    def log_change(cls, user, change_type, description, previous_values, new_values, ip_address=None):
+        """
+        Create a new change log entry.
+
+        Args:
+            user: User who made the change
+            change_type: Type of change (from CHANGE_TYPES)
+            description: Human-readable description
+            previous_values: Dict of previous settings
+            new_values: Dict of new settings
+            ip_address: IP address of user
+        """
+        return cls.objects.create(
+            changed_by=user,
+            change_type=change_type,
+            description=description,
+            previous_values=previous_values,
+            new_values=new_values,
+            ip_address=ip_address,
+            effective_immediately=True
+        )
+
 
 # ... (rest of your models like Consumer, Barangay, etc.) ...
     
