@@ -16,6 +16,13 @@
                 <p class="text-sm text-dark-500 mt-1">Track meter reading progress by barangay - {{ current_month|date:"F Y" }}</p>
             </div>
             <div class="flex gap-2">
+                {% if pending_proof_readings_count %}
+                <a href="{% url 'consumers:pending_readings' %}"
+                   class="btn-sm inline-flex items-center gap-2 bg-warning-500 hover:bg-warning-600 text-white font-medium px-3 py-2 rounded-xl transition-colors">
+                    <i class="bi bi-camera-fill"></i> Pending Readings
+                    <span class="bg-white text-warning-600 text-xs font-bold px-2 py-0.5 rounded-full">{{ pending_proof_readings_count }}</span>
+                </a>
+                {% endif %}
                 <a href="?export=print"
                    class="btn-primary btn-sm" target="_blank">
                     <i class="bi bi-printer-fill"></i> Print Report
