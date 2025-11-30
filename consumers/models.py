@@ -818,16 +818,85 @@ class Consumer(models.Model):
 # Meter Reading Model
 # ----------------------------
 class MeterReading(models.Model):
+    """
+    Stores meter readings from field staff (mobile app) or office (manual entry).
+
+    FLOW:
+    - Mobile app: source='mobile_app', is_confirmed=True (auto-confirm)
+    - Manual with proof: source='manual_with_proof', is_confirmed=False (needs admin review)
+    - Office manual: source='manual', is_confirmed=True (trusted)
+    """
+    SOURCE_CHOICES = [
+        ('manual', 'Office Manual Entry'),
+        ('mobile_app', 'Mobile App (OCR)'),
+        ('manual_with_proof', 'Manual with Proof Photo'),
+        ('smart_meter', 'Smart Meter'),
+    ]
+
     consumer = models.ForeignKey(
-        Consumer, 
-        on_delete=models.CASCADE, 
+        Consumer,
+        on_delete=models.CASCADE,
         related_name='meter_readings'
     )
     reading_date = models.DateField()
-    reading_value = models.IntegerField()  # cumulative meter value
-    source = models.CharField(max_length=50, default='manual')
-    is_confirmed = models.BooleanField(default=False)
+    reading_value = models.IntegerField(help_text="Cumulative meter value")
+    source = models.CharField(max_length=50, choices=SOURCE_CHOICES, default='manual')
     created_at = models.DateTimeField(auto_now_add=True)
+
+    # -------------------------
+    # PROOF IMAGE (for manual readings)
+    # -------------------------
+    proof_image_url = models.URLField(
+        max_length=500,
+        blank=True,
+        null=True,
+        help_text="Cloudinary URL of meter photo proof"
+    )
+
+    # -------------------------
+    # CONFIRMATION STATUS
+    # -------------------------
+    is_confirmed = models.BooleanField(default=False, help_text="Has admin confirmed this reading?")
+    confirmed_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='confirmed_readings',
+        help_text="Admin who confirmed this reading"
+    )
+    confirmed_at = models.DateTimeField(null=True, blank=True)
+
+    # -------------------------
+    # REJECTION STATUS
+    # -------------------------
+    is_rejected = models.BooleanField(default=False, help_text="Was this reading rejected?")
+    rejected_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='rejected_readings',
+        help_text="Admin who rejected this reading"
+    )
+    rejected_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.CharField(
+        max_length=255,
+        blank=True,
+        help_text="Reason for rejection (required when rejecting)"
+    )
+
+    # -------------------------
+    # FIELD STAFF INFO
+    # -------------------------
+    submitted_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='submitted_readings',
+        help_text="Field staff who submitted this reading"
+    )
 
     class Meta:
         ordering = ['-reading_date', '-created_at']
@@ -835,11 +904,27 @@ class MeterReading(models.Model):
             models.Index(fields=['consumer', 'is_confirmed'], name='reading_consumer_conf_idx'),
             models.Index(fields=['reading_date'], name='reading_date_idx'),
             models.Index(fields=['consumer', 'is_confirmed', '-reading_date'], name='reading_latest_idx'),
+            models.Index(fields=['is_confirmed', 'is_rejected'], name='reading_status_idx'),
         ]
-        # Removed unique_together to allow multiple readings on same date for testing/demo
 
     def __str__(self):
-        return f"{self.consumer} - {self.reading_value} on {self.reading_date}"
+        status = "✓" if self.is_confirmed else ("✗" if self.is_rejected else "?")
+        return f"{self.consumer} - {self.reading_value} on {self.reading_date} [{status}]"
+
+    @property
+    def needs_confirmation(self):
+        """Check if this reading needs admin confirmation"""
+        return not self.is_confirmed and not self.is_rejected and self.source == 'manual_with_proof'
+
+    @property
+    def status_display(self):
+        """Human-readable status"""
+        if self.is_confirmed:
+            return "Confirmed"
+        elif self.is_rejected:
+            return "Rejected"
+        else:
+            return "Pending Review"
 
 
 # ----------------------------

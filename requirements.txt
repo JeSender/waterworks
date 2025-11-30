@@ -16,6 +16,9 @@ et-xmlfile==2.0.0
 # Image Processing
 Pillow==12.0.0
 
+# Cloud Image Storage (for proof photos)
+cloudinary==1.36.0
+
 # CORS Headers (for Android app API)
 django-cors-headers==4.3.1
 

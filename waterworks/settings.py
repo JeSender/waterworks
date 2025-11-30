@@ -246,6 +246,37 @@ else:
 if not EMAIL_HOST_PASSWORD:
     _email_logger.warning("EMAIL_HOST_PASSWORD is not configured!")
 
+# ============================================================================
+# CLOUDINARY CONFIGURATION - For proof image uploads
+# ============================================================================
+# Sign up at https://cloudinary.com/ and get your credentials
+# Add these to your environment variables on Render:
+# - CLOUDINARY_CLOUD_NAME
+# - CLOUDINARY_API_KEY
+# - CLOUDINARY_API_SECRET
+CLOUDINARY_AVAILABLE = False
+try:
+    import cloudinary
+    import cloudinary.uploader
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    _email_logger.warning("Cloudinary package not installed. Proof image uploads will not work.")
+
+CLOUDINARY_CLOUD_NAME = config('CLOUDINARY_CLOUD_NAME', default='')
+CLOUDINARY_API_KEY = config('CLOUDINARY_API_KEY', default='')
+CLOUDINARY_API_SECRET = config('CLOUDINARY_API_SECRET', default='')
+
+if CLOUDINARY_AVAILABLE and CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
+    cloudinary.config(
+        cloud_name=CLOUDINARY_CLOUD_NAME,
+        api_key=CLOUDINARY_API_KEY,
+        api_secret=CLOUDINARY_API_SECRET,
+        secure=True
+    )
+    _email_logger.info(f"Cloudinary configured with cloud: {CLOUDINARY_CLOUD_NAME}")
+elif CLOUDINARY_AVAILABLE:
+    _email_logger.warning("Cloudinary credentials not configured! Proof image uploads will fail.")
+
 # Add Render domain to trusted origins dynamically
 if RENDER_ENVIRONMENT:
     render_external_url = config('RENDER_EXTERNAL_URL', default='')

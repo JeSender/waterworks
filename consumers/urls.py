@@ -38,6 +38,8 @@ urlpatterns = [
     path('meter-readings/confirm-all-global/', views.confirm_all_readings_global, name='confirm_all_readings_global'),
     path('meter-readings/barangay/<int:barangay_id>/export/', views.export_barangay_readings, name='export_barangay_readings'),
     path('meter-readings/<int:reading_id>/confirm/', views.confirm_reading, name='confirm_reading'),
+    path('meter-readings/<int:reading_id>/reject/', views.reject_reading, name='reject_reading'),
+    path('meter-readings/pending/', views.pending_readings_view, name='pending_readings'),
     path('meter-readings/barangay/<int:barangay_id>/confirm-selected/', views.confirm_selected_readings, name='confirm_selected_readings'),
 
     # Smart Meter
@@ -79,6 +81,17 @@ urlpatterns = [
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
     path('api/settings/', views.api_get_system_settings, name='api_get_system_settings'),
+
+    # Manual Reading with Proof (requires admin confirmation)
+    path('api/readings/manual/', views.api_submit_manual_reading, name='api_submit_manual_reading'),
+    path('api/readings/pending/', views.api_get_pending_readings, name='api_get_pending_readings'),
+    path('api/readings/<int:reading_id>/confirm/', views.api_confirm_reading, name='api_confirm_reading'),
+    path('api/readings/<int:reading_id>/reject/', views.api_reject_reading, name='api_reject_reading'),
+
+    # Notifications API
+    path('api/notifications/', views.api_get_notifications, name='api_get_notifications'),
+    path('api/notifications/count/', views.api_get_notification_count, name='api_get_notification_count'),
+    path('api/notifications/<int:notification_id>/mark-read/', views.api_mark_notification_read, name='api_mark_notification_read'),
 
     # User Management & Security
     path('admin-verification/', views.admin_verification, name='admin_verification'),

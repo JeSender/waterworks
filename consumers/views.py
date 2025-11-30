@@ -310,7 +310,538 @@ def api_submit_reading(request):
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
+# ============================================================================
+# API VIEW: SUBMIT MANUAL READING WITH PROOF IMAGE
+# ============================================================================
+@csrf_exempt
+def api_submit_manual_reading(request):
+    """
+    API endpoint for Android app to submit manual reading with proof photo.
 
+    This reading requires admin confirmation before bill is generated.
+
+    POST data:
+    {
+        "consumer_id": 1,
+        "reading": 1275,
+        "reading_date": "2025-12-01",
+        "proof_image": "base64_encoded_image_string"
+    }
+
+    Flow:
+    1. Save reading with is_confirmed=False
+    2. Upload proof image to Cloudinary
+    3. Create notification for admin
+    4. Admin reviews and confirms/rejects
+    5. Bill generated only after confirmation
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        import base64
+        import cloudinary.uploader
+        from django.conf import settings
+
+        data = json.loads(request.body.decode('utf-8'))
+
+        # Extract data
+        consumer_id = data.get('consumer_id')
+        reading_value = data.get('reading')
+        reading_date_str = data.get('reading_date')
+        proof_image_base64 = data.get('proof_image')
+
+        # Validate required fields
+        if not consumer_id or reading_value is None:
+            return JsonResponse({'error': 'Missing required fields: consumer_id or reading'}, status=400)
+
+        # Get consumer
+        try:
+            consumer = Consumer.objects.get(id=consumer_id)
+        except Consumer.DoesNotExist:
+            return JsonResponse({'error': 'Consumer not found'}, status=404)
+
+        # Check if consumer is disconnected
+        if consumer.status == 'disconnected':
+            return JsonResponse({
+                'error': 'Consumer is disconnected',
+                'message': f'{consumer.first_name} {consumer.last_name} is currently disconnected.'
+            }, status=403)
+
+        # Parse reading date
+        if reading_date_str:
+            try:
+                reading_date = timezone.datetime.strptime(reading_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+        else:
+            reading_date = timezone.now().date()
+
+        # Validate reading value
+        try:
+            current_reading = int(reading_value)
+            if current_reading < 0:
+                raise ValueError("Reading value cannot be negative")
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid reading value.'}, status=400)
+
+        # Get previous reading for validation
+        previous_reading = get_previous_reading(consumer)
+        if current_reading < previous_reading:
+            return JsonResponse({
+                'error': 'Invalid reading',
+                'message': f'Current reading ({current_reading}) cannot be less than previous ({previous_reading})'
+            }, status=400)
+
+        consumption = current_reading - previous_reading
+
+        # Upload proof image to Cloudinary (if provided)
+        proof_image_url = None
+        if proof_image_base64:
+            try:
+                # Check if Cloudinary is configured
+                if not settings.CLOUDINARY_CLOUD_NAME:
+                    return JsonResponse({'error': 'Image upload not configured'}, status=500)
+
+                # Upload to Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    f"data:image/jpeg;base64,{proof_image_base64}",
+                    folder="waterworks/meter_proofs",
+                    public_id=f"reading_{consumer.id_number}_{reading_date}",
+                    overwrite=True,
+                    resource_type="image"
+                )
+                proof_image_url = upload_result.get('secure_url')
+            except Exception as e:
+                import logging
+                logging.error(f"Cloudinary upload error: {e}")
+                return JsonResponse({'error': 'Failed to upload proof image'}, status=500)
+
+        # Create meter reading (NOT confirmed - needs admin review)
+        reading = MeterReading.objects.create(
+            consumer=consumer,
+            reading_date=reading_date,
+            reading_value=current_reading,
+            source='manual_with_proof',
+            is_confirmed=False,  # Needs admin confirmation
+            proof_image_url=proof_image_url,
+            submitted_by=request.user if request.user.is_authenticated else None
+        )
+
+        # Create notification for admin
+        from django.urls import reverse
+        Notification.objects.create(
+            user=None,  # Notify all admins
+            notification_type='meter_reading',
+            title='Manual Reading - Needs Confirmation',
+            message=f'{consumer.first_name} {consumer.last_name} ({consumer.id_number}) - {consumption} m³ | Proof image attached',
+            related_object_id=reading.id,
+            redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id})
+        )
+
+        # Get field staff name
+        field_staff_name = "Field Staff"
+        if request.user.is_authenticated:
+            field_staff_name = request.user.get_full_name() or request.user.username
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading submitted for review. Awaiting admin confirmation.',
+            'reading_id': reading.id,
+            'consumer_id': consumer.id,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'id_number': consumer.id_number,
+            'reading_date': str(reading_date),
+            'previous_reading': previous_reading,
+            'current_reading': current_reading,
+            'consumption': consumption,
+            'proof_image_url': proof_image_url,
+            'status': 'pending_confirmation',
+            'field_staff_name': field_staff_name
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
+    except Exception as e:
+        import logging
+        logging.error(f"Error submitting manual reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: CONFIRM MANUAL READING
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_confirm_reading(request, reading_id):
+    """
+    API endpoint for admin to confirm a manual reading.
+
+    POST /api/readings/<reading_id>/confirm/
+
+    On confirm:
+    1. Set is_confirmed=True
+    2. Generate bill with current rates
+    3. Mark notification as read
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        reading = MeterReading.objects.select_related('consumer').get(id=reading_id)
+
+        if reading.is_confirmed:
+            return JsonResponse({'error': 'Reading already confirmed'}, status=400)
+
+        if reading.is_rejected:
+            return JsonResponse({'error': 'Cannot confirm a rejected reading'}, status=400)
+
+        consumer = reading.consumer
+
+        # Get previous reading for consumption calculation
+        prev = MeterReading.objects.filter(
+            consumer=consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev:
+            consumption = reading.reading_value - prev.reading_value
+        else:
+            baseline = consumer.first_reading if consumer.first_reading else 0
+            consumption = reading.reading_value - baseline
+
+        if consumption < 0:
+            return JsonResponse({'error': 'Invalid consumption calculation'}, status=400)
+
+        # Calculate bill using tiered rates
+        from .utils import calculate_tiered_water_bill
+        setting = SystemSetting.objects.first()
+
+        if setting:
+            billing_day = setting.billing_day_of_month
+            due_day = setting.due_day_of_month
+        else:
+            billing_day = 1
+            due_day = 20
+
+        total, average_rate, breakdown = calculate_tiered_water_bill(
+            consumption=consumption,
+            usage_type=consumer.usage_type,
+            settings=setting
+        )
+
+        # Create bill
+        Bill.objects.create(
+            consumer=consumer,
+            previous_reading=prev,
+            current_reading=reading,
+            billing_period=reading.reading_date.replace(day=billing_day),
+            due_date=reading.reading_date.replace(day=due_day),
+            consumption=consumption,
+            tier1_consumption=breakdown['tier1_units'],
+            tier1_amount=breakdown['tier1_amount'],
+            tier2_consumption=breakdown['tier2_units'],
+            tier2_rate=breakdown['tier2_rate'],
+            tier2_amount=breakdown['tier2_amount'],
+            tier3_consumption=breakdown['tier3_units'],
+            tier3_rate=breakdown['tier3_rate'],
+            tier3_amount=breakdown['tier3_amount'],
+            tier4_consumption=breakdown['tier4_units'],
+            tier4_rate=breakdown['tier4_rate'],
+            tier4_amount=breakdown['tier4_amount'],
+            tier5_consumption=breakdown['tier5_units'],
+            tier5_rate=breakdown['tier5_rate'],
+            tier5_amount=breakdown['tier5_amount'],
+            rate_per_cubic=average_rate,
+            fixed_charge=Decimal('0.00'),
+            total_amount=total,
+            status='Pending'
+        )
+
+        # Update reading status
+        reading.is_confirmed = True
+        reading.confirmed_by = request.user
+        reading.confirmed_at = timezone.now()
+        reading.save()
+
+        # Mark related notification as read
+        Notification.objects.filter(
+            related_object_id=reading.id,
+            notification_type='meter_reading'
+        ).update(is_read=True, read_at=timezone.now())
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading confirmed and bill generated',
+            'reading_id': reading.id,
+            'bill_amount': float(total),
+            'consumption': consumption
+        })
+
+    except MeterReading.DoesNotExist:
+        return JsonResponse({'error': 'Reading not found'}, status=404)
+    except Exception as e:
+        import logging
+        logging.error(f"Error confirming reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: REJECT MANUAL READING
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_reject_reading(request, reading_id):
+    """
+    API endpoint for admin to reject a manual reading.
+
+    POST /api/readings/<reading_id>/reject/
+    {
+        "reason": "Image is blurry, please resubmit"
+    }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        reason = data.get('reason', '').strip()
+
+        if not reason:
+            return JsonResponse({'error': 'Rejection reason is required'}, status=400)
+
+        reading = MeterReading.objects.select_related('consumer').get(id=reading_id)
+
+        if reading.is_confirmed:
+            return JsonResponse({'error': 'Cannot reject a confirmed reading'}, status=400)
+
+        if reading.is_rejected:
+            return JsonResponse({'error': 'Reading already rejected'}, status=400)
+
+        # Update reading status
+        reading.is_rejected = True
+        reading.rejected_by = request.user
+        reading.rejected_at = timezone.now()
+        reading.rejection_reason = reason
+        reading.save()
+
+        # Mark related notification as read
+        Notification.objects.filter(
+            related_object_id=reading.id,
+            notification_type='meter_reading'
+        ).update(is_read=True, read_at=timezone.now())
+
+        # Create notification for field staff about rejection
+        if reading.submitted_by:
+            Notification.objects.create(
+                user=reading.submitted_by,
+                notification_type='system_alert',
+                title='Reading Rejected',
+                message=f'Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected. Reason: {reason}',
+                related_object_id=reading.id
+            )
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading rejected',
+            'reading_id': reading.id,
+            'reason': reason
+        })
+
+    except MeterReading.DoesNotExist:
+        return JsonResponse({'error': 'Reading not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        import logging
+        logging.error(f"Error rejecting reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET NOTIFICATIONS LIST
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_notifications(request):
+    """
+    API endpoint to get notifications for the current user.
+
+    GET /api/notifications/
+    GET /api/notifications/?unread_only=true
+
+    Returns list of notifications (newest first).
+    """
+    try:
+        unread_only = request.GET.get('unread_only', 'false').lower() == 'true'
+
+        # Get notifications for this user or all admins (user=None)
+        notifications = Notification.objects.filter(
+            models.Q(user=request.user) | models.Q(user__isnull=True),
+            is_archived=False
+        ).order_by('-created_at')
+
+        if unread_only:
+            notifications = notifications.filter(is_read=False)
+
+        # Limit to last 50
+        notifications = notifications[:50]
+
+        data = []
+        for n in notifications:
+            data.append({
+                'id': n.id,
+                'type': n.notification_type,
+                'title': n.title,
+                'message': n.message,
+                'is_read': n.is_read,
+                'redirect_url': n.redirect_url,
+                'related_object_id': n.related_object_id,
+                'created_at': n.created_at.isoformat(),
+                'read_at': n.read_at.isoformat() if n.read_at else None,
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'notifications': data,
+            'total': len(data)
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching notifications: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET UNREAD NOTIFICATION COUNT
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_notification_count(request):
+    """
+    API endpoint to get unread notification count.
+
+    GET /api/notifications/count/
+
+    Returns: { "unread_count": 5 }
+    """
+    try:
+        count = Notification.objects.filter(
+            models.Q(user=request.user) | models.Q(user__isnull=True),
+            is_read=False,
+            is_archived=False
+        ).count()
+
+        return JsonResponse({
+            'status': 'success',
+            'unread_count': count
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching notification count: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: MARK NOTIFICATION AS READ
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_mark_notification_read(request, notification_id):
+    """
+    API endpoint to mark a notification as read.
+
+    POST /api/notifications/<id>/mark-read/
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        notification = Notification.objects.get(id=notification_id)
+
+        # Check if user can access this notification
+        if notification.user and notification.user != request.user:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Notification marked as read'
+        })
+
+    except Notification.DoesNotExist:
+        return JsonResponse({'error': 'Notification not found'}, status=404)
+    except Exception as e:
+        import logging
+        logging.error(f"Error marking notification as read: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET PENDING READINGS (for admin review)
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_pending_readings(request):
+    """
+    API endpoint to get all readings pending confirmation.
+
+    GET /api/readings/pending/
+
+    Returns list of readings that need admin review.
+    """
+    try:
+        readings = MeterReading.objects.filter(
+            is_confirmed=False,
+            is_rejected=False,
+            source='manual_with_proof'
+        ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-created_at')
+
+        data = []
+        for r in readings:
+            # Calculate consumption
+            prev = MeterReading.objects.filter(
+                consumer=r.consumer,
+                is_confirmed=True,
+                reading_date__lt=r.reading_date
+            ).order_by('-reading_date').first()
+
+            if prev:
+                consumption = r.reading_value - prev.reading_value
+            else:
+                baseline = r.consumer.first_reading if r.consumer.first_reading else 0
+                consumption = r.reading_value - baseline
+
+            data.append({
+                'reading_id': r.id,
+                'consumer_id': r.consumer.id,
+                'consumer_name': f"{r.consumer.first_name} {r.consumer.last_name}",
+                'id_number': r.consumer.id_number,
+                'barangay': r.consumer.barangay.name if r.consumer.barangay else '',
+                'reading_date': r.reading_date.isoformat(),
+                'reading_value': r.reading_value,
+                'consumption': consumption,
+                'proof_image_url': r.proof_image_url,
+                'submitted_by': r.submitted_by.get_full_name() if r.submitted_by else 'Unknown',
+                'submitted_at': r.created_at.isoformat(),
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'pending_readings': data,
+            'total': len(data)
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching pending readings: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 @csrf_exempt
@@ -3598,15 +4129,126 @@ def confirm_reading(request, reading_id):
 
         # Mark the reading as confirmed
         current.is_confirmed = True
+        current.confirmed_by = request.user
+        current.confirmed_at = timezone.now()
         current.save()
 
-        messages.success(request, f"✅ Bill successfully generated for {get_consumer_display_id(consumer)}!")
+        success_message = f"Bill successfully generated for {get_consumer_display_id(consumer)}!"
+
+        # Handle AJAX request (from pending_readings page)
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({'status': 'success', 'message': success_message})
+
+        messages.success(request, f"✅ {success_message}")
 
     except Exception as e:
-        messages.error(request, f"Failed to generate bill: {str(e)}")
+        error_message = f"Failed to generate bill: {str(e)}"
+        if request.headers.get('Content-Type') == 'application/json':
+            return JsonResponse({'status': 'error', 'message': error_message}, status=400)
+        messages.error(request, error_message)
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
     return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
+
+
+@login_required
+def reject_reading(request, reading_id):
+    """
+    Reject a meter reading submitted with proof photo.
+    Only accessible via POST with a rejection reason.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+    reading = get_object_or_404(MeterReading, id=reading_id)
+
+    # Check if already processed
+    if reading.is_confirmed:
+        return JsonResponse({'status': 'error', 'message': 'This reading is already confirmed'}, status=400)
+    if reading.is_rejected:
+        return JsonResponse({'status': 'error', 'message': 'This reading is already rejected'}, status=400)
+
+    # Get rejection reason from request body
+    try:
+        data = json.loads(request.body)
+        reason = data.get('reason', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        reason = request.POST.get('reason', '').strip()
+
+    if not reason:
+        return JsonResponse({'status': 'error', 'message': 'Rejection reason is required'}, status=400)
+
+    # Mark as rejected
+    reading.is_rejected = True
+    reading.rejected_by = request.user
+    reading.rejected_at = timezone.now()
+    reading.rejection_reason = reason
+    reading.save()
+
+    # Create notification for the field staff who submitted
+    if reading.submitted_by:
+        Notification.objects.create(
+            user=reading.submitted_by,
+            notification_type='reading_rejected',
+            title='Reading Rejected',
+            message=f"Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected: {reason}",
+            redirect_url=''
+        )
+
+    return JsonResponse({
+        'status': 'success',
+        'message': f'Reading rejected for {reading.consumer.first_name} {reading.consumer.last_name}'
+    })
+
+
+@login_required
+def pending_readings_view(request):
+    """
+    Display all meter readings pending admin confirmation (with proof photos).
+    """
+    today = date.today()
+
+    # Get pending readings (not confirmed, not rejected, submitted with proof)
+    pending_readings = MeterReading.objects.filter(
+        is_confirmed=False,
+        is_rejected=False,
+        source='manual_with_proof'
+    ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-reading_date')
+
+    # Add previous reading info to each
+    for reading in pending_readings:
+        prev = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev:
+            reading.previous_reading = prev.reading_value
+            reading.consumption = reading.reading_value - prev.reading_value
+        else:
+            baseline = reading.consumer.first_reading or 0
+            reading.previous_reading = baseline
+            reading.consumption = reading.reading_value - baseline
+
+    # Stats
+    confirmed_today_count = MeterReading.objects.filter(
+        is_confirmed=True,
+        confirmed_at__date=today
+    ).count()
+
+    rejected_today_count = MeterReading.objects.filter(
+        is_rejected=True,
+        rejected_at__date=today
+    ).count()
+
+    context = {
+        'pending_readings': pending_readings,
+        'confirmed_today_count': confirmed_today_count,
+        'rejected_today_count': rejected_today_count,
+    }
+
+    return render(request, 'consumers/pending_readings.html', context)
 
 # consumers/views.py
 
