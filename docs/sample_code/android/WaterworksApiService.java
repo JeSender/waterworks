@@ -55,4 +55,25 @@ public interface WaterworksApiService {
      */
     @POST("api/logout/")
     Call<LogoutResponse> logout();
+
+    // =========================================================================
+    // AI METER READING ENDPOINTS
+    // =========================================================================
+
+    /**
+     * AI-powered meter reading with anti-cheat protection
+     * POST /api/read-meter/
+     *
+     * @param request Contains base64 image and optional previous_reading
+     * @return AiMeterResponse with reading or rejection reason
+     */
+    @POST("api/read-meter/")
+    Call<AiMeterResponse> readMeterAi(@Body AiMeterRequest request);
+
+    /**
+     * Check AI service health
+     * GET /api/ai-health/
+     */
+    @GET("api/ai-health/")
+    Call<AiHealthResponse> checkAiHealth();
 }
