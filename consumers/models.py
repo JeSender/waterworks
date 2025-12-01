@@ -679,9 +679,8 @@ class Consumer(models.Model):
     first_reading = models.IntegerField()
     registration_date = models.DateField()
 
-    # 🔑 ID Number (Primary Identifier)
-    account_number = models.CharField(max_length=20, unique=True, blank=True)  # DEPRECATED - kept for database compatibility
-    id_number = models.CharField(max_length=20, unique=True, blank=True, null=True)  # PRIMARY - Format: YYYYMMXXXX (e.g., 2025110001)
+    # 🔑 ID Number (Primary Identifier) - Format: YYYYMMXXXX (e.g., 2025120001)
+    id_number = models.CharField(max_length=20, unique=True, blank=True, null=True)
 
     # Status & Disconnection
     status = models.CharField(
@@ -733,11 +732,8 @@ class Consumer(models.Model):
     # Methods
     # ========================
     def save(self, *args, **kwargs):
-        # ID Number (YYYYMMXXXX format) is the primary identifier
-        # account_number field is deprecated and kept only for database compatibility
-
         # Auto-generate ID Number if not set
-        # Format: YYYYMM + 4-digit sequential (e.g., 2025110001, 2025110002)
+        # Format: YYYYMM + 4-digit sequential (e.g., 2025120001, 2025120002)
         if not self.id_number:
             from django.db import transaction
             from datetime import datetime
@@ -746,7 +742,7 @@ class Consumer(models.Model):
             with transaction.atomic():
                 # Get current year and month
                 now = datetime.now()
-                year_month_prefix = now.strftime('%Y%m')  # e.g., '202511'
+                year_month_prefix = now.strftime('%Y%m')  # e.g., '202512'
 
                 # Find all existing ID numbers with the same year-month prefix
                 all_ids = Consumer.objects.select_for_update().exclude(
@@ -779,11 +775,6 @@ class Consumer(models.Model):
                     new_seq += 1
                     if new_seq > 9999:
                         raise ValueError(f"ID number limit reached for {year_month_prefix} (max 9999 per month)")
-
-        # Set account_number to match id_number (for backward compatibility)
-        # This prevents unique constraint violation on blank account_number
-        if not self.account_number or self.account_number == '':
-            self.account_number = self.id_number
 
         super().save(*args, **kwargs)
 
