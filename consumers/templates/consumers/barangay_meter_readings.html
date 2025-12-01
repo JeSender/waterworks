@@ -5,20 +5,17 @@
 {% block title %}{{ barangay.name }} Readings{% endblock %}
 
 {% block main_content %}
-<!-- Header: Centered Title with Back Button -->
+<!-- Header -->
 <div class="mb-6 flex items-center justify-between">
-    <!-- Back Button: Left Side -->
     <a href="{% url 'consumers:meter_reading_overview' %}"
        class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
         <i class="bi bi-arrow-left mr-2"></i>Back to Overview
     </a>
 
-    <!-- Centered Title -->
     <h1 class="text-2xl font-bold text-gray-800 absolute left-1/2 transform -translate-x-1/2">
         {{ barangay.name }} – Meter Readings
     </h1>
 
-    <!-- Print Button: Right Side -->
     <a href="{% url 'consumers:barangay_meter_readings_print' barangay.id %}"
        target="_blank"
        class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
@@ -51,14 +48,10 @@
         >
         <i class="bi bi-search absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
     </div>
-    <button
-        onclick="clearSearch()"
-        class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center"
-        title="Clear search"
-    >
+    <button onclick="clearSearch()" class="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
         <i class="bi bi-x-circle mr-2"></i>Clear
     </button>
-    <span id="search-results" class="text-sm text-gray-600 min-w-32 text-right">
+    <span class="text-sm text-gray-600 min-w-32 text-right">
         <span class="font-semibold" id="visible-count">{{ readings|length }}</span> of {{ readings|length }}
     </span>
 </div>
@@ -69,51 +62,30 @@
         <table class="w-full">
             <thead class="bg-gray-100 border-b border-gray-200">
                 <tr>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        ID Number
-                    </th>
-                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Consumer Name
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Current
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Previous
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Consumption (m³)
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Date
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Status
-                    </th>
-                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                        Actions
-                    </th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ID Number</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Consumer Name</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Current</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Previous</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Consumption (m³)</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</th>
+                    <th class="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-gray-200">
                 {% for item in readings %}
-                    <tr class="hover:bg-gray-50 transition-colors duration-100 {% if item.reading and item.reading.id|stringformat:'i' == request.GET.highlight %}bg-yellow-50{% endif %}"
-                        id="reading-row-{{ item.reading.id }}"
+                    <tr class="hover:bg-gray-50 transition-colors duration-100"
                         data-consumer-name="{{ item.consumer.first_name|lower }} {{ item.consumer.last_name|lower }}"
-                        data-consumer-id="{{ item.display_id|lower }}"
-                        data-reading-id="{{ item.reading.id|default:'' }}">
+                        data-consumer-id="{{ item.display_id|lower }}">
 
-                        <!-- ID Number -->
                         <td class="px-4 py-2">
                             <span class="text-sm font-semibold text-gray-800">{{ item.display_id }}</span>
                         </td>
 
-                        <!-- Consumer Name -->
                         <td class="px-4 py-2">
                             <span class="text-sm text-gray-700">{{ item.consumer.first_name }} {{ item.consumer.last_name }}</span>
                         </td>
 
-                        <!-- Current Reading -->
                         <td class="px-4 py-2 text-center">
                             {% if item.reading %}
                                 <span class="text-sm font-medium text-gray-800">{{ item.reading.reading_value }}</span>
@@ -122,18 +94,16 @@
                             {% endif %}
                         </td>
 
-                        <!-- Previous Reading -->
                         <td class="px-4 py-2 text-center">
                             {% if item.prev_reading %}
                                 <span class="text-sm text-gray-600">{{ item.prev_reading.reading_value }}</span>
                             {% elif item.consumer.first_reading %}
-                                <span class="text-sm text-blue-600" title="Initial meter reading at registration">{{ item.consumer.first_reading }}</span>
+                                <span class="text-sm text-blue-600">{{ item.consumer.first_reading }}</span>
                             {% else %}
                                 <span class="text-sm text-gray-400">0</span>
                             {% endif %}
                         </td>
 
-                        <!-- Consumption -->
                         <td class="px-4 py-2 text-center">
                             {% if item.consumption is not none %}
                                 <span class="text-sm font-medium text-gray-800">{{ item.consumption }}</span>
@@ -142,7 +112,6 @@
                             {% endif %}
                         </td>
 
-                        <!-- Date -->
                         <td class="px-4 py-2 text-center">
                             {% if item.reading %}
                                 <span class="text-sm text-gray-600">{{ item.reading.reading_date|date:"Y-m-d" }}</span>
@@ -151,7 +120,6 @@
                             {% endif %}
                         </td>
 
-                        <!-- Status -->
                         <td class="px-4 py-2 text-center">
                             {% if item.reading %}
                                 {% if item.reading.is_confirmed %}
@@ -168,32 +136,13 @@
                             {% endif %}
                         </td>
 
-                        <!-- Actions -->
                         <td class="px-4 py-2 text-center">
-                            {% if item.reading %}
-                                <div class="flex items-center justify-center gap-1">
-                                    {% if item.reading.proof_image_url %}
-                                        <!-- View Proof Button -->
-                                        <button onclick="showProofAndConfirm({{ item.reading.id }}, '{{ item.reading.proof_image_url }}', {{ item.reading.reading_value }}, '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', {{ item.consumption|default:0 }})"
-                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                                                title="View Proof Photo">
-                                            <i class="bi bi-image"></i>
-                                        </button>
-                                    {% endif %}
-                                    {% if not item.reading.is_confirmed %}
-                                        <!-- Confirm Button -->
-                                        <button onclick="confirmReading({{ item.reading.id }})"
-                                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-green-100 text-green-700 hover:bg-green-200 transition-colors"
-                                                title="Confirm Reading">
-                                            <i class="bi bi-check-lg"></i>
-                                        </button>
-                                    {% else %}
-                                        <!-- Already Confirmed -->
-                                        <span class="inline-flex items-center px-2 py-1 text-xs font-medium text-green-600">
-                                            <i class="bi bi-check-circle-fill"></i>
-                                        </span>
-                                    {% endif %}
-                                </div>
+                            {% if item.reading and item.reading.proof_image_url %}
+                                <button onclick="openImageModal('{{ item.reading.proof_image_url }}')"
+                                        class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                                        title="View Proof Photo">
+                                    <i class="bi bi-image mr-1"></i> View
+                                </button>
                             {% else %}
                                 <span class="text-sm text-gray-400">—</span>
                             {% endif %}
@@ -211,218 +160,67 @@
         </table>
     </div>
 
-    <!-- Table Footer: Summary Statistics -->
     {% if readings %}
     <div class="bg-gray-50 px-4 py-3 border-t border-gray-200">
         <div class="flex flex-wrap gap-6 text-xs text-gray-600">
-            <div>
-                <span class="font-semibold text-gray-700">Total Consumers:</span>
-                <span class="ml-1">{{ readings|length }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">Confirmed:</span>
-                <span class="ml-1 text-green-700 font-semibold">{{ confirmed_count }}</span>
-            </div>
-            <div>
-                <span class="font-semibold text-gray-700">Pending:</span>
-                <span class="ml-1 text-yellow-700 font-semibold">{{ pending_count|default:0 }}</span>
-            </div>
+            <div><span class="font-semibold text-gray-700">Total:</span> {{ readings|length }}</div>
+            <div><span class="font-semibold text-gray-700">Confirmed:</span> <span class="text-green-700 font-semibold">{{ confirmed_count }}</span></div>
+            <div><span class="font-semibold text-gray-700">Pending:</span> <span class="text-yellow-700 font-semibold">{{ pending_count|default:0 }}</span></div>
         </div>
     </div>
     {% endif %}
 </div>
 
-<!-- Proof Image & Confirm Modal -->
-<div id="proofModal" class="fixed inset-0 z-50 hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-80" onclick="closeProofModal()"></div>
+<!-- Image Modal (View Only) -->
+<div id="imageModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-80" onclick="closeImageModal()"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
-            <!-- Modal Header -->
-            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 flex items-center justify-between">
-                <h3 class="text-lg font-bold text-white">
-                    <i class="bi bi-camera-fill mr-2"></i> Verify Meter Reading
-                </h3>
-                <button onclick="closeProofModal()" class="text-white hover:text-gray-200">
-                    <i class="bi bi-x-lg text-xl"></i>
-                </button>
-            </div>
-
-            <!-- Modal Body -->
-            <div class="p-6">
-                <!-- Consumer Info -->
-                <div class="mb-4 p-3 bg-gray-50 rounded-lg">
-                    <p class="text-sm text-gray-600">Consumer: <span id="modalConsumerName" class="font-bold text-gray-900"></span></p>
-                    <div class="flex gap-6 mt-2">
-                        <p class="text-sm text-gray-600">New Reading: <span id="modalReadingValue" class="font-bold text-blue-600 text-lg"></span></p>
-                        <p class="text-sm text-gray-600">Consumption: <span id="modalConsumption" class="font-bold text-green-600 text-lg"></span> m³</p>
-                    </div>
-                </div>
-
-                <!-- Proof Image -->
-                <div class="mb-4">
-                    <p class="text-sm font-semibold text-gray-700 mb-2">Proof Photo from Field Staff:</p>
-                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-2 bg-gray-50">
-                        <img id="modalProofImage" src="" alt="Meter Reading Proof"
-                             class="w-full max-h-80 object-contain rounded cursor-pointer"
-                             onclick="openFullImage(this.src)">
-                        <p class="text-xs text-center text-gray-500 mt-2">Click image to view full size</p>
-                    </div>
-                </div>
-
-                <!-- Confirm Instructions -->
-                <div class="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                    <p class="text-sm text-yellow-800">
-                        <i class="bi bi-info-circle-fill mr-1"></i>
-                        Please verify that the reading value <strong>matches</strong> the meter display in the photo, then click Confirm.
-                    </p>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex gap-3">
-                    <button onclick="closeProofModal()" class="flex-1 px-4 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">
-                        <i class="bi bi-arrow-left mr-2"></i> Back
-                    </button>
-                    <button onclick="confirmCurrentReading()" class="flex-1 px-4 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium">
-                        <i class="bi bi-check-lg mr-2"></i> Confirm Reading
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Full Image Modal -->
-<div id="fullImageModal" class="fixed inset-0 z-[60] hidden">
-    <div class="fixed inset-0 bg-black bg-opacity-95" onclick="closeFullImage()"></div>
-    <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="relative">
-            <button onclick="closeFullImage()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
+        <div class="relative max-w-4xl max-h-[90vh]">
+            <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
                 <i class="bi bi-x-lg"></i>
             </button>
-            <img id="fullImage" src="" alt="Full Size Proof" class="max-w-[95vw] max-h-[90vh] rounded-lg shadow-2xl">
+            <img id="modalImage" src="" alt="Proof Photo" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl">
         </div>
     </div>
 </div>
 
 <script>
-let currentReadingId = null;
-
-// Initialize on page load
-document.addEventListener('DOMContentLoaded', function() {
-    // Search functionality
-    const searchInput = document.getElementById('search-consumer');
-    if (searchInput) {
-        searchInput.addEventListener('input', debounce(filterConsumers, 300));
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                filterConsumers();
-            }
-        });
-    }
-
-    // Auto-open proof modal if highlight parameter is present
-    const urlParams = new URLSearchParams(window.location.search);
-    const highlightId = urlParams.get('highlight');
-    if (highlightId) {
-        const row = document.getElementById('reading-row-' + highlightId);
-        if (row) {
-            // Scroll to the row
-            row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-            // Find and click the View Proof button
-            const viewProofBtn = row.querySelector('button[onclick^="showProofAndConfirm"]');
-            if (viewProofBtn) {
-                setTimeout(() => viewProofBtn.click(), 500);
-            }
-        }
-    }
-});
-
-// Show proof image and confirm modal
-function showProofAndConfirm(readingId, imageUrl, readingValue, consumerName, consumption) {
-    currentReadingId = readingId;
-    document.getElementById('modalProofImage').src = imageUrl;
-    document.getElementById('modalReadingValue').textContent = readingValue;
-    document.getElementById('modalConsumerName').textContent = consumerName;
-    document.getElementById('modalConsumption').textContent = consumption;
-    document.getElementById('proofModal').classList.remove('hidden');
+// Image Modal
+function openImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('imageModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
 
-function closeProofModal() {
-    document.getElementById('proofModal').classList.add('hidden');
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden');
     document.body.style.overflow = '';
-    currentReadingId = null;
 }
 
-// Open full size image
-function openFullImage(src) {
-    document.getElementById('fullImage').src = src;
-    document.getElementById('fullImageModal').classList.remove('hidden');
-}
-
-function closeFullImage() {
-    document.getElementById('fullImageModal').classList.add('hidden');
-}
-
-// Confirm reading from modal
-function confirmCurrentReading() {
-    if (currentReadingId) {
-        confirmReading(currentReadingId);
-    }
-}
-
-// Confirm reading directly
-function confirmReading(readingId) {
-    closeProofModal();
-    showLoading('Confirming reading & generating bill...');
-
-    fetch(`/meter-readings/${readingId}/confirm/`, {
-        method: 'POST',
-        headers: {
-            'X-CSRFToken': getCookie('csrftoken'),
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        hideLoading();
-        if (data.status === 'success') {
-            showToast('success', data.message || 'Reading confirmed and bill generated!');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('error', data.message || 'Failed to confirm reading');
-        }
-    })
-    .catch(error => {
-        hideLoading();
-        console.error('Error:', error);
-        showToast('error', 'An error occurred. Please try again.');
-    });
-}
-
-// Filter consumers by name or ID
-function filterConsumers() {
+// Search
+document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-consumer');
-    const filter = searchInput.value.toLowerCase().trim();
-    const rows = document.querySelectorAll('tbody tr[data-consumer-name]');
+    if (searchInput) {
+        searchInput.addEventListener('input', debounce(filterConsumers, 300));
+    }
+});
 
+function filterConsumers() {
+    const filter = document.getElementById('search-consumer').value.toLowerCase().trim();
+    const rows = document.querySelectorAll('tbody tr[data-consumer-name]');
     let visibleCount = 0;
 
     rows.forEach(row => {
-        const consumerName = row.getAttribute('data-consumer-name');
-        const consumerId = row.getAttribute('data-consumer-id');
-
-        if (consumerName.includes(filter) || consumerId.includes(filter)) {
+        const name = row.getAttribute('data-consumer-name');
+        const id = row.getAttribute('data-consumer-id');
+        if (name.includes(filter) || id.includes(filter)) {
             row.style.display = '';
             visibleCount++;
         } else {
             row.style.display = 'none';
         }
     });
-
-    updateVisibleCount(visibleCount, rows.length);
+    document.getElementById('visible-count').textContent = visibleCount;
 }
 
 function clearSearch() {
@@ -430,43 +228,16 @@ function clearSearch() {
     filterConsumers();
 }
 
-function updateVisibleCount(visible, total) {
-    document.getElementById('visible-count').textContent = visible;
-}
-
 function debounce(func, wait) {
     let timeout;
-    return function executedFunction(...args) {
-        const later = () => {
-            clearTimeout(timeout);
-            func(...args);
-        };
+    return function(...args) {
         clearTimeout(timeout);
-        timeout = setTimeout(later, wait);
+        timeout = setTimeout(() => func(...args), wait);
     };
 }
 
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Close modals on Escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeProofModal();
-        closeFullImage();
-    }
+    if (e.key === 'Escape') closeImageModal();
 });
 </script>
 {% endblock %}
