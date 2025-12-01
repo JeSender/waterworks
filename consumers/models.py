@@ -780,6 +780,11 @@ class Consumer(models.Model):
                     if new_seq > 9999:
                         raise ValueError(f"ID number limit reached for {year_month_prefix} (max 9999 per month)")
 
+        # Set account_number to match id_number (for backward compatibility)
+        # This prevents unique constraint violation on blank account_number
+        if not self.account_number or self.account_number == '':
+            self.account_number = self.id_number
+
         super().save(*args, **kwargs)
 
     def __str__(self):
