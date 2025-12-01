@@ -4012,100 +4012,72 @@ def export_barangay_readings(request, barangay_id):
 def confirm_reading(request, reading_id):
     """
     Confirm a meter reading and generate a bill for the consumer.
-
-    TESTING: Click this to instantly generate a bill from a pending reading.
-
-    FLOW:
-    1. App submits reading → MeterReading (is_confirmed=False)
-    2. Admin clicks Confirm → THIS FUNCTION RUNS
-    3. Bill created with status='Pending' → Appears in payment page
-    4. Admin processes payment → Bill status='Paid'
-
-    If this is the first reading for the consumer, consumption is calculated
-    from consumer.first_reading (initial meter value at registration).
+    Supports both regular requests and AJAX requests.
     """
-    current = get_object_or_404(MeterReading, id=reading_id)
-    consumer = current.consumer
-    barangay_id = consumer.barangay.id
+    # Helper to check if AJAX request
+    def is_ajax_request():
+        return request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+               'application/json' in request.headers.get('Content-Type', '') or \
+               'application/json' in request.headers.get('Accept', '')
 
-    # Check if the reading is already confirmed
-    if current.is_confirmed:
-        messages.error(request, "This reading is already confirmed and billed.")
+    # Helper to return error (AJAX or redirect)
+    def return_error(message, barangay_id):
+        if is_ajax_request():
+            return JsonResponse({'status': 'error', 'message': message}, status=400)
+        messages.error(request, message)
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    # Validate date - cannot confirm future readings
-    if current.reading_date > date.today():
-        messages.error(request, "Reading date cannot be in the future.")
-        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-
-    # Find the previous confirmed reading for consumption calculation
-    previous = MeterReading.objects.filter(
-        consumer=consumer,
-        is_confirmed=True,
-        reading_date__lt=current.reading_date
-    ).order_by('-reading_date').first()
-
-    # ========================================================================
-    # CONSUMPTION CALCULATION
-    # ========================================================================
-    # consumption = current_reading - previous_reading
-    # If no previous reading, use consumer.first_reading as baseline
-    # ========================================================================
-    if previous:
-        # Use the previous confirmed reading for calculation
-        if current.reading_value < previous.reading_value:
-            messages.error(request, f"Current reading ({current.reading_value}) < previous ({previous.reading_value}).")
-            return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-        elif current.reading_value == previous.reading_value:
-            messages.warning(request, "Zero consumption. Bill will be generated.")
-        consumption = current.reading_value - previous.reading_value
-    else:
-        # FIRST READING for this consumer
-        # Use consumer's initial first_reading (set at registration) as baseline
-        baseline = consumer.first_reading if consumer.first_reading else 0
-        if current.reading_value < baseline:
-            messages.error(request, f"Current reading ({current.reading_value}) < initial reading ({baseline}).")
-            return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-        consumption = current.reading_value - baseline
-
-    # ========================================================================
-    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM
-    # ========================================================================
-    # Bill is created RIGHT NOW, not on a schedule.
-    # billing_day_of_month: Only affects billing_period date on the bill
-    # due_day_of_month: Only affects due_date on the bill
-    # These do NOT control WHEN bills are generated - that's instant on confirm.
-    # Uses TIERED RATE calculation from current SystemSettings.
-    # ========================================================================
     try:
-        from .utils import calculate_tiered_water_bill
+        current = get_object_or_404(MeterReading, id=reading_id)
+        consumer = current.consumer
+        barangay_id = consumer.barangay.id
 
+        # Check if already confirmed
+        if current.is_confirmed:
+            return return_error("This reading is already confirmed and billed.", barangay_id)
+
+        # Validate date
+        if current.reading_date > date.today():
+            return return_error("Reading date cannot be in the future.", barangay_id)
+
+        # Find previous confirmed reading
+        previous = MeterReading.objects.filter(
+            consumer=consumer,
+            is_confirmed=True,
+            reading_date__lt=current.reading_date
+        ).order_by('-reading_date').first()
+
+        # Calculate consumption
+        if previous:
+            if current.reading_value < previous.reading_value:
+                return return_error(f"Current reading ({current.reading_value}) cannot be less than previous ({previous.reading_value}).", barangay_id)
+            consumption = current.reading_value - previous.reading_value
+        else:
+            baseline = consumer.first_reading if consumer.first_reading else 0
+            if current.reading_value < baseline:
+                return return_error(f"Current reading ({current.reading_value}) cannot be less than initial ({baseline}).", barangay_id)
+            consumption = current.reading_value - baseline
+
+        # Generate bill
+        from .utils import calculate_tiered_water_bill
         setting = SystemSetting.objects.first()
 
-        # Get schedule settings (for billing period and due date)
-        if setting:
-            billing_day = setting.billing_day_of_month
-            due_day = setting.due_day_of_month
-        else:
-            billing_day = 1
-            due_day = 20
+        billing_day = setting.billing_day_of_month if setting else 1
+        due_day = setting.due_day_of_month if setting else 20
 
-        # Calculate bill using TIERED RATES (uses current SystemSettings)
         total_amount, average_rate, breakdown = calculate_tiered_water_bill(
             consumption=consumption,
             usage_type=consumer.usage_type,
             settings=setting
         )
 
-        # CREATE BILL IMMEDIATELY - Store actual tier rates, not averages
         Bill.objects.create(
             consumer=consumer,
-            previous_reading=previous,  # Will be None if this is the first reading
+            previous_reading=previous,
             current_reading=current,
             billing_period=current.reading_date.replace(day=billing_day),
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            # Store ACTUAL tier breakdown (not averages)
             tier1_consumption=breakdown['tier1_units'],
             tier1_amount=breakdown['tier1_amount'],
             tier2_consumption=breakdown['tier2_units'],
@@ -4120,41 +4092,32 @@ def confirm_reading(request, reading_id):
             tier5_consumption=breakdown['tier5_units'],
             tier5_rate=breakdown['tier5_rate'],
             tier5_amount=breakdown['tier5_amount'],
-            # Legacy fields
             rate_per_cubic=average_rate,
             fixed_charge=Decimal('0.00'),
             total_amount=total_amount,
             status='Pending'
         )
 
-        # Mark the reading as confirmed
+        # Mark reading as confirmed
         current.is_confirmed = True
         current.confirmed_by = request.user
         current.confirmed_at = timezone.now()
         current.save()
 
-        success_message = f"Bill successfully generated for {get_consumer_display_id(consumer)}!"
+        success_message = f"Bill generated for {get_consumer_display_id(consumer)}!"
 
-        # Handle AJAX request (from pending_readings page)
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
-                  'application/json' in request.headers.get('Content-Type', '')
-
-        if is_ajax:
+        if is_ajax_request():
             return JsonResponse({'status': 'success', 'message': success_message})
 
         messages.success(request, f"✅ {success_message}")
+        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
     except Exception as e:
         error_message = f"Failed to generate bill: {str(e)}"
-        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
-                  'application/json' in request.headers.get('Content-Type', '')
-
-        if is_ajax:
+        if is_ajax_request():
             return JsonResponse({'status': 'error', 'message': error_message}, status=400)
         messages.error(request, error_message)
-        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-
-    return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
+        return redirect('consumers:meter_reading_overview')
 
 
 @login_required
