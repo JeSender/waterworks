@@ -1526,6 +1526,7 @@ class Notification(models.Model):
     """
     NOTIFICATION_TYPES = [
         ('meter_reading', 'Meter Reading Submitted'),
+        ('reading_pending_confirmation', 'Reading Pending Confirmation'),
         ('payment', 'Payment Processed'),
         ('bill_generated', 'Bill Generated'),
         ('consumer_registered', 'New Consumer Registered'),

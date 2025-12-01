@@ -42,6 +42,53 @@ from .models import (
 from .forms import ConsumerForm
 
 
+# Helper function to authenticate API requests using session token
+def authenticate_api_request(request):
+    """
+    Authenticate API request using session token from Authorization header or request body.
+    Returns the user if authenticated, None otherwise.
+    """
+    from django.contrib.sessions.models import Session
+
+    token = None
+
+    # Try Authorization header first (Bearer token)
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+
+    # Try request body if no header token
+    if not token and request.body:
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            token = data.get('token')
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass
+
+    if not token:
+        return None
+
+    try:
+        # Find the session by key
+        session = Session.objects.get(session_key=token)
+
+        # Check if session is expired
+        if session.expire_date < timezone.now():
+            return None
+
+        # Get user from session data
+        session_data = session.get_decoded()
+        user_id = session_data.get('_auth_user_id')
+
+        if user_id:
+            user = User.objects.get(id=user_id)
+            return user
+    except (Session.DoesNotExist, User.DoesNotExist):
+        pass
+
+    return None
+
+
 # Helper function to get previous confirmed reading
 def get_previous_reading(consumer):
     """Get the most recent confirmed meter reading for a consumer."""
@@ -108,6 +155,11 @@ def api_submit_reading(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
+        # Authenticate using token if not already authenticated
+        api_user = None
+        if not request.user.is_authenticated:
+            api_user = authenticate_api_request(request)
+
         # Parse JSON data from the request body
         data = json.loads(request.body.decode('utf-8'))
 
@@ -172,10 +224,13 @@ def api_submit_reading(request):
         # Calculate bill using tiered rates
         rate, total_amount, breakdown = calculate_water_bill(consumer, consumption)
 
+        # Determine the authenticated user (from session or token)
+        current_user = request.user if request.user.is_authenticated else api_user
+
         # Get field staff name
         field_staff_name = "System"  # Default
-        if request.user.is_authenticated:
-            field_staff_name = request.user.get_full_name() or request.user.username
+        if current_user:
+            field_staff_name = current_user.get_full_name() or current_user.username
 
         # --- NEW LOGIC: Check for existing unconfirmed reading on the same date ---
         try:
@@ -265,19 +320,19 @@ def api_submit_reading(request):
                 redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id})
             )
 
-        # Track activity for login session
-        if request.user.is_authenticated:
+        # Track activity for login session (using current_user from session or token)
+        if current_user:
             try:
                 # Find current login session
                 current_session = UserLoginEvent.objects.filter(
-                    user=request.user,
+                    user=current_user,
                     logout_timestamp__isnull=True,
                     status='success'
                 ).order_by('-login_timestamp').first()
 
                 # Log the meter reading activity
                 UserActivity.objects.create(
-                    user=request.user,
+                    user=current_user,
                     action='meter_reading_submitted',
                     description=f"Meter reading submitted for {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reading: {current_reading}, Consumption: {consumption} m³",
                     login_event=current_session
@@ -325,7 +380,8 @@ def api_submit_manual_reading(request):
         "consumer_id": 1,
         "reading": 1275,
         "reading_date": "2025-12-01",
-        "proof_image": "base64_encoded_image_string"
+        "proof_image": "base64_encoded_image_string",
+        "token": "session_token_from_login"
     }
 
     Flow:
@@ -342,6 +398,14 @@ def api_submit_manual_reading(request):
         import base64
         import cloudinary.uploader
         from django.conf import settings
+
+        # Authenticate using token if not already authenticated
+        api_user = None
+        if not request.user.is_authenticated:
+            api_user = authenticate_api_request(request)
+
+        # Determine the authenticated user (from session or token)
+        current_user = request.user if request.user.is_authenticated else api_user
 
         data = json.loads(request.body.decode('utf-8'))
 
@@ -438,7 +502,7 @@ def api_submit_manual_reading(request):
             source='manual_with_proof',
             is_confirmed=False,  # Needs admin confirmation
             proof_image_url=proof_image_url,
-            submitted_by=request.user if request.user.is_authenticated else None
+            submitted_by=current_user  # Use current_user (from session or token)
         )
 
         # Create notification for admin - redirect to pending readings page
@@ -452,10 +516,28 @@ def api_submit_manual_reading(request):
             redirect_url=reverse('consumers:pending_readings')
         )
 
-        # Get field staff name
+        # Get field staff name and log activity
         field_staff_name = "Field Staff"
-        if request.user.is_authenticated:
-            field_staff_name = request.user.get_full_name() or request.user.username
+        if current_user:
+            field_staff_name = current_user.get_full_name() or current_user.username
+
+            # Log the manual meter reading submission to UserActivity
+            try:
+                # Get the current login session
+                current_session = UserLoginEvent.objects.filter(
+                    user=current_user,
+                    status='success'
+                ).order_by('-login_timestamp').first()
+
+                # Log the meter reading activity
+                UserActivity.objects.create(
+                    user=current_user,
+                    action='meter_reading_submitted',
+                    description=f"Manual reading with proof submitted for {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reading: {current_reading}, Consumption: {consumption} m³. Status: Pending confirmation.",
+                    login_event=current_session
+                )
+            except Exception:
+                pass  # Don't fail if activity logging fails
 
         return JsonResponse({
             'status': 'success',
