@@ -4647,11 +4647,11 @@ def user_login_history(request):
         return render(request, 'consumers/403.html', status=403)
 
     # Get filter parameters
-    search_query = request.GET.get('search', '').strip()
-    status_filter = request.GET.get('status', '')
-    method_filter = request.GET.get('method', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    search_query: str = request.GET.get('search', '').strip()
+    status_filter: str = request.GET.get('status', '')
+    method_filter: str = request.GET.get('method', '')
+    date_from: str = request.GET.get('date_from', '')
+    date_to: str = request.GET.get('date_to', '')
 
     # Base query - prefetch activities for session tracking
     login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities').all()
