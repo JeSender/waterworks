@@ -377,6 +377,19 @@ def api_submit_manual_reading(request):
         else:
             reading_date = timezone.now().date()
 
+        # Check for duplicate reading (same consumer, same month)
+        existing_reading = MeterReading.objects.filter(
+            consumer=consumer,
+            reading_date__year=reading_date.year,
+            reading_date__month=reading_date.month
+        ).first()
+
+        if existing_reading:
+            return JsonResponse({
+                'error': 'Duplicate reading',
+                'message': f'Reading for {consumer.first_name} {consumer.last_name} already exists for {reading_date.strftime("%B %Y")}.'
+            }, status=400)
+
         # Validate reading value
         try:
             current_reading = int(reading_value)
