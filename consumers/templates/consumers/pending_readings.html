@@ -6,186 +6,187 @@
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Header -->
-    <div class="mb-6">
+    <div class="mb-4">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
+                <h2 class="text-xl font-bold text-dark-900 flex items-center gap-2">
                     <i class="bi bi-camera-fill text-warning-600"></i>
                     Pending Meter Readings
                 </h2>
-                <p class="text-sm text-dark-500 mt-1">Review and confirm meter readings submitted with proof photos</p>
+                <p class="text-xs text-dark-500 mt-1">Review and confirm readings with proof photos</p>
             </div>
-            <a href="{% url 'consumers:meter_reading_overview' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg shadow-sm transition-colors duration-150 text-sm inline-flex items-center">
-                <i class="bi bi-arrow-left mr-2"></i> Back to Overview
+            <a href="{% url 'consumers:meter_reading_overview' %}" class="px-3 py-1.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg text-sm inline-flex items-center">
+                <i class="bi bi-arrow-left mr-1"></i> Back
             </a>
         </div>
     </div>
 
-    <!-- Stats Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-warning-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide">Pending Review</p>
-                    <p class="text-3xl font-bold text-warning-600 mt-2">{{ pending_readings|length }}</p>
-                </div>
-                <div class="w-14 h-14 bg-warning-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-hourglass-split text-warning-600 text-2xl"></i>
-                </div>
-            </div>
+    <!-- Stats Row -->
+    <div class="flex gap-4 mb-4">
+        <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-2 flex items-center gap-2">
+            <i class="bi bi-hourglass-split text-yellow-600"></i>
+            <span class="text-sm"><strong class="text-yellow-700">{{ pending_readings|length }}</strong> Pending</span>
         </div>
-        <div class="bg-white rounded-xl shadow-md p-5 border-l-4 border-success-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase tracking-wide">Confirmed Today</p>
-                    <p class="text-3xl font-bold text-success-600 mt-2">{{ confirmed_today_count }}</p>
-                </div>
-                <div class="w-14 h-14 bg-success-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-check-circle-fill text-success-600 text-2xl"></i>
-                </div>
-            </div>
+        <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-2 flex items-center gap-2">
+            <i class="bi bi-check-circle-fill text-green-600"></i>
+            <span class="text-sm"><strong class="text-green-700">{{ confirmed_today_count }}</strong> Confirmed Today</span>
         </div>
     </div>
 
-    <!-- Pending Readings List -->
+    <!-- Pending Readings Table -->
     {% if pending_readings %}
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {% for reading in pending_readings %}
-        <div class="bg-white rounded-xl shadow-md overflow-hidden" id="reading-card-{{ reading.id }}">
-            <div class="p-5">
-                <!-- Consumer Info Header -->
-                <div class="flex items-start justify-between mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-person-fill text-blue-600 text-xl"></i>
+    <div class="bg-white rounded-lg shadow-md overflow-hidden">
+        <table class="w-full">
+            <thead class="bg-gray-100 border-b border-gray-200">
+                <tr>
+                    <th class="px-3 py-2 text-left text-xs font-semibold text-gray-700 uppercase">Consumer</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Reading</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Prev</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Consumption</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Date</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Proof</th>
+                    <th class="px-3 py-2 text-center text-xs font-semibold text-gray-700 uppercase">Action</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {% for reading in pending_readings %}
+                <tr class="hover:bg-gray-50" id="reading-row-{{ reading.id }}">
+                    <!-- Consumer Info -->
+                    <td class="px-3 py-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                <i class="bi bi-person-fill text-blue-600 text-sm"></i>
+                            </div>
+                            <div class="min-w-0">
+                                <p class="text-sm font-medium text-gray-900 truncate">{{ reading.consumer.first_name }} {{ reading.consumer.last_name }}</p>
+                                <p class="text-xs text-gray-500">{{ reading.consumer.id_number|default:reading.consumer.id }} • {{ reading.consumer.barangay.name }}</p>
+                            </div>
                         </div>
-                        <div>
-                            <h3 class="text-lg font-bold text-gray-900">
-                                {{ reading.consumer.first_name }} {{ reading.consumer.last_name }}
-                            </h3>
-                            <p class="text-sm text-gray-500">
-                                ID: {{ reading.consumer.id_number|default:reading.consumer.id }}
-                                • {{ reading.consumer.barangay.name }}
-                            </p>
-                        </div>
-                    </div>
-                    <span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800">
-                        <i class="bi bi-clock-fill mr-1"></i> Pending
-                    </span>
-                </div>
+                    </td>
 
-                <!-- Reading Details -->
-                <div class="grid grid-cols-3 gap-4 mb-4 p-3 bg-gray-50 rounded-lg">
-                    <div class="text-center">
-                        <p class="text-xs text-gray-500 uppercase font-semibold">New Reading</p>
-                        <p class="text-xl font-bold text-gray-900">{{ reading.reading_value }}</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-xs text-gray-500 uppercase font-semibold">Previous</p>
-                        <p class="text-xl font-bold text-gray-600">{{ reading.previous_reading|default:"0" }}</p>
-                    </div>
-                    <div class="text-center">
-                        <p class="text-xs text-gray-500 uppercase font-semibold">Consumption</p>
-                        <p class="text-xl font-bold text-blue-600">{{ reading.consumption|default:"0" }} m³</p>
-                    </div>
-                </div>
+                    <!-- New Reading -->
+                    <td class="px-3 py-2 text-center">
+                        <span class="text-sm font-bold text-gray-900">{{ reading.reading_value }}</span>
+                    </td>
 
-                <!-- Submission Info -->
-                <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span>
-                        <i class="bi bi-person-badge mr-1"></i>
-                        {% if reading.submitted_by %}
-                            {{ reading.submitted_by.get_full_name|default:reading.submitted_by.username }}
-                        {% else %}
-                            Field Staff
-                        {% endif %}
-                    </span>
-                    <span>
-                        <i class="bi bi-calendar3 mr-1"></i>
-                        {{ reading.reading_date|date:"M d, Y" }}
-                    </span>
-                </div>
+                    <!-- Previous Reading -->
+                    <td class="px-3 py-2 text-center">
+                        <span class="text-sm text-gray-600">{{ reading.previous_reading|default:"0" }}</span>
+                    </td>
 
-                <!-- Proof Image Section -->
-                {% if reading.proof_image_url %}
-                <div class="mb-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <p class="text-sm font-semibold text-gray-700">
-                            <i class="bi bi-camera-fill mr-1 text-blue-600"></i> Meter Proof Photo
-                        </p>
-                        <button onclick="openImageModal('{{ reading.proof_image_url }}')"
-                                class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium rounded-lg transition-colors inline-flex items-center">
-                            <i class="bi bi-eye-fill mr-1"></i> View Full Photo
+                    <!-- Consumption -->
+                    <td class="px-3 py-2 text-center">
+                        <span class="inline-flex items-center px-2 py-0.5 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
+                            {{ reading.consumption|default:"0" }} m³
+                        </span>
+                    </td>
+
+                    <!-- Date -->
+                    <td class="px-3 py-2 text-center">
+                        <span class="text-xs text-gray-500">{{ reading.reading_date|date:"M d" }}</span>
+                    </td>
+
+                    <!-- Proof Photo -->
+                    <td class="px-3 py-2 text-center">
+                        {% if reading.proof_image_url %}
+                        <button onclick="openImageModal('{{ reading.proof_image_url }}', '{{ reading.consumer.first_name }} {{ reading.consumer.last_name }}', {{ reading.reading_value }}, {{ reading.previous_reading|default:0 }}, {{ reading.consumption|default:0 }}, {{ reading.id }})"
+                                class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors">
+                            <i class="bi bi-image mr-1"></i> View
                         </button>
-                    </div>
-                    <div class="relative group cursor-pointer" onclick="openImageModal('{{ reading.proof_image_url }}')">
-                        <img src="{{ reading.proof_image_url }}"
-                             alt="Meter Reading Proof"
-                             class="w-full h-48 object-cover rounded-lg border-2 border-blue-200 transition-transform hover:scale-[1.02]">
-                        <div class="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-lg flex items-center justify-center transition-all">
-                            <span class="text-white text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity bg-black bg-opacity-50 px-3 py-1.5 rounded-lg">
-                                <i class="bi bi-zoom-in mr-1"></i> Click to Enlarge
-                            </span>
-                        </div>
-                    </div>
-                </div>
-                {% else %}
-                <div class="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
-                    <i class="bi bi-exclamation-triangle text-3xl text-yellow-500 mb-2 block"></i>
-                    <p class="text-sm text-yellow-700 font-medium">No proof image attached</p>
-                </div>
-                {% endif %}
+                        {% else %}
+                        <span class="text-xs text-gray-400">No image</span>
+                        {% endif %}
+                    </td>
 
-                <!-- Action Buttons -->
-                <div class="flex gap-3">
-                    {% if reading.proof_image_url %}
-                    <button onclick="openImageModal('{{ reading.proof_image_url }}')"
-                            class="flex-1 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
-                        <i class="bi bi-image mr-2"></i> View Proof Photo
-                    </button>
-                    {% endif %}
-                    <button onclick="confirmReading({{ reading.id }})"
-                            class="flex-1 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center">
-                        <i class="bi bi-check-circle-fill mr-2"></i> Confirm & Generate Bill
-                    </button>
-                </div>
-            </div>
-        </div>
-        {% endfor %}
+                    <!-- Confirm Action -->
+                    <td class="px-3 py-2 text-center">
+                        <button onclick="confirmReading({{ reading.id }})"
+                                class="inline-flex items-center px-3 py-1 text-xs font-medium rounded bg-green-600 text-white hover:bg-green-700 transition-colors">
+                            <i class="bi bi-check-lg mr-1"></i> Confirm
+                        </button>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
     {% else %}
     <!-- Empty State -->
-    <div class="bg-white rounded-xl shadow-md p-12 text-center">
-        <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <i class="bi bi-check-all text-green-600 text-4xl"></i>
+    <div class="bg-white rounded-xl shadow-md p-8 text-center">
+        <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+            <i class="bi bi-check-all text-green-600 text-3xl"></i>
         </div>
-        <h3 class="text-xl font-bold text-gray-900 mb-2">All Caught Up!</h3>
-        <p class="text-gray-500 mb-4">No pending meter readings require your review.</p>
-        <a href="{% url 'consumers:meter_reading_overview' %}" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors">
-            <i class="bi bi-grid-3x3-gap-fill mr-2"></i> View Reading Overview
+        <h3 class="text-lg font-bold text-gray-900 mb-1">All Caught Up!</h3>
+        <p class="text-gray-500 text-sm mb-3">No pending readings require review.</p>
+        <a href="{% url 'consumers:meter_reading_overview' %}" class="inline-flex items-center px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors">
+            <i class="bi bi-grid-3x3-gap-fill mr-1"></i> View Overview
         </a>
     </div>
     {% endif %}
 </div>
 
-<!-- Image Modal -->
+<!-- Image Modal with Details -->
 <div id="imageModal" class="fixed inset-0 z-50 hidden">
     <div class="fixed inset-0 bg-black bg-opacity-80" onclick="closeImageModal()"></div>
     <div class="fixed inset-0 flex items-center justify-center p-4">
-        <div class="relative max-w-4xl max-h-[90vh]">
-            <button onclick="closeImageModal()"
-                    class="absolute -top-10 right-0 text-white text-2xl hover:text-gray-300">
-                <i class="bi bi-x-lg"></i>
-            </button>
-            <img id="modalImage" src="" alt="Proof Photo" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+            <!-- Modal Header -->
+            <div class="bg-gray-100 px-4 py-3 flex items-center justify-between border-b">
+                <div>
+                    <h3 class="font-bold text-gray-900" id="modalConsumerName">Consumer Name</h3>
+                    <p class="text-xs text-gray-500">Proof Photo Verification</p>
+                </div>
+                <button onclick="closeImageModal()" class="text-gray-500 hover:text-gray-700 text-xl">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+
+            <!-- Reading Details -->
+            <div class="grid grid-cols-3 gap-2 p-3 bg-blue-50 border-b text-center">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">New Reading</p>
+                    <p class="text-lg font-bold text-gray-900" id="modalNewReading">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Previous</p>
+                    <p class="text-lg font-bold text-gray-600" id="modalPrevReading">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-500 uppercase">Consumption</p>
+                    <p class="text-lg font-bold text-blue-600" id="modalConsumption">0 m³</p>
+                </div>
+            </div>
+
+            <!-- Image -->
+            <div class="p-3">
+                <img id="modalImage" src="" alt="Proof Photo" class="w-full max-h-[50vh] object-contain rounded-lg border border-gray-200">
+            </div>
+
+            <!-- Modal Footer - Confirm Button -->
+            <div class="px-4 py-3 bg-gray-50 border-t flex justify-end gap-2">
+                <button onclick="closeImageModal()" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg text-sm">
+                    Close
+                </button>
+                <button id="modalConfirmBtn" onclick="confirmFromModal()"
+                        class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm inline-flex items-center">
+                    <i class="bi bi-check-circle-fill mr-1"></i> Confirm & Generate Bill
+                </button>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-// Image Modal Functions
-function openImageModal(imageUrl) {
+let currentReadingId = null;
+
+// Image Modal with reading details
+function openImageModal(imageUrl, consumerName, newReading, prevReading, consumption, readingId) {
+    currentReadingId = readingId;
     document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('modalConsumerName').textContent = consumerName;
+    document.getElementById('modalNewReading').textContent = newReading;
+    document.getElementById('modalPrevReading').textContent = prevReading;
+    document.getElementById('modalConsumption').textContent = consumption + ' m³';
     document.getElementById('imageModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -193,13 +194,21 @@ function openImageModal(imageUrl) {
 function closeImageModal() {
     document.getElementById('imageModal').classList.add('hidden');
     document.body.style.overflow = '';
+    currentReadingId = null;
+}
+
+function confirmFromModal() {
+    if (currentReadingId) {
+        closeImageModal();
+        confirmReading(currentReadingId);
+    }
 }
 
 // Confirm Reading
 function confirmReading(readingId) {
     Swal.fire({
         title: 'Confirm Reading?',
-        text: 'This will confirm the reading and generate the consumer\'s bill.',
+        text: 'This will confirm the reading and generate the bill.',
         icon: 'question',
         showCancelButton: true,
         confirmButtonColor: '#16a34a',
@@ -208,58 +217,61 @@ function confirmReading(readingId) {
         cancelButtonText: 'Cancel'
     }).then((result) => {
         if (result.isConfirmed) {
-            showLoading('Confirming reading...');
+            showLoading('Confirming...');
 
             fetch(`/meter-readings/${readingId}/confirm/`, {
                 method: 'POST',
                 headers: {
                     'X-CSRFToken': getCookie('csrftoken'),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(response => response.json())
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(data => { throw new Error(data.message || 'Failed to confirm'); });
+                }
+                return response.json();
+            })
             .then(data => {
                 hideLoading();
                 if (data.status === 'success') {
-                    showToast('success', data.message || 'Reading confirmed and bill generated!');
-                    // Remove the card with animation
-                    const card = document.getElementById(`reading-card-${readingId}`);
-                    if (card) {
-                        card.style.animation = 'fadeOut 0.3s ease forwards';
-                        setTimeout(() => card.remove(), 300);
+                    showToast('success', data.message || 'Reading confirmed!');
+                    // Remove row with animation
+                    const row = document.getElementById(`reading-row-${readingId}`);
+                    if (row) {
+                        row.style.animation = 'fadeOut 0.3s ease forwards';
+                        setTimeout(() => row.remove(), 300);
                     }
-                    // Reload if no more pending readings
+                    // Reload if empty
                     setTimeout(() => {
-                        const remainingCards = document.querySelectorAll('[id^="reading-card-"]');
-                        if (remainingCards.length === 0) {
+                        if (document.querySelectorAll('[id^="reading-row-"]').length === 0) {
                             location.reload();
                         }
                     }, 400);
                 } else {
-                    showToast('error', data.message || 'Failed to confirm reading');
+                    showToast('error', data.message || 'Failed to confirm');
                 }
             })
             .catch(error => {
                 hideLoading();
                 console.error('Error:', error);
-                showToast('error', 'An error occurred. Please try again.');
+                showToast('error', error.message || 'An error occurred. Please try again.');
             });
         }
     });
 }
 
-// Close modal on Escape key
+// Close modal on Escape
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeImageModal();
-    }
+    if (e.key === 'Escape') closeImageModal();
 });
 </script>
 
 <style>
 @keyframes fadeOut {
-    from { opacity: 1; transform: scale(1); }
-    to { opacity: 0; transform: scale(0.95); }
+    from { opacity: 1; }
+    to { opacity: 0; }
 }
 </style>
 {% endblock %}

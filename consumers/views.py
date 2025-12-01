@@ -4136,14 +4136,20 @@ def confirm_reading(request, reading_id):
         success_message = f"Bill successfully generated for {get_consumer_display_id(consumer)}!"
 
         # Handle AJAX request (from pending_readings page)
-        if request.headers.get('Content-Type') == 'application/json':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+                  'application/json' in request.headers.get('Content-Type', '')
+
+        if is_ajax:
             return JsonResponse({'status': 'success', 'message': success_message})
 
         messages.success(request, f"✅ {success_message}")
 
     except Exception as e:
         error_message = f"Failed to generate bill: {str(e)}"
-        if request.headers.get('Content-Type') == 'application/json':
+        is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+                  'application/json' in request.headers.get('Content-Type', '')
+
+        if is_ajax:
             return JsonResponse({'status': 'error', 'message': error_message}, status=400)
         messages.error(request, error_message)
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
