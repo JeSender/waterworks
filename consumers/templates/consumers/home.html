@@ -453,8 +453,8 @@ function generateReport() {
     showToast('info', `Generating ${monthNames[month]} ${year} report...`, 2000);
 
     setTimeout(() => {
-        window.open(`/delinquent-report/print/?month=${month}&year=${year}`, '_blank');
-        showToast('success', 'Report opened in new tab');
+        window.open(`/delinquent-report/print/?month=${month}&year=${year}`, 'DelinquentReport', 'width=800,height=600,scrollbars=yes');
+        showToast('success', 'Report opened in popup window');
     }, 1000);
 }
 
