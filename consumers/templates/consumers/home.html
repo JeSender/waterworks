@@ -162,22 +162,12 @@
                 </h3>
                 <div class="flex items-center gap-3">
                     <div class="flex items-center gap-2">
-                        <label for="barangayFilter" class="text-white text-sm">Barangay:</label>
+                        <label for="barangayFilter" class="text-white text-sm">Filter by Barangay:</label>
                         <select id="barangayFilter" class="px-3 py-2 text-sm border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
                             <option value="all" class="text-dark-900">All Barangays</option>
                             {% for barangay in all_barangays %}
                             <option value="{{ barangay.id }}" data-name="{{ barangay.name }}" class="text-dark-900">{{ barangay.name }}</option>
                             {% endfor %}
-                        </select>
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <label for="statusFilter" class="text-white text-sm">Status:</label>
-                        <select id="statusFilter" class="px-3 py-2 text-sm border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
-                            <option value="all" class="text-dark-900">All Status</option>
-                            <option value="Pending" class="text-dark-900">Pending</option>
-                            <option value="Paid" class="text-dark-900">Paid</option>
-                            <option value="Overdue,Unpaid" class="text-dark-900">Delinquent</option>
-                            <option value="No Bill" class="text-dark-900">No Bill</option>
                         </select>
                     </div>
                     <button onclick="exportToExcel()" class="px-3 py-2 text-sm font-medium bg-success-600 hover:bg-success-700 text-white rounded-lg transition-colors flex items-center gap-2">
@@ -331,13 +321,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // ========== Consumer Bill Status Table ==========
     const consumerBillStatusData = {{ consumer_bill_status|safe }};
     const barangayFilter = document.getElementById('barangayFilter');
-    const statusFilter = document.getElementById('statusFilter');
     const tableBody = document.getElementById('consumerBillStatusBody');
     const visibleCountEl = document.getElementById('visibleCount');
     const totalCountEl = document.getElementById('totalCount');
 
-    // Global variable to store current filtered data for export
+    // Global variables to store current filter states
     let currentFilteredData = [];
+    let currentStatusFilter = 'all';
 
     function getStatusBadge(status) {
         let badgeClasses = '';
@@ -406,7 +396,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderBillStatusTable() {
         const barangayFilterValue = barangayFilter.value;
-        const statusFilterValue = statusFilter.value;
 
         let filteredData = consumerBillStatusData;
 
@@ -416,12 +405,12 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Apply status filter
-        if (statusFilterValue !== 'all') {
-            const statuses = statusFilterValue.split(',');
+        if (currentStatusFilter !== 'all') {
+            const statuses = currentStatusFilter.split(',');
             filteredData = filteredData.filter(item => statuses.includes(item.payment_status));
         }
 
-        // Store filtered data for export
+        // Store filtered data for export and print
         currentFilteredData = filteredData;
 
         // Update statistics
@@ -461,7 +450,6 @@ document.addEventListener('DOMContentLoaded', function() {
     // Initialize table and attach event listeners
     renderBillStatusTable();
     barangayFilter.addEventListener('change', renderBillStatusTable);
-    statusFilter.addEventListener('change', renderBillStatusTable);
 
     // Export to Excel function
     window.exportToExcel = function() {
@@ -491,7 +479,14 @@ document.addEventListener('DOMContentLoaded', function() {
         const url = URL.createObjectURL(blob);
 
         const barangayName = barangayFilter.options[barangayFilter.selectedIndex].text;
-        const statusName = statusFilter.options[statusFilter.selectedIndex].text.replace(/,/g, '_');
+        const statusNames = {
+            'all': 'All_Status',
+            'Pending': 'Pending',
+            'Paid': 'Paid',
+            'Overdue,Unpaid': 'Delinquent',
+            'No Bill': 'No_Bill'
+        };
+        const statusName = statusNames[currentStatusFilter] || 'All_Status';
         const filename = `Consumer_Bill_Status_${barangayName}_${statusName}_${new Date().toISOString().split('T')[0]}.csv`;
 
         link.setAttribute('href', url);
@@ -504,8 +499,8 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // Quick Filter Function
     window.quickFilter = function(status) {
-        // Update the status filter dropdown
-        statusFilter.value = status;
+        // Update the current status filter
+        currentStatusFilter = status;
 
         // Update active button state
         document.querySelectorAll('.quick-filter-btn').forEach(btn => {
@@ -579,22 +574,26 @@ function generateReport() {
 
 // Print Bill Status Report Function
 function printBillStatus() {
-    const barangayFilter = document.getElementById('barangayFilter');
-    const selectedValue = barangayFilter.value;
-    const selectedOption = barangayFilter.options[barangayFilter.selectedIndex];
-    const barangayName = selectedValue === 'all' ? 'All Barangays' : selectedOption.dataset.name;
-
-    // Get filtered data
-    const consumerBillStatusData = {{ consumer_bill_status|safe }};
-    let filteredData = consumerBillStatusData;
-    if (selectedValue !== 'all') {
-        filteredData = consumerBillStatusData.filter(item => item.barangay_id == selectedValue);
-    }
+    // Use the current filtered data (already filtered by barangay and status)
+    const filteredData = currentFilteredData;
 
     if (filteredData.length === 0) {
-        showToast('warning', 'No consumers found for the selected barangay.');
+        alert('No data to print. Please adjust your filters.');
         return;
     }
+
+    // Get filter labels
+    const barangayFilter = document.getElementById('barangayFilter');
+    const barangayName = barangayFilter.options[barangayFilter.selectedIndex].text;
+
+    const statusNames = {
+        'all': 'All Status',
+        'Pending': 'Pending Only',
+        'Paid': 'Paid Only',
+        'Overdue,Unpaid': 'Delinquent Only',
+        'No Bill': 'No Bill Only'
+    };
+    const statusLabel = statusNames[currentStatusFilter] || 'All Status';
 
     // Format helpers
     function formatDate(dateStr) {
@@ -694,7 +693,8 @@ function printBillStatus() {
                         <p style="font-size: 10px; color: #555; margin: 0;">Republic of the Philippines | Province of Bohol</p>
                         <h1 style="font-size: 14px; font-weight: 700; color: #003366; margin: 2px 0;">MUNICIPALITY OF BALILIHAN</h1>
                         <p style="font-size: 11px; font-weight: 600; color: #0055aa; margin: 0;">Waterworks System</p>
-                        <p style="font-size: 10px; font-weight: 600; color: #333; margin-top: 3px; background: #eee; padding: 2px 10px; border-radius: 8px; display: inline-block;">Consumer Bill Status Report: ${barangayName}</p>
+                        <p style="font-size: 10px; font-weight: 600; color: #333; margin-top: 3px; background: #eee; padding: 2px 10px; border-radius: 8px; display: inline-block;">Consumer Bill Status Report</p>
+                        <p style="font-size: 9px; color: #666; margin-top: 2px;">${barangayName} | ${statusLabel}</p>
                     </div>
                     <img src="/static/consumers/images/logo.jpg" alt="Waterworks Logo" style="width: 55px; height: 55px; object-fit: cover; border-radius: 50%; border: 2px solid #003366;">
                 </div>
