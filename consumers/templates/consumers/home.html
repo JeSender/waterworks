@@ -252,6 +252,9 @@
 
 {% block extra_js %}
 <script>
+// Global variable to store current filtered data (must be outside DOMContentLoaded for print function)
+let currentFilteredData = [];
+
 document.addEventListener('DOMContentLoaded', function() {
     // Display real-time current date
     function updateCurrentDate() {
@@ -281,9 +284,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const tableBody = document.getElementById('consumerBillStatusBody');
     const visibleCountEl = document.getElementById('visibleCount');
     const totalCountEl = document.getElementById('totalCount');
-
-    // Global variable to store current filtered data
-    let currentFilteredData = [];
 
     function getStatusBadge(status) {
         let badgeClasses = '';
