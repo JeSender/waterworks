@@ -279,8 +279,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== Consumer Bill Status Table ==========
     const consumerBillStatusData = {{ consumer_bill_status|safe }};
-    console.log('Consumer Bill Status Data:', consumerBillStatusData);
-    console.log('Data length:', consumerBillStatusData.length);
 
     const barangayFilter = document.getElementById('barangayFilter');
     const statusFilter = document.getElementById('statusFilter');
@@ -354,18 +352,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderBillStatusTable() {
-        console.log('renderBillStatusTable called');
-
         if (!consumerBillStatusData || !Array.isArray(consumerBillStatusData)) {
-            console.error('consumerBillStatusData is not defined or not an array');
             return;
         }
 
         const barangayFilterValue = barangayFilter.value;
         const statusFilterValue = statusFilter.value;
-
-        console.log('Barangay filter:', barangayFilterValue);
-        console.log('Status filter:', statusFilterValue);
 
         let filteredData = consumerBillStatusData;
 
@@ -379,8 +371,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const statuses = statusFilterValue.split(',');
             filteredData = filteredData.filter(item => statuses.includes(item.payment_status));
         }
-
-        console.log('Filtered data length:', filteredData.length);
 
         // Store filtered data for print
         currentFilteredData = filteredData;
@@ -447,14 +437,6 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => {
             animateValue(el, 0, finalValue, 800);
         }, 100 + (index * 100));
-    });
-
-    // Calculate total revenue
-    const revenueData = {{ revenue_data|safe }};
-    const totalRevenue = revenueData.reduce((sum, value) => sum + value, 0);
-    document.getElementById('totalRevenue').textContent = '₱' + totalRevenue.toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
     });
 });
 
