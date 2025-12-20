@@ -192,31 +192,53 @@
             </div>
         </div>
 
+        <!-- Quick Filter Buttons -->
+        <div class="px-6 py-3 bg-white border-b border-light-200">
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-medium text-dark-700 mr-2">Quick Filter:</span>
+                <button onclick="quickFilter('all')" id="filterAll" class="quick-filter-btn active px-4 py-2 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-grid-3x3-gap-fill mr-1"></i>All
+                </button>
+                <button onclick="quickFilter('Pending')" id="filterPending" class="quick-filter-btn px-4 py-2 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-clock-fill mr-1"></i>Pending
+                </button>
+                <button onclick="quickFilter('Paid')" id="filterPaid" class="quick-filter-btn px-4 py-2 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-check-circle-fill mr-1"></i>Paid
+                </button>
+                <button onclick="quickFilter('Overdue,Unpaid')" id="filterDelinquent" class="quick-filter-btn px-4 py-2 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-exclamation-triangle-fill mr-1"></i>Delinquent
+                </button>
+                <button onclick="quickFilter('No Bill')" id="filterNoBill" class="quick-filter-btn px-4 py-2 text-sm font-medium rounded-lg transition-all">
+                    <i class="bi bi-dash-circle mr-1"></i>No Bill
+                </button>
+            </div>
+        </div>
+
         <!-- Statistics Summary Bar -->
         <div class="grid grid-cols-5 gap-3 px-6 py-3 bg-light-50 border-b border-light-200">
-            <div class="text-center">
+            <div class="text-center cursor-pointer hover:bg-light-100 transition-colors rounded-lg p-2" onclick="quickFilter('all')">
                 <div class="text-xs text-dark-500 font-medium mb-1">Total</div>
                 <div id="statTotal" class="text-lg font-bold text-dark-900">0</div>
             </div>
-            <div class="text-center">
+            <div class="text-center cursor-pointer hover:bg-success-50 transition-colors rounded-lg p-2" onclick="quickFilter('Paid')">
                 <div class="text-xs text-success-600 font-medium mb-1 flex items-center justify-center gap-1">
                     <i class="bi bi-check-circle-fill"></i>Paid
                 </div>
                 <div id="statPaid" class="text-lg font-bold text-success-700">0</div>
             </div>
-            <div class="text-center">
+            <div class="text-center cursor-pointer hover:bg-warning-50 transition-colors rounded-lg p-2" onclick="quickFilter('Pending')">
                 <div class="text-xs text-warning-600 font-medium mb-1 flex items-center justify-center gap-1">
                     <i class="bi bi-clock-fill"></i>Pending
                 </div>
                 <div id="statPending" class="text-lg font-bold text-warning-700">0</div>
             </div>
-            <div class="text-center">
+            <div class="text-center cursor-pointer hover:bg-danger-50 transition-colors rounded-lg p-2" onclick="quickFilter('Overdue,Unpaid')">
                 <div class="text-xs text-danger-600 font-medium mb-1 flex items-center justify-center gap-1">
                     <i class="bi bi-exclamation-triangle-fill"></i>Delinquent
                 </div>
                 <div id="statDelinquent" class="text-lg font-bold text-danger-700">0</div>
             </div>
-            <div class="text-center">
+            <div class="text-center cursor-pointer hover:bg-light-100 transition-colors rounded-lg p-2" onclick="quickFilter('No Bill')">
                 <div class="text-xs text-dark-500 font-medium mb-1 flex items-center justify-center gap-1">
                     <i class="bi bi-dash-circle"></i>No Bill
                 </div>
@@ -249,6 +271,37 @@
     </div>
 
 </div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Quick Filter Button Styles */
+    .quick-filter-btn {
+        background: #f3f4f6;
+        border: 2px solid transparent;
+        color: #4b5563;
+    }
+
+    .quick-filter-btn:hover {
+        background: #e5e7eb;
+        border-color: #d1d5db;
+    }
+
+    .quick-filter-btn.active {
+        background: #2563eb;
+        color: white;
+        border-color: #1d4ed8;
+        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
+    }
+
+    .quick-filter-btn i {
+        opacity: 0.7;
+    }
+
+    .quick-filter-btn.active i {
+        opacity: 1;
+    }
+</style>
 {% endblock %}
 
 {% block extra_js %}
@@ -447,6 +500,32 @@ document.addEventListener('DOMContentLoaded', function() {
         document.body.appendChild(link);
         link.click();
         document.body.removeChild(link);
+    };
+
+    // Quick Filter Function
+    window.quickFilter = function(status) {
+        // Update the status filter dropdown
+        statusFilter.value = status;
+
+        // Update active button state
+        document.querySelectorAll('.quick-filter-btn').forEach(btn => {
+            btn.classList.remove('active');
+        });
+
+        if (status === 'all') {
+            document.getElementById('filterAll').classList.add('active');
+        } else if (status === 'Pending') {
+            document.getElementById('filterPending').classList.add('active');
+        } else if (status === 'Paid') {
+            document.getElementById('filterPaid').classList.add('active');
+        } else if (status === 'Overdue,Unpaid') {
+            document.getElementById('filterDelinquent').classList.add('active');
+        } else if (status === 'No Bill') {
+            document.getElementById('filterNoBill').classList.add('active');
+        }
+
+        // Trigger the table re-render
+        renderBillStatusTable();
     };
     // ========== End Consumer Bill Status Table ==========
 
