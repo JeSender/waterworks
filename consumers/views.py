@@ -42,6 +42,53 @@ from .models import (
 from .forms import ConsumerForm
 
 
+# Helper function to authenticate API requests using session token
+def authenticate_api_request(request):
+    """
+    Authenticate API request using session token from Authorization header or request body.
+    Returns the user if authenticated, None otherwise.
+    """
+    from django.contrib.sessions.models import Session
+
+    token = None
+
+    # Try Authorization header first (Bearer token)
+    auth_header = request.META.get('HTTP_AUTHORIZATION', '')
+    if auth_header.startswith('Bearer '):
+        token = auth_header[7:]
+
+    # Try request body if no header token
+    if not token and request.body:
+        try:
+            data = json.loads(request.body.decode('utf-8'))
+            token = data.get('token')
+        except (json.JSONDecodeError, UnicodeDecodeError):
+            pass
+
+    if not token:
+        return None
+
+    try:
+        # Find the session by key
+        session = Session.objects.get(session_key=token)
+
+        # Check if session is expired
+        if session.expire_date < timezone.now():
+            return None
+
+        # Get user from session data
+        session_data = session.get_decoded()
+        user_id = session_data.get('_auth_user_id')
+
+        if user_id:
+            user = User.objects.get(id=user_id)
+            return user
+    except (Session.DoesNotExist, User.DoesNotExist):
+        pass
+
+    return None
+
+
 # Helper function to get previous confirmed reading
 def get_previous_reading(consumer):
     """Get the most recent confirmed meter reading for a consumer."""
@@ -108,6 +155,11 @@ def api_submit_reading(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
+        # Authenticate using token if not already authenticated
+        api_user = None
+        if not request.user.is_authenticated:
+            api_user = authenticate_api_request(request)
+
         # Parse JSON data from the request body
         data = json.loads(request.body.decode('utf-8'))
 
@@ -172,10 +224,13 @@ def api_submit_reading(request):
         # Calculate bill using tiered rates
         rate, total_amount, breakdown = calculate_water_bill(consumer, consumption)
 
+        # Determine the authenticated user (from session or token)
+        current_user = request.user if request.user.is_authenticated else api_user
+
         # Get field staff name
         field_staff_name = "System"  # Default
-        if request.user.is_authenticated:
-            field_staff_name = request.user.get_full_name() or request.user.username
+        if current_user:
+            field_staff_name = current_user.get_full_name() or current_user.username
 
         # --- NEW LOGIC: Check for existing unconfirmed reading on the same date ---
         try:
@@ -224,9 +279,7 @@ def api_submit_reading(request):
                 billing_day = 1
                 due_day = 20
 
-            # Create Bill automatically with tiered rate info
-            # Note: rate_per_cubic stores average rate, fixed_charge is 0 for tiered billing
-            # (minimum charge is included in tier 1)
+            # Create Bill automatically with ACTUAL tier breakdown (not averages)
             Bill.objects.create(
                 consumer=consumer,
                 previous_reading=prev_reading_obj,
@@ -234,8 +287,23 @@ def api_submit_reading(request):
                 billing_period=reading_date.replace(day=billing_day),
                 due_date=reading_date.replace(day=due_day),
                 consumption=consumption,
-                rate_per_cubic=Decimal(str(rate)),  # Average rate for display
-                fixed_charge=Decimal('0.00'),  # No separate fixed charge in tiered billing
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
+                rate_per_cubic=Decimal(str(rate)),
+                fixed_charge=Decimal('0.00'),
                 total_amount=Decimal(str(total_amount)),
                 status='Pending'
             )
@@ -252,19 +320,19 @@ def api_submit_reading(request):
                 redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id})
             )
 
-        # Track activity for login session
-        if request.user.is_authenticated:
+        # Track activity for login session (using current_user from session or token)
+        if current_user:
             try:
                 # Find current login session
                 current_session = UserLoginEvent.objects.filter(
-                    user=request.user,
+                    user=current_user,
                     logout_timestamp__isnull=True,
                     status='success'
                 ).order_by('-login_timestamp').first()
 
                 # Log the meter reading activity
                 UserActivity.objects.create(
-                    user=request.user,
+                    user=current_user,
                     action='meter_reading_submitted',
                     description=f"Meter reading submitted for {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reading: {current_reading}, Consumption: {consumption} m³",
                     login_event=current_session
@@ -297,7 +365,578 @@ def api_submit_reading(request):
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
+# ============================================================================
+# API VIEW: SUBMIT MANUAL READING WITH PROOF IMAGE
+# ============================================================================
+@csrf_exempt
+def api_submit_manual_reading(request):
+    """
+    API endpoint for Android app to submit manual reading with proof photo.
 
+    This reading requires admin confirmation before bill is generated.
+
+    POST data:
+    {
+        "consumer_id": 1,
+        "reading": 1275,
+        "reading_date": "2025-12-01",
+        "proof_image": "base64_encoded_image_string",
+        "token": "session_token_from_login"
+    }
+
+    Flow:
+    1. Save reading with is_confirmed=False
+    2. Upload proof image to Cloudinary
+    3. Create notification for admin
+    4. Admin reviews and confirms/rejects
+    5. Bill generated only after confirmation
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        import base64
+        import cloudinary.uploader
+        from django.conf import settings
+
+        # Authenticate using token if not already authenticated
+        api_user = None
+        if not request.user.is_authenticated:
+            api_user = authenticate_api_request(request)
+
+        # Determine the authenticated user (from session or token)
+        current_user = request.user if request.user.is_authenticated else api_user
+
+        data = json.loads(request.body.decode('utf-8'))
+
+        # Extract data
+        consumer_id = data.get('consumer_id')
+        reading_value = data.get('reading')
+        reading_date_str = data.get('reading_date')
+        proof_image_base64 = data.get('proof_image')
+
+        # Validate required fields
+        if not consumer_id or reading_value is None:
+            return JsonResponse({'error': 'Missing required fields: consumer_id or reading'}, status=400)
+
+        # Get consumer
+        try:
+            consumer = Consumer.objects.get(id=consumer_id)
+        except Consumer.DoesNotExist:
+            return JsonResponse({'error': 'Consumer not found'}, status=404)
+
+        # Check if consumer is disconnected
+        if consumer.status == 'disconnected':
+            return JsonResponse({
+                'error': 'Consumer is disconnected',
+                'message': f'{consumer.first_name} {consumer.last_name} is currently disconnected.'
+            }, status=403)
+
+        # Parse reading date
+        if reading_date_str:
+            try:
+                reading_date = timezone.datetime.strptime(reading_date_str, '%Y-%m-%d').date()
+            except ValueError:
+                return JsonResponse({'error': 'Invalid date format. Use YYYY-MM-DD.'}, status=400)
+        else:
+            reading_date = timezone.now().date()
+
+        # Check for duplicate reading (same consumer, same month)
+        existing_reading = MeterReading.objects.filter(
+            consumer=consumer,
+            reading_date__year=reading_date.year,
+            reading_date__month=reading_date.month
+        ).first()
+
+        if existing_reading:
+            return JsonResponse({
+                'error': 'Duplicate reading',
+                'message': f'Reading for {consumer.first_name} {consumer.last_name} already exists for {reading_date.strftime("%B %Y")}.'
+            }, status=400)
+
+        # Validate reading value
+        try:
+            current_reading = int(reading_value)
+            if current_reading < 0:
+                raise ValueError("Reading value cannot be negative")
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'Invalid reading value.'}, status=400)
+
+        # Get previous reading for validation
+        previous_reading = get_previous_reading(consumer)
+        if current_reading < previous_reading:
+            return JsonResponse({
+                'error': 'Invalid reading',
+                'message': f'Current reading ({current_reading}) cannot be less than previous ({previous_reading})'
+            }, status=400)
+
+        consumption = current_reading - previous_reading
+
+        # Upload proof image to Cloudinary (if provided)
+        proof_image_url = None
+        if proof_image_base64:
+            try:
+                # Check if Cloudinary is configured
+                if not settings.CLOUDINARY_AVAILABLE:
+                    return JsonResponse({'error': 'Image upload not configured'}, status=500)
+
+                # Upload to Cloudinary
+                upload_result = cloudinary.uploader.upload(
+                    f"data:image/jpeg;base64,{proof_image_base64}",
+                    folder="waterworks/meter_proofs",
+                    public_id=f"reading_{consumer.id_number}_{reading_date}",
+                    overwrite=True,
+                    resource_type="image"
+                )
+                proof_image_url = upload_result.get('secure_url')
+            except Exception as e:
+                import logging
+                logging.error(f"Cloudinary upload error: {e}")
+                return JsonResponse({'error': 'Failed to upload proof image'}, status=500)
+
+        # Create meter reading (NOT confirmed - needs admin review)
+        reading = MeterReading.objects.create(
+            consumer=consumer,
+            reading_date=reading_date,
+            reading_value=current_reading,
+            source='manual_with_proof',
+            is_confirmed=False,  # Needs admin confirmation
+            proof_image_url=proof_image_url,
+            submitted_by=current_user  # Use current_user (from session or token)
+        )
+
+        # Create notification for admin - redirect to pending readings page
+        from django.urls import reverse
+        Notification.objects.create(
+            user=None,  # Notify all admins
+            notification_type='reading_pending_confirmation',
+            title='Manual Reading - Needs Confirmation',
+            message=f'{consumer.first_name} {consumer.last_name} ({consumer.id_number}) - {consumption} m³ | Proof image attached',
+            related_object_id=reading.id,
+            redirect_url=reverse('consumers:pending_readings')
+        )
+
+        # Get field staff name and log activity
+        field_staff_name = "Field Staff"
+        if current_user:
+            field_staff_name = current_user.get_full_name() or current_user.username
+
+            # Log the manual meter reading submission to UserActivity
+            try:
+                # Get the current login session
+                current_session = UserLoginEvent.objects.filter(
+                    user=current_user,
+                    status='success'
+                ).order_by('-login_timestamp').first()
+
+                # Log the meter reading activity
+                UserActivity.objects.create(
+                    user=current_user,
+                    action='meter_reading_submitted',
+                    description=f"Manual reading with proof submitted for {consumer.first_name} {consumer.last_name} ({consumer.id_number}). Reading: {current_reading}, Consumption: {consumption} m³. Status: Pending confirmation.",
+                    login_event=current_session
+                )
+            except Exception:
+                pass  # Don't fail if activity logging fails
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading submitted for review. Awaiting admin confirmation.',
+            'reading_id': reading.id,
+            'consumer_id': consumer.id,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'id_number': consumer.id_number,
+            'reading_date': str(reading_date),
+            'previous_reading': previous_reading,
+            'current_reading': current_reading,
+            'consumption': consumption,
+            'proof_image_url': proof_image_url,
+            'status': 'pending_confirmation',
+            'field_staff_name': field_staff_name
+        })
+
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON in request body'}, status=400)
+    except Exception as e:
+        import logging
+        logging.error(f"Error submitting manual reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: CONFIRM MANUAL READING
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_confirm_reading(request, reading_id):
+    """
+    API endpoint for admin to confirm a manual reading.
+
+    POST /api/readings/<reading_id>/confirm/
+
+    On confirm:
+    1. Set is_confirmed=True
+    2. Generate bill with current rates
+    3. Mark notification as read
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        reading = MeterReading.objects.select_related('consumer').get(id=reading_id)
+
+        if reading.is_confirmed:
+            return JsonResponse({'error': 'Reading already confirmed'}, status=400)
+
+        if reading.is_rejected:
+            return JsonResponse({'error': 'Cannot confirm a rejected reading'}, status=400)
+
+        consumer = reading.consumer
+
+        # Get previous reading for consumption calculation
+        prev = MeterReading.objects.filter(
+            consumer=consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev:
+            consumption = reading.reading_value - prev.reading_value
+        else:
+            baseline = consumer.first_reading if consumer.first_reading else 0
+            consumption = reading.reading_value - baseline
+
+        if consumption < 0:
+            return JsonResponse({'error': 'Invalid consumption calculation'}, status=400)
+
+        # Calculate bill using tiered rates
+        from .utils import calculate_tiered_water_bill
+        setting = SystemSetting.objects.first()
+
+        if setting:
+            billing_day = setting.billing_day_of_month
+            due_day = setting.due_day_of_month
+        else:
+            billing_day = 1
+            due_day = 20
+
+        total, average_rate, breakdown = calculate_tiered_water_bill(
+            consumption=consumption,
+            usage_type=consumer.usage_type,
+            settings=setting
+        )
+
+        # Create bill
+        Bill.objects.create(
+            consumer=consumer,
+            previous_reading=prev,
+            current_reading=reading,
+            billing_period=reading.reading_date.replace(day=billing_day),
+            due_date=reading.reading_date.replace(day=due_day),
+            consumption=consumption,
+            tier1_consumption=breakdown['tier1_units'],
+            tier1_amount=breakdown['tier1_amount'],
+            tier2_consumption=breakdown['tier2_units'],
+            tier2_rate=breakdown['tier2_rate'],
+            tier2_amount=breakdown['tier2_amount'],
+            tier3_consumption=breakdown['tier3_units'],
+            tier3_rate=breakdown['tier3_rate'],
+            tier3_amount=breakdown['tier3_amount'],
+            tier4_consumption=breakdown['tier4_units'],
+            tier4_rate=breakdown['tier4_rate'],
+            tier4_amount=breakdown['tier4_amount'],
+            tier5_consumption=breakdown['tier5_units'],
+            tier5_rate=breakdown['tier5_rate'],
+            tier5_amount=breakdown['tier5_amount'],
+            rate_per_cubic=average_rate,
+            fixed_charge=Decimal('0.00'),
+            total_amount=total,
+            status='Pending'
+        )
+
+        # Update reading status
+        reading.is_confirmed = True
+        reading.confirmed_by = request.user
+        reading.confirmed_at = timezone.now()
+        reading.save()
+
+        # Mark related notification as read
+        Notification.objects.filter(
+            related_object_id=reading.id,
+            notification_type='meter_reading'
+        ).update(is_read=True, read_at=timezone.now())
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading confirmed and bill generated',
+            'reading_id': reading.id,
+            'bill_amount': float(total),
+            'consumption': consumption
+        })
+
+    except MeterReading.DoesNotExist:
+        return JsonResponse({'error': 'Reading not found'}, status=404)
+    except Exception as e:
+        import logging
+        logging.error(f"Error confirming reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: REJECT MANUAL READING
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_reject_reading(request, reading_id):
+    """
+    API endpoint for admin to reject a manual reading.
+
+    POST /api/readings/<reading_id>/reject/
+    {
+        "reason": "Image is blurry, please resubmit"
+    }
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        data = json.loads(request.body.decode('utf-8'))
+        reason = data.get('reason', '').strip()
+
+        if not reason:
+            return JsonResponse({'error': 'Rejection reason is required'}, status=400)
+
+        reading = MeterReading.objects.select_related('consumer').get(id=reading_id)
+
+        if reading.is_confirmed:
+            return JsonResponse({'error': 'Cannot reject a confirmed reading'}, status=400)
+
+        if reading.is_rejected:
+            return JsonResponse({'error': 'Reading already rejected'}, status=400)
+
+        # Update reading status
+        reading.is_rejected = True
+        reading.rejected_by = request.user
+        reading.rejected_at = timezone.now()
+        reading.rejection_reason = reason
+        reading.save()
+
+        # Mark related notification as read
+        Notification.objects.filter(
+            related_object_id=reading.id,
+            notification_type='meter_reading'
+        ).update(is_read=True, read_at=timezone.now())
+
+        # Create notification for field staff about rejection
+        if reading.submitted_by:
+            Notification.objects.create(
+                user=reading.submitted_by,
+                notification_type='system_alert',
+                title='Reading Rejected',
+                message=f'Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected. Reason: {reason}',
+                related_object_id=reading.id
+            )
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Reading rejected',
+            'reading_id': reading.id,
+            'reason': reason
+        })
+
+    except MeterReading.DoesNotExist:
+        return JsonResponse({'error': 'Reading not found'}, status=404)
+    except json.JSONDecodeError:
+        return JsonResponse({'error': 'Invalid JSON'}, status=400)
+    except Exception as e:
+        import logging
+        logging.error(f"Error rejecting reading: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET NOTIFICATIONS LIST
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_notifications(request):
+    """
+    API endpoint to get notifications for the current user.
+
+    GET /api/notifications/
+    GET /api/notifications/?unread_only=true
+
+    Returns list of notifications (newest first).
+    """
+    try:
+        unread_only = request.GET.get('unread_only', 'false').lower() == 'true'
+
+        # Get notifications for this user or all admins (user=None)
+        notifications = Notification.objects.filter(
+            models.Q(user=request.user) | models.Q(user__isnull=True),
+            is_archived=False
+        ).order_by('-created_at')
+
+        if unread_only:
+            notifications = notifications.filter(is_read=False)
+
+        # Limit to last 50
+        notifications = notifications[:50]
+
+        data = []
+        for n in notifications:
+            data.append({
+                'id': n.id,
+                'type': n.notification_type,
+                'title': n.title,
+                'message': n.message,
+                'is_read': n.is_read,
+                'redirect_url': n.redirect_url,
+                'related_object_id': n.related_object_id,
+                'created_at': n.created_at.isoformat(),
+                'read_at': n.read_at.isoformat() if n.read_at else None,
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'notifications': data,
+            'total': len(data)
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching notifications: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET UNREAD NOTIFICATION COUNT
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_notification_count(request):
+    """
+    API endpoint to get unread notification count.
+
+    GET /api/notifications/count/
+
+    Returns: { "unread_count": 5 }
+    """
+    try:
+        count = Notification.objects.filter(
+            models.Q(user=request.user) | models.Q(user__isnull=True),
+            is_read=False,
+            is_archived=False
+        ).count()
+
+        return JsonResponse({
+            'status': 'success',
+            'unread_count': count
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching notification count: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: MARK NOTIFICATION AS READ
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_mark_notification_read(request, notification_id):
+    """
+    API endpoint to mark a notification as read.
+
+    POST /api/notifications/<id>/mark-read/
+    """
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+    try:
+        notification = Notification.objects.get(id=notification_id)
+
+        # Check if user can access this notification
+        if notification.user and notification.user != request.user:
+            return JsonResponse({'error': 'Access denied'}, status=403)
+
+        notification.is_read = True
+        notification.read_at = timezone.now()
+        notification.save()
+
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Notification marked as read'
+        })
+
+    except Notification.DoesNotExist:
+        return JsonResponse({'error': 'Notification not found'}, status=404)
+    except Exception as e:
+        import logging
+        logging.error(f"Error marking notification as read: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET PENDING READINGS (for admin review)
+# ============================================================================
+@csrf_exempt
+@login_required
+def api_get_pending_readings(request):
+    """
+    API endpoint to get all readings pending confirmation.
+
+    GET /api/readings/pending/
+
+    Returns list of readings that need admin review.
+    """
+    try:
+        readings = MeterReading.objects.filter(
+            is_confirmed=False,
+            is_rejected=False,
+            source='manual_with_proof'
+        ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-created_at')
+
+        data = []
+        for r in readings:
+            # Calculate consumption
+            prev = MeterReading.objects.filter(
+                consumer=r.consumer,
+                is_confirmed=True,
+                reading_date__lt=r.reading_date
+            ).order_by('-reading_date').first()
+
+            if prev:
+                consumption = r.reading_value - prev.reading_value
+            else:
+                baseline = r.consumer.first_reading if r.consumer.first_reading else 0
+                consumption = r.reading_value - baseline
+
+            data.append({
+                'reading_id': r.id,
+                'consumer_id': r.consumer.id,
+                'consumer_name': f"{r.consumer.first_name} {r.consumer.last_name}",
+                'id_number': r.consumer.id_number,
+                'barangay': r.consumer.barangay.name if r.consumer.barangay else '',
+                'reading_date': r.reading_date.isoformat(),
+                'reading_value': r.reading_value,
+                'consumption': consumption,
+                'proof_image_url': r.proof_image_url,
+                'submitted_by': r.submitted_by.get_full_name() if r.submitted_by else 'Unknown',
+                'submitted_at': r.created_at.isoformat(),
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'pending_readings': data,
+            'total': len(data)
+        })
+
+    except Exception as e:
+        import logging
+        logging.error(f"Error fetching pending readings: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
 @csrf_exempt
@@ -702,6 +1341,189 @@ def api_get_current_rates(request):
         import logging
         logger = logging.getLogger(__name__)
         logger.error(f"Error fetching rates: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET BILL DETAILS FOR A CONSUMER
+# ============================================================================
+@csrf_exempt
+def api_get_consumer_bill(request, consumer_id):
+    """
+    API endpoint for Android app to get bill details for a specific consumer.
+
+    URL: /api/consumers/<consumer_id>/bill/
+
+    Returns the latest pending bill for the consumer with all details needed
+    for the Bill Details screen in the mobile app.
+    """
+    try:
+        # Get the consumer
+        consumer = Consumer.objects.select_related('barangay', 'purok').get(id=consumer_id)
+
+        # Get the latest bill for this consumer
+        bill = Bill.objects.filter(
+            consumer=consumer
+        ).select_related(
+            'current_reading', 'previous_reading'
+        ).order_by('-billing_period', '-created_at').first()
+
+        if not bill:
+            return JsonResponse({
+                'status': 'no_bill',
+                'message': 'No bill found for this consumer',
+                'consumer_id': consumer.id,
+                'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+                'id_number': consumer.id_number,
+            }, status=404)
+
+        # Get reader name from the meter reading source
+        reader_name = "System"
+        if bill.current_reading:
+            if bill.current_reading.source == 'mobile_app':
+                reader_name = "Field Staff (Mobile)"
+            elif bill.current_reading.source == 'manual':
+                reader_name = "Office Staff (Manual)"
+
+        return JsonResponse({
+            'status': 'success',
+
+            # Consumer Info
+            'consumer_id': consumer.id,
+            'id_number': consumer.id_number,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'address': f"{consumer.purok.name if consumer.purok else ''}, {consumer.barangay.name if consumer.barangay else ''}",
+            'account_type': consumer.usage_type,  # Residential or Commercial
+            'serial_number': consumer.serial_number,
+
+            # Bill Info
+            'bill_id': bill.id,
+            'billing_date': bill.billing_period.isoformat(),
+            'due_date': bill.due_date.isoformat(),
+            'bill_status': bill.status,
+
+            # Meter Readings
+            'previous_reading': bill.previous_reading.reading_value if bill.previous_reading else consumer.first_reading or 0,
+            'current_reading': bill.current_reading.reading_value if bill.current_reading else 0,
+            'reading_date': bill.current_reading.reading_date.isoformat() if bill.current_reading else None,
+            'consumption': bill.consumption,
+
+            # Tiered Rate Breakdown
+            'tier_breakdown': {
+                'tier1': {
+                    'range': '1-5 m³',
+                    'consumption': bill.tier1_consumption,
+                    'amount': float(bill.tier1_amount),
+                    'description': 'Minimum Charge'
+                },
+                'tier2': {
+                    'range': '6-10 m³',
+                    'consumption': bill.tier2_consumption,
+                    'rate': float(bill.tier2_rate),
+                    'amount': float(bill.tier2_amount)
+                },
+                'tier3': {
+                    'range': '11-20 m³',
+                    'consumption': bill.tier3_consumption,
+                    'rate': float(bill.tier3_rate),
+                    'amount': float(bill.tier3_amount)
+                },
+                'tier4': {
+                    'range': '21-50 m³',
+                    'consumption': bill.tier4_consumption,
+                    'rate': float(bill.tier4_rate),
+                    'amount': float(bill.tier4_amount)
+                },
+                'tier5': {
+                    'range': '51+ m³',
+                    'consumption': bill.tier5_consumption,
+                    'rate': float(bill.tier5_rate),
+                    'amount': float(bill.tier5_amount)
+                }
+            },
+
+            # Totals
+            'rate_per_cubic': float(bill.rate_per_cubic),  # Average rate
+            'total_amount': float(bill.total_amount),
+
+            # Penalty Info
+            'penalty_amount': float(bill.penalty_amount),
+            'penalty_waived': bill.penalty_waived,
+            'total_amount_due': float(bill.total_amount + bill.penalty_amount) if not bill.penalty_waived else float(bill.total_amount),
+
+            # Metadata
+            'reader_name': reader_name,
+            'printed_at': timezone.now().isoformat(),
+            'created_at': bill.created_at.isoformat(),
+        })
+
+    except Consumer.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Consumer not found'
+        }, status=404)
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching bill for consumer {consumer_id}: {e}", exc_info=True)
+        return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+# ============================================================================
+# API VIEW: GET ALL BILLS FOR A CONSUMER (History)
+# ============================================================================
+@csrf_exempt
+def api_get_consumer_bills(request, consumer_id):
+    """
+    API endpoint for Android app to get all bills for a specific consumer.
+
+    URL: /api/consumers/<consumer_id>/bills/
+
+    Returns list of all bills (history) for the consumer.
+    """
+    try:
+        consumer = Consumer.objects.get(id=consumer_id)
+
+        bills = Bill.objects.filter(
+            consumer=consumer
+        ).select_related(
+            'current_reading', 'previous_reading'
+        ).order_by('-billing_period', '-created_at')
+
+        bills_list = []
+        for bill in bills:
+            bills_list.append({
+                'bill_id': bill.id,
+                'billing_date': bill.billing_period.isoformat(),
+                'due_date': bill.due_date.isoformat(),
+                'consumption': bill.consumption,
+                'total_amount': float(bill.total_amount),
+                'penalty_amount': float(bill.penalty_amount),
+                'status': bill.status,
+                'previous_reading': bill.previous_reading.reading_value if bill.previous_reading else 0,
+                'current_reading': bill.current_reading.reading_value if bill.current_reading else 0,
+            })
+
+        return JsonResponse({
+            'status': 'success',
+            'consumer_id': consumer.id,
+            'consumer_name': f"{consumer.first_name} {consumer.last_name}",
+            'id_number': consumer.id_number,
+            'total_bills': len(bills_list),
+            'bills': bills_list
+        })
+
+    except Consumer.DoesNotExist:
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Consumer not found'
+        }, status=404)
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error fetching bills for consumer {consumer_id}: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
 
 
@@ -3046,11 +3868,26 @@ def confirm_all_readings(request, barangay_id):
 
             Bill.objects.create(
                 consumer=reading.consumer,
-                previous_reading=prev,  # Will be None for first reading
+                previous_reading=prev,
                 current_reading=reading,
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
@@ -3060,7 +3897,6 @@ def confirm_all_readings(request, barangay_id):
             reading.save()
             success_count += 1
         except Exception as e:
-            # Log the error for debugging
             import logging
             logging.error(f"Error confirming reading {reading.id}: {str(e)}")
             continue
@@ -3134,6 +3970,21 @@ def confirm_all_readings_global(request):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
@@ -3269,118 +4120,212 @@ def export_barangay_readings(request, barangay_id):
 def confirm_reading(request, reading_id):
     """
     Confirm a meter reading and generate a bill for the consumer.
-
-    TESTING: Click this to instantly generate a bill from a pending reading.
-
-    FLOW:
-    1. App submits reading → MeterReading (is_confirmed=False)
-    2. Admin clicks Confirm → THIS FUNCTION RUNS
-    3. Bill created with status='Pending' → Appears in payment page
-    4. Admin processes payment → Bill status='Paid'
-
-    If this is the first reading for the consumer, consumption is calculated
-    from consumer.first_reading (initial meter value at registration).
+    Supports both regular requests and AJAX requests.
     """
-    current = get_object_or_404(MeterReading, id=reading_id)
-    consumer = current.consumer
-    barangay_id = consumer.barangay.id
+    # Helper to check if AJAX request
+    def is_ajax_request():
+        return request.headers.get('X-Requested-With') == 'XMLHttpRequest' or \
+               'application/json' in request.headers.get('Content-Type', '') or \
+               'application/json' in request.headers.get('Accept', '')
 
-    # Check if the reading is already confirmed
-    if current.is_confirmed:
-        messages.error(request, "This reading is already confirmed and billed.")
+    # Helper to return error (AJAX or redirect)
+    def return_error(message, barangay_id):
+        if is_ajax_request():
+            return JsonResponse({'status': 'error', 'message': message}, status=400)
+        messages.error(request, message)
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    # Validate date - cannot confirm future readings
-    if current.reading_date > date.today():
-        messages.error(request, "Reading date cannot be in the future.")
-        return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-
-    # Find the previous confirmed reading for consumption calculation
-    previous = MeterReading.objects.filter(
-        consumer=consumer,
-        is_confirmed=True,
-        reading_date__lt=current.reading_date
-    ).order_by('-reading_date').first()
-
-    # ========================================================================
-    # CONSUMPTION CALCULATION
-    # ========================================================================
-    # consumption = current_reading - previous_reading
-    # If no previous reading, use consumer.first_reading as baseline
-    # ========================================================================
-    if previous:
-        # Use the previous confirmed reading for calculation
-        if current.reading_value < previous.reading_value:
-            messages.error(request, f"Current reading ({current.reading_value}) < previous ({previous.reading_value}).")
-            return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-        elif current.reading_value == previous.reading_value:
-            messages.warning(request, "Zero consumption. Bill will be generated.")
-        consumption = current.reading_value - previous.reading_value
-    else:
-        # FIRST READING for this consumer
-        # Use consumer's initial first_reading (set at registration) as baseline
-        baseline = consumer.first_reading if consumer.first_reading else 0
-        if current.reading_value < baseline:
-            messages.error(request, f"Current reading ({current.reading_value}) < initial reading ({baseline}).")
-            return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
-        consumption = current.reading_value - baseline
-
-    # ========================================================================
-    # BILL GENERATION - HAPPENS IMMEDIATELY ON CONFIRM
-    # ========================================================================
-    # Bill is created RIGHT NOW, not on a schedule.
-    # billing_day_of_month: Only affects billing_period date on the bill
-    # due_day_of_month: Only affects due_date on the bill
-    # These do NOT control WHEN bills are generated - that's instant on confirm.
-    # Uses TIERED RATE calculation from current SystemSettings.
-    # ========================================================================
     try:
-        from .utils import calculate_tiered_water_bill
+        current = get_object_or_404(MeterReading, id=reading_id)
+        consumer = current.consumer
+        barangay_id = consumer.barangay.id
 
+        # Check if already confirmed
+        if current.is_confirmed:
+            return return_error("This reading is already confirmed and billed.", barangay_id)
+
+        # Validate date
+        if current.reading_date > date.today():
+            return return_error("Reading date cannot be in the future.", barangay_id)
+
+        # Find previous confirmed reading
+        previous = MeterReading.objects.filter(
+            consumer=consumer,
+            is_confirmed=True,
+            reading_date__lt=current.reading_date
+        ).order_by('-reading_date').first()
+
+        # Calculate consumption
+        if previous:
+            if current.reading_value < previous.reading_value:
+                return return_error(f"Current reading ({current.reading_value}) cannot be less than previous ({previous.reading_value}).", barangay_id)
+            consumption = current.reading_value - previous.reading_value
+        else:
+            baseline = consumer.first_reading if consumer.first_reading else 0
+            if current.reading_value < baseline:
+                return return_error(f"Current reading ({current.reading_value}) cannot be less than initial ({baseline}).", barangay_id)
+            consumption = current.reading_value - baseline
+
+        # Generate bill
+        from .utils import calculate_tiered_water_bill
         setting = SystemSetting.objects.first()
 
-        # Get schedule settings (for billing period and due date)
-        if setting:
-            billing_day = setting.billing_day_of_month
-            due_day = setting.due_day_of_month
-        else:
-            billing_day = 1
-            due_day = 20
+        billing_day = setting.billing_day_of_month if setting else 1
+        due_day = setting.due_day_of_month if setting else 20
 
-        # Calculate bill using TIERED RATES (uses current SystemSettings)
         total_amount, average_rate, breakdown = calculate_tiered_water_bill(
             consumption=consumption,
             usage_type=consumer.usage_type,
             settings=setting
         )
 
-        # CREATE BILL IMMEDIATELY - This is the key action
         Bill.objects.create(
             consumer=consumer,
-            previous_reading=previous,  # Will be None if this is the first reading
+            previous_reading=previous,
             current_reading=current,
-            # billing_period: First day of billing month (just for display/records)
             billing_period=current.reading_date.replace(day=billing_day),
-            # due_date: When payment is due (from SystemSettings)
             due_date=current.reading_date.replace(day=due_day),
             consumption=consumption,
-            rate_per_cubic=average_rate,  # Store average rate for reference
-            fixed_charge=Decimal('0.00'),  # No fixed charge with tiered rates
+            tier1_consumption=breakdown['tier1_units'],
+            tier1_amount=breakdown['tier1_amount'],
+            tier2_consumption=breakdown['tier2_units'],
+            tier2_rate=breakdown['tier2_rate'],
+            tier2_amount=breakdown['tier2_amount'],
+            tier3_consumption=breakdown['tier3_units'],
+            tier3_rate=breakdown['tier3_rate'],
+            tier3_amount=breakdown['tier3_amount'],
+            tier4_consumption=breakdown['tier4_units'],
+            tier4_rate=breakdown['tier4_rate'],
+            tier4_amount=breakdown['tier4_amount'],
+            tier5_consumption=breakdown['tier5_units'],
+            tier5_rate=breakdown['tier5_rate'],
+            tier5_amount=breakdown['tier5_amount'],
+            rate_per_cubic=average_rate,
+            fixed_charge=Decimal('0.00'),
             total_amount=total_amount,
             status='Pending'
         )
 
-        # Mark the reading as confirmed
+        # Mark reading as confirmed
         current.is_confirmed = True
+        current.confirmed_by = request.user
+        current.confirmed_at = timezone.now()
         current.save()
 
-        messages.success(request, f"✅ Bill successfully generated for {get_consumer_display_id(consumer)}!")
+        success_message = f"Bill generated for {get_consumer_display_id(consumer)}!"
 
-    except Exception as e:
-        messages.error(request, f"Failed to generate bill: {str(e)}")
+        if is_ajax_request():
+            return JsonResponse({'status': 'success', 'message': success_message})
+
+        messages.success(request, f"✅ {success_message}")
         return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
 
-    return redirect('consumers:barangay_meter_readings', barangay_id=barangay_id)
+    except Exception as e:
+        error_message = f"Failed to generate bill: {str(e)}"
+        if is_ajax_request():
+            return JsonResponse({'status': 'error', 'message': error_message}, status=400)
+        messages.error(request, error_message)
+        return redirect('consumers:meter_reading_overview')
+
+
+@login_required
+def reject_reading(request, reading_id):
+    """
+    Reject a meter reading submitted with proof photo.
+    Only accessible via POST with a rejection reason.
+    """
+    if request.method != 'POST':
+        return JsonResponse({'status': 'error', 'message': 'Method not allowed'}, status=405)
+
+    reading = get_object_or_404(MeterReading, id=reading_id)
+
+    # Check if already processed
+    if reading.is_confirmed:
+        return JsonResponse({'status': 'error', 'message': 'This reading is already confirmed'}, status=400)
+    if reading.is_rejected:
+        return JsonResponse({'status': 'error', 'message': 'This reading is already rejected'}, status=400)
+
+    # Get rejection reason from request body
+    try:
+        data = json.loads(request.body)
+        reason = data.get('reason', '').strip()
+    except (json.JSONDecodeError, AttributeError):
+        reason = request.POST.get('reason', '').strip()
+
+    if not reason:
+        return JsonResponse({'status': 'error', 'message': 'Rejection reason is required'}, status=400)
+
+    # Mark as rejected
+    reading.is_rejected = True
+    reading.rejected_by = request.user
+    reading.rejected_at = timezone.now()
+    reading.rejection_reason = reason
+    reading.save()
+
+    # Create notification for the field staff who submitted
+    if reading.submitted_by:
+        Notification.objects.create(
+            user=reading.submitted_by,
+            notification_type='reading_rejected',
+            title='Reading Rejected',
+            message=f"Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected: {reason}",
+            redirect_url=''
+        )
+
+    return JsonResponse({
+        'status': 'success',
+        'message': f'Reading rejected for {reading.consumer.first_name} {reading.consumer.last_name}'
+    })
+
+
+@login_required
+def pending_readings_view(request):
+    """
+    Display all meter readings pending admin confirmation (with proof photos).
+    """
+    today = date.today()
+
+    # Get pending readings (not confirmed, not rejected, submitted with proof)
+    pending_readings = MeterReading.objects.filter(
+        is_confirmed=False,
+        is_rejected=False,
+        source='manual_with_proof'
+    ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-reading_date')
+
+    # Add previous reading info to each
+    for reading in pending_readings:
+        prev = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev:
+            reading.previous_reading = prev.reading_value
+            reading.consumption = reading.reading_value - prev.reading_value
+        else:
+            baseline = reading.consumer.first_reading or 0
+            reading.previous_reading = baseline
+            reading.consumption = reading.reading_value - baseline
+
+    # Stats
+    confirmed_today_count = MeterReading.objects.filter(
+        is_confirmed=True,
+        confirmed_at__date=today
+    ).count()
+
+    rejected_today_count = MeterReading.objects.filter(
+        is_rejected=True,
+        rejected_at__date=today
+    ).count()
+
+    context = {
+        'pending_readings': pending_readings,
+        'confirmed_today_count': confirmed_today_count,
+        'rejected_today_count': rejected_today_count,
+    }
+
+    return render(request, 'consumers/pending_readings.html', context)
 
 # consumers/views.py
 
@@ -3453,6 +4398,21 @@ def confirm_selected_readings(request, barangay_id):
                 billing_period=reading.reading_date.replace(day=billing_day),
                 due_date=reading.reading_date.replace(day=due_day),
                 consumption=cons,
+                # Store ACTUAL tier breakdown
+                tier1_consumption=breakdown['tier1_units'],
+                tier1_amount=breakdown['tier1_amount'],
+                tier2_consumption=breakdown['tier2_units'],
+                tier2_rate=breakdown['tier2_rate'],
+                tier2_amount=breakdown['tier2_amount'],
+                tier3_consumption=breakdown['tier3_units'],
+                tier3_rate=breakdown['tier3_rate'],
+                tier3_amount=breakdown['tier3_amount'],
+                tier4_consumption=breakdown['tier4_units'],
+                tier4_rate=breakdown['tier4_rate'],
+                tier4_amount=breakdown['tier4_amount'],
+                tier5_consumption=breakdown['tier5_units'],
+                tier5_rate=breakdown['tier5_rate'],
+                tier5_amount=breakdown['tier5_amount'],
                 rate_per_cubic=average_rate,
                 fixed_charge=Decimal('0.00'),
                 total_amount=total,
@@ -3782,11 +4742,11 @@ def user_login_history(request):
         return render(request, 'consumers/403.html', status=403)
 
     # Get filter parameters
-    search_query = request.GET.get('search', '').strip()
-    status_filter = request.GET.get('status', '')
-    method_filter = request.GET.get('method', '')
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
+    search_query: str = request.GET.get('search', '').strip()
+    status_filter: str = request.GET.get('status', '')
+    method_filter: str = request.GET.get('method', '')
+    date_from: str = request.GET.get('date_from', '')
+    date_to: str = request.GET.get('date_to', '')
 
     # Base query - prefetch activities for session tracking
     login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities').all()
@@ -4221,7 +5181,7 @@ def delete_user(request, user_id):
     RESTRICTED: Superuser only - Admins cannot delete users.
     User data is preserved in ArchivedUser model.
     """
-
+    
     from .models import ArchivedUser
 
     user = get_object_or_404(User, id=user_id)
@@ -4278,7 +5238,6 @@ def archived_users(request):
     }
 
     return render(request, 'consumers/archived_users.html', context)
-
 
 
 @login_required
