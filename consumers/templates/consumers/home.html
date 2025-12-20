@@ -540,8 +540,8 @@ function printBillStatus() {
     // Calculate total amount
     const totalAmount = filteredData.reduce((sum, item) => sum + (parseFloat(item.latest_bill_amount) || 0), 0);
 
-    // Create print window
-    const printWindow = window.open('', '_blank');
+    // Create print window as popup (not full tab)
+    const printWindow = window.open('', 'PrintWindow', 'width=800,height=600,scrollbars=yes');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -645,6 +645,14 @@ function printBillStatus() {
                 <button onclick="window.print()" style="background: #003366; color: white; padding: 10px 25px; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print Report</button>
                 <button onclick="window.close()" style="background: #eee; color: #333; padding: 10px 25px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
             </div>
+            <script>
+                // Automatically trigger print dialog when popup opens
+                window.onload = function() {
+                    setTimeout(function() {
+                        window.print();
+                    }, 500);
+                };
+            </script>
         </body>
         </html>
     `);
