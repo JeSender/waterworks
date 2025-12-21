@@ -279,6 +279,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ========== Consumer Bill Status Table ==========
     const consumerBillStatusData = {{ consumer_bill_status|safe }};
+    console.log('DEBUG: Consumer Bill Status Data:', consumerBillStatusData);
+    console.log('DEBUG: Is Array?', Array.isArray(consumerBillStatusData));
+    console.log('DEBUG: Length:', consumerBillStatusData ? consumerBillStatusData.length : 'null/undefined');
 
     const barangayFilter = document.getElementById('barangayFilter');
     const statusFilter = document.getElementById('statusFilter');
@@ -352,12 +355,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function renderBillStatusTable() {
+        console.log('DEBUG: renderBillStatusTable() called');
+
         if (!consumerBillStatusData || !Array.isArray(consumerBillStatusData)) {
+            console.error('DEBUG: Data check failed!', {
+                exists: !!consumerBillStatusData,
+                isArray: Array.isArray(consumerBillStatusData)
+            });
             return;
         }
 
         const barangayFilterValue = barangayFilter.value;
         const statusFilterValue = statusFilter.value;
+
+        console.log('DEBUG: Filters -', {barangay: barangayFilterValue, status: statusFilterValue});
 
         let filteredData = consumerBillStatusData;
 
