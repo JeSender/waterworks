@@ -278,10 +278,16 @@ document.addEventListener('DOMContentLoaded', function() {
     Chart.defaults.color = '#6b7280';
 
     // ========== Consumer Bill Status Table ==========
-    const consumerBillStatusData = {{ consumer_bill_status|safe }};
-    console.log('DEBUG: Consumer Bill Status Data:', consumerBillStatusData);
-    console.log('DEBUG: Is Array?', Array.isArray(consumerBillStatusData));
-    console.log('DEBUG: Length:', consumerBillStatusData ? consumerBillStatusData.length : 'null/undefined');
+    let consumerBillStatusData = [];
+    try {
+        consumerBillStatusData = {{ consumer_bill_status|safe }} || [];
+        console.log('DEBUG: Consumer Bill Status Data:', consumerBillStatusData);
+        console.log('DEBUG: Is Array?', Array.isArray(consumerBillStatusData));
+        console.log('DEBUG: Length:', consumerBillStatusData.length);
+    } catch (error) {
+        console.error('DEBUG: Error parsing consumer data:', error);
+        consumerBillStatusData = [];
+    }
 
     const barangayFilter = document.getElementById('barangayFilter');
     const statusFilter = document.getElementById('statusFilter');
