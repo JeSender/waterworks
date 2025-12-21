@@ -2546,7 +2546,6 @@ def password_reset_complete(request):
 @login_required
 def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
-    from datetime import timedelta
     from .models import Notification
 
     # Auto-cleanup: Delete notifications older than 1 month
@@ -2647,16 +2646,13 @@ def home(request):
     all_barangays = Barangay.objects.all().order_by('name')
 
     # Consumer Bill Status Data - Get latest bill for each consumer
-    from django.db.models import Subquery, OuterRef
     latest_bill_subquery = Bill.objects.filter(
         consumer=OuterRef('pk')
     ).order_by('-billing_period').values('id')[:1]
 
-    consumers_with_bills = Consumer.objects.filter(
-        status='active'
-    ).annotate(
+    consumers_with_bills = Consumer.objects.all().annotate(
         latest_bill_id=Subquery(latest_bill_subquery)
-    ).select_related('barangay')
+    ).select_related('barangay').order_by('barangay__name', 'last_name', 'first_name')
 
     consumer_bill_status = []
     for consumer in consumers_with_bills:
@@ -2709,7 +2705,6 @@ def home(request):
         consumption_data.append(float(item['total_consumption'] or 0))
 
     # Create a date object for proper month/year formatting in template
-    from datetime import date
     selected_date = date(selected_year, selected_month, 1)
 
     context = {

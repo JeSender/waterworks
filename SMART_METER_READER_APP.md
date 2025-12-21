@@ -198,8 +198,10 @@ import retrofit2.converter.gson.GsonConverterFactory;
 import java.util.concurrent.TimeUnit;
 
 public class ApiClient {
-    // IMPORTANT: Change this to your Render deployment URL
-    private static final String BASE_URL = "https://your-app.onrender.com/";
+    // ⚠️ IMPORTANT: Change this to your actual Render deployment URL!
+    // Example: "https://balilihan-waterworks.onrender.com/"
+    // The app will NOT work with localhost - must use live server URL
+    private static final String BASE_URL = "https://YOUR-RENDER-APP-NAME.onrender.com/";
 
     private static Retrofit retrofit = null;
     private static TokenManager tokenManager;
