@@ -362,12 +362,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function renderBillStatusTable() {
         console.log('DEBUG: renderBillStatusTable() called');
+        console.log('DEBUG: consumerBillStatusData type:', typeof consumerBillStatusData);
+        console.log('DEBUG: consumerBillStatusData value:', consumerBillStatusData);
 
         if (!consumerBillStatusData || !Array.isArray(consumerBillStatusData)) {
             console.error('DEBUG: Data check failed!', {
                 exists: !!consumerBillStatusData,
-                isArray: Array.isArray(consumerBillStatusData)
+                isArray: Array.isArray(consumerBillStatusData),
+                type: typeof consumerBillStatusData
             });
+            // Show error message in table
+            tableBody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="text-center text-danger-600 py-8">
+                        <i class="bi bi-exclamation-triangle text-3xl block mb-2"></i>
+                        <strong>Error: Consumer data is not valid</strong><br>
+                        <small>Check browser console for details</small>
+                    </td>
+                </tr>
+            `;
             return;
         }
 
