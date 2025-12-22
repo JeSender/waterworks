@@ -158,65 +158,23 @@
             <div class="flex items-center justify-between">
                 <h3 class="text-base font-bold text-white flex items-center gap-2">
                     <i class="bi bi-people-fill"></i>
-                    Consumer Bill Status Report
+                    Consumer Bill Status by Barangay
                 </h3>
-                <div class="flex items-center gap-3">
+                <div class="flex items-center gap-4">
                     <div class="flex items-center gap-2">
-                        <label for="barangayFilter" class="text-white text-sm">Barangay:</label>
-                        <select id="barangayFilter" class="px-3 py-2 text-sm border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
+                        <label for="barangayFilter" class="text-white text-sm">Filter:</label>
+                        <select id="barangayFilter" class="px-3 py-2 text-sm border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
                             <option value="all" class="text-dark-900">All Barangays</option>
                             {% for barangay in all_barangays %}
                             <option value="{{ barangay.id }}" data-name="{{ barangay.name }}" class="text-dark-900">{{ barangay.name }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="flex items-center gap-2">
-                        <label for="statusFilter" class="text-white text-sm">Status:</label>
-                        <select id="statusFilter" class="px-3 py-2 text-sm border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-white bg-white/20 text-white">
-                            <option value="all" class="text-dark-900">All Status</option>
-                            <option value="Pending" class="text-dark-900">Pending</option>
-                            <option value="Paid" class="text-dark-900">Paid</option>
-                            <option value="Overdue,Unpaid" class="text-dark-900">Delinquent</option>
-                            <option value="No Bill" class="text-dark-900">No Bill</option>
-                        </select>
-                    </div>
-                    <button onclick="printBillStatus()" class="px-3 py-2 text-sm font-medium bg-white/20 hover:bg-white/30 text-white rounded-lg transition-colors flex items-center gap-2">
+                    <button onclick="printBillStatus()" class="px-4 py-2 text-sm font-medium bg-white/20 hover:bg-white/30 text-white rounded-xl transition-colors flex items-center gap-2">
                         <i class="bi bi-printer-fill"></i>
-                        Print
+                        Print Report
                     </button>
                 </div>
-            </div>
-        </div>
-
-        <!-- Statistics Summary Bar -->
-        <div class="grid grid-cols-5 gap-3 px-6 py-3 bg-light-50 border-b border-light-200">
-            <div class="text-center">
-                <div class="text-xs text-dark-500 font-medium mb-1">Total</div>
-                <div id="statTotal" class="text-lg font-bold text-dark-900">0</div>
-            </div>
-            <div class="text-center">
-                <div class="text-xs text-success-600 font-medium mb-1 flex items-center justify-center gap-1">
-                    <i class="bi bi-check-circle-fill"></i>Paid
-                </div>
-                <div id="statPaid" class="text-lg font-bold text-success-700">0</div>
-            </div>
-            <div class="text-center">
-                <div class="text-xs text-warning-600 font-medium mb-1 flex items-center justify-center gap-1">
-                    <i class="bi bi-clock-fill"></i>Pending
-                </div>
-                <div id="statPending" class="text-lg font-bold text-warning-700">0</div>
-            </div>
-            <div class="text-center">
-                <div class="text-xs text-danger-600 font-medium mb-1 flex items-center justify-center gap-1">
-                    <i class="bi bi-exclamation-triangle-fill"></i>Delinquent
-                </div>
-                <div id="statDelinquent" class="text-lg font-bold text-danger-700">0</div>
-            </div>
-            <div class="text-center">
-                <div class="text-xs text-dark-500 font-medium mb-1 flex items-center justify-center gap-1">
-                    <i class="bi bi-dash-circle"></i>No Bill
-                </div>
-                <div id="statNoBill" class="text-lg font-bold text-dark-600">0</div>
             </div>
         </div>
         <div class="overflow-x-auto" style="max-height: 400px; overflow-y: auto;">
@@ -247,14 +205,8 @@
 </div>
 {% endblock %}
 
-{% block extra_css %}
-{% endblock %}
-
 {% block extra_js %}
 <script>
-// Global variable to store current filtered data (must be outside DOMContentLoaded for print function)
-let currentFilteredData = [];
-
 document.addEventListener('DOMContentLoaded', function() {
     // Display real-time current date
     function updateCurrentDate() {
@@ -278,19 +230,8 @@ document.addEventListener('DOMContentLoaded', function() {
     Chart.defaults.color = '#6b7280';
 
     // ========== Consumer Bill Status Table ==========
-    let consumerBillStatusData = [];
-    try {
-        consumerBillStatusData = {{ consumer_bill_status|safe }} || [];
-        console.log('DEBUG: Consumer Bill Status Data:', consumerBillStatusData);
-        console.log('DEBUG: Is Array?', Array.isArray(consumerBillStatusData));
-        console.log('DEBUG: Length:', consumerBillStatusData.length);
-    } catch (error) {
-        console.error('DEBUG: Error parsing consumer data:', error);
-        consumerBillStatusData = [];
-    }
-
+    const consumerBillStatusData = {{ consumer_bill_status|safe }};
     const barangayFilter = document.getElementById('barangayFilter');
-    const statusFilter = document.getElementById('statusFilter');
     const tableBody = document.getElementById('consumerBillStatusBody');
     const visibleCountEl = document.getElementById('visibleCount');
     const totalCountEl = document.getElementById('totalCount');
@@ -337,76 +278,11 @@ document.addEventListener('DOMContentLoaded', function() {
         return '₱' + parseFloat(amount).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    function updateStatistics(data) {
-        const stats = {
-            total: data.length,
-            paid: 0,
-            pending: 0,
-            delinquent: 0,
-            noBill: 0
-        };
-
-        data.forEach(item => {
-            if (item.payment_status === 'Paid') stats.paid++;
-            else if (item.payment_status === 'Pending') stats.pending++;
-            else if (item.payment_status === 'Overdue' || item.payment_status === 'Unpaid') stats.delinquent++;
-            else if (item.payment_status === 'No Bill') stats.noBill++;
-        });
-
-        document.getElementById('statTotal').textContent = stats.total;
-        document.getElementById('statPaid').textContent = stats.paid;
-        document.getElementById('statPending').textContent = stats.pending;
-        document.getElementById('statDelinquent').textContent = stats.delinquent;
-        document.getElementById('statNoBill').textContent = stats.noBill;
-    }
-
-    function renderBillStatusTable() {
-        console.log('DEBUG: renderBillStatusTable() called');
-        console.log('DEBUG: consumerBillStatusData type:', typeof consumerBillStatusData);
-        console.log('DEBUG: consumerBillStatusData value:', consumerBillStatusData);
-
-        if (!consumerBillStatusData || !Array.isArray(consumerBillStatusData)) {
-            console.error('DEBUG: Data check failed!', {
-                exists: !!consumerBillStatusData,
-                isArray: Array.isArray(consumerBillStatusData),
-                type: typeof consumerBillStatusData
-            });
-            // Show error message in table
-            tableBody.innerHTML = `
-                <tr>
-                    <td colspan="6" class="text-center text-danger-600 py-8">
-                        <i class="bi bi-exclamation-triangle text-3xl block mb-2"></i>
-                        <strong>Error: Consumer data is not valid</strong><br>
-                        <small>Check browser console for details</small>
-                    </td>
-                </tr>
-            `;
-            return;
-        }
-
-        const barangayFilterValue = barangayFilter.value;
-        const statusFilterValue = statusFilter.value;
-
-        console.log('DEBUG: Filters -', {barangay: barangayFilterValue, status: statusFilterValue});
-
+    function renderBillStatusTable(filter = 'all') {
         let filteredData = consumerBillStatusData;
-
-        // Apply barangay filter
-        if (barangayFilterValue !== 'all') {
-            filteredData = filteredData.filter(item => item.barangay_id == barangayFilterValue);
+        if (filter !== 'all') {
+            filteredData = consumerBillStatusData.filter(item => item.barangay_id == filter);
         }
-
-        // Apply status filter
-        if (statusFilterValue !== 'all') {
-            const statuses = statusFilterValue.split(',');
-            filteredData = filteredData.filter(item => statuses.includes(item.payment_status));
-        }
-
-        // Store filtered data for print
-        currentFilteredData = filteredData;
-
-        // Update statistics
-        updateStatistics(filteredData);
 
         visibleCountEl.textContent = filteredData.length;
         totalCountEl.textContent = consumerBillStatusData.length;
@@ -417,7 +293,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 <tr>
                     <td colspan="6" class="text-center text-dark-400 py-8">
                         <i class="bi bi-inbox text-3xl block mb-2 opacity-30"></i>
-                        No consumers found for the selected filters
+                        No consumers found for the selected barangay
                     </td>
                 </tr>
             `;
@@ -439,10 +315,10 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Initialize table and attach event listeners
     renderBillStatusTable();
-    barangayFilter.addEventListener('change', renderBillStatusTable);
-    statusFilter.addEventListener('change', renderBillStatusTable);
+    barangayFilter.addEventListener('change', function() {
+        renderBillStatusTable(this.value);
+    });
     // ========== End Consumer Bill Status Table ==========
 
     // Animate metric values
@@ -468,6 +344,14 @@ document.addEventListener('DOMContentLoaded', function() {
             animateValue(el, 0, finalValue, 800);
         }, 100 + (index * 100));
     });
+
+    // Calculate total revenue
+    const revenueData = {{ revenue_data|safe }};
+    const totalRevenue = revenueData.reduce((sum, value) => sum + value, 0);
+    document.getElementById('totalRevenue').textContent = '₱' + totalRevenue.toLocaleString('en-PH', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
 });
 
 // Generate Report Function
@@ -480,34 +364,29 @@ function generateReport() {
     showToast('info', `Generating ${monthNames[month]} ${year} report...`, 2000);
 
     setTimeout(() => {
-        window.open(`/delinquent-report/print/?month=${month}&year=${year}`, 'DelinquentReport', 'width=800,height=600,scrollbars=yes');
-        showToast('success', 'Report opened in popup window');
+        window.open(`/delinquent-report/print/?month=${month}&year=${year}`, '_blank');
+        showToast('success', 'Report opened in new tab');
     }, 1000);
 }
 
 // Print Bill Status Report Function
 function printBillStatus() {
-    // Use the current filtered data (already filtered by barangay and status)
-    const filteredData = currentFilteredData;
+    const barangayFilter = document.getElementById('barangayFilter');
+    const selectedValue = barangayFilter.value;
+    const selectedOption = barangayFilter.options[barangayFilter.selectedIndex];
+    const barangayName = selectedValue === 'all' ? 'All Barangays' : selectedOption.dataset.name;
 
-    if (filteredData.length === 0) {
-        alert('No data to print. Please adjust your filters.');
-        return;
+    // Get filtered data
+    const consumerBillStatusData = {{ consumer_bill_status|safe }};
+    let filteredData = consumerBillStatusData;
+    if (selectedValue !== 'all') {
+        filteredData = consumerBillStatusData.filter(item => item.barangay_id == selectedValue);
     }
 
-    // Get filter labels
-    const barangayFilter = document.getElementById('barangayFilter');
-    const statusFilter = document.getElementById('statusFilter');
-    const barangayName = barangayFilter.options[barangayFilter.selectedIndex].text;
-
-    const statusNames = {
-        'all': 'All Status',
-        'Pending': 'Pending Only',
-        'Paid': 'Paid Only',
-        'Overdue,Unpaid': 'Delinquent Only',
-        'No Bill': 'No Bill Only'
-    };
-    const statusLabel = statusNames[statusFilter.value] || 'All Status';
+    if (filteredData.length === 0) {
+        showToast('warning', 'No consumers found for the selected barangay.');
+        return;
+    }
 
     // Format helpers
     function formatDate(dateStr) {
@@ -567,8 +446,8 @@ function printBillStatus() {
     // Calculate total amount
     const totalAmount = filteredData.reduce((sum, item) => sum + (parseFloat(item.latest_bill_amount) || 0), 0);
 
-    // Create print window as popup (not full tab)
-    const printWindow = window.open('', 'PrintWindow', 'width=800,height=600,scrollbars=yes');
+    // Create print window
+    const printWindow = window.open('', '_blank');
     printWindow.document.write(`
         <!DOCTYPE html>
         <html lang="en">
@@ -607,8 +486,7 @@ function printBillStatus() {
                         <p style="font-size: 10px; color: #555; margin: 0;">Republic of the Philippines | Province of Bohol</p>
                         <h1 style="font-size: 14px; font-weight: 700; color: #003366; margin: 2px 0;">MUNICIPALITY OF BALILIHAN</h1>
                         <p style="font-size: 11px; font-weight: 600; color: #0055aa; margin: 0;">Waterworks System</p>
-                        <p style="font-size: 10px; font-weight: 600; color: #333; margin-top: 3px; background: #eee; padding: 2px 10px; border-radius: 8px; display: inline-block;">Consumer Bill Status Report</p>
-                        <p style="font-size: 9px; color: #666; margin-top: 2px;">${barangayName} | ${statusLabel}</p>
+                        <p style="font-size: 10px; font-weight: 600; color: #333; margin-top: 3px; background: #eee; padding: 2px 10px; border-radius: 8px; display: inline-block;">Consumer Bill Status Report: ${barangayName}</p>
                     </div>
                     <img src="/static/consumers/images/logo.jpg" alt="Waterworks Logo" style="width: 55px; height: 55px; object-fit: cover; border-radius: 50%; border: 2px solid #003366;">
                 </div>
@@ -672,14 +550,6 @@ function printBillStatus() {
                 <button onclick="window.print()" style="background: #003366; color: white; padding: 10px 25px; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print Report</button>
                 <button onclick="window.close()" style="background: #eee; color: #333; padding: 10px 25px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
             </div>
-            <script>
-                // Automatically trigger print dialog when popup opens
-                window.onload = function() {
-                    setTimeout(function() {
-                        window.print();
-                    }, 500);
-                };
-            </script>
         </body>
         </html>
     `);
