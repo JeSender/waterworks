@@ -40,11 +40,10 @@
             background: rgba(0, 0, 0, 0.4);
             z-index: -1;
         }
-        /* Transparent login card with glassmorphism effect */
+        /* Transparent login card without blur */
         .login-card {
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
         /* White text for all labels and inputs */
         .login-card label {
@@ -74,12 +73,9 @@
 </head>
 <body class="flex items-center justify-center p-4">
     <div class="w-full max-w-sm">
-        <!-- Logo & Title -->
+        <!-- Title -->
         <div class="text-center mb-8">
-            <div class="w-20 h-20 mx-auto mb-4 bg-white rounded-full p-1.5 shadow-lg">
-                <img src="{% static 'consumers/images/logo.jpg' %}" alt="Logo" class="w-full h-full rounded-full object-cover">
-            </div>
-            <h1 class="text-2xl font-bold text-white">Balilihan Waterworks</h1>
+            <h1 class="text-3xl font-bold text-white">Balilihan Waterworks</h1>
         </div>
 
         <!-- Login Card -->
