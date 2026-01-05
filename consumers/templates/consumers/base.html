@@ -595,7 +595,7 @@
                     type="button"
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown', event)">
-                <!-- Role-based Icon with Letter -->
+                <!-- Role-based Icon with Letter (Superadmin & Cashier only - Field Staff use mobile app) -->
                 {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
                     <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
                          style="background: linear-gradient(135deg, #dc2626, #ef4444);">
@@ -608,12 +608,6 @@
                         C
                     </div>
                     <span class="text-dark-900 text-sm font-semibold">Cashier</span>
-                {% elif user.staffprofile.role == 'field_staff' %}
-                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
-                         style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
-                        F
-                    </div>
-                    <span class="text-dark-900 text-sm font-semibold">Field Staff</span>
                 {% else %}
                     <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
                          style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
@@ -625,7 +619,7 @@
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
                     <div class="flex items-center gap-3 mb-2">
-                        <!-- Role-based Icon in Dropdown -->
+                        <!-- Role-based Icon in Dropdown (Superadmin & Cashier only - Field Staff use mobile app) -->
                         {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
                             <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
                                  style="background: linear-gradient(135deg, #dc2626, #ef4444);">
@@ -635,11 +629,6 @@
                             <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
                                  style="background: linear-gradient(135deg, #059669, #10b981);">
                                 C
-                            </div>
-                        {% elif user.staffprofile.role == 'field_staff' %}
-                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
-                                 style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
-                                F
                             </div>
                         {% else %}
                             <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
