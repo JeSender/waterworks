@@ -595,21 +595,58 @@
                     type="button"
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown', event)">
-                <!-- Admin Icon with Letter A -->
-                <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
-                     style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                    A
-                </div>
-                <!-- Admin Text -->
-                <span class="text-dark-900 text-sm font-semibold">Admin</span>
+                <!-- Role-based Icon with Letter -->
+                {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                         style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                        S
+                    </div>
+                    <span class="text-dark-900 text-sm font-semibold">Superadmin</span>
+                {% elif user.staffprofile.role == 'cashier' %}
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                         style="background: linear-gradient(135deg, #059669, #10b981);">
+                        C
+                    </div>
+                    <span class="text-dark-900 text-sm font-semibold">Cashier</span>
+                {% elif user.staffprofile.role == 'field_staff' %}
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                         style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                        F
+                    </div>
+                    <span class="text-dark-900 text-sm font-semibold">Field Staff</span>
+                {% else %}
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                         style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                        U
+                    </div>
+                    <span class="text-dark-900 text-sm font-semibold">User</span>
+                {% endif %}
             </button>
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
                     <div class="flex items-center gap-3 mb-2">
-                        <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
-                             style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
-                            A
-                        </div>
+                        <!-- Role-based Icon in Dropdown -->
+                        {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                                 style="background: linear-gradient(135deg, #dc2626, #ef4444);">
+                                S
+                            </div>
+                        {% elif user.staffprofile.role == 'cashier' %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                                 style="background: linear-gradient(135deg, #059669, #10b981);">
+                                C
+                            </div>
+                        {% elif user.staffprofile.role == 'field_staff' %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                                 style="background: linear-gradient(135deg, #2563eb, #3b82f6);">
+                                F
+                            </div>
+                        {% else %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                                 style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                                U
+                            </div>
+                        {% endif %}
                         <div class="flex-1">
                             <div class="font-bold text-dark-900">{{ request.user.get_full_name|default:request.user.username }}</div>
                         </div>
