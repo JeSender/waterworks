@@ -392,8 +392,8 @@ function generateReport() {
     showToast('info', `Generating ${monthNames[month]} ${year} report...`, 2000);
 
     setTimeout(() => {
-        window.open(`/delinquent-report/print/?month=${month}&year=${year}`, '_blank');
-        showToast('success', 'Report opened in new tab');
+        // Navigate to print page in same tab
+        window.location.href = `/delinquent-report/print/?month=${month}&year=${year}`;
     }, 1000);
 }
 
@@ -479,9 +479,8 @@ function printBillStatus() {
     // Calculate total amount
     const totalAmount = filteredData.reduce((sum, item) => sum + (parseFloat(item.latest_bill_amount) || 0), 0);
 
-    // Create print window
-    const printWindow = window.open('', '_blank');
-    printWindow.document.write(`
+    // Create print content in a hidden div
+    const printContent = `
         <!DOCTYPE html>
         <html lang="en">
         <head>
@@ -582,12 +581,44 @@ function printBillStatus() {
             <!-- Action Buttons -->
             <div class="no-print" style="text-align: center; padding: 15px;">
                 <button onclick="window.print()" style="background: #003366; color: white; padding: 10px 25px; border: none; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer; margin-right: 8px;">Print Report</button>
-                <button onclick="window.close()" style="background: #eee; color: #333; padding: 10px 25px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
+                <button onclick="closePrintView()" style="background: #eee; color: #333; padding: 10px 25px; border: 1px solid #ccc; border-radius: 5px; font-size: 12px; font-weight: 600; cursor: pointer;">Close</button>
             </div>
         </body>
         </html>
-    `);
-    printWindow.document.close();
+    `;
+
+    // Create or get print container
+    let printContainer = document.getElementById('printContainer');
+    if (!printContainer) {
+        printContainer = document.createElement('div');
+        printContainer.id = 'printContainer';
+        printContainer.style.display = 'none';
+        document.body.appendChild(printContainer);
+    }
+
+    // Set content
+    printContainer.innerHTML = printContent;
+
+    // Hide main content and show print content
+    document.querySelector('.main-content').style.display = 'none';
+    printContainer.style.display = 'block';
+
+    // Trigger print dialog
+    window.print();
 }
+
+// Function to close print view and restore main content
+function closePrintView() {
+    const printContainer = document.getElementById('printContainer');
+    if (printContainer) {
+        printContainer.style.display = 'none';
+    }
+    document.querySelector('.main-content').style.display = 'block';
+}
+
+// Restore main content after printing (when user cancels or completes print)
+window.addEventListener('afterprint', function() {
+    closePrintView();
+});
 </script>
 {% endblock %}
