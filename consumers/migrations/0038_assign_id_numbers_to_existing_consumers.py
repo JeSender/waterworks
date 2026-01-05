@@ -18,7 +18,7 @@ def assign_id_numbers(apps, schema_editor):
     ) | Consumer.objects.filter(id_number='')
 
     if not consumers_without_id.exists():
-        print("✅ All consumers already have id_numbers")
+        print("All consumers already have id_numbers")
         return
 
     # Group by month of creation
@@ -58,10 +58,10 @@ def assign_id_numbers(apps, schema_editor):
                 break
             new_seq += 1
             if new_seq > 9999:
-                print(f"⚠️ ID number limit reached for {year_month}")
+                print(f"WARNING: ID number limit reached for {year_month}")
                 break
 
-    print(f"✅ Assigned id_numbers to {updated_count} consumers")
+    print(f"Assigned id_numbers to {updated_count} consumers")
 
 
 def reverse_migration(apps, schema_editor):

@@ -30,7 +30,7 @@ def update_tiered_rates(apps, schema_editor):
         setting.commercial_tier5_rate = Decimal('30.00')        # Tier 5 (51+ m³)
 
         setting.save()
-        print("✅ SystemSetting tiered rates updated successfully!")
+        print("SystemSetting tiered rates updated successfully!")
     else:
         # Create new SystemSetting with correct rates
         SystemSetting.objects.create(
@@ -45,7 +45,7 @@ def update_tiered_rates(apps, schema_editor):
             commercial_tier4_rate=Decimal('22.00'),
             commercial_tier5_rate=Decimal('30.00'),
         )
-        print("✅ SystemSetting created with correct tiered rates!")
+        print("SystemSetting created with correct tiered rates!")
 
 
 def reverse_migration(apps, schema_editor):

@@ -5172,13 +5172,9 @@ def edit_user(request, user_id):
 @user_management_permission_required
 def delete_user(request, user_id):
     """
-    Archive a user instead of permanently deleting.
+    Delete a user.
     RESTRICTED: Superuser only - Admins cannot delete users.
-    User data is preserved in ArchivedUser model.
     """
-    
-    from .models import ArchivedUser
-
     user = get_object_or_404(User, id=user_id)
 
     # Prevent self-deletion
@@ -5189,70 +5185,13 @@ def delete_user(request, user_id):
     if request.method == 'POST':
         username = user.username
 
-        # Archive the user before deletion
-        ArchivedUser.archive_user(
-            user=user,
-            archived_by=request.user,
-            reason="User deleted by admin"
-        )
-
-        # Now delete the actual user
+        # Delete the user
         user.delete()
 
-        messages.success(request, f"User '{username}' has been archived successfully!")
+        messages.success(request, f"User '{username}' has been deleted successfully!")
         return redirect('consumers:user_management')
 
     return redirect('consumers:user_management')
-
-
-@login_required
-@user_management_permission_required
-def archived_users(request):
-    """
-    View list of archived/deleted users.
-    RESTRICTED: Superuser only.
-    """
-    from .models import ArchivedUser
-
-    # Get all archived users
-    archived_list = ArchivedUser.objects.all().order_by('-archived_at')
- 
-
-    # Pagination
-    paginator = Paginator(archived_list, 20)
-    page = request.GET.get('page', 1)
-    try:
-        archived_users_page = paginator.page(page)
-    except:
-        archived_users_page = paginator.page(1)
-
-    context = {
-        'archived_users': archived_users_page,
-        'search_query': search_query,
-        'total_archived': ArchivedUser.objects.count(),
-    }
-
-    return render(request, 'consumers/archived_users.html', context)
-
-
-@login_required
-@user_management_permission_required
-def permanently_delete_archived_user(request, archived_id):
-    """
-    Permanently delete an archived user record.
-    RESTRICTED: Superuser only.
-    """
-    from .models import ArchivedUser
-
-    archived_user = get_object_or_404(ArchivedUser, id=archived_id)
-
-    if request.method == 'POST':
-        username = archived_user.username
-        archived_user.delete()
-        messages.success(request, f"Archived user '{username}' has been permanently deleted.")
-        return redirect('consumers:archived_users')
-
-    return redirect('consumers:archived_users')
 
 
 @login_required
