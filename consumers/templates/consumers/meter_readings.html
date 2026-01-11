@@ -202,7 +202,7 @@
                 </thead>
                 <tbody class="divide-y divide-light-200">
                     {% for item in readings %}
-                    <tr class="hover:bg-light-50 transition-colors duration-150">
+                    <tr class="hover:bg-light-50 transition-colors duration-150" id="reading-row-{{ item.reading.id }}">
                         <td class="px-4 py-4">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -272,10 +272,19 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-4 text-center">
-                            <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}"
-                               class="text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">
-                                <i class="bi bi-eye-fill"></i> View
-                            </a>
+                            {% if not item.reading.is_confirmed %}
+                                <!-- Pending Reading - Show Review & Confirm Button -->
+                                <button onclick="openConfirmModal({{ item.reading.id }}, '{{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}', '{{ item.reading.consumer.id_number }}', '{{ item.reading.consumer.barangay.name }}', {{ item.reading.reading_value }}, {% if item.prev_reading %}{{ item.prev_reading.reading_value }}{% else %}0{% endif %}, {% if item.consumption %}{{ item.consumption }}{% else %}0{% endif %}, '{{ item.reading.proof_image_url|default:"" }}')"
+                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-success-600 text-white hover:bg-success-700 transition-colors">
+                                    <i class="bi bi-eye-fill"></i> Review & Confirm
+                                </button>
+                            {% else %}
+                                <!-- Confirmed Reading - Show View Consumer Link -->
+                                <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}"
+                                   class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">
+                                    <i class="bi bi-eye-fill"></i> View
+                                </a>
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -338,10 +347,273 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Confirm Reading Modal -->
+<div id="confirmModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeConfirmModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+            <!-- Header -->
+            <div class="bg-success-600 px-6 py-4 text-white">
+                <h3 class="font-bold text-lg" id="modalName">Consumer Name</h3>
+                <p class="text-sm text-success-100" id="modalInfo">ID • Barangay</p>
+            </div>
+
+            <!-- Reading Info -->
+            <div class="grid grid-cols-3 text-center p-4 bg-light-50 border-b">
+                <div>
+                    <p class="text-xs text-dark-500 uppercase font-semibold">Current</p>
+                    <p class="text-2xl font-bold text-dark-900 mt-1" id="modalReading">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-dark-500 uppercase font-semibold">Previous</p>
+                    <p class="text-2xl font-bold text-dark-500 mt-1" id="modalPrev">0</p>
+                </div>
+                <div>
+                    <p class="text-xs text-dark-500 uppercase font-semibold">m³</p>
+                    <p class="text-2xl font-bold text-primary-600 mt-1" id="modalConsumption">0</p>
+                </div>
+            </div>
+
+            <!-- Photo Section -->
+            <div class="p-4">
+                <label class="block text-sm font-semibold text-dark-700 mb-2">Proof Photo:</label>
+                <div id="photoBox" class="relative cursor-pointer" onclick="openFullPhoto()">
+                    <img id="modalPhoto" src="" alt="Proof" class="w-full h-48 object-cover rounded-lg border-2 border-light-200 hover:border-primary-500 transition-colors">
+                    <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg flex items-center justify-center transition-all">
+                        <span class="text-white opacity-0 hover:opacity-100 text-sm font-medium bg-black bg-opacity-70 px-3 py-2 rounded-lg">
+                            <i class="bi bi-arrows-fullscreen mr-1"></i> Click to Enlarge
+                        </span>
+                    </div>
+                </div>
+                <p id="noPhoto" class="hidden text-center text-dark-400 py-8 bg-light-50 rounded-lg border-2 border-dashed border-light-300">
+                    <i class="bi bi-image text-4xl block mb-2"></i>
+                    <span class="text-sm">No proof photo attached</span>
+                </p>
+            </div>
+
+            <!-- Buttons -->
+            <div class="flex gap-3 p-4 bg-light-50 border-t">
+                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 bg-light-200 hover:bg-light-300 text-dark-700 font-semibold rounded-lg text-sm transition-colors">
+                    <i class="bi bi-x-circle mr-1"></i> Cancel
+                </button>
+                <button onclick="doConfirm()" class="flex-1 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors">
+                    <i class="bi bi-check-circle-fill mr-1"></i> Confirm & Generate Bill
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Full Photo Modal -->
+<div id="fullPhotoModal" class="fixed inset-0 z-[60] hidden">
+    <div class="fixed inset-0 bg-black" onclick="closeFullPhoto()"></div>
+    <div class="fixed inset-0 flex flex-col">
+        <!-- Top Bar -->
+        <div class="flex items-center justify-between px-6 py-3 bg-black bg-opacity-80 text-white">
+            <button onclick="closeFullPhoto()" class="text-sm font-medium hover:text-light-200 transition-colors">
+                <i class="bi bi-arrow-left mr-2"></i> Back to Review
+            </button>
+            <span class="text-base font-semibold" id="fullPhotoName">Proof Photo</span>
+            <button onclick="closeFullPhoto()" class="text-2xl hover:text-light-200 transition-colors">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <!-- Image -->
+        <div class="flex-1 flex items-center justify-center p-4 bg-black">
+            <img id="fullPhoto" src="" alt="Full Photo" class="max-w-full max-h-full object-contain">
+        </div>
+        <!-- Bottom Actions -->
+        <div class="bg-black bg-opacity-80 px-6 py-4 flex justify-center gap-4">
+            <button onclick="closeFullPhoto()" class="px-6 py-2.5 bg-light-600 hover:bg-light-500 text-white font-semibold rounded-lg text-sm transition-colors">
+                <i class="bi bi-arrow-left mr-1"></i> Back
+            </button>
+            <button onclick="confirmFromFullPhoto()" class="px-6 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors">
+                <i class="bi bi-check-circle-fill mr-1"></i> Confirm & Generate Bill
+            </button>
+        </div>
+    </div>
+</div>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Global variables for modal
+let currentReadingId = null;
+let currentPhotoUrl = null;
+
+// Open confirmation modal
+function openConfirmModal(id, name, idNum, barangay, reading, prev, consumption, photoUrl) {
+    currentReadingId = id;
+    currentPhotoUrl = photoUrl;
+
+    document.getElementById('modalName').textContent = name;
+    document.getElementById('modalInfo').textContent = idNum + ' • ' + barangay;
+    document.getElementById('modalReading').textContent = reading;
+    document.getElementById('modalPrev').textContent = prev;
+    document.getElementById('modalConsumption').textContent = consumption;
+
+    // Handle photo display
+    if (photoUrl && photoUrl !== '' && photoUrl !== 'None' && photoUrl !== 'null') {
+        document.getElementById('modalPhoto').src = photoUrl;
+        document.getElementById('photoBox').classList.remove('hidden');
+        document.getElementById('noPhoto').classList.add('hidden');
+    } else {
+        document.getElementById('photoBox').classList.add('hidden');
+        document.getElementById('noPhoto').classList.remove('hidden');
+    }
+
+    document.getElementById('confirmModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close confirmation modal
+function closeConfirmModal() {
+    document.getElementById('confirmModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Open full photo modal
+function openFullPhoto() {
+    if (currentPhotoUrl && currentPhotoUrl !== '' && currentPhotoUrl !== 'None' && currentPhotoUrl !== 'null') {
+        document.getElementById('fullPhoto').src = currentPhotoUrl;
+        document.getElementById('fullPhotoName').textContent = document.getElementById('modalName').textContent + ' - Meter Reading Proof';
+        document.getElementById('fullPhotoModal').classList.remove('hidden');
+    }
+}
+
+// Close full photo modal
+function closeFullPhoto() {
+    document.getElementById('fullPhotoModal').classList.add('hidden');
+}
+
+// Confirm from full photo modal
+function confirmFromFullPhoto() {
+    closeFullPhoto();
+    doConfirm();
+}
+
+// Confirm reading and generate bill
+function doConfirm() {
+    if (!currentReadingId) return;
+
+    const readingId = currentReadingId;
+    closeConfirmModal();
+
+    // Show SweetAlert confirmation
+    Swal.fire({
+        title: 'Confirm This Reading?',
+        html: 'This will generate the bill for <strong>' + document.getElementById('modalName').textContent + '</strong>',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#16a34a',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: '<i class="bi bi-check-circle-fill mr-1"></i> Yes, Confirm',
+        cancelButtonText: '<i class="bi bi-x-circle mr-1"></i> Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading
+            Swal.fire({
+                title: 'Generating Bill...',
+                html: 'Please wait while we process the reading and generate the bill.',
+                allowOutsideClick: false,
+                allowEscapeKey: false,
+                showConfirmButton: false,
+                willOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Submit confirmation via AJAX
+            fetch(`/meter-readings/${readingId}/confirm/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    // Success - remove row with animation
+                    const row = document.getElementById(`reading-row-${readingId}`);
+                    if (row) {
+                        row.style.transition = 'opacity 0.3s ease-out';
+                        row.style.opacity = '0';
+                        setTimeout(() => {
+                            row.remove();
+
+                            // Check if no more rows
+                            const remainingRows = document.querySelectorAll('[id^="reading-row-"]');
+                            if (remainingRows.length === 0) {
+                                // Reload page to show "no readings" message
+                                location.reload();
+                            }
+                        }, 300);
+                    }
+
+                    // Show success message
+                    Swal.fire({
+                        title: 'Success!',
+                        html: data.message || 'Bill generated successfully!',
+                        icon: 'success',
+                        confirmButtonColor: '#16a34a',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    // Error
+                    Swal.fire({
+                        title: 'Error',
+                        html: data.message || 'Failed to confirm reading',
+                        icon: 'error',
+                        confirmButtonColor: '#dc2626',
+                        confirmButtonText: 'OK'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    html: 'Network error occurred. Please check your connection.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc2626',
+                    confirmButtonText: 'OK'
+                });
+            });
+        }
+    });
+}
+
+// Get CSRF token from cookies
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Close modals with Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        if (!document.getElementById('fullPhotoModal').classList.contains('hidden')) {
+            closeFullPhoto();
+        } else if (!document.getElementById('confirmModal').classList.contains('hidden')) {
+            closeConfirmModal();
+        }
+    }
+});
+
 // Auto-submit on filter change
 document.addEventListener('DOMContentLoaded', function() {
     const autoSubmitSelects = ['barangay-filter', 'source-filter', 'status-filter'];
@@ -368,4 +640,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+<style>
+/* Smooth fade-out animation for confirmed rows */
+[id^="reading-row-"] {
+    transition: opacity 0.3s ease-out;
+}
+</style>
 {% endblock %}

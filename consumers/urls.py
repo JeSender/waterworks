@@ -81,6 +81,7 @@ urlpatterns = [
     path('api/meter-readings/', views.api_submit_reading, name='api_submit_reading'),
     path('api/rates/', views.api_get_current_rates, name='api_get_current_rates'),
     path('api/settings/', views.api_get_system_settings, name='api_get_system_settings'),
+    path('api/settings/check-version/', views.api_check_settings_version, name='api_check_settings_version'),
 
     # Manual Reading with Proof (requires admin confirmation)
     path('api/readings/manual/', views.api_submit_manual_reading, name='api_submit_manual_reading'),

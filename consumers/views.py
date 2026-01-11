@@ -32,12 +32,22 @@ from decimal import Decimal, InvalidOperation
 import uuid
 import json
 import csv
+import base64
 import openpyxl
-from openpyxl.styles import Font, PatternFill
+from openpyxl.styles import Font, PatternFill, Alignment
+
+# Cloudinary import with error handling (optional dependency)
+try:
+    from cloudinary import uploader as cloudinary_uploader  # type: ignore
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    cloudinary_uploader = None
+    CLOUDINARY_AVAILABLE = False
+
 from .models import (
     Consumer, Barangay, Purok, MeterReading, Bill, SystemSetting, Payment,
     StaffProfile, UserLoginEvent, MeterBrand, PasswordResetToken, UserActivity,
-    SystemSettingChangeLog
+    SystemSettingChangeLog, Notification
 )
 from .forms import ConsumerForm
 
@@ -395,10 +405,6 @@ def api_submit_manual_reading(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
     try:
-        import base64
-        import cloudinary.uploader
-        from django.conf import settings
-
         # Authenticate using token if not already authenticated
         api_user = None
         if not request.user.is_authenticated:
@@ -476,12 +482,12 @@ def api_submit_manual_reading(request):
         proof_image_url = None
         if proof_image_base64:
             try:
-                # Check if Cloudinary is configured
-                if not settings.CLOUDINARY_AVAILABLE:
+                # Check if Cloudinary is configured and available
+                if not CLOUDINARY_AVAILABLE or cloudinary_uploader is None:
                     return JsonResponse({'error': 'Image upload not configured'}, status=500)
 
                 # Upload to Cloudinary
-                upload_result = cloudinary.uploader.upload(
+                upload_result = cloudinary_uploader.upload(
                     f"data:image/jpeg;base64,{proof_image_base64}",
                     folder="waterworks/meter_proofs",
                     public_id=f"reading_{consumer.id_number}_{reading_date}",
@@ -773,7 +779,7 @@ def api_get_notifications(request):
 
         # Get notifications for this user or all admins (user=None)
         notifications = Notification.objects.filter(
-            models.Q(user=request.user) | models.Q(user__isnull=True),
+            Q(user=request.user) | Q(user__isnull=True),
             is_archived=False
         ).order_by('-created_at')
 
@@ -824,7 +830,7 @@ def api_get_notification_count(request):
     """
     try:
         count = Notification.objects.filter(
-            models.Q(user=request.user) | models.Q(user__isnull=True),
+            Q(user=request.user) | Q(user__isnull=True),
             is_read=False,
             is_archived=False
         ).count()
@@ -1616,6 +1622,93 @@ def api_get_system_settings(request):
         logger = logging.getLogger(__name__)
         logger.error(f"Error fetching system settings: {e}", exc_info=True)
         return JsonResponse({'error': 'Internal server error'}, status=500)
+
+
+@csrf_exempt
+def api_check_settings_version(request):
+    """
+    Lightweight API endpoint for Android app to check if settings have been updated.
+
+    The app should poll this endpoint periodically (e.g., every 5 minutes or on app resume)
+    to check if settings have changed since last sync.
+
+    Request (optional):
+    {
+        "last_updated": "2025-01-08T10:30:00Z"  # ISO format timestamp from app's last sync
+    }
+
+    Response:
+    {
+        "status": "success",
+        "settings_changed": true/false,
+        "current_version": "2025-01-08T14:25:30.123456+00:00",
+        "message": "Settings have been updated. Please sync."
+    }
+
+    Usage in Android:
+    1. App stores last_updated timestamp from /api/settings/ response
+    2. Periodically calls this endpoint with last_updated
+    3. If settings_changed = true, fetches full settings from /api/settings/
+    """
+    try:
+        setting = SystemSetting.objects.first()
+        if not setting:
+            return JsonResponse({
+                'status': 'error',
+                'message': 'System settings not configured'
+            }, status=500)
+
+        # Get last_updated timestamp from request (if provided)
+        last_updated_str = None
+        if request.method == 'POST':
+            try:
+                data = json.loads(request.body.decode('utf-8'))
+                last_updated_str = data.get('last_updated')
+            except (json.JSONDecodeError, UnicodeDecodeError):
+                pass
+        elif request.method == 'GET':
+            last_updated_str = request.GET.get('last_updated')
+
+        # Compare timestamps
+        settings_changed = False
+        if last_updated_str:
+            try:
+                from datetime import datetime as dt
+                # Parse ISO format timestamp from app
+                last_updated = dt.fromisoformat(last_updated_str.replace('Z', '+00:00'))
+
+                # Make timezone-aware if needed
+                if timezone.is_naive(last_updated):
+                    last_updated = timezone.make_aware(last_updated)
+
+                # Check if settings were updated after last sync
+                settings_changed = setting.updated_at > last_updated
+            except (ValueError, AttributeError):
+                # If parsing fails, assume settings changed (force sync)
+                settings_changed = True
+        else:
+            # No last_updated provided, assume first sync
+            settings_changed = True
+
+        return JsonResponse({
+            'status': 'success',
+            'settings_changed': settings_changed,
+            'current_version': setting.updated_at.isoformat(),
+            'message': 'Settings have been updated. Please sync.' if settings_changed else 'Settings are up to date.',
+            'last_change': {
+                'date': setting.updated_at.strftime('%Y-%m-%d'),
+                'time': setting.updated_at.strftime('%I:%M %p')
+            }
+        })
+
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error checking settings version: {e}", exc_info=True)
+        return JsonResponse({
+            'status': 'error',
+            'message': 'Internal server error'
+        }, status=500)
 
 
 @login_required
@@ -5195,6 +5288,69 @@ def delete_user(request, user_id):
 
 
 @login_required
+@user_management_permission_required
+def archived_users(request):
+    """
+    View list of archived/deleted users.
+    RESTRICTED: Superuser only.
+    """
+    from .models import ArchivedUser
+
+    # Get search query parameter
+    search_query = request.GET.get('search', '').strip()
+
+    # Get all archived users
+    archived_list = ArchivedUser.objects.all().order_by('-archived_at')
+
+    # Apply search filter if provided
+    if search_query:
+        archived_list = archived_list.filter(
+            Q(username__icontains=search_query) |
+            Q(first_name__icontains=search_query) |
+            Q(last_name__icontains=search_query) |
+            Q(email__icontains=search_query)
+        )
+
+    # Pagination
+    paginator = Paginator(archived_list, 20)
+    page = request.GET.get('page', 1)
+    try:
+        archived_users_page = paginator.page(page)
+    except:
+        archived_users_page = paginator.page(1)
+
+    context = {
+        'archived_users': archived_users_page,
+        'search_query': search_query,
+        'total_archived': ArchivedUser.objects.count(),
+    }
+
+    return render(request, 'consumers/archived_users.html', context)
+
+
+@login_required
+@user_management_permission_required
+def permanently_delete_archived_user(request, archived_id):
+    """
+    Permanently delete an archived user record.
+    RESTRICTED: Superuser only.
+    """
+    from .models import ArchivedUser
+
+    archived_user = get_object_or_404(ArchivedUser, id=archived_id)
+
+    if request.method == 'POST':
+        username = archived_user.username
+        archived_user.delete()
+        messages.success(request, f"Archived user '{username}' has been permanently deleted.")
+        return redirect('consumers:archived_users')
+
+    return redirect('consumers:archived_users')
+
+
+@login_required
+
+
 def reset_user_password(request, user_id):
     """Reset user password (superuser and admin)."""
     from .decorators import check_password_strength
