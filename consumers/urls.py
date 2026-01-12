@@ -32,6 +32,7 @@ urlpatterns = [
 
     # Meter Readings
     path('meter-reading-overview/', views.meter_reading_overview, name='meter_reading_overview'),
+    path('meter-readings/', views.meter_readings, name='meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/', views.barangay_meter_readings, name='barangay_meter_readings'),
     path('meter-readings/barangay/<int:barangay_id>/print/', views.barangay_meter_readings_print, name='barangay_meter_readings_print'),
     path('meter-readings/barangay/<int:barangay_id>/confirm-all/', views.confirm_all_readings, name='confirm_all_readings'),

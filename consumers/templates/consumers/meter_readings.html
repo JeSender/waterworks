@@ -1,7 +1,7 @@
 {% extends "consumers/base.html" %}
 {% load static %}
 
-{% block title %}Recent Meter Readings - Balilihan Waterworks{% endblock %}
+{% block title %}Meter Readings Management - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
@@ -11,340 +11,422 @@
             <div>
                 <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
                     <i class="bi bi-speedometer2 text-primary-600"></i>
-                    Recent Meter Readings
+                    Meter Readings Management
                 </h2>
-                <p class="text-sm text-dark-500 mt-1">All recent readings from web, mobile app, and smart meters</p>
+                <p class="text-sm text-dark-500 mt-1">Review and manage all meter readings</p>
             </div>
             <a href="{% url 'consumers:meter_reading_overview' %}"
-               class="btn-secondary btn-sm">
-                <i class="bi bi-grid-3x3-gap-fill"></i> Barangay Overview
+               class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg text-sm inline-flex items-center transition-colors">
+                <i class="bi bi-grid-3x3-gap-fill mr-2"></i> Barangay Overview
             </a>
         </div>
     </div>
 
-    <!-- Search & Filters Panel -->
+    <!-- Tab Navigation -->
     <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden">
-        <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700">
-            <h3 class="text-white font-semibold text-base flex items-center gap-2">
-                <i class="bi bi-funnel-fill"></i>
-                Search & Filter
-            </h3>
+        <div class="border-b border-gray-200">
+            <nav class="flex" role="tablist">
+                <button id="tab-all"
+                        onclick="switchTab('all')"
+                        class="tab-button flex-1 px-6 py-4 text-sm font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50 border-b-2 border-transparent transition-all flex items-center justify-center gap-2"
+                        role="tab">
+                    <i class="bi bi-list-ul"></i>
+                    <span>All Readings</span>
+                    <span class="px-2 py-0.5 bg-primary-100 text-primary-700 text-xs font-bold rounded-full">{{ total_count|default:0 }}</span>
+                </button>
+                <button id="tab-pending"
+                        onclick="switchTab('pending')"
+                        class="tab-button flex-1 px-6 py-4 text-sm font-semibold text-gray-700 hover:text-primary-600 hover:bg-gray-50 border-b-2 border-transparent transition-all flex items-center justify-center gap-2"
+                        role="tab">
+                    <i class="bi bi-hourglass-split"></i>
+                    <span>Pending Review</span>
+                    <span class="px-2 py-0.5 bg-warning-500 text-white text-xs font-bold rounded-full">{{ pending_count|default:0 }}</span>
+                </button>
+            </nav>
         </div>
-        <div class="p-6">
-            <form method="get" id="filter-form" class="space-y-4">
-                <!-- Row 1: Search and Barangay -->
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="md:col-span-2">
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">Search Consumer</label>
-                        <div class="relative">
-                            <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-dark-400"></i>
-                            <input type="text"
-                                   name="search"
-                                   id="search-input"
-                                   value="{{ search_query }}"
-                                   class="w-full pl-10 pr-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                                   placeholder="Search by name or account number...">
+
+        <!-- Tab Content: All Readings View -->
+        <div id="content-all" class="tab-content">
+            <!-- Search & Filters Panel -->
+            <div class="p-6 bg-gray-50 border-b border-gray-200">
+                <h3 class="text-dark-900 font-semibold text-base flex items-center gap-2 mb-4">
+                    <i class="bi bi-funnel-fill text-primary-600"></i>
+                    Search & Filter
+                </h3>
+                <form method="get" id="filter-form" class="space-y-4">
+                    <input type="hidden" name="view" value="all">
+                    <!-- Row 1: Search and Barangay -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="md:col-span-2">
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">Search Consumer</label>
+                            <div class="relative">
+                                <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-dark-400"></i>
+                                <input type="text"
+                                       name="search"
+                                       id="search-input"
+                                       value="{{ search_query }}"
+                                       class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
+                                       placeholder="Search by name or account number...">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">Barangay</label>
+                            <select name="barangay"
+                                    id="barangay-filter"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                                <option value="">All Barangays</option>
+                                {% for barangay in barangays %}
+                                <option value="{{ barangay.id }}" {% if barangay.id|stringformat:"s" == selected_barangay %}selected{% endif %}>
+                                    {{ barangay.name }}
+                                </option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">Barangay</label>
-                        <select name="barangay"
-                                id="barangay-filter"
-                                class="w-full px-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">All Barangays</option>
-                            {% for barangay in barangays %}
-                            <option value="{{ barangay.id }}" {% if barangay.id|stringformat:"s" == selected_barangay %}selected{% endif %}>
-                                {{ barangay.name }}
-                            </option>
-                            {% endfor %}
-                        </select>
-                    </div>
-                </div>
 
-                <!-- Row 2: Source, Status, Date Range -->
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">Source</label>
-                        <select name="source"
-                                id="source-filter"
-                                class="w-full px-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">All Sources</option>
-                            <option value="mobile_app" {% if selected_source == 'mobile_app' %}selected{% endif %}>Mobile App</option>
-                            <option value="manual" {% if selected_source == 'manual' %}selected{% endif %}>Manual</option>
-                            <option value="smart_meter" {% if selected_source == 'smart_meter' %}selected{% endif %}>Smart Meter</option>
-                        </select>
+                    <!-- Row 2: Source, Status, Date Range -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">Source</label>
+                            <select name="source"
+                                    id="source-filter"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                                <option value="">All Sources</option>
+                                <option value="mobile_app" {% if selected_source == 'mobile_app' %}selected{% endif %}>Mobile App</option>
+                                <option value="manual" {% if selected_source == 'manual' %}selected{% endif %}>Manual</option>
+                                <option value="smart_meter" {% if selected_source == 'smart_meter' %}selected{% endif %}>Smart Meter</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">Status</label>
+                            <select name="status"
+                                    id="status-filter"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                                <option value="">All Status</option>
+                                <option value="confirmed" {% if selected_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
+                                <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">From Date</label>
+                            <input type="date"
+                                   name="from_date"
+                                   value="{{ from_date }}"
+                                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-dark-700 mb-2">To Date</label>
+                            <input type="date"
+                                   name="to_date"
+                                   value="{{ to_date }}"
+                                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
+                        </div>
                     </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">Status</label>
-                        <select name="status"
-                                id="status-filter"
-                                class="w-full px-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                            <option value="">All Status</option>
-                            <option value="confirmed" {% if selected_status == 'confirmed' %}selected{% endif %}>Confirmed</option>
-                            <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">From Date</label>
-                        <input type="date"
-                               name="from_date"
-                               value="{{ from_date }}"
-                               class="w-full px-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-dark-700 mb-2">To Date</label>
-                        <input type="date"
-                               name="to_date"
-                               value="{{ to_date }}"
-                               class="w-full px-4 py-2.5 border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
-                    </div>
-                </div>
 
-                <!-- Action Buttons -->
-                <div class="flex gap-3">
-                    <button type="submit" class="btn-primary">
-                        <i class="bi bi-search"></i> Apply Filters
-                    </button>
-                    <a href="{% url 'consumers:meter_readings' %}" class="btn-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i> Reset
-                    </a>
-                    {% if readings %}
-                    <a href="?{{ request.GET.urlencode }}&export=excel" class="btn-success ml-auto">
-                        <i class="bi bi-file-earmark-excel"></i> Export to Excel
-                    </a>
-                    {% endif %}
-                </div>
-            </form>
-        </div>
-    </div>
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button type="submit" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors">
+                            <i class="bi bi-search"></i> Apply Filters
+                        </button>
+                        <a href="{% url 'consumers:meter_readings' %}?view=all" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors">
+                            <i class="bi bi-arrow-counterclockwise"></i> Reset
+                        </a>
+                        {% if readings %}
+                        <a href="?{{ request.GET.urlencode }}&export=excel" class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors ml-auto">
+                            <i class="bi bi-file-earmark-excel"></i> Export to Excel
+                        </a>
+                        {% endif %}
+                    </div>
+                </form>
+            </div>
 
-    <!-- Stats Cards -->
-    {% if readings %}
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-primary-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase">Total Readings</p>
-                    <p class="text-2xl font-bold text-dark-900 mt-1">{{ total_count }}</p>
+            <!-- Stats Cards -->
+            {% if readings %}
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 p-6 bg-gray-50 border-b border-gray-200">
+                <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-primary-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-dark-500 uppercase">Total Readings</p>
+                            <p class="text-2xl font-bold text-dark-900 mt-1">{{ total_count }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-speedometer2 text-primary-600 text-xl"></i>
+                        </div>
+                    </div>
                 </div>
-                <div class="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-speedometer2 text-primary-600 text-xl"></i>
+                <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-success-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-dark-500 uppercase">Confirmed</p>
+                            <p class="text-2xl font-bold text-success-600 mt-1">{{ confirmed_count }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-warning-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-dark-500 uppercase">Pending</p>
+                            <p class="text-2xl font-bold text-warning-600 mt-1">{{ pending_count }}</p>
+                        </div>
+                        <div class="w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-clock-fill text-warning-600 text-xl"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-lg shadow-sm p-4 border-l-4 border-info-500">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-semibold text-dark-500 uppercase">Avg Consumption</p>
+                            <p class="text-2xl font-bold text-info-600 mt-1">{{ avg_consumption|floatformat:1 }} m³</p>
+                        </div>
+                        <div class="w-12 h-12 bg-info-100 rounded-full flex items-center justify-center">
+                            <i class="bi bi-droplet-fill text-info-600 text-xl"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-success-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase">Confirmed</p>
-                    <p class="text-2xl font-bold text-success-600 mt-1">{{ confirmed_count }}</p>
-                </div>
-                <div class="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-warning-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase">Pending</p>
-                    <p class="text-2xl font-bold text-warning-600 mt-1">{{ pending_count }}</p>
-                </div>
-                <div class="w-12 h-12 bg-warning-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-clock-fill text-warning-600 text-xl"></i>
-                </div>
-            </div>
-        </div>
-        <div class="bg-white rounded-xl shadow-md p-4 border-l-4 border-info-500">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-xs font-semibold text-dark-500 uppercase">Avg Consumption</p>
-                    <p class="text-2xl font-bold text-info-600 mt-1">{{ avg_consumption|floatformat:1 }} m³</p>
-                </div>
-                <div class="w-12 h-12 bg-info-100 rounded-full flex items-center justify-center">
-                    <i class="bi bi-droplet-fill text-info-600 text-xl"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
+            {% endif %}
 
-    <!-- Readings Table -->
-    <div class="bg-white rounded-xl shadow-md overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-light-100 border-b border-light-200">
-                    <tr>
-                        <th class="px-4 py-4 text-left text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Consumer
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Previous
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Current
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Consumption
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Date
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Source
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th class="px-4 py-4 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-light-200">
-                    {% for item in readings %}
-                    <tr class="hover:bg-light-50 transition-colors duration-150" id="reading-row-{{ item.reading.id }}">
-                        <td class="px-4 py-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                    <i class="bi bi-person-fill text-primary-600"></i>
-                                </div>
-                                <div>
-                                    <div class="font-semibold text-dark-900 text-sm">
-                                        {{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}
+            <!-- Readings Table (8 columns - Full View) -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-100 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-dark-700 uppercase tracking-wider">Consumer</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Previous</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Current</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Consumption</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Date</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Source</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Status</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        {% for item in readings %}
+                        <tr class="hover:bg-gray-50 transition-colors" id="reading-row-{{ item.reading.id }}">
+                            <td class="px-4 py-3">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                        <i class="bi bi-person-fill text-primary-600"></i>
                                     </div>
-                                    <div class="text-xs text-dark-500 font-mono">
-                                        {{ item.reading.consumer.account_number }}
-                                    </div>
-                                    <div class="text-xs text-dark-400">
-                                        {{ item.reading.consumer.barangay.name|default:"—" }}
+                                    <div>
+                                        <div class="font-semibold text-dark-900 text-sm">
+                                            {{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}
+                                        </div>
+                                        <div class="text-xs text-dark-500 font-mono">
+                                            {{ item.reading.consumer.account_number }}
+                                        </div>
+                                        <div class="text-xs text-dark-400">
+                                            {{ item.reading.consumer.barangay.name|default:"—" }}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            {% if item.prev_reading %}
-                                <span class="text-dark-700 font-medium">{{ item.prev_reading.reading_value }}</span>
-                            {% else %}
-                                <span class="text-dark-400">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            <span class="font-bold text-dark-900 text-base">{{ item.reading.reading_value }}</span>
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            {% if item.consumption is not none %}
-                                <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 font-bold rounded-full text-sm">
-                                    <i class="bi bi-droplet-fill"></i>
-                                    {{ item.consumption }} m³
-                                </span>
-                            {% else %}
-                                <span class="text-dark-400">—</span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            <div class="text-sm text-dark-700">{{ item.reading.reading_date|date:"M d, Y" }}</div>
-                            <div class="text-xs text-dark-400">{{ item.reading.reading_date|date:"g:i A" }}</div>
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            <span class="badge
-                                {% if item.reading.source == 'mobile_app' %}badge-primary
-                                {% elif item.reading.source == 'manual' %}badge-secondary
-                                {% elif item.reading.source == 'smart_meter' %}badge-success
-                                {% else %}badge-info{% endif %}">
-                                <i class="bi
-                                    {% if item.reading.source == 'mobile_app' %}bi-phone-fill
-                                    {% elif item.reading.source == 'manual' %}bi-pencil-fill
-                                    {% elif item.reading.source == 'smart_meter' %}bi-cpu-fill
-                                    {% else %}bi-question-circle{% endif %}">
-                                </i>
-                                {{ item.reading.get_source_display|default:item.reading.source }}
-                            </span>
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            {% if item.reading.is_confirmed %}
-                                <span class="badge badge-success">
-                                    <i class="bi bi-check-circle-fill"></i> Confirmed
-                                </span>
-                            {% else %}
-                                <span class="badge badge-warning">
-                                    <i class="bi bi-clock-fill"></i> Pending
-                                </span>
-                            {% endif %}
-                        </td>
-                        <td class="px-4 py-4 text-center">
-                            {% if not item.reading.is_confirmed %}
-                                <!-- Pending Reading - Show Review & Confirm Button -->
-                                <button onclick="openConfirmModal({{ item.reading.id }}, '{{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}', '{{ item.reading.consumer.id_number }}', '{{ item.reading.consumer.barangay.name }}', {{ item.reading.reading_value }}, {% if item.prev_reading %}{{ item.prev_reading.reading_value }}{% else %}0{% endif %}, {% if item.consumption %}{{ item.consumption }}{% else %}0{% endif %}, '{{ item.reading.proof_image_url|default:"" }}')"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-medium rounded-lg bg-success-600 text-white hover:bg-success-700 transition-colors">
-                                    <i class="bi bi-eye-fill"></i> Review & Confirm
-                                </button>
-                            {% else %}
-                                <!-- Confirmed Reading - Show View Consumer Link -->
-                                <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}"
-                                   class="inline-flex items-center gap-1 text-primary-600 hover:text-primary-700 text-sm font-medium transition-colors">
-                                    <i class="bi bi-eye-fill"></i> View
-                                </a>
-                            {% endif %}
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="8" class="px-4 py-16 text-center">
-                            <i class="bi bi-inbox text-6xl text-light-300 block mb-4"></i>
-                            <h5 class="text-lg font-bold text-dark-600 mb-2">No Meter Readings Found</h5>
-                            <p class="text-sm text-dark-500">
-                                {% if request.GET %}
-                                Try adjusting your filters or search criteria
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if item.prev_reading %}
+                                    <span class="text-dark-700 font-medium">{{ item.prev_reading.reading_value }}</span>
                                 {% else %}
-                                No readings have been submitted yet
+                                    <span class="text-dark-400">—</span>
                                 {% endif %}
-                            </p>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="font-bold text-dark-900 text-base">{{ item.reading.reading_value }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if item.consumption is not none %}
+                                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-primary-100 text-primary-700 font-bold rounded-full text-sm">
+                                        <i class="bi bi-droplet-fill"></i>
+                                        {{ item.consumption }} m³
+                                    </span>
+                                {% else %}
+                                    <span class="text-dark-400">—</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="text-sm text-dark-700">{{ item.reading.reading_date|date:"M d, Y" }}</div>
+                                <div class="text-xs text-dark-400">{{ item.reading.reading_date|date:"g:i A" }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-1 text-xs font-medium rounded-full inline-flex items-center gap-1
+                                    {% if item.reading.source == 'mobile_app' %}bg-primary-100 text-primary-800
+                                    {% elif item.reading.source == 'manual' %}bg-gray-100 text-gray-800
+                                    {% elif item.reading.source == 'smart_meter' %}bg-success-100 text-success-800
+                                    {% else %}bg-info-100 text-info-800{% endif %}">
+                                    <i class="bi {% if item.reading.source == 'mobile_app' %}bi-phone-fill
+                                        {% elif item.reading.source == 'manual' %}bi-pencil-fill
+                                        {% elif item.reading.source == 'smart_meter' %}bi-cpu-fill
+                                        {% else %}bi-question-circle{% endif %}"></i>
+                                    {{ item.reading.get_source_display|default:item.reading.source }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if item.reading.is_confirmed %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-success-100 text-success-800 inline-flex items-center gap-1">
+                                        <i class="bi bi-check-circle-fill"></i> Confirmed
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-1 text-xs font-medium rounded-full bg-warning-100 text-warning-800 inline-flex items-center gap-1">
+                                        <i class="bi bi-clock-fill"></i> Pending
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if not item.reading.is_confirmed %}
+                                    <button onclick="openConfirmModal({{ item.reading.id }}, '{{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}', '{{ item.reading.consumer.id_number }}', '{{ item.reading.consumer.barangay.name }}', {{ item.reading.reading_value }}, {% if item.prev_reading %}{{ item.prev_reading.reading_value }}{% else %}0{% endif %}, {% if item.consumption %}{{ item.consumption }}{% else %}0{% endif %}, '{{ item.reading.proof_image_url|default:"" }}')"
+                                            class="px-3 py-1.5 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-xs inline-flex items-center gap-1 transition-colors">
+                                        <i class="bi bi-eye-fill"></i> Review & Confirm
+                                    </button>
+                                {% else %}
+                                    <a href="{% url 'consumers:consumer_detail' item.reading.consumer.id %}"
+                                       class="px-3 py-1.5 text-primary-600 hover:text-primary-700 text-xs font-medium inline-flex items-center gap-1 transition-colors">
+                                        <i class="bi bi-eye-fill"></i> View
+                                    </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="px-4 py-16 text-center">
+                                <i class="bi bi-inbox text-6xl text-gray-300 block mb-4"></i>
+                                <h5 class="text-lg font-bold text-gray-600 mb-2">No Meter Readings Found</h5>
+                                <p class="text-sm text-gray-500">
+                                    {% if request.GET %}
+                                    Try adjusting your filters or search criteria
+                                    {% else %}
+                                    No readings have been submitted yet
+                                    {% endif %}
+                                </p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-        <!-- Pagination -->
-        {% if is_paginated %}
-        <div class="px-6 py-4 bg-light-50 border-t border-light-200">
-            <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                <div class="text-sm text-dark-600">
-                    Showing <span class="font-semibold">{{ page_obj.start_index }}</span> to
-                    <span class="font-semibold">{{ page_obj.end_index }}</span> of
-                    <span class="font-semibold">{{ paginator.count }}</span> readings
-                </div>
-                <div class="flex gap-2">
-                    {% if page_obj.has_previous %}
-                    <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
-                       class="px-3 py-2 bg-white border border-light-300 rounded-lg hover:bg-light-50 text-sm font-medium text-dark-700 transition-colors">
-                        <i class="bi bi-chevron-bar-left"></i>
-                    </a>
-                    <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
-                       class="px-3 py-2 bg-white border border-light-300 rounded-lg hover:bg-light-50 text-sm font-medium text-dark-700 transition-colors">
-                        <i class="bi bi-chevron-left"></i> Previous
-                    </a>
-                    {% endif %}
-
-                    <div class="px-4 py-2 bg-primary-100 border border-primary-300 rounded-lg text-sm font-bold text-primary-700">
-                        Page {{ page_obj.number }} of {{ paginator.num_pages }}
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="text-sm text-dark-600">
+                        Showing <span class="font-semibold">{{ page_obj.start_index }}</span> to
+                        <span class="font-semibold">{{ page_obj.end_index }}</span> of
+                        <span class="font-semibold">{{ paginator.count }}</span> readings
                     </div>
+                    <div class="flex gap-2">
+                        {% if page_obj.has_previous %}
+                        <a href="?page=1{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-dark-700 transition-colors">
+                            <i class="bi bi-chevron-bar-left"></i>
+                        </a>
+                        <a href="?page={{ page_obj.previous_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-dark-700 transition-colors">
+                            <i class="bi bi-chevron-left"></i> Previous
+                        </a>
+                        {% endif %}
 
-                    {% if page_obj.has_next %}
-                    <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
-                       class="px-3 py-2 bg-white border border-light-300 rounded-lg hover:bg-light-50 text-sm font-medium text-dark-700 transition-colors">
-                        Next <i class="bi bi-chevron-right"></i>
-                    </a>
-                    <a href="?page={{ paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
-                       class="px-3 py-2 bg-white border border-light-300 rounded-lg hover:bg-light-50 text-sm font-medium text-dark-700 transition-colors">
-                        <i class="bi bi-chevron-bar-right"></i>
-                    </a>
-                    {% endif %}
+                        <div class="px-4 py-2 bg-primary-100 border border-primary-300 rounded-lg text-sm font-bold text-primary-700">
+                            Page {{ page_obj.number }} of {{ paginator.num_pages }}
+                        </div>
+
+                        {% if page_obj.has_next %}
+                        <a href="?page={{ page_obj.next_page_number }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-dark-700 transition-colors">
+                            Next <i class="bi bi-chevron-right"></i>
+                        </a>
+                        <a href="?page={{ paginator.num_pages }}{% if request.GET.urlencode %}&{{ request.GET.urlencode }}{% endif %}"
+                           class="px-3 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm font-medium text-dark-700 transition-colors">
+                            <i class="bi bi-chevron-bar-right"></i>
+                        </a>
+                        {% endif %}
+                    </div>
                 </div>
             </div>
+            {% endif %}
         </div>
-        {% endif %}
+
+        <!-- Tab Content: Pending Review View -->
+        <div id="content-pending" class="tab-content hidden">
+            <!-- Pending Stats -->
+            <div class="flex gap-3 p-6 bg-gray-50 border-b border-gray-200">
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg px-4 py-3 flex items-center gap-3 flex-1">
+                    <div class="w-10 h-10 bg-yellow-100 rounded-full flex items-center justify-center">
+                        <i class="bi bi-hourglass-split text-yellow-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-yellow-700 font-semibold uppercase">Pending Review</p>
+                        <p class="text-2xl font-bold text-yellow-800">{{ pending_readings|length }}</p>
+                    </div>
+                </div>
+                <div class="bg-green-50 border border-green-200 rounded-lg px-4 py-3 flex items-center gap-3 flex-1">
+                    <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
+                        <i class="bi bi-check-circle-fill text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <p class="text-xs text-green-700 font-semibold uppercase">Confirmed Today</p>
+                        <p class="text-2xl font-bold text-green-800">{{ confirmed_today_count|default:0 }}</p>
+                    </div>
+                </div>
+            </div>
+
+            {% if pending_readings %}
+            <!-- Compact Pending Table (6 columns) -->
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-100 border-b border-gray-200">
+                        <tr>
+                            <th class="px-4 py-3 text-left text-xs font-bold text-dark-700 uppercase tracking-wider">Consumer</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Reading</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Previous</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">m³</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Date</th>
+                            <th class="px-4 py-3 text-center text-xs font-bold text-dark-700 uppercase tracking-wider">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200 bg-white">
+                        {% for reading in pending_readings %}
+                        <tr class="hover:bg-gray-50 transition-colors" id="pending-row-{{ reading.id }}">
+                            <td class="px-4 py-3">
+                                <div class="font-semibold text-dark-900 text-sm">{{ reading.consumer.first_name }} {{ reading.consumer.last_name }}</div>
+                                <div class="text-xs text-dark-500">{{ reading.consumer.id_number }} • {{ reading.consumer.barangay.name }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="font-bold text-dark-900 text-base">{{ reading.reading_value }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="text-dark-600 font-medium">{{ reading.previous_reading|default:"0" }}</span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <span class="px-2 py-1 text-xs font-bold rounded-full bg-blue-100 text-blue-700">
+                                    {{ reading.consumption|default:"0" }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <div class="text-sm text-dark-700">{{ reading.reading_date|date:"M d" }}</div>
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <button onclick="openConfirmModal({{ reading.id }}, '{{ reading.consumer.first_name }} {{ reading.consumer.last_name }}', '{{ reading.consumer.id_number }}', '{{ reading.consumer.barangay.name }}', {{ reading.reading_value }}, {{ reading.previous_reading|default:0 }}, {{ reading.consumption|default:0 }}, '{{ reading.proof_image_url|default:"" }}')"
+                                        class="px-3 py-1.5 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-xs inline-flex items-center gap-1 transition-colors">
+                                    <i class="bi bi-eye-fill"></i> Review
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <!-- Empty State -->
+            <div class="p-16 text-center bg-white">
+                <i class="bi bi-check-all text-green-500 text-6xl block mb-4"></i>
+                <h3 class="text-xl font-bold text-gray-900 mb-2">All Caught Up!</h3>
+                <p class="text-gray-500">No pending readings to review at the moment.</p>
+            </div>
+            {% endif %}
+        </div>
     </div>
 </div>
 
@@ -360,7 +442,7 @@
             </div>
 
             <!-- Reading Info -->
-            <div class="grid grid-cols-3 text-center p-4 bg-light-50 border-b">
+            <div class="grid grid-cols-3 text-center p-4 bg-gray-50 border-b">
                 <div>
                     <p class="text-xs text-dark-500 uppercase font-semibold">Current</p>
                     <p class="text-2xl font-bold text-dark-900 mt-1" id="modalReading">0</p>
@@ -379,26 +461,26 @@
             <div class="p-4">
                 <label class="block text-sm font-semibold text-dark-700 mb-2">Proof Photo:</label>
                 <div id="photoBox" class="relative cursor-pointer" onclick="openFullPhoto()">
-                    <img id="modalPhoto" src="" alt="Proof" class="w-full h-48 object-cover rounded-lg border-2 border-light-200 hover:border-primary-500 transition-colors">
+                    <img id="modalPhoto" src="" alt="Proof" class="w-full h-48 object-cover rounded-lg border-2 border-gray-200 hover:border-primary-500 transition-colors">
                     <div class="absolute inset-0 bg-black bg-opacity-0 hover:bg-opacity-20 rounded-lg flex items-center justify-center transition-all">
                         <span class="text-white opacity-0 hover:opacity-100 text-sm font-medium bg-black bg-opacity-70 px-3 py-2 rounded-lg">
                             <i class="bi bi-arrows-fullscreen mr-1"></i> Click to Enlarge
                         </span>
                     </div>
                 </div>
-                <p id="noPhoto" class="hidden text-center text-dark-400 py-8 bg-light-50 rounded-lg border-2 border-dashed border-light-300">
+                <p id="noPhoto" class="hidden text-center text-dark-400 py-8 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
                     <i class="bi bi-image text-4xl block mb-2"></i>
                     <span class="text-sm">No proof photo attached</span>
                 </p>
             </div>
 
             <!-- Buttons -->
-            <div class="flex gap-3 p-4 bg-light-50 border-t">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2.5 bg-light-200 hover:bg-light-300 text-dark-700 font-semibold rounded-lg text-sm transition-colors">
-                    <i class="bi bi-x-circle mr-1"></i> Cancel
+            <div class="flex gap-3 p-4 bg-gray-50 border-t">
+                <button onclick="closeConfirmModal()" class="flex-1 px-4 py-2.5 bg-gray-200 hover:bg-gray-300 text-dark-700 font-semibold rounded-lg text-sm transition-colors inline-flex items-center justify-center gap-1">
+                    <i class="bi bi-x-circle"></i> Cancel
                 </button>
-                <button onclick="doConfirm()" class="flex-1 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors">
-                    <i class="bi bi-check-circle-fill mr-1"></i> Confirm & Generate Bill
+                <button onclick="doConfirm()" class="flex-1 px-4 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors inline-flex items-center justify-center gap-1">
+                    <i class="bi bi-check-circle-fill"></i> Confirm & Generate Bill
                 </button>
             </div>
         </div>
@@ -411,11 +493,11 @@
     <div class="fixed inset-0 flex flex-col">
         <!-- Top Bar -->
         <div class="flex items-center justify-between px-6 py-3 bg-black bg-opacity-80 text-white">
-            <button onclick="closeFullPhoto()" class="text-sm font-medium hover:text-light-200 transition-colors">
-                <i class="bi bi-arrow-left mr-2"></i> Back to Review
+            <button onclick="closeFullPhoto()" class="px-3 py-2 text-sm font-medium hover:text-gray-200 transition-colors inline-flex items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Review
             </button>
             <span class="text-base font-semibold" id="fullPhotoName">Proof Photo</span>
-            <button onclick="closeFullPhoto()" class="text-2xl hover:text-light-200 transition-colors">
+            <button onclick="closeFullPhoto()" class="px-3 py-2 text-2xl hover:text-gray-200 transition-colors">
                 <i class="bi bi-x-lg"></i>
             </button>
         </div>
@@ -425,11 +507,11 @@
         </div>
         <!-- Bottom Actions -->
         <div class="bg-black bg-opacity-80 px-6 py-4 flex justify-center gap-4">
-            <button onclick="closeFullPhoto()" class="px-6 py-2.5 bg-light-600 hover:bg-light-500 text-white font-semibold rounded-lg text-sm transition-colors">
-                <i class="bi bi-arrow-left mr-1"></i> Back
+            <button onclick="closeFullPhoto()" class="px-4 py-2.5 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-lg text-sm transition-colors inline-flex items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back
             </button>
-            <button onclick="confirmFromFullPhoto()" class="px-6 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors">
-                <i class="bi bi-check-circle-fill mr-1"></i> Confirm & Generate Bill
+            <button onclick="confirmFromFullPhoto()" class="px-4 py-2.5 bg-success-600 hover:bg-success-700 text-white font-semibold rounded-lg text-sm transition-colors inline-flex items-center gap-2">
+                <i class="bi bi-check-circle-fill"></i> Confirm & Generate Bill
             </button>
         </div>
     </div>
@@ -441,6 +523,63 @@
 // Global variables for modal
 let currentReadingId = null;
 let currentPhotoUrl = null;
+
+// Tab Switching Function
+function switchTab(tabName) {
+    const tabs = ['all', 'pending'];
+
+    tabs.forEach(tab => {
+        const tabButton = document.getElementById(`tab-${tab}`);
+        const tabContent = document.getElementById(`content-${tab}`);
+
+        if (tab === tabName) {
+            // Activate selected tab
+            tabButton.classList.add('border-primary-600', 'text-primary-700', 'bg-gray-50');
+            tabButton.classList.remove('border-transparent', 'text-gray-700');
+            tabContent.classList.remove('hidden');
+
+            // Update URL without reload
+            const url = new URL(window.location);
+            url.searchParams.set('view', tab);
+            window.history.pushState({}, '', url);
+        } else {
+            // Deactivate other tabs
+            tabButton.classList.remove('border-primary-600', 'text-primary-700', 'bg-gray-50');
+            tabButton.classList.add('border-transparent', 'text-gray-700');
+            tabContent.classList.add('hidden');
+        }
+    });
+}
+
+// Initialize tab on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const view = urlParams.get('view') || 'all';
+    switchTab(view);
+
+    // Auto-submit on filter change (All Readings tab only)
+    const autoSubmitSelects = ['barangay-filter', 'source-filter', 'status-filter'];
+    autoSubmitSelects.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('change', function() {
+                document.getElementById('filter-form').submit();
+            });
+        }
+    });
+
+    // Debounced search
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+        let timeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                document.getElementById('filter-form').submit();
+            }, 500);
+        });
+    }
+});
 
 // Open confirmation modal
 function openConfirmModal(id, name, idNum, barangay, reading, prev, consumption, photoUrl) {
@@ -537,8 +676,9 @@ function doConfirm() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === 'success') {
-                    // Success - remove row with animation
-                    const row = document.getElementById(`reading-row-${readingId}`);
+                    // Success - remove row with animation (works for both tabs)
+                    const row = document.getElementById(`reading-row-${readingId}`) ||
+                               document.getElementById(`pending-row-${readingId}`);
                     if (row) {
                         row.style.transition = 'opacity 0.3s ease-out';
                         row.style.opacity = '0';
@@ -546,9 +686,9 @@ function doConfirm() {
                             row.remove();
 
                             // Check if no more rows
-                            const remainingRows = document.querySelectorAll('[id^="reading-row-"]');
+                            const remainingRows = document.querySelectorAll('[id^="reading-row-"], [id^="pending-row-"]');
                             if (remainingRows.length === 0) {
-                                // Reload page to show "no readings" message
+                                // Reload page to update counts
                                 location.reload();
                             }
                         }, 300);
@@ -613,38 +753,17 @@ document.addEventListener('keydown', function(e) {
         }
     }
 });
-
-// Auto-submit on filter change
-document.addEventListener('DOMContentLoaded', function() {
-    const autoSubmitSelects = ['barangay-filter', 'source-filter', 'status-filter'];
-
-    autoSubmitSelects.forEach(id => {
-        const element = document.getElementById(id);
-        if (element) {
-            element.addEventListener('change', function() {
-                document.getElementById('filter-form').submit();
-            });
-        }
-    });
-
-    // Debounced search
-    const searchInput = document.getElementById('search-input');
-    if (searchInput) {
-        let timeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(timeout);
-            timeout = setTimeout(() => {
-                document.getElementById('filter-form').submit();
-            }, 500);
-        });
-    }
-});
 </script>
 
 <style>
 /* Smooth fade-out animation for confirmed rows */
-[id^="reading-row-"] {
+[id^="reading-row-"], [id^="pending-row-"] {
     transition: opacity 0.3s ease-out;
+}
+
+/* Tab button active state */
+.tab-button {
+    position: relative;
 }
 </style>
 {% endblock %}

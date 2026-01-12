@@ -694,18 +694,11 @@
                     <span class="font-medium">Payment History</span>
                 </a>
 
-                <!-- Meter Readings: Superadmin and Cashier -->
-                <a href="{% url 'consumers:meter_reading_overview' %}"
+                <!-- Meter Readings: Superadmin and Cashier (Unified with Pending tab) -->
+                <a href="{% url 'consumers:meter_readings' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-speedometer2 me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Meter Readings</span>
-                </a>
-
-                <!-- Pending Readings: Show when there are pending proof readings -->
-                <a href="{% url 'consumers:pending_readings' %}"
-                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
-                    <i class="bi bi-camera-fill me-2.5 text-base" style="width: 20px;"></i>
-                    <span class="font-medium">Pending Readings</span>
                     {% if pending_proof_readings_count %}
                     <span class="ml-auto bg-warning-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">{{ pending_proof_readings_count }}</span>
                     {% endif %}

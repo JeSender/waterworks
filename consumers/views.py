@@ -4367,6 +4367,137 @@ def reject_reading(request, reading_id):
 
 
 @login_required
+def meter_readings(request):
+    """
+    Unified meter readings management view with tabbed interface.
+    - All Readings tab: Shows all readings with filters
+    - Pending Review tab: Shows only unconfirmed readings
+    """
+    today = date.today()
+
+    # Get all barangays for filter
+    barangays = Barangay.objects.all().order_by('name')
+
+    # Get all meter readings with related data
+    readings_queryset = MeterReading.objects.select_related(
+        'consumer', 'consumer__barangay', 'submitted_by'
+    ).order_by('-reading_date', '-created_at')
+
+    # Apply filters
+    search_query = request.GET.get('search', '').strip()
+    selected_barangay = request.GET.get('barangay', '')
+    selected_source = request.GET.get('source', '')
+    selected_status = request.GET.get('status', '')
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+
+    if search_query:
+        readings_queryset = readings_queryset.filter(
+            Q(consumer__first_name__icontains=search_query) |
+            Q(consumer__last_name__icontains=search_query) |
+            Q(consumer__account_number__icontains=search_query) |
+            Q(consumer__id_number__icontains=search_query)
+        )
+
+    if selected_barangay:
+        readings_queryset = readings_queryset.filter(consumer__barangay_id=selected_barangay)
+
+    if selected_source:
+        readings_queryset = readings_queryset.filter(source=selected_source)
+
+    if selected_status:
+        if selected_status == 'confirmed':
+            readings_queryset = readings_queryset.filter(is_confirmed=True)
+        elif selected_status == 'pending':
+            readings_queryset = readings_queryset.filter(is_confirmed=False, is_rejected=False)
+
+    if from_date:
+        readings_queryset = readings_queryset.filter(reading_date__gte=from_date)
+
+    if to_date:
+        readings_queryset = readings_queryset.filter(reading_date__lte=to_date)
+
+    # Prepare readings with consumption data
+    readings_with_data = []
+    for reading in readings_queryset[:500]:  # Limit to recent 500 for performance
+        prev_reading = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev_reading:
+            consumption = reading.reading_value - prev_reading.reading_value
+        else:
+            baseline = reading.consumer.first_reading or 0
+            consumption = reading.reading_value - baseline if reading.reading_value >= baseline else 0
+
+        readings_with_data.append({
+            'reading': reading,
+            'prev_reading': prev_reading,
+            'consumption': consumption if reading.is_confirmed else (consumption if consumption >= 0 else 0),
+            'display_id': reading.consumer.id_number or reading.consumer.account_number
+        })
+
+    # Get pending readings for Pending tab
+    pending_readings = MeterReading.objects.filter(
+        is_confirmed=False,
+        is_rejected=False,
+        source='manual_with_proof'
+    ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-reading_date')
+
+    # Add previous reading info to each pending reading
+    for reading in pending_readings:
+        prev = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev:
+            reading.previous_reading = prev.reading_value
+            reading.consumption = reading.reading_value - prev.reading_value
+        else:
+            baseline = reading.consumer.first_reading or 0
+            reading.previous_reading = baseline
+            reading.consumption = reading.reading_value - baseline
+
+    # Calculate statistics
+    total_count = len(readings_with_data)
+    confirmed_count = sum(1 for item in readings_with_data if item['reading'].is_confirmed)
+    pending_count = sum(1 for item in readings_with_data if not item['reading'].is_confirmed and not item['reading'].is_rejected)
+
+    # Calculate average consumption
+    consumptions = [item['consumption'] for item in readings_with_data if item['consumption'] is not None and item['consumption'] > 0]
+    avg_consumption = sum(consumptions) / len(consumptions) if consumptions else 0
+
+    # Confirmed today count
+    confirmed_today_count = MeterReading.objects.filter(
+        is_confirmed=True,
+        confirmed_at__date=today
+    ).count()
+
+    context = {
+        'readings': readings_with_data,
+        'pending_readings': pending_readings,
+        'barangays': barangays,
+        'search_query': search_query,
+        'selected_barangay': selected_barangay,
+        'selected_source': selected_source,
+        'selected_status': selected_status,
+        'from_date': from_date,
+        'to_date': to_date,
+        'total_count': total_count,
+        'confirmed_count': confirmed_count,
+        'pending_count': pending_count,
+        'avg_consumption': avg_consumption,
+        'confirmed_today_count': confirmed_today_count,
+    }
+
+    return render(request, 'consumers/meter_readings.html', context)
+
+
+@login_required
 def pending_readings_view(request):
     """
     Display all meter readings pending admin confirmation (with proof photos).
