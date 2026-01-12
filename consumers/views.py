@@ -4492,6 +4492,7 @@ def meter_readings(request):
         'pending_count': pending_count,
         'avg_consumption': avg_consumption,
         'confirmed_today_count': confirmed_today_count,
+        'is_paginated': False,  # Add pagination support in future if needed
     }
 
     return render(request, 'consumers/meter_readings.html', context)
