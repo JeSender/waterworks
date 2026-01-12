@@ -66,7 +66,7 @@
                                        id="search-input"
                                        value="{{ search_query }}"
                                        class="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
-                                       placeholder="Search by name or account number...">
+                                       placeholder="Search by name or ID number...">
                             </div>
                         </div>
                         <div>
@@ -218,7 +218,7 @@
                                             {{ item.reading.consumer.first_name }} {{ item.reading.consumer.last_name }}
                                         </div>
                                         <div class="text-xs text-dark-500 font-mono">
-                                            {{ item.reading.consumer.account_number }}
+                                            {{ item.reading.consumer.id_number }}
                                         </div>
                                         <div class="text-xs text-dark-400">
                                             {{ item.reading.consumer.barangay.name|default:"—" }}

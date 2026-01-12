@@ -4395,7 +4395,6 @@ def meter_readings(request):
         readings_queryset = readings_queryset.filter(
             Q(consumer__first_name__icontains=search_query) |
             Q(consumer__last_name__icontains=search_query) |
-            Q(consumer__account_number__icontains=search_query) |
             Q(consumer__id_number__icontains=search_query)
         )
 
@@ -4436,7 +4435,7 @@ def meter_readings(request):
             'reading': reading,
             'prev_reading': prev_reading,
             'consumption': consumption if reading.is_confirmed else (consumption if consumption >= 0 else 0),
-            'display_id': reading.consumer.id_number or reading.consumer.account_number
+            'display_id': reading.consumer.id_number
         })
 
     # Get pending readings for Pending tab
