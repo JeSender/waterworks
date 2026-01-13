@@ -256,7 +256,7 @@ def api_submit_reading(request):
             else:
                 # If it's unconfirmed, update the existing record
                 existing_reading.reading_value = current_reading
-                existing_reading.source = 'mobile_app' # Update source to reflect API submission
+                existing_reading.source = 'app_scanned' # OCR scan from Smart Meter Reader app
                 existing_reading.save()
 
         except MeterReading.DoesNotExist:
@@ -266,7 +266,7 @@ def api_submit_reading(request):
                 consumer=consumer,
                 reading_date=reading_date,
                 reading_value=current_reading,
-                source='mobile_app',  # Mark source as coming from the mobile app
+                source='app_scanned',  # OCR scan from Smart Meter Reader app
                 is_confirmed=True  # Auto-confirm - no manual confirmation needed
             )
 
@@ -505,7 +505,7 @@ def api_submit_manual_reading(request):
             consumer=consumer,
             reading_date=reading_date,
             reading_value=current_reading,
-            source='manual_with_proof',
+            source='app_manual',  # Manual entry from Smart Meter Reader app
             is_confirmed=False,  # Needs admin confirmation
             proof_image_url=proof_image_url,
             submitted_by=current_user  # Use current_user (from session or token)
@@ -901,7 +901,7 @@ def api_get_pending_readings(request):
         readings = MeterReading.objects.filter(
             is_confirmed=False,
             is_rejected=False,
-            source='manual_with_proof'
+            source='app_manual'  # Manual entry from Smart Meter Reader app
         ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-created_at')
 
         data = []
@@ -1386,7 +1386,7 @@ def api_get_consumer_bill(request, consumer_id):
         # Get reader name from the meter reading source
         reader_name = "System"
         if bill.current_reading:
-            if bill.current_reading.source == 'mobile_app':
+            if bill.current_reading.source in ['app_scanned', 'app_manual']:
                 reader_name = "Field Staff (Mobile)"
             elif bill.current_reading.source == 'manual':
                 reader_name = "Office Staff (Manual)"
@@ -2098,7 +2098,7 @@ def smart_meter_webhook(request):
             consumer=consumer,
             reading_value=reading_value,
             reading_date=data['date'],
-            source='smart_meter'
+            source='app_scanned'  # Auto-confirmed reading (webhook/IoT)
         )
         return JsonResponse({'status': 'success', 'message': 'Reading recorded'})
 
@@ -4442,7 +4442,7 @@ def meter_readings(request):
     pending_readings = MeterReading.objects.filter(
         is_confirmed=False,
         is_rejected=False,
-        source='manual_with_proof'
+        source='app_manual'  # Manual entry from Smart Meter Reader app
     ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-reading_date')
 
     # Add previous reading info to each pending reading
@@ -4508,7 +4508,7 @@ def pending_readings_view(request):
     pending_readings = MeterReading.objects.filter(
         is_confirmed=False,
         is_rejected=False,
-        source='manual_with_proof'
+        source='app_manual'  # Manual entry from Smart Meter Reader app
     ).select_related('consumer', 'consumer__barangay', 'submitted_by').order_by('-reading_date')
 
     # Add previous reading info to each

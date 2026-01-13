@@ -731,18 +731,17 @@ class Consumer(models.Model):
 # ----------------------------
 class MeterReading(models.Model):
     """
-    Stores meter readings from field staff (mobile app) or office (manual entry).
+    Stores meter readings from Smart Meter Reader app or office entry.
 
     FLOW:
-    - Mobile app: source='mobile_app', is_confirmed=True (auto-confirm)
-    - Manual with proof: source='manual_with_proof', is_confirmed=False (needs admin review)
-    - Office manual: source='manual', is_confirmed=True (trusted)
+    - App OCR Scan: source='app_scanned', is_confirmed=True (auto-confirm, OCR reads meter)
+    - App Manual Entry: source='app_manual', is_confirmed=False (needs admin review, has proof photo)
+    - Office Manual: source='manual', is_confirmed=True (trusted, web dashboard entry)
     """
     SOURCE_CHOICES = [
+        ('app_scanned', 'App - OCR Scan'),
+        ('app_manual', 'App - Manual Entry'),
         ('manual', 'Office Manual Entry'),
-        ('mobile_app', 'Mobile App (OCR)'),
-        ('manual_with_proof', 'Manual with Proof Photo'),
-        ('smart_meter', 'Smart Meter'),
     ]
 
     consumer = models.ForeignKey(

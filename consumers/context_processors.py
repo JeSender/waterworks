@@ -49,7 +49,7 @@ def notifications(request):
             pending_proof_count = MeterReading.objects.filter(
                 is_confirmed=False,
                 is_rejected=False,
-                source='manual_with_proof'
+                source='app_manual'  # Manual entry from Smart Meter Reader app
             ).count()
 
             return {
@@ -63,7 +63,7 @@ def notifications(request):
             pending_proof_count = MeterReading.objects.filter(
                 is_confirmed=False,
                 is_rejected=False,
-                source='manual_with_proof'
+                source='app_manual'  # Manual entry from Smart Meter Reader app
             ).count()
 
             return {
