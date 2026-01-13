@@ -297,11 +297,8 @@
         </div>
 
         <!-- Top Bar - Floating over image -->
-        <div class="absolute top-0 left-0 right-0 bg-gradient-to-b from-black via-black/80 to-transparent px-6 py-5 flex items-center justify-between z-10">
+        <div class="absolute top-0 left-0 right-0 bg-gradient-to-b from-black via-black/80 to-transparent px-6 py-5 flex items-center justify-center z-10">
             <span class="text-lg font-semibold text-white drop-shadow-lg" id="photoConsumerName">Proof Photo</span>
-            <button onclick="closeImageModal()" class="inline-flex items-center px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg text-base font-bold text-white transition-all shadow-2xl border-2 border-blue-400">
-                <i class="bi bi-arrow-left mr-2 text-lg"></i> <span id="imageModalBackText">Back to Details</span>
-            </button>
         </div>
 
         <!-- Bottom Bar - Floating over image -->
@@ -380,7 +377,6 @@ function openImageModal(imageUrl, consumerName, fromDetails = false) {
 
     // Update back button text based on context
     const backText = fromDetails ? 'Back to Details' : 'Back to List';
-    document.getElementById('imageModalBackText').textContent = backText;
     document.getElementById('imageModalBackTextBottom').textContent = backText;
 
     document.getElementById('imageModal').classList.remove('hidden');
