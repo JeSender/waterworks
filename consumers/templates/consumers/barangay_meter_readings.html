@@ -214,47 +214,47 @@
                 <!-- Two-column layout container -->
                 <div id="detailsGrid" class="grid grid-cols-1 gap-6">
                     <!-- Left Column: Consumer & Reading Info -->
-                    <div class="space-y-4">
+                    <div class="space-y-4 mx-auto w-full max-w-lg">
                         <!-- Consumer Info -->
-                        <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs text-gray-600 uppercase font-semibold">Consumer</span>
-                                <span class="text-sm font-bold text-gray-900" id="detail-consumer-name"></span>
+                        <div class="bg-gray-50 rounded-lg p-4 space-y-3">
+                            <div class="text-center">
+                                <span class="text-xs text-gray-600 uppercase font-semibold block mb-1">Consumer</span>
+                                <span class="text-base font-bold text-gray-900" id="detail-consumer-name"></span>
                             </div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs text-gray-600 uppercase font-semibold">ID Number</span>
+                            <div class="text-center border-t pt-2">
+                                <span class="text-xs text-gray-600 uppercase font-semibold block mb-1">ID Number</span>
                                 <span class="text-sm font-mono text-gray-800" id="detail-consumer-id"></span>
                             </div>
-                            <div class="flex justify-between items-start">
-                                <span class="text-xs text-gray-600 uppercase font-semibold">Barangay</span>
+                            <div class="text-center border-t pt-2">
+                                <span class="text-xs text-gray-600 uppercase font-semibold block mb-1">Barangay</span>
                                 <span class="text-sm text-gray-800" id="detail-barangay"></span>
                             </div>
                         </div>
 
                         <!-- Reading Info -->
                         <div class="space-y-3">
-                            <div class="flex justify-between items-center pb-3 border-b">
-                                <span class="text-sm text-gray-600">Current Reading</span>
-                                <span class="text-lg font-bold text-blue-600" id="detail-current"></span>
+                            <div class="text-center pb-3 border-b">
+                                <span class="text-sm text-gray-600 block mb-2">Current Reading</span>
+                                <span class="text-2xl font-bold text-blue-600" id="detail-current"></span>
                             </div>
-                            <div class="flex justify-between items-center pb-3 border-b">
-                                <span class="text-sm text-gray-600">Previous Reading</span>
-                                <span class="text-lg font-semibold text-gray-700" id="detail-previous"></span>
+                            <div class="text-center pb-3 border-b">
+                                <span class="text-sm text-gray-600 block mb-2">Previous Reading</span>
+                                <span class="text-xl font-semibold text-gray-700" id="detail-previous"></span>
                             </div>
-                            <div class="flex justify-between items-center pb-3 border-b">
-                                <span class="text-sm text-gray-600">Consumption</span>
-                                <span class="text-lg font-bold text-green-600" id="detail-consumption"></span>
+                            <div class="text-center pb-3 border-b">
+                                <span class="text-sm text-gray-600 block mb-2">Consumption</span>
+                                <span class="text-2xl font-bold text-green-600" id="detail-consumption"></span>
                             </div>
-                            <div class="flex justify-between items-center pb-3 border-b">
-                                <span class="text-sm text-gray-600">Reading Date</span>
+                            <div class="text-center pb-3 border-b">
+                                <span class="text-sm text-gray-600 block mb-1">Reading Date</span>
                                 <span class="text-sm font-medium text-gray-800" id="detail-date"></span>
                             </div>
-                            <div class="flex justify-between items-center pb-3 border-b">
-                                <span class="text-sm text-gray-600">Source</span>
+                            <div class="text-center pb-3 border-b">
+                                <span class="text-sm text-gray-600 block mb-1">Source</span>
                                 <span class="text-sm font-medium text-gray-800" id="detail-source"></span>
                             </div>
-                            <div class="flex justify-between items-center">
-                                <span class="text-sm text-gray-600">Status</span>
+                            <div class="text-center">
+                                <span class="text-sm text-gray-600 block mb-2">Status</span>
                                 <span id="detail-status"></span>
                             </div>
                         </div>
@@ -289,27 +289,24 @@
 
 <!-- Image Modal (View Only) -->
 <div id="imageModal" class="fixed inset-0 z-[60] hidden">
-    <div class="fixed inset-0 bg-black" onclick="closeImageModal()"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-95" onclick="closeImageModal()"></div>
     <div class="fixed inset-0 flex flex-col">
-        <!-- Top Bar with Back Button -->
-        <div class="flex items-center justify-between px-6 py-4 bg-black bg-opacity-90 text-white">
-            <button onclick="closeImageModal()" class="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold transition-colors">
+        <!-- Top Bar with Title and Back Button -->
+        <div class="flex items-center justify-between px-6 py-4">
+            <span class="text-lg font-semibold text-white" id="photoConsumerName">Proof Photo</span>
+            <button onclick="closeImageModal()" class="inline-flex items-center px-5 py-2.5 bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm rounded-lg text-base font-semibold text-white transition-all border border-white border-opacity-30 shadow-lg">
                 <i class="bi bi-arrow-left mr-2"></i> <span id="imageModalBackText">Back to Details</span>
-            </button>
-            <span class="text-base font-semibold" id="photoConsumerName">Proof Photo</span>
-            <button onclick="closeImageModal()" class="text-2xl hover:text-gray-300 transition-colors px-2">
-                <i class="bi bi-x-lg"></i>
             </button>
         </div>
 
         <!-- Image Display -->
-        <div class="flex-1 flex items-center justify-center p-4 bg-black">
+        <div class="flex-1 flex items-center justify-center p-4">
             <img id="modalImage" src="" alt="Proof Photo" class="max-w-full max-h-full object-contain">
         </div>
 
         <!-- Bottom Bar with Back Button -->
-        <div class="bg-black bg-opacity-90 px-6 py-4 flex justify-center">
-            <button onclick="closeImageModal()" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-base transition-colors inline-flex items-center shadow-lg">
+        <div class="px-6 py-4 flex justify-center">
+            <button onclick="closeImageModal()" class="px-8 py-3 bg-white bg-opacity-20 hover:bg-opacity-30 backdrop-blur-sm text-white font-semibold rounded-lg text-base transition-all inline-flex items-center shadow-lg border border-white border-opacity-30">
                 <i class="bi bi-arrow-left mr-2 text-lg"></i> <span id="imageModalBackTextBottom">Back to Details</span>
             </button>
         </div>
