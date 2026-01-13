@@ -36,6 +36,27 @@
     </div>
 {% endif %}
 
+<!-- Info Box: Why View-Only -->
+<div class="mb-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+    <div class="flex items-start gap-3">
+        <i class="bi bi-info-circle-fill text-blue-600 text-xl flex-shrink-0 mt-0.5"></i>
+        <div class="flex-1">
+            <h3 class="text-sm font-semibold text-blue-900 mb-1">📊 Monitoring & Overview Page</h3>
+            <p class="text-sm text-blue-800 mb-2">
+                This page shows all consumers in <strong>{{ barangay.name }}</strong> for monitoring and reporting purposes.
+                You can view reading details and proof photos to verify submissions.
+            </p>
+            <p class="text-xs text-blue-700 italic">
+                <strong>Note:</strong> To confirm or reject readings with proof photos, please use the
+                <a href="{% url 'consumers:pending_readings' %}" class="underline hover:text-blue-900 font-semibold">
+                    📷 Pending Readings
+                </a>
+                page which provides the full review workflow with confirmation actions.
+            </p>
+        </div>
+    </div>
+</div>
+
 <!-- Search Filter -->
 <div class="mb-4 flex items-center gap-3">
     <div class="flex-1 relative">
@@ -136,14 +157,23 @@
                         </td>
 
                         <td class="px-4 py-2 text-center">
-                            {% if item.reading and item.reading.proof_image_url %}
-                                <button onclick="openImageModal('{{ item.reading.proof_image_url }}')"
-                                        class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                                        title="View Proof Photo">
-                                    <i class="bi bi-image mr-1"></i> View
-                                </button>
+                            {% if item.reading %}
+                                <div class="flex items-center justify-center gap-2">
+                                    <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }})"
+                                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                                            title="Show Reading Details">
+                                        <i class="bi bi-info-circle mr-1"></i> Details
+                                    </button>
+                                    {% if item.reading.proof_image_url %}
+                                    <button onclick="openImageModal('{{ item.reading.proof_image_url }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}')"
+                                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
+                                            title="View Proof Photo">
+                                        <i class="bi bi-image mr-1"></i> Photo
+                                    </button>
+                                    {% endif %}
+                                </div>
                             {% else %}
-                                <span class="text-sm text-gray-400">—</span>
+                                <span class="text-sm text-gray-400">No reading yet</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -170,6 +200,81 @@
     {% endif %}
 </div>
 
+<!-- Details Modal -->
+<div id="detailsModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black bg-opacity-50" onclick="closeDetailsModal()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full" onclick="event.stopPropagation()">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-700 px-6 py-4 rounded-t-lg">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="bi bi-file-text-fill"></i>
+                        Reading Details
+                    </h3>
+                    <button onclick="closeDetailsModal()" class="text-white hover:text-gray-200 text-xl">
+                        <i class="bi bi-x-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Content -->
+            <div class="p-6 space-y-4">
+                <!-- Consumer Info -->
+                <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-600 uppercase font-semibold">Consumer</span>
+                        <span class="text-sm font-bold text-gray-900" id="detail-consumer-name"></span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-600 uppercase font-semibold">ID Number</span>
+                        <span class="text-sm font-mono text-gray-800" id="detail-consumer-id"></span>
+                    </div>
+                    <div class="flex justify-between items-start">
+                        <span class="text-xs text-gray-600 uppercase font-semibold">Barangay</span>
+                        <span class="text-sm text-gray-800" id="detail-barangay"></span>
+                    </div>
+                </div>
+
+                <!-- Reading Info -->
+                <div class="space-y-3">
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <span class="text-sm text-gray-600">Current Reading</span>
+                        <span class="text-lg font-bold text-blue-600" id="detail-current"></span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <span class="text-sm text-gray-600">Previous Reading</span>
+                        <span class="text-lg font-semibold text-gray-700" id="detail-previous"></span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <span class="text-sm text-gray-600">Consumption</span>
+                        <span class="text-lg font-bold text-green-600" id="detail-consumption"></span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <span class="text-sm text-gray-600">Reading Date</span>
+                        <span class="text-sm font-medium text-gray-800" id="detail-date"></span>
+                    </div>
+                    <div class="flex justify-between items-center pb-3 border-b">
+                        <span class="text-sm text-gray-600">Source</span>
+                        <span class="text-sm font-medium text-gray-800" id="detail-source"></span>
+                    </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-sm text-gray-600">Status</span>
+                        <span id="detail-status"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="bg-gray-50 px-6 py-4 rounded-b-lg flex justify-center">
+                <button onclick="closeDetailsModal()" class="px-6 py-2.5 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-sm transition-colors inline-flex items-center gap-2">
+                    <i class="bi bi-arrow-left"></i> Back to List
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Image Modal (View Only) -->
 <div id="imageModal" class="fixed inset-0 z-50 hidden">
     <div class="fixed inset-0 bg-black" onclick="closeImageModal()"></div>
@@ -179,7 +284,7 @@
             <button onclick="closeImageModal()" class="inline-flex items-center text-sm font-medium hover:text-gray-300 transition-colors">
                 <i class="bi bi-arrow-left mr-2"></i> Back to List
             </button>
-            <span class="text-base font-semibold">Proof Photo</span>
+            <span class="text-base font-semibold" id="photoConsumerName">Proof Photo</span>
             <button onclick="closeImageModal()" class="text-2xl hover:text-gray-300 transition-colors">
                 <i class="bi bi-x-lg"></i>
             </button>
@@ -200,9 +305,38 @@
 </div>
 
 <script>
+// Details Modal
+function openDetailsModal(id, name, barangay, current, previous, consumption, date, source, confirmed) {
+    document.getElementById('detail-consumer-name').textContent = name;
+    document.getElementById('detail-consumer-id').textContent = id;
+    document.getElementById('detail-barangay').textContent = barangay;
+    document.getElementById('detail-current').textContent = current;
+    document.getElementById('detail-previous').textContent = previous;
+    document.getElementById('detail-consumption').textContent = consumption + ' m³';
+    document.getElementById('detail-date').textContent = date;
+    document.getElementById('detail-source').textContent = source;
+
+    // Status badge
+    const statusSpan = document.getElementById('detail-status');
+    if (confirmed) {
+        statusSpan.innerHTML = '<span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"><i class="bi bi-check-circle-fill mr-1"></i> Confirmed</span>';
+    } else {
+        statusSpan.innerHTML = '<span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800"><i class="bi bi-clock-fill mr-1"></i> Pending</span>';
+    }
+
+    document.getElementById('detailsModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeDetailsModal() {
+    document.getElementById('detailsModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
 // Image Modal
-function openImageModal(imageUrl) {
+function openImageModal(imageUrl, consumerName) {
     document.getElementById('modalImage').src = imageUrl;
+    document.getElementById('photoConsumerName').textContent = consumerName ? consumerName + ' - Proof Photo' : 'Proof Photo';
     document.getElementById('imageModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -252,7 +386,13 @@ function debounce(func, wait) {
 }
 
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeImageModal();
+    if (e.key === 'Escape') {
+        if (!document.getElementById('detailsModal').classList.contains('hidden')) {
+            closeDetailsModal();
+        } else if (!document.getElementById('imageModal').classList.contains('hidden')) {
+            closeImageModal();
+        }
+    }
 });
 </script>
 {% endblock %}
