@@ -84,19 +84,8 @@
                         </div>
                     </div>
 
-                    <!-- Row 2: Source, Status, Date Range -->
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-dark-700 mb-2">Source</label>
-                            <select name="source"
-                                    id="source-filter"
-                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm">
-                                <option value="">All Sources</option>
-                                <option value="app_scanned" {% if selected_source == 'app_scanned' %}selected{% endif %}>App - OCR Scan</option>
-                                <option value="app_manual" {% if selected_source == 'app_manual' %}selected{% endif %}>App - Manual Entry</option>
-                                <option value="manual" {% if selected_source == 'manual' %}selected{% endif %}>Office Manual Entry</option>
-                            </select>
-                        </div>
+                    <!-- Row 2: Status, Date Range -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div>
                             <label class="block text-xs font-semibold text-dark-700 mb-2">Status</label>
                             <select name="status"

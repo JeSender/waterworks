@@ -4386,7 +4386,6 @@ def meter_readings(request):
     # Apply filters
     search_query = request.GET.get('search', '').strip()
     selected_barangay = request.GET.get('barangay', '')
-    selected_source = request.GET.get('source', '')
     selected_status = request.GET.get('status', '')
     from_date = request.GET.get('from_date', '')
     to_date = request.GET.get('to_date', '')
@@ -4400,9 +4399,6 @@ def meter_readings(request):
 
     if selected_barangay:
         readings_queryset = readings_queryset.filter(consumer__barangay_id=selected_barangay)
-
-    if selected_source:
-        readings_queryset = readings_queryset.filter(source=selected_source)
 
     if selected_status:
         if selected_status == 'confirmed':
@@ -4482,7 +4478,6 @@ def meter_readings(request):
         'barangays': barangays,
         'search_query': search_query,
         'selected_barangay': selected_barangay,
-        'selected_source': selected_source,
         'selected_status': selected_status,
         'from_date': from_date,
         'to_date': to_date,
