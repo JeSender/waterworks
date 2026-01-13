@@ -735,17 +735,6 @@ function getCookie(name) {
     }
     return cookieValue;
 }
-
-// Close modals with Escape key
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        if (!document.getElementById('fullPhotoModal').classList.contains('hidden')) {
-            closeFullPhoto();
-        } else if (!document.getElementById('confirmModal').classList.contains('hidden')) {
-            closeConfirmModal();
-        }
-    }
-});
 </script>
 
 <style>
@@ -761,32 +750,37 @@ document.addEventListener('keydown', function(e) {
 </style>
 
 <!-- Print Modal -->
-<div id="printModal" class="fixed inset-0 z-50 hidden">
+<div id="printModal" class="fixed inset-0 z-50 hidden" style="z-index: 9999;">
     <!-- Backdrop -->
-    <div class="fixed inset-0 bg-black bg-opacity-75" onclick="closePrintModal()"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-75 backdrop-blur-sm" onclick="closePrintModal()" style="z-index: 9998;"></div>
 
-    <!-- Modal Container -->
-    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
-        <!-- Paper Preview -->
-        <div class="relative bg-white rounded-lg shadow-2xl max-w-5xl w-full" style="min-height: 11in;">
-            <!-- Control Bar (Non-printable) -->
-            <div class="no-print sticky top-0 z-10 bg-gray-800 text-white px-6 py-3 rounded-t-lg flex items-center justify-between">
-                <h3 class="text-lg font-semibold">📄 Print Preview - Long Bond Paper</h3>
-                <div class="flex gap-3">
-                    <button onclick="printReport()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
-                        <i class="bi bi-printer-fill"></i> Print
-                    </button>
-                    <button onclick="closePrintModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
-                        <i class="bi bi-x-lg"></i> Close
-                    </button>
+    <!-- Modal Container - Centered -->
+    <div class="fixed inset-0 flex items-center justify-center p-4" style="z-index: 9999; overflow-y: auto;">
+        <div class="relative my-8" onclick="event.stopPropagation();">
+            <!-- Paper Preview Container -->
+            <div class="bg-white rounded-lg shadow-2xl" style="width: 8.5in; max-height: 90vh; overflow-y: auto;">
+                <!-- Control Bar (Non-printable) -->
+                <div class="no-print sticky top-0 z-10 bg-gray-800 text-white px-6 py-4 rounded-t-lg flex items-center justify-between shadow-lg">
+                    <h3 class="text-lg font-semibold flex items-center gap-2">
+                        <i class="bi bi-file-earmark-text"></i>
+                        Print Preview - Long Bond Paper (8.5" × 13")
+                    </h3>
+                    <div class="flex gap-3">
+                        <button onclick="printReport()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg">
+                            <i class="bi bi-printer-fill"></i> Print
+                        </button>
+                        <button onclick="closePrintModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-semibold inline-flex items-center gap-2 transition-all duration-200 shadow-md hover:shadow-lg">
+                            <i class="bi bi-x-lg"></i> Close
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Print Content -->
-            <div id="printContent" class="p-8 bg-white" style="width: 8.5in; min-height: 11in; margin: 0 auto;">
-                <div class="text-center py-8 text-gray-400">
-                    <i class="bi bi-hourglass-split text-4xl mb-3 block"></i>
-                    <p>Loading print preview...</p>
+                <!-- Print Content -->
+                <div id="printContent" class="p-8 bg-white" style="width: 8.5in; min-height: 13in;">
+                    <div class="text-center py-16 text-gray-400">
+                        <i class="bi bi-hourglass-split text-5xl mb-4 block animate-pulse"></i>
+                        <p class="text-lg">Loading print preview...</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -798,9 +792,23 @@ function openPrintModal() {
     const modal = document.getElementById('printModal');
     const printContent = document.getElementById('printContent');
 
-    // Show modal
+    // Reset to loading state
+    printContent.innerHTML = `
+        <div class="text-center py-16 text-gray-400">
+            <i class="bi bi-hourglass-split text-5xl mb-4 block animate-pulse"></i>
+            <p class="text-lg">Loading print preview...</p>
+        </div>
+    `;
+
+    // Show modal with smooth transition
     modal.classList.remove('hidden');
     document.body.style.overflow = 'hidden';
+
+    // Scroll modal container to top
+    const modalContainer = modal.querySelector('.fixed.inset-0.flex');
+    if (modalContainer) {
+        modalContainer.scrollTop = 0;
+    }
 
     // Build URL with current filters
     const urlParams = new URLSearchParams(window.location.search);
@@ -808,7 +816,12 @@ function openPrintModal() {
 
     // Fetch print content
     fetch(printUrl)
-        .then(response => response.text())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Failed to fetch print preview');
+            }
+            return response.text();
+        })
         .then(html => {
             // Extract the report content from the fetched HTML
             const parser = new DOMParser();
@@ -818,12 +831,24 @@ function openPrintModal() {
             if (reportDiv) {
                 printContent.innerHTML = reportDiv.innerHTML;
             } else {
-                printContent.innerHTML = '<p class="text-red-500 text-center py-8">Failed to load print preview.</p>';
+                printContent.innerHTML = `
+                    <div class="text-center py-16">
+                        <i class="bi bi-exclamation-triangle text-5xl mb-4 block text-red-500"></i>
+                        <p class="text-lg text-red-600 font-semibold">Failed to load print preview</p>
+                        <p class="text-sm text-gray-500 mt-2">Please try again or contact support</p>
+                    </div>
+                `;
             }
         })
         .catch(error => {
             console.error('Error loading print preview:', error);
-            printContent.innerHTML = '<p class="text-red-500 text-center py-8">Error loading print preview.</p>';
+            printContent.innerHTML = `
+                <div class="text-center py-16">
+                    <i class="bi bi-exclamation-triangle text-5xl mb-4 block text-red-500"></i>
+                    <p class="text-lg text-red-600 font-semibold">Error loading print preview</p>
+                    <p class="text-sm text-gray-500 mt-2">${error.message}</p>
+                </div>
+            `;
         });
 }
 
@@ -834,22 +859,28 @@ function closePrintModal() {
 }
 
 function printReport() {
-    // Hide the control bar
-    document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
-
-    // Print
+    // Print the content
     window.print();
-
-    // Restore the control bar after a short delay
-    setTimeout(() => {
-        document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
-    }, 100);
 }
 
-// ESC key to close print modal
+// Handle ESC key to close print modal (with priority check)
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && !document.getElementById('printModal').classList.contains('hidden')) {
-        closePrintModal();
+    if (e.key === 'Escape') {
+        const printModal = document.getElementById('printModal');
+        const fullPhotoModal = document.getElementById('fullPhotoModal');
+        const confirmModal = document.getElementById('confirmModal');
+
+        // Close print modal first if it's open
+        if (printModal && !printModal.classList.contains('hidden')) {
+            closePrintModal();
+            e.stopPropagation();
+        }
+        // Then check other modals
+        else if (fullPhotoModal && !fullPhotoModal.classList.contains('hidden')) {
+            closeFullPhoto();
+        } else if (confirmModal && !confirmModal.classList.contains('hidden')) {
+            closeConfirmModal();
+        }
     }
 });
 </script>
@@ -857,11 +888,27 @@ document.addEventListener('keydown', function(e) {
 <style>
 /* Print Modal Styles */
 #printModal {
-    backdrop-filter: blur(4px);
+    transition: opacity 0.3s ease-in-out;
+}
+
+#printModal > div:first-child {
+    transition: opacity 0.3s ease-in-out;
 }
 
 #printContent {
     font-family: Arial, sans-serif;
+}
+
+/* Smooth scroll for modal content */
+#printModal .overflow-y-auto {
+    scroll-behavior: smooth;
+}
+
+/* Ensure modal content is centered and properly displayed */
+#printModal .relative.my-8 {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
 }
 
 /* Long Bond Paper Format */
@@ -871,6 +918,7 @@ document.addEventListener('keydown', function(e) {
 }
 
 @media print {
+    /* Hide everything except print content */
     body * {
         visibility: hidden;
     }
@@ -894,6 +942,7 @@ document.addEventListener('keydown', function(e) {
     /* Ensure content fits on page */
     table {
         page-break-inside: auto;
+        font-size: 11px;
     }
 
     tr {
@@ -903,6 +952,26 @@ document.addEventListener('keydown', function(e) {
 
     thead {
         display: table-header-group;
+    }
+
+    /* Reset any modal styling for print */
+    #printModal {
+        position: static;
+        background: white;
+    }
+}
+
+/* Animate modal opening */
+#printModal:not(.hidden) {
+    animation: fadeIn 0.2s ease-in-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
     }
 }
 </style>
