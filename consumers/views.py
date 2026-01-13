@@ -4367,12 +4367,242 @@ def reject_reading(request, reading_id):
 
 
 @login_required
+def export_meter_readings_excel(request):
+    """Export meter readings to Excel (.xlsx) file with logo and formatting"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.drawing.image import Image as XLImage
+    from openpyxl.utils import get_column_letter
+    from io import BytesIO
+    from datetime import datetime
+    import os
+    from django.conf import settings
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', '')
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+
+    # Build queryset with same filters as the view
+    readings_queryset = MeterReading.objects.select_related(
+        'consumer', 'consumer__barangay', 'submitted_by'
+    ).order_by('-reading_date', '-created_at')
+
+    if search_query:
+        readings_queryset = readings_queryset.filter(
+            Q(consumer__first_name__icontains=search_query) |
+            Q(consumer__last_name__icontains=search_query) |
+            Q(consumer__id_number__icontains=search_query)
+        )
+
+    if selected_barangay:
+        readings_queryset = readings_queryset.filter(consumer__barangay_id=selected_barangay)
+
+    if selected_status:
+        if selected_status == 'confirmed':
+            readings_queryset = readings_queryset.filter(is_confirmed=True)
+        elif selected_status == 'pending':
+            readings_queryset = readings_queryset.filter(is_confirmed=False, is_rejected=False)
+
+    if from_date:
+        readings_queryset = readings_queryset.filter(reading_date__gte=from_date)
+
+    if to_date:
+        readings_queryset = readings_queryset.filter(reading_date__lte=to_date)
+
+    # Limit to 2000 records for performance
+    readings_queryset = readings_queryset[:2000]
+
+    # Create workbook
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Meter Readings"
+
+    # Try to add logo
+    try:
+        logo_path = os.path.join(settings.BASE_DIR, 'consumers', 'static', 'consumers', 'images', 'logo.jpg')
+        if os.path.exists(logo_path):
+            img = XLImage(logo_path)
+            # Resize logo to fit in header (about 60x60 pixels)
+            img.width = 60
+            img.height = 60
+            ws.add_image(img, 'A1')
+    except Exception as e:
+        pass  # If logo fails, continue without it
+
+    # Styling
+    title_font = Font(bold=True, size=16, color="003366")
+    subtitle_font = Font(bold=True, size=11, color="0055aa")
+    header_font = Font(bold=True, color="FFFFFF", size=11)
+    header_fill = PatternFill(start_color="4472C4", end_color="4472C4", fill_type="solid")
+    border = Border(
+        left=Side(style='thin'),
+        right=Side(style='thin'),
+        top=Side(style='thin'),
+        bottom=Side(style='thin')
+    )
+
+    # Header Section (rows 1-5)
+    ws.merge_cells('B1:G1')
+    ws['B1'] = "BALILIHAN WATERWORKS"
+    ws['B1'].font = title_font
+    ws['B1'].alignment = Alignment(horizontal='center', vertical='center')
+
+    ws.merge_cells('B2:G2')
+    ws['B2'] = "METER READINGS REPORT"
+    ws['B2'].font = subtitle_font
+    ws['B2'].alignment = Alignment(horizontal='center', vertical='center')
+
+    # Add filter info
+    filter_info = []
+    if selected_barangay:
+        try:
+            barangay = Barangay.objects.get(id=selected_barangay)
+            filter_info.append(f"Barangay: {barangay.name}")
+        except:
+            pass
+    if selected_status:
+        filter_info.append(f"Status: {selected_status.title()}")
+    if from_date and to_date:
+        filter_info.append(f"Period: {from_date} to {to_date}")
+    elif from_date:
+        filter_info.append(f"From: {from_date}")
+    elif to_date:
+        filter_info.append(f"To: {to_date}")
+
+    ws.merge_cells('B3:G3')
+    ws['B3'] = " | ".join(filter_info) if filter_info else "All Records"
+    ws['B3'].alignment = Alignment(horizontal='center')
+
+    ws.merge_cells('B4:G4')
+    ws['B4'] = f"Generated: {datetime.now().strftime('%Y-%m-%d %I:%M %p')}"
+    ws['B4'].alignment = Alignment(horizontal='center')
+    ws['B4'].font = Font(size=9, color="666666")
+
+    # Set row heights
+    ws.row_dimensions[1].height = 50
+    ws.row_dimensions[2].height = 20
+    ws.row_dimensions[3].height = 18
+    ws.row_dimensions[4].height = 18
+    ws.row_dimensions[5].height = 5  # Empty row
+
+    # Headers (row 6)
+    headers = ['ID Number', 'Consumer Name', 'Barangay', 'Current', 'Previous', 'Consumption (m³)', 'Date', 'Source', 'Status']
+    ws.append([])  # Row 5 (empty)
+    ws.append(headers)  # Row 6
+
+    header_row = ws[6]
+    for cell in header_row:
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal='center', vertical='center')
+        cell.border = border
+
+    # Data rows
+    for reading in readings_queryset:
+        # Get previous reading
+        prev_reading = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        # Calculate consumption
+        if prev_reading:
+            consumption = reading.reading_value - prev_reading.reading_value
+            prev_value = prev_reading.reading_value
+        elif reading.consumer.first_reading:
+            consumption = reading.reading_value - reading.consumer.first_reading
+            prev_value = reading.consumer.first_reading
+        else:
+            consumption = reading.reading_value
+            prev_value = 0
+
+        # Source display
+        source_display = reading.get_source_display() if hasattr(reading, 'get_source_display') else reading.source
+
+        # Status
+        if reading.is_confirmed:
+            status = "Confirmed"
+        elif reading.is_rejected:
+            status = "Rejected"
+        else:
+            status = "Pending"
+
+        ws.append([
+            reading.consumer.id_number or '—',
+            f"{reading.consumer.first_name} {reading.consumer.last_name}",
+            reading.consumer.barangay.name if reading.consumer.barangay else 'N/A',
+            reading.reading_value,
+            prev_value,
+            consumption if reading.is_confirmed else (consumption if consumption >= 0 else 0),
+            reading.reading_date.strftime('%Y-%m-%d'),
+            source_display,
+            status
+        ])
+
+    # Apply borders and alignment to all data cells
+    for row in range(7, ws.max_row + 1):
+        for col in range(1, len(headers) + 1):
+            cell = ws.cell(row, col)
+            cell.border = border
+            if col in [4, 5, 6]:  # Numeric columns
+                cell.alignment = Alignment(horizontal='center')
+            else:
+                cell.alignment = Alignment(horizontal='left')
+
+    # Auto-adjust column widths
+    column_widths = {
+        'A': 15,  # ID Number
+        'B': 30,  # Consumer Name
+        'C': 20,  # Barangay
+        'D': 12,  # Current
+        'E': 12,  # Previous
+        'F': 16,  # Consumption
+        'G': 14,  # Date
+        'H': 18,  # Source
+        'I': 12,  # Status
+    }
+    for col_letter, width in column_widths.items():
+        ws.column_dimensions[col_letter].width = width
+
+    # Create response
+    response = HttpResponse(
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+
+    # Generate filename
+    filename_parts = ['Meter_Readings']
+    if selected_barangay:
+        try:
+            barangay = Barangay.objects.get(id=selected_barangay)
+            filename_parts.append(barangay.name.replace(' ', '_'))
+        except:
+            pass
+    if from_date and to_date:
+        filename_parts.append(f"{from_date}_to_{to_date}")
+    filename_parts.append(datetime.now().strftime('%Y%m%d'))
+
+    filename = '_'.join(filename_parts) + '.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{filename}"'
+
+    wb.save(response)
+    return response
+
+
+@login_required
 def meter_readings(request):
     """
     Unified meter readings management view with tabbed interface.
     - All Readings tab: Shows all readings with filters
     - Pending Review tab: Shows only unconfirmed readings
     """
+    # Check if export is requested
+    if request.GET.get('export') == 'excel':
+        return export_meter_readings_excel(request)
+
     today = date.today()
 
     # Get all barangays for filter
