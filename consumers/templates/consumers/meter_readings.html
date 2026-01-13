@@ -121,11 +121,10 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </a>
                         {% if readings %}
-                        <a href="{% url 'consumers:meter_readings_print' %}?{{ request.GET.urlencode }}"
-                           target="_blank"
-                           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors ml-auto">
+                        <button onclick="openPrintModal()"
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors ml-auto">
                             <i class="bi bi-printer"></i> Print Report
-                        </a>
+                        </button>
                         <a href="{% url 'consumers:meter_readings' %}?{{ request.GET.urlencode }}&export=excel"
                            class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors">
                             <i class="bi bi-file-earmark-excel"></i> Export to Excel
@@ -758,6 +757,153 @@ document.addEventListener('keydown', function(e) {
 /* Tab button active state */
 .tab-button {
     position: relative;
+}
+</style>
+
+<!-- Print Modal -->
+<div id="printModal" class="fixed inset-0 z-50 hidden">
+    <!-- Backdrop -->
+    <div class="fixed inset-0 bg-black bg-opacity-75" onclick="closePrintModal()"></div>
+
+    <!-- Modal Container -->
+    <div class="fixed inset-0 flex items-center justify-center p-4 overflow-y-auto">
+        <!-- Paper Preview -->
+        <div class="relative bg-white rounded-lg shadow-2xl max-w-5xl w-full" style="min-height: 11in;">
+            <!-- Control Bar (Non-printable) -->
+            <div class="no-print sticky top-0 z-10 bg-gray-800 text-white px-6 py-3 rounded-t-lg flex items-center justify-between">
+                <h3 class="text-lg font-semibold">📄 Print Preview - Long Bond Paper</h3>
+                <div class="flex gap-3">
+                    <button onclick="printReport()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                        <i class="bi bi-printer-fill"></i> Print
+                    </button>
+                    <button onclick="closePrintModal()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-sm font-medium inline-flex items-center gap-2 transition-colors">
+                        <i class="bi bi-x-lg"></i> Close
+                    </button>
+                </div>
+            </div>
+
+            <!-- Print Content -->
+            <div id="printContent" class="p-8 bg-white" style="width: 8.5in; min-height: 11in; margin: 0 auto;">
+                <div class="text-center py-8 text-gray-400">
+                    <i class="bi bi-hourglass-split text-4xl mb-3 block"></i>
+                    <p>Loading print preview...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function openPrintModal() {
+    const modal = document.getElementById('printModal');
+    const printContent = document.getElementById('printContent');
+
+    // Show modal
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+
+    // Build URL with current filters
+    const urlParams = new URLSearchParams(window.location.search);
+    const printUrl = "{% url 'consumers:meter_readings_print' %}?" + urlParams.toString();
+
+    // Fetch print content
+    fetch(printUrl)
+        .then(response => response.text())
+        .then(html => {
+            // Extract the report content from the fetched HTML
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const reportDiv = doc.querySelector('.report');
+
+            if (reportDiv) {
+                printContent.innerHTML = reportDiv.innerHTML;
+            } else {
+                printContent.innerHTML = '<p class="text-red-500 text-center py-8">Failed to load print preview.</p>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading print preview:', error);
+            printContent.innerHTML = '<p class="text-red-500 text-center py-8">Error loading print preview.</p>';
+        });
+}
+
+function closePrintModal() {
+    const modal = document.getElementById('printModal');
+    modal.classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+function printReport() {
+    // Hide the control bar
+    document.querySelectorAll('.no-print').forEach(el => el.style.display = 'none');
+
+    // Print
+    window.print();
+
+    // Restore the control bar after a short delay
+    setTimeout(() => {
+        document.querySelectorAll('.no-print').forEach(el => el.style.display = '');
+    }, 100);
+}
+
+// ESC key to close print modal
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape' && !document.getElementById('printModal').classList.contains('hidden')) {
+        closePrintModal();
+    }
+});
+</script>
+
+<style>
+/* Print Modal Styles */
+#printModal {
+    backdrop-filter: blur(4px);
+}
+
+#printContent {
+    font-family: Arial, sans-serif;
+}
+
+/* Long Bond Paper Format */
+@page {
+    size: 8.5in 13in; /* Legal size (long bond) */
+    margin: 0.5in;
+}
+
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #printContent, #printContent * {
+        visibility: visible;
+    }
+
+    #printContent {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        padding: 0;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    /* Ensure content fits on page */
+    table {
+        page-break-inside: auto;
+    }
+
+    tr {
+        page-break-inside: avoid;
+        page-break-after: auto;
+    }
+
+    thead {
+        display: table-header-group;
+    }
 }
 </style>
 {% endblock %}

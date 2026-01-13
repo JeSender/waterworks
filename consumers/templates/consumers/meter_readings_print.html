@@ -181,49 +181,7 @@
             font-size: 11px;
             color: #666;
         }
-        .no-print {
-            background: #fef3c7;
-            border: 2px solid #f59e0b;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        .no-print h3 {
-            margin: 0 0 10px 0;
-            color: #92400e;
-            font-size: 16px;
-        }
-        .no-print p {
-            margin: 0;
-            font-size: 14px;
-            color: #78350f;
-        }
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            margin: 5px;
-            background: #0055aa;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            font-size: 14px;
-        }
-        .btn:hover {
-            background: #003d7a;
-        }
-        .btn-secondary {
-            background: #6c757d;
-        }
-        .btn-secondary:hover {
-            background: #545b62;
-        }
         @media print {
-            .no-print {
-                display: none;
-            }
             body {
                 padding: 0;
             }
@@ -244,15 +202,6 @@
     </style>
 </head>
 <body>
-    <div class="no-print">
-        <h3>🖨️ Ready to Print</h3>
-        <p>Review the report below. When ready, click Print to generate a PDF or paper copy.</p>
-        <div style="margin-top: 10px;">
-            <button onclick="window.print()" class="btn">🖨️ Print Report</button>
-            <button onclick="window.close()" class="btn btn-secondary">← Back to List</button>
-        </div>
-    </div>
-
     <div class="report">
         <!-- Unified Header: Logo + Text + Logo in single row -->
         <div class="header-row">
