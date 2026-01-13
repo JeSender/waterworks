@@ -121,7 +121,13 @@
                             <i class="bi bi-arrow-counterclockwise"></i> Reset
                         </a>
                         {% if readings %}
-                        <a href="?{{ request.GET.urlencode }}&export=excel" class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors ml-auto">
+                        <a href="{% url 'consumers:meter_readings_print' %}?{{ request.GET.urlencode }}"
+                           target="_blank"
+                           class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors ml-auto">
+                            <i class="bi bi-printer"></i> Print Report
+                        </a>
+                        <a href="{% url 'consumers:meter_readings' %}?{{ request.GET.urlencode }}&export=excel"
+                           class="px-4 py-2 bg-success-600 hover:bg-success-700 text-white font-medium rounded-lg text-sm inline-flex items-center gap-2 transition-colors">
                             <i class="bi bi-file-earmark-excel"></i> Export to Excel
                         </a>
                         {% endif %}

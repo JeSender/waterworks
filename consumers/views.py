@@ -4593,6 +4593,109 @@ def export_meter_readings_excel(request):
 
 
 @login_required
+def meter_readings_print(request):
+    """Printable meter readings report with receipt-style header"""
+    from datetime import datetime
+
+    # Get filter parameters
+    search_query = request.GET.get('search', '').strip()
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', '')
+    from_date = request.GET.get('from_date', '')
+    to_date = request.GET.get('to_date', '')
+
+    # Build queryset with same filters as the view
+    readings_queryset = MeterReading.objects.select_related(
+        'consumer', 'consumer__barangay', 'submitted_by'
+    ).order_by('-reading_date', '-created_at')
+
+    if search_query:
+        readings_queryset = readings_queryset.filter(
+            Q(consumer__first_name__icontains=search_query) |
+            Q(consumer__last_name__icontains=search_query) |
+            Q(consumer__id_number__icontains=search_query)
+        )
+
+    if selected_barangay:
+        readings_queryset = readings_queryset.filter(consumer__barangay_id=selected_barangay)
+
+    if selected_status:
+        if selected_status == 'confirmed':
+            readings_queryset = readings_queryset.filter(is_confirmed=True)
+        elif selected_status == 'pending':
+            readings_queryset = readings_queryset.filter(is_confirmed=False, is_rejected=False)
+
+    if from_date:
+        readings_queryset = readings_queryset.filter(reading_date__gte=from_date)
+
+    if to_date:
+        readings_queryset = readings_queryset.filter(reading_date__lte=to_date)
+
+    # Limit to 500 records for print
+    readings_queryset = readings_queryset[:500]
+
+    # Prepare readings with consumption data
+    readings_with_data = []
+    for reading in readings_queryset:
+        prev_reading = MeterReading.objects.filter(
+            consumer=reading.consumer,
+            is_confirmed=True,
+            reading_date__lt=reading.reading_date
+        ).order_by('-reading_date').first()
+
+        if prev_reading:
+            consumption = reading.reading_value - prev_reading.reading_value
+            prev_value = prev_reading.reading_value
+        elif reading.consumer.first_reading:
+            consumption = reading.reading_value - reading.consumer.first_reading
+            prev_value = reading.consumer.first_reading
+        else:
+            consumption = reading.reading_value
+            prev_value = 0
+
+        readings_with_data.append({
+            'reading': reading,
+            'prev_value': prev_value,
+            'consumption': consumption if reading.is_confirmed else (consumption if consumption >= 0 else 0),
+        })
+
+    # Build filter display
+    filter_display_parts = []
+    if selected_barangay:
+        try:
+            barangay = Barangay.objects.get(id=selected_barangay)
+            filter_display_parts.append(f"Barangay: {barangay.name}")
+        except:
+            pass
+    if selected_status:
+        filter_display_parts.append(f"Status: {selected_status.title()}")
+    if from_date and to_date:
+        filter_display_parts.append(f"Period: {from_date} to {to_date}")
+    elif from_date:
+        filter_display_parts.append(f"From: {from_date}")
+    elif to_date:
+        filter_display_parts.append(f"To: {to_date}")
+
+    filter_display = " | ".join(filter_display_parts) if filter_display_parts else "All Records"
+
+    # Calculate statistics
+    total_count = len(readings_with_data)
+    confirmed_count = sum(1 for item in readings_with_data if item['reading'].is_confirmed)
+    pending_count = sum(1 for item in readings_with_data if not item['reading'].is_confirmed and not item['reading'].is_rejected)
+
+    context = {
+        'readings_with_data': readings_with_data,
+        'filter_display': filter_display,
+        'total_count': total_count,
+        'confirmed_count': confirmed_count,
+        'pending_count': pending_count,
+        'generated_date': timezone.now()
+    }
+
+    return render(request, 'consumers/meter_readings_print.html', context)
+
+
+@login_required
 def meter_readings(request):
     """
     Unified meter readings management view with tabbed interface.
