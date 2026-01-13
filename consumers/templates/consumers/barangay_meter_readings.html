@@ -158,20 +158,11 @@
 
                         <td class="px-4 py-2 text-center">
                             {% if item.reading %}
-                                <div class="flex items-center justify-center gap-2">
-                                    <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }})"
-                                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                                            title="Show Reading Details">
-                                        <i class="bi bi-info-circle mr-1"></i> Details
-                                    </button>
-                                    {% if item.reading.proof_image_url %}
-                                    <button onclick="openImageModal('{{ item.reading.proof_image_url }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}')"
-                                            class="inline-flex items-center px-2 py-1 text-xs font-medium rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors"
-                                            title="View Proof Photo">
-                                        <i class="bi bi-image mr-1"></i> Photo
-                                    </button>
-                                    {% endif %}
-                                </div>
+                                <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }}, '{{ item.reading.proof_image_url|default:"" }}')"
+                                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                        title="Show Reading Details">
+                                    <i class="bi bi-info-circle mr-1.5"></i> Show Details
+                                </button>
                             {% else %}
                                 <span class="text-sm text-gray-400">No reading yet</span>
                             {% endif %}
@@ -263,6 +254,18 @@
                         <span id="detail-status"></span>
                     </div>
                 </div>
+
+                <!-- Proof Photo Section -->
+                <div id="detail-photo-section" class="hidden">
+                    <div class="border-t pt-4">
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-sm font-semibold text-gray-700">Proof Photo</span>
+                        </div>
+                        <div class="bg-gray-100 rounded-lg p-2 flex items-center justify-center">
+                            <img id="detail-photo" src="" alt="Proof Photo" class="max-w-full max-h-64 object-contain rounded cursor-pointer hover:opacity-90 transition-opacity" onclick="openFullImageModal()">
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Footer -->
@@ -306,7 +309,7 @@
 
 <script>
 // Details Modal
-function openDetailsModal(id, name, barangay, current, previous, consumption, date, source, confirmed) {
+function openDetailsModal(id, name, barangay, current, previous, consumption, date, source, confirmed, photoUrl) {
     document.getElementById('detail-consumer-name').textContent = name;
     document.getElementById('detail-consumer-id').textContent = id;
     document.getElementById('detail-barangay').textContent = barangay;
@@ -324,6 +327,16 @@ function openDetailsModal(id, name, barangay, current, previous, consumption, da
         statusSpan.innerHTML = '<span class="inline-flex items-center px-2 py-1 text-xs font-medium rounded-full bg-yellow-100 text-yellow-800"><i class="bi bi-clock-fill mr-1"></i> Pending</span>';
     }
 
+    // Handle proof photo
+    const photoSection = document.getElementById('detail-photo-section');
+    const photoImg = document.getElementById('detail-photo');
+    if (photoUrl && photoUrl !== '') {
+        photoImg.src = photoUrl;
+        photoSection.classList.remove('hidden');
+    } else {
+        photoSection.classList.add('hidden');
+    }
+
     document.getElementById('detailsModal').classList.remove('hidden');
     document.body.style.overflow = 'hidden';
 }
@@ -331,6 +344,15 @@ function openDetailsModal(id, name, barangay, current, previous, consumption, da
 function closeDetailsModal() {
     document.getElementById('detailsModal').classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+// Open full image modal from details modal
+function openFullImageModal() {
+    const photoImg = document.getElementById('detail-photo');
+    const consumerName = document.getElementById('detail-consumer-name').textContent;
+    if (photoImg.src) {
+        openImageModal(photoImg.src, consumerName);
+    }
 }
 
 // Image Modal
