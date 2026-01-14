@@ -28,29 +28,29 @@
                             Report Controls
                         </h2>
                     </div>
-                    <div class="p-6">
+                    <div class="p-5">
                         <form method="GET" action="{% url 'consumers:reports' %}" id="reportForm">
                             <!-- Date Range Inputs -->
-                            <div class="mb-5">
-                                <label class="block text-base font-medium text-dark-700 mb-2">
-                                    <i class="bi bi-calendar3 text-primary-600 me-1"></i>Select Date Range
+                            <div class="mb-4">
+                                <label class="block text-sm font-semibold text-dark-800 mb-2">
+                                    <i class="bi bi-calendar3 text-primary-600 me-1.5"></i>Date Range
                                 </label>
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-2 gap-2.5">
                                     <div>
-                                        <label for="date_from" class="block text-sm font-medium text-dark-600 mb-1">From</label>
+                                        <label for="date_from" class="block text-xs font-medium text-dark-600 mb-1.5">From</label>
                                         <input
                                             type="date"
-                                            class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                            class="w-full px-3 py-2.5 text-base font-medium border-2 border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                                             id="date_from"
                                             name="date_from"
                                             value="{{ date_from_value }}"
                                             required>
                                     </div>
                                     <div>
-                                        <label for="date_to" class="block text-sm font-medium text-dark-600 mb-1">To</label>
+                                        <label for="date_to" class="block text-xs font-medium text-dark-600 mb-1.5">To</label>
                                         <input
                                             type="date"
-                                            class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                            class="w-full px-3 py-2.5 text-base font-medium border-2 border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                                             id="date_to"
                                             name="date_to"
                                             value="{{ date_to_value }}"
@@ -60,12 +60,12 @@
                             </div>
 
                             <!-- Report Type Dropdown -->
-                            <div class="mb-6">
-                                <label for="report_type" class="block text-base font-medium text-dark-700 mb-2">
-                                    <i class="bi bi-file-earmark-text text-primary-600 me-1"></i>Report Type
+                            <div class="mb-4">
+                                <label for="report_type" class="block text-sm font-semibold text-dark-800 mb-2">
+                                    <i class="bi bi-file-earmark-text text-primary-600 me-1.5"></i>Report Type
                                 </label>
                                 <select
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                    class="w-full px-3.5 py-2.5 text-base font-medium border-2 border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                                     id="report_type"
                                     name="report_type"
                                     required>
@@ -77,12 +77,12 @@
                             </div>
 
                             <!-- Barangay Filter (for detailed reports) -->
-                            <div class="mb-6" id="barangayFilterDiv">
-                                <label for="barangay" class="block text-base font-medium text-dark-700 mb-2">
-                                    <i class="bi bi-geo-alt-fill text-primary-600 me-1"></i>Filter by Barangay
+                            <div class="mb-4" id="barangayFilterDiv">
+                                <label for="barangay" class="block text-sm font-semibold text-dark-800 mb-2">
+                                    <i class="bi bi-geo-alt-fill text-primary-600 me-1.5"></i>Barangay Filter
                                 </label>
                                 <select
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
+                                    class="w-full px-3.5 py-2.5 text-base font-medium border-2 border-light-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
                                     id="barangay"
                                     name="barangay">
                                     <option value="">All Barangays</option>
@@ -90,21 +90,21 @@
                                     <option value="{{ brgy.id }}" {% if barangay_id == brgy.id|stringformat:"s" %}selected{% endif %}>{{ brgy.name }}</option>
                                     {% endfor %}
                                 </select>
-                                <p class="text-xs text-gray-500 mt-2">
-                                    <i class="bi bi-info-circle me-1"></i>Optional: Filter detailed report to specific barangay
+                                <p class="text-xs text-gray-600 mt-1.5 italic">
+                                    <i class="bi bi-info-circle me-1"></i>Optional filter
                                 </p>
                             </div>
 
                             <!-- Action Buttons -->
-                            <div class="mb-5">
+                            <div class="pt-3 border-t border-gray-200">
                                 <!-- Generate Report Button -->
                                 <button
                                     type="submit"
                                     id="generateBtn"
-                                    class="btn-primary w-full btn-lg">
-                                    <i class="bi bi-play-fill"></i>
+                                    class="w-full px-4 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2">
+                                    <i class="bi bi-play-circle text-base"></i>
                                     <span id="btnText">Generate Report</span>
-                                    <i class="bi bi-arrow-clockwise animate-spin ms-2 hidden" id="btnSpinner"></i>
+                                    <i class="bi bi-arrow-clockwise animate-spin hidden" id="btnSpinner"></i>
                                 </button>
                             </div>
 
