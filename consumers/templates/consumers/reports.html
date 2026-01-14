@@ -20,7 +20,7 @@
     <div class="flex flex-col lg:flex-row gap-6">
 
             <!-- LEFT COLUMN: Report Generation Form -->
-            <div class="w-full lg:w-1/3 lg:max-w-md">
+            <div class="w-full lg:w-2/5 lg:max-w-lg">
                 <div class="bg-white rounded-xl shadow-md sticky top-6 overflow-hidden">
                     <div class="bg-gradient-to-r from-primary-600 to-primary-700 px-6 py-4">
                         <h2 class="text-base font-bold text-white flex items-center gap-2">
@@ -226,7 +226,7 @@
                                     <td colspan="6" class="px-4 py-3 text-base font-bold text-right uppercase text-blue-900">Total Revenue</td>
                                     <td class="px-4 py-3 text-base font-bold text-right text-blue-900">₱{{ total_amount|floatformat:2|intcomma }}</td>
                                 </tr>
-                                <tr>
+                                <tr class="print-only">
                                     <td colspan="7" class="px-4 py-8">
                                         <div class="mt-8 pt-4">
                                             <p class="text-sm font-semibold text-gray-800 mb-6">Prepared by:</p>
@@ -342,7 +342,7 @@
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="mt-8 pt-4 border-t-2 border-gray-300">
+                                        <div class="mt-8 pt-4 border-t-2 border-gray-300 print-only">
                                             <p class="text-base font-bold text-gray-800 mb-6">Prepared by:</p>
                                             <div class="mt-16 border-t-2 border-gray-800 w-80">
                                                 <p class="text-sm text-gray-600 mt-2 text-center font-medium">Signature over Printed Name</p>
@@ -436,6 +436,11 @@
     display: block;
 }
 
+/* Print Only - Hidden on Screen, Visible on Print */
+.print-only {
+    display: none;
+}
+
 /* Print Styles */
 @media print {
     /* Hide screen-only elements */
@@ -450,10 +455,18 @@
         display: none !important;
     }
 
+    /* Show print-only elements */
+    .print-only {
+        display: table-row !important;
+    }
+
     /* Hide left sidebar/form column */
     .lg\:w-1\/3,
+    .lg\:w-2\/5,
     .w-full.lg\:w-1\/3,
-    .lg\:max-w-md {
+    .w-full.lg\:w-2\/5,
+    .lg\:max-w-md,
+    .lg\:max-w-lg {
         display: none !important;
     }
 
