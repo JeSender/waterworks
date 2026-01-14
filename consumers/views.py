@@ -3226,6 +3226,7 @@ def reports(request):
     report_type = request.GET.get('report_type') or request.POST.get('report_type', 'revenue')
     date_from_str = request.GET.get('date_from') or request.POST.get('date_from')
     date_to_str = request.GET.get('date_to') or request.POST.get('date_to')
+    barangay_id = request.GET.get('barangay') or request.POST.get('barangay', '')
 
     # Default to current month (first day to last day)
     now = datetime.now()
@@ -3256,17 +3257,44 @@ def reports(request):
     report_title = ""
     total_amount = 0
     record_count = 0
+    total_consumption = 0
 
     # Generate report based on type
     if report_type == 'revenue':
-        report_title = f"Revenue Report"
+        report_title = f"Revenue Report (Detailed)"
+        payments_query = Payment.objects.filter(
+            payment_date__gte=date_from,
+            payment_date__lte=date_to
+        ).select_related('bill__consumer', 'bill__consumer__barangay')
+
+        # Apply barangay filter if selected
+        if barangay_id:
+            payments_query = payments_query.filter(bill__consumer__barangay_id=barangay_id)
+
+        report_data = payments_query.order_by('payment_date')
+        total_amount = report_data.aggregate(total=Sum('amount_paid'))['total'] or 0
+        record_count = report_data.count()
+
+    elif report_type == 'revenue_barangay':
+        report_title = f"Revenue Summary by Barangay"
+        from django.db.models import Q
+
+        # Aggregate by barangay
         report_data = Payment.objects.filter(
             payment_date__gte=date_from,
             payment_date__lte=date_to
-        ).select_related('bill__consumer').order_by('payment_date')
+        ).values(
+            'bill__consumer__barangay__name'
+        ).annotate(
+            barangay_name=F('bill__consumer__barangay__name'),
+            payment_count=Count('id'),
+            total_amount=Sum('amount_paid'),
+            total_consumption=Sum('bill__consumption')
+        ).order_by('barangay_name')
 
-        total_amount = report_data.aggregate(total=Sum('amount_paid'))['total'] or 0
-        record_count = report_data.count()
+        total_amount = report_data.aggregate(total=Sum('total_amount'))['total'] or 0
+        total_consumption = report_data.aggregate(total=Sum('total_consumption'))['total'] or 0
+        record_count = report_data.aggregate(total=Sum('payment_count'))['payment_count'] or 0
 
     elif report_type == 'delinquency':
         report_title = f"Delinquent Accounts Report"
@@ -3299,6 +3327,9 @@ def reports(request):
         total_amount = report_data.aggregate(total=Sum('total_paid'))['total'] or 0
         record_count = report_data.count()
 
+    # Get all barangays for filter dropdown
+    barangays = Barangay.objects.all().order_by('name')
+
     context = {
         'report_type': report_type,
         'date_from_value': date_from_value,
@@ -3310,6 +3341,9 @@ def reports(request):
         'report_data': report_data,
         'total_amount': total_amount,
         'record_count': record_count,
+        'total_consumption': total_consumption,
+        'barangays': barangays,
+        'barangay_id': barangay_id,
     }
 
     return render(request, 'consumers/reports.html', context)
