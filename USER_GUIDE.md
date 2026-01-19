@@ -3,6 +3,8 @@
 
 This guide provides detailed steps to setup, deploy, and maintain the Balilihan Waterworks Management System, developed using Python programming language, Django framework, and PostgreSQL database.
 
+**Live Production System**: [https://waterworks-sos3.onrender.com](https://waterworks-sos3.onrender.com)
+
 ---
 
 ## 1. Prerequisites
@@ -138,9 +140,17 @@ It is best practice to run Django projects inside a virtual environment to isola
    ```
 
    **CORS & CSRF (for Mobile App API):**
+
+   For local development:
    ```
    CORS_ALLOWED_ORIGINS=http://localhost:8081,http://127.0.0.1:8081
    CSRF_TRUSTED_ORIGINS=http://localhost:8000,http://127.0.0.1:8000
+   ```
+
+   For production deployment:
+   ```
+   CORS_ALLOWED_ORIGINS=https://waterworks-sos3.onrender.com
+   CSRF_TRUSTED_ORIGINS=https://waterworks-sos3.onrender.com
    ```
 
    **Cloudinary (Optional - for cloud image storage):**
@@ -465,9 +475,9 @@ For deploying to a production environment on Render:
 1. Update `.env` file:
    ```env
    DEBUG=False
-   ALLOWED_HOSTS=your-app-name.onrender.com
-   CORS_ALLOWED_ORIGINS=https://your-app-name.onrender.com
-   CSRF_TRUSTED_ORIGINS=https://your-app-name.onrender.com
+   ALLOWED_HOSTS=waterworks-sos3.onrender.com
+   CORS_ALLOWED_ORIGINS=https://waterworks-sos3.onrender.com
+   CSRF_TRUSTED_ORIGINS=https://waterworks-sos3.onrender.com
    ```
 
 2. Collect static files:
