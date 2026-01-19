@@ -3226,7 +3226,15 @@ def reports(request):
     report_type = request.GET.get('report_type') or request.POST.get('report_type', 'revenue')
     date_from_str = request.GET.get('date_from') or request.POST.get('date_from')
     date_to_str = request.GET.get('date_to') or request.POST.get('date_to')
-    barangay_id = request.GET.get('barangay') or request.POST.get('barangay', '')
+    barangay_id_str = request.GET.get('barangay') or request.POST.get('barangay', '')
+
+    # Convert barangay_id to integer if provided
+    barangay_id = None
+    if barangay_id_str and barangay_id_str.strip():
+        try:
+            barangay_id = int(barangay_id_str)
+        except (ValueError, TypeError):
+            barangay_id = None
 
     # Default to current month (first day to last day)
     now = datetime.now()
@@ -3343,7 +3351,7 @@ def reports(request):
         'record_count': record_count,
         'total_consumption': total_consumption,
         'barangays': barangays,
-        'barangay_id': barangay_id,
+        'barangay_id': barangay_id_str if barangay_id else '',
     }
 
     return render(request, 'consumers/reports.html', context)
