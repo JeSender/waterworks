@@ -139,9 +139,7 @@
                 </div>
                 <div class="flex-1">
                     <select id="reportYear" class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 bg-white">
-                        <option value="2025">2025</option>
-                        <option value="2024">2024</option>
-                        <option value="2023">2023</option>
+                        <!-- Years will be populated dynamically by JavaScript -->
                     </select>
                 </div>
                 <button type="button" onclick="generateReport()" class="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2">
@@ -232,10 +230,22 @@ document.addEventListener('DOMContentLoaded', function() {
     // Update date every minute to keep it current
     setInterval(updateCurrentDate, 60000);
 
-    // Set current month and year
+    // Populate year dropdown dynamically
     const now = new Date();
+    const currentYear = now.getFullYear();
+    const yearSelect = document.getElementById('reportYear');
+
+    // Generate years from current year to 10 years back
+    for (let year = currentYear; year >= currentYear - 10; year--) {
+        const option = document.createElement('option');
+        option.value = year;
+        option.textContent = year;
+        yearSelect.appendChild(option);
+    }
+
+    // Set current month and year as default values
     document.getElementById('reportMonth').value = now.getMonth() + 1;
-    document.getElementById('reportYear').value = now.getFullYear();
+    document.getElementById('reportYear').value = currentYear;
 
     // Chart.js default configuration
     Chart.defaults.font.family = 'system-ui, -apple-system, sans-serif';
