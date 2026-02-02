@@ -4464,7 +4464,7 @@ def export_meter_readings_excel(request):
 
     # Try to add logo
     try:
-        logo_path = os.path.join(settings.BASE_DIR, 'consumers', 'static', 'consumers', 'images', 'logo.jpg')
+        logo_path = os.path.join(settings.BASE_DIR, 'consumers', 'static', 'consumers', 'images', 'logo.png')
         if os.path.exists(logo_path):
             img = XLImage(logo_path)
             # Resize logo to fit in header (about 60x60 pixels)

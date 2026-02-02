@@ -816,7 +816,7 @@ waterworks/
 │   ├── static/
 │   │   └── consumers/
 │   │       └── images/
-│   │           ├── logo.jpg
+│   │           ├── logo.png
 │   │           └── background.jpg
 │   ├── models.py                            # Database models
 │   ├── views.py                             # View functions (70+ views)
