@@ -5440,21 +5440,39 @@ def session_activities(request, session_id):
 def consumer_bill(request, consumer_id):
     """
     Display all bills for a specific consumer with summary statistics.
-    Optimized with select_related to reduce database queries.
+    Includes year filter and service connection history.
     """
     from django.db.models import Sum
     from datetime import datetime
 
     consumer = get_object_or_404(Consumer, id=consumer_id)
-    bills = consumer.bills.select_related(
+    all_bills = consumer.bills.select_related(
         'current_reading__consumer',
         'previous_reading__consumer'
     ).order_by('-billing_period')
 
-    # Calculate summary statistics
+    # Get available years for filter
+    bill_years = all_bills.dates('billing_period', 'year', order='DESC')
+    available_years = [d.year for d in bill_years]
+
+    # Apply year filter
+    selected_year = request.GET.get('year', '')
+    if selected_year:
+        bills = all_bills.filter(billing_period__year=int(selected_year))
+    else:
+        bills = all_bills
+
+    # Calculate summary statistics (for filtered bills)
     total_billed = bills.aggregate(total=Sum('total_amount'))['total'] or 0
     outstanding_balance = bills.filter(status='Pending').aggregate(total=Sum('total_amount'))['total'] or 0
     outstanding_balance += bills.filter(status='Overdue').aggregate(total=Sum('total_amount'))['total'] or 0
+
+    # Get service history (disconnect/reconnect events) for this consumer
+    consumer_name = f"{consumer.first_name} {consumer.last_name}"
+    service_history = UserActivity.objects.filter(
+        action__in=['consumer_disconnected', 'consumer_reconnected'],
+        description__icontains=consumer.id_number or consumer_name
+    ).order_by('-created_at')
 
     return render(request, 'consumers/consumer_bill.html', {
         'consumer': consumer,
@@ -5462,6 +5480,9 @@ def consumer_bill(request, consumer_id):
         'total_billed': total_billed,
         'outstanding_balance': outstanding_balance,
         'today': datetime.now(),
+        'available_years': available_years,
+        'selected_year': selected_year,
+        'service_history': service_history,
     })
 
 
