@@ -91,6 +91,11 @@
                                    title="View Details">
                                     <i class="bi bi-eye"></i>
                                 </a>
+                                <a href="{% url 'consumers:consumer_bill' consumer.id %}"
+                                   class="p-1.5 text-success-600 hover:bg-success-50 rounded-lg transition-colors"
+                                   title="View Bills">
+                                    <i class="bi bi-receipt"></i>
+                                </a>
                                 {% if user.is_superuser %}
                                 <a href="{% url 'consumers:edit_consumer' consumer.pk %}"
                                    class="p-1.5 text-warning-600 hover:bg-warning-50 rounded-lg transition-colors"
