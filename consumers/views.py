@@ -5152,24 +5152,42 @@ def inquire(request):
             messages.error(request, f"Error processing payment: {e}")
             return redirect(request.get_full_path())
 
-    # ===== GET REQUEST - Direct consumer selection (no location filter) =====
+    # ===== GET REQUEST - Consumer selection with filters =====
     selected_consumer_id = request.GET.get('consumer')
+    selected_barangay = request.GET.get('barangay', '')
+    selected_status = request.GET.get('status', 'pending')  # Default to pending
 
-    # Load all active consumers directly for faster transaction
+    # Load all active consumers
     consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok').order_by('last_name', 'first_name')
 
-    # Build consumer bills dictionary and track consumers with any bills
+    # Apply barangay filter
+    if selected_barangay:
+        consumers = consumers.filter(barangay_id=selected_barangay)
+
+    # Build consumer bills dictionary
     consumer_bills = {}
     consumers_with_bills = set()
     for c in consumers:
         bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
         if bill:
-            # Update penalty for display
             update_bill_penalty(bill, system_settings, save=True)
         consumer_bills[c.id] = bill
-        # Check if consumer has ever had any bills
         if c.bills.exists():
             consumers_with_bills.add(c.id)
+
+    # Apply status filter - remove paid consumers by default (show only pending)
+    if selected_status == 'pending':
+        consumers = [c for c in consumers if consumer_bills.get(c.id) is not None]
+    elif selected_status == 'no_bills':
+        consumers = [c for c in consumers if consumer_bills.get(c.id) is None and c.id not in consumers_with_bills]
+    elif selected_status == 'all':
+        consumers = list(consumers)
+    else:
+        # Default: show only pending
+        consumers = [c for c in consumers if consumer_bills.get(c.id) is not None]
+
+    # Load barangays for filter dropdown
+    barangays = Barangay.objects.all().order_by('name')
 
     selected_consumer = None
     latest_bill = None
@@ -5180,7 +5198,6 @@ def inquire(request):
         latest_bill = selected_consumer.bills.filter(status='Pending').order_by('-billing_period').first()
 
         if latest_bill:
-            # Get detailed payment breakdown including penalty
             payment_breakdown = get_payment_breakdown(latest_bill, system_settings)
 
     # Count total pending bills
@@ -5201,6 +5218,9 @@ def inquire(request):
         'total_pending_bills': total_pending_bills,
         'system_settings': system_settings,
         'can_waive_penalty': can_waive_penalty,
+        'barangays': barangays,
+        'selected_barangay': selected_barangay,
+        'selected_status': selected_status,
     }
     return render(request, 'consumers/inquire.html', context)
 
@@ -5648,10 +5668,13 @@ def create_user(request):
         email = request.POST.get('email', '').strip()
         password = request.POST.get('password', '')
         password_confirm = request.POST.get('password_confirm', '')
-        is_staff = request.POST.get('is_staff') == 'on'
-        is_superuser = request.POST.get('is_superuser') == 'on'
         assigned_barangay_id = request.POST.get('assigned_barangay')
         role = request.POST.get('role', 'field_staff')
+
+        # Automatically set is_staff=True for all users (required for login)
+        # Set is_superuser=True only for superadmin role
+        is_staff = True
+        is_superuser = role == 'superadmin'
 
         # Validation - require first name and last name
         if not first_name or not last_name:
@@ -5697,21 +5720,20 @@ def create_user(request):
             user.set_password(password)
             user.save()
 
-            # Create staff profile for staff users
-            if is_staff:
-                # Field staff requires barangay, admin doesn't
-                if role == 'field_staff' and not assigned_barangay_id:
-                    messages.warning(request, f"User '{username}' created but field staff should have an assigned barangay.")
+            # Always create staff profile (required for login on both web and app)
+            # Field staff requires barangay for mobile app access
+            if role == 'field_staff' and not assigned_barangay_id:
+                messages.warning(request, f"User '{username}' created but field staff should have an assigned barangay.")
 
-                barangay = None
-                if assigned_barangay_id:
-                    barangay = Barangay.objects.get(id=assigned_barangay_id)
+            barangay = None
+            if assigned_barangay_id:
+                barangay = Barangay.objects.get(id=assigned_barangay_id)
 
-                StaffProfile.objects.create(
-                    user=user,
-                    assigned_barangay=barangay,
-                    role=role
-                )
+            StaffProfile.objects.create(
+                user=user,
+                assigned_barangay=barangay,
+                role=role
+            )
 
             messages.success(request, f"User '{username}' created successfully!")
             return redirect('consumers:user_management')

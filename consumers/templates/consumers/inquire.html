@@ -2,16 +2,16 @@
 {% load dict_extras %}
 {% load static %}
 
-{% block title %}Bill Inquiry & Payment - Balilihan Waterworks{% endblock %}
+{% block title %}Payment - Balilihan Waterworks{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
-    <!-- Page Header - Compact -->
+    <!-- Page Header -->
     <div class="mb-4 flex items-center justify-between">
         <div>
             <h2 class="text-xl font-bold text-dark-900 flex items-center gap-2">
                 <i class="bi bi-credit-card-2-front-fill text-primary-600"></i>
-                Bill Inquiry & Payment
+                Payment
             </h2>
         </div>
         {% if total_pending_bills > 0 %}
@@ -21,8 +21,6 @@
         </div>
         {% endif %}
     </div>
-
-    <!-- Messages now appear in header notification bell -->
 
     {% if not selected_consumer %}
     <!-- Consumer Selection Panel -->
@@ -38,6 +36,34 @@
                     {{ consumers|length }} Consumers
                 </span>
             </div>
+
+            <!-- Filters Row -->
+            <div class="flex flex-col sm:flex-row gap-3 mb-4">
+                <!-- Barangay Filter -->
+                <div class="flex-1">
+                    <select id="filter-barangay"
+                            onchange="applyFilters()"
+                            class="w-full px-3 py-2.5 text-sm bg-white border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-dark-700">
+                        <option value="">All Barangays</option>
+                        {% for barangay in barangays %}
+                        <option value="{{ barangay.id }}" {% if selected_barangay == barangay.id|stringformat:"d" %}selected{% endif %}>
+                            {{ barangay.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Status Filter -->
+                <div class="flex-1">
+                    <select id="filter-status"
+                            onchange="applyFilters()"
+                            class="w-full px-3 py-2.5 text-sm bg-white border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-dark-700">
+                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Bills</option>
+                        <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Consumers</option>
+                        <option value="no_bills" {% if selected_status == 'no_bills' %}selected{% endif %}>No Bills</option>
+                    </select>
+                </div>
+            </div>
+
             <!-- Search Bar -->
             <div class="relative">
                 <i class="bi bi-search absolute left-4 top-1/2 -translate-y-1/2 text-dark-400"></i>
@@ -49,8 +75,8 @@
             </div>
             <div class="mt-3 flex items-center justify-between text-sm text-white/80">
                 <span>Showing <strong class="text-white" id="visible-count">{{ consumers|length }}</strong> consumers</span>
-                <button onclick="clearSearch()" class="hover:text-white transition-colors flex items-center gap-1">
-                    <i class="bi bi-arrow-clockwise"></i>Clear
+                <button onclick="clearFilters()" class="hover:text-white transition-colors flex items-center gap-1">
+                    <i class="bi bi-arrow-clockwise"></i>Reset
                 </button>
             </div>
         </div>
@@ -94,11 +120,6 @@
                             </span>
                             <div class="text-warning-700 font-bold">₱{{ bill.total_amount|floatformat:2 }}</div>
                         </div>
-                        {% elif consumer.id in consumers_with_bills %}
-                        <div class="px-2 py-1 bg-success-100 text-success-700 text-xs font-medium rounded flex items-center gap-1">
-                            <i class="bi bi-check-circle-fill"></i>
-                            Paid
-                        </div>
                         {% else %}
                         <div class="px-2 py-1 bg-gray-100 text-gray-500 text-xs font-medium rounded flex items-center gap-1">
                             <i class="bi bi-dash-circle"></i>
@@ -121,11 +142,11 @@
             <!-- Empty State -->
             <div class="text-center py-12">
                 <i class="bi bi-inbox text-6xl text-light-300 mb-3"></i>
-                <h5 class="text-lg font-bold text-dark-600 mb-1">No Consumers</h5>
-                <p class="text-sm text-dark-500 mb-4">No active consumers found in the system</p>
-                <a href="{% url 'consumers:consumer_management' %}" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                    <i class="bi bi-plus-circle-fill mr-2"></i>Add Consumer
-                </a>
+                <h5 class="text-lg font-bold text-dark-600 mb-1">No Consumers Found</h5>
+                <p class="text-sm text-dark-500 mb-4">No consumers match the selected filters</p>
+                <button onclick="clearFilters()" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                    <i class="bi bi-arrow-clockwise mr-2"></i>Reset Filters
+                </button>
             </div>
             {% endif %}
         </div>
@@ -406,7 +427,22 @@
 
 {% block extra_js %}
 <script>
-// Search consumers by name or ID number
+// Apply barangay and status filters via URL
+function applyFilters() {
+    const barangay = document.getElementById('filter-barangay')?.value || '';
+    const status = document.getElementById('filter-status')?.value || 'pending';
+    const params = new URLSearchParams();
+    if (barangay) params.set('barangay', barangay);
+    if (status) params.set('status', status);
+    window.location.href = '{% url "consumers:inquire" %}?' + params.toString();
+}
+
+// Clear all filters
+function clearFilters() {
+    window.location.href = '{% url "consumers:inquire" %}';
+}
+
+// Search consumers by name or ID number (client-side)
 function filterConsumers() {
     const searchInput = document.getElementById('search-consumer');
     if (!searchInput) return;
@@ -430,26 +466,14 @@ function filterConsumers() {
         }
     });
 
-    // Update counter
     const visibleCountEl = document.getElementById('visible-count');
     if (visibleCountEl) {
         visibleCountEl.textContent = visibleCount;
     }
 
-    // Show/hide no results message
     if (noResults && consumerList) {
         noResults.classList.toggle('hidden', visibleCount > 0);
         consumerList.classList.toggle('hidden', visibleCount === 0);
-    }
-}
-
-// Clear search
-function clearSearch() {
-    const searchInput = document.getElementById('search-consumer');
-    if (searchInput) {
-        searchInput.value = '';
-        filterConsumers();
-        searchInput.focus();
     }
 }
 
