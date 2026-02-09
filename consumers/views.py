@@ -5152,10 +5152,9 @@ def inquire(request):
             messages.error(request, f"Error processing payment: {e}")
             return redirect(request.get_full_path())
 
-    # ===== GET REQUEST - Consumer selection with filters =====
+    # ===== GET REQUEST - Show only consumers with pending bills =====
     selected_consumer_id = request.GET.get('consumer')
     selected_barangay = request.GET.get('barangay', '')
-    selected_status = request.GET.get('status', 'pending')  # Default to pending
 
     # Load all active consumers
     consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok').order_by('last_name', 'first_name')
@@ -5164,27 +5163,16 @@ def inquire(request):
     if selected_barangay:
         consumers = consumers.filter(barangay_id=selected_barangay)
 
-    # Build consumer bills dictionary
+    # Build consumer bills dictionary - only pending bills
     consumer_bills = {}
-    consumers_with_bills = set()
     for c in consumers:
         bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
         if bill:
             update_bill_penalty(bill, system_settings, save=True)
-        consumer_bills[c.id] = bill
-        if c.bills.exists():
-            consumers_with_bills.add(c.id)
+            consumer_bills[c.id] = bill
 
-    # Apply status filter - remove paid consumers by default (show only pending)
-    if selected_status == 'pending':
-        consumers = [c for c in consumers if consumer_bills.get(c.id) is not None]
-    elif selected_status == 'no_bills':
-        consumers = [c for c in consumers if consumer_bills.get(c.id) is None and c.id not in consumers_with_bills]
-    elif selected_status == 'all':
-        consumers = list(consumers)
-    else:
-        # Default: show only pending
-        consumers = [c for c in consumers if consumer_bills.get(c.id) is not None]
+    # Show only consumers with pending bills
+    consumers = [c for c in consumers if c.id in consumer_bills]
 
     # Load barangays for filter dropdown
     barangays = Barangay.objects.all().order_by('name')
@@ -5211,7 +5199,6 @@ def inquire(request):
     context = {
         'consumers': consumers,
         'consumer_bills': consumer_bills,
-        'consumers_with_bills': consumers_with_bills,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
         'payment_breakdown': payment_breakdown,
@@ -5220,7 +5207,6 @@ def inquire(request):
         'can_waive_penalty': can_waive_penalty,
         'barangays': barangays,
         'selected_barangay': selected_barangay,
-        'selected_status': selected_status,
     }
     return render(request, 'consumers/inquire.html', context)
 

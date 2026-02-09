@@ -11,16 +11,15 @@
     <!-- ============ CONSUMER SELECTION VIEW ============ -->
     <div class="bg-white rounded-2xl shadow-sm border border-light-200 overflow-hidden">
 
-        <!-- Top Bar: Filters & Search -->
-        <div class="p-4 sm:p-5 border-b border-light-200 bg-light-50">
-            <!-- Filters Row -->
+        <!-- Top Bar: Filter & Search -->
+        <div class="px-4 sm:px-5 pt-4 sm:pt-5 pb-4 border-b border-light-200 bg-gradient-to-r from-primary-600 to-primary-700">
+            <!-- Barangay Filter & Search Row -->
             <div class="flex flex-col sm:flex-row gap-3 mb-3">
                 <!-- Barangay Filter -->
-                <div class="flex-1 relative">
-                    <label class="block text-xs font-semibold text-dark-500 mb-1 uppercase tracking-wide">Barangay</label>
+                <div class="sm:w-56">
                     <select id="filter-barangay"
                             onchange="applyFilters()"
-                            class="w-full px-3 py-2.5 text-sm bg-white border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-dark-700 appearance-none cursor-pointer">
+                            class="w-full px-3 py-2.5 text-sm bg-white/95 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-dark-700 cursor-pointer shadow-sm">
                         <option value="">All Barangays</option>
                         {% for barangay in barangays %}
                         <option value="{{ barangay.id }}" {% if selected_barangay == barangay.id|stringformat:"d" %}selected{% endif %}>
@@ -29,46 +28,26 @@
                         {% endfor %}
                     </select>
                 </div>
-                <!-- Status Filter -->
-                <div class="flex-1">
-                    <label class="block text-xs font-semibold text-dark-500 mb-1 uppercase tracking-wide">Status</label>
-                    <select id="filter-status"
-                            onchange="applyFilters()"
-                            class="w-full px-3 py-2.5 text-sm bg-white border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 text-dark-700 appearance-none cursor-pointer">
-                        <option value="pending" {% if selected_status == 'pending' %}selected{% endif %}>Pending Bills</option>
-                        <option value="all" {% if selected_status == 'all' %}selected{% endif %}>All Consumers</option>
-                        <option value="no_bills" {% if selected_status == 'no_bills' %}selected{% endif %}>No Bills</option>
-                    </select>
+                <!-- Search Bar -->
+                <div class="flex-1 relative">
+                    <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 text-sm"></i>
+                    <input type="text"
+                           id="search-consumer"
+                           placeholder="Search by name or ID number..."
+                           class="w-full pl-10 pr-4 py-2.5 text-sm bg-white/95 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-dark-400 shadow-sm"
+                           autofocus>
                 </div>
-                <!-- Reset Button -->
-                <div class="flex items-end">
-                    <button onclick="clearFilters()"
-                            class="px-4 py-2.5 text-sm font-medium text-dark-500 hover:text-primary-600 bg-white border border-light-300 rounded-lg hover:border-primary-300 transition-colors flex items-center gap-1.5">
-                        <i class="bi bi-arrow-clockwise"></i>
-                        <span class="hidden sm:inline">Reset</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Search Bar -->
-            <div class="relative">
-                <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 text-sm"></i>
-                <input type="text"
-                       id="search-consumer"
-                       placeholder="Search by name or ID number..."
-                       class="w-full pl-10 pr-4 py-2.5 text-sm bg-white border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 placeholder-dark-400"
-                       autofocus>
             </div>
 
             <!-- Result Count -->
-            <div class="mt-2.5 flex items-center justify-between">
-                <p class="text-xs text-dark-500">
-                    <span id="visible-count" class="font-bold text-dark-700">{{ consumers|length }}</span> consumers found
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-white/80">
+                    <span id="visible-count" class="font-bold text-white">{{ consumers|length }}</span> pending consumers
                 </p>
-                {% if selected_barangay or selected_status != 'pending' %}
-                <span class="text-xs text-primary-600 font-medium flex items-center gap-1">
-                    <i class="bi bi-funnel-fill text-[10px]"></i> Filters active
-                </span>
+                {% if selected_barangay %}
+                <button onclick="clearFilters()" class="text-xs text-white/70 hover:text-white transition-colors flex items-center gap-1">
+                    <i class="bi bi-x-circle"></i> Clear filter
+                </button>
                 {% endif %}
             </div>
         </div>
@@ -131,14 +110,16 @@
             {% else %}
             <!-- Empty State -->
             <div class="text-center py-16 px-4">
-                <div class="w-14 h-14 bg-light-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <i class="bi bi-inbox text-2xl text-light-400"></i>
+                <div class="w-14 h-14 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-check-circle-fill text-2xl text-success-500"></i>
                 </div>
-                <h5 class="text-base font-bold text-dark-600 mb-1">No Consumers Found</h5>
-                <p class="text-sm text-dark-400 mb-5">No consumers match the selected filters</p>
+                <h5 class="text-base font-bold text-dark-600 mb-1">No Pending Bills</h5>
+                <p class="text-sm text-dark-400 mb-5">All consumers are up to date with their payments</p>
+                {% if selected_barangay %}
                 <button onclick="clearFilters()" class="inline-flex items-center px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                    <i class="bi bi-arrow-clockwise mr-2"></i>Reset Filters
+                    <i class="bi bi-arrow-clockwise mr-2"></i>View All Barangays
                 </button>
+                {% endif %}
             </div>
             {% endif %}
         </div>
@@ -407,17 +388,15 @@
 
 {% block extra_js %}
 <script>
-// Apply barangay and status filters via URL
+// Apply barangay filter via URL
 function applyFilters() {
     const barangay = document.getElementById('filter-barangay')?.value || '';
-    const status = document.getElementById('filter-status')?.value || 'pending';
     const params = new URLSearchParams();
     if (barangay) params.set('barangay', barangay);
-    if (status) params.set('status', status);
     window.location.href = '{% url "consumers:inquire" %}?' + params.toString();
 }
 
-// Clear all filters
+// Clear filter
 function clearFilters() {
     window.location.href = '{% url "consumers:inquire" %}';
 }
