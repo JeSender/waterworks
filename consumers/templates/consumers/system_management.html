@@ -222,23 +222,13 @@
 
                 <!-- Row 3: Late Payment Penalty -->
                 <div class="bg-white rounded-xl shadow-md p-4">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
-                            <i class="bi bi-exclamation-triangle-fill text-danger-600"></i>
-                            Late Payment Penalty
-                        </h3>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" name="penalty_enabled" id="penalty_enabled" class="sr-only peer"
-                                   {% if setting.penalty_enabled %}checked{% endif %}
-                                   onchange="togglePenaltySettings()">
-                            <div class="w-10 h-5 bg-light-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-danger-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-light-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-danger-600"></div>
-                            <span class="ml-2 text-xs font-medium text-dark-700" id="penalty-toggle-label">
-                                {% if setting.penalty_enabled %}Enabled{% else %}Disabled{% endif %}
-                            </span>
-                        </label>
-                    </div>
+                    <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2 mb-2">
+                        <i class="bi bi-exclamation-triangle-fill text-danger-600"></i>
+                        Late Payment Penalty
+                    </h3>
 
-                    <div id="penalty-settings-container" class="{% if not setting.penalty_enabled %}opacity-50 pointer-events-none{% endif %}">
+                    <div>
+                        <input type="hidden" name="penalty_enabled" value="on">
                         <input type="hidden" name="penalty_type" id="penalty_type" value="percentage">
                         <input type="hidden" name="penalty_grace_period_days" id="penalty_grace_period_days" value="0">
                         <input type="hidden" name="max_penalty_amount" id="max_penalty_amount" value="0">
@@ -374,20 +364,6 @@ function updateTimeline() {
     updatePenaltyDueDay();
 }
 
-// Toggle penalty settings visibility
-function togglePenaltySettings() {
-    const checkbox = document.getElementById('penalty_enabled');
-    const container = document.getElementById('penalty-settings-container');
-    const label = document.getElementById('penalty-toggle-label');
-    if (checkbox.checked) {
-        container.classList.remove('opacity-50', 'pointer-events-none');
-        label.textContent = 'Enabled';
-    } else {
-        container.classList.add('opacity-50', 'pointer-events-none');
-        label.textContent = 'Disabled';
-    }
-}
-
 // Update penalty preview
 function updatePenaltyPreview() {
     const rate = parseFloat(document.getElementById('penalty_rate').value) || 25;
@@ -406,7 +382,6 @@ function updatePenaltyDueDay() {
 function resetForm() {
     document.getElementById('settingsForm').reset();
     updateTimeline();
-    togglePenaltySettings();
     updatePenaltyPreview();
 }
 
