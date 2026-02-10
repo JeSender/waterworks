@@ -2724,6 +2724,11 @@ def home(request):
         payment_date__year=current_year
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
+    # Annual Revenue (Current Year)
+    annual_revenue = Payment.objects.filter(
+        payment_date__year=current_year
+    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
+
     # Total Revenue (All Time)
     total_revenue = Payment.objects.aggregate(
         total=Sum('amount_paid')
@@ -2864,6 +2869,7 @@ def home(request):
         # Revenue data
         'today_revenue': today_revenue,
         'monthly_revenue': monthly_revenue,
+        'annual_revenue': annual_revenue,
         'total_revenue': total_revenue,
         'today_payment_count': today_payment_count,
         # Chart data
