@@ -39,9 +39,9 @@
     <form method="POST" id="settingsForm">
         {% csrf_token %}
 
-        <div class="flex flex-col lg:flex-row gap-3">
+        <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-3">
             <!-- LEFT COLUMN -->
-            <div class="flex-1 space-y-3" id="left-column">
+            <div class="space-y-3" id="left-column">
 
                 <!-- Water Rates - Compact Table -->
                 <div class="bg-white rounded-xl shadow-md p-4">
@@ -286,8 +286,7 @@
             </div>
 
             <!-- RIGHT COLUMN -->
-            <div class="lg:w-80 xl:w-96 flex-shrink-0" id="right-column">
-                <div class="flex flex-col gap-3 lg:h-full" id="right-inner">
+            <div class="flex flex-col gap-3" id="right-column">
 
                     <!-- Billing Cycle Timeline -->
                     <div class="bg-white rounded-xl shadow-md p-4 flex-shrink-0">
@@ -358,7 +357,6 @@
                         </div>
                     </div>
                     {% endif %}
-                </div>
             </div>
         </div>
     </form>
@@ -367,17 +365,6 @@
 
 {% block extra_js %}
 <script>
-// Sync right column height to match left column exactly
-function syncColumnHeights() {
-    const left = document.getElementById('left-column');
-    const rightInner = document.getElementById('right-inner');
-    if (left && rightInner && window.innerWidth >= 1024) {
-        rightInner.style.height = left.offsetHeight + 'px';
-    } else if (rightInner) {
-        rightInner.style.height = '';
-    }
-}
-
 // Update timeline display
 function updateTimeline() {
     document.getElementById('timeline-reading-start').textContent = document.getElementById('reading_start_day').value || 1;
@@ -448,8 +435,6 @@ function confirmSave() {
 document.addEventListener('DOMContentLoaded', function() {
     updateTimeline();
     updatePenaltyPreview();
-    syncColumnHeights();
-    window.addEventListener('resize', syncColumnHeights);
 });
 </script>
 {% endblock %}
