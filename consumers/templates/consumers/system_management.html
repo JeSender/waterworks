@@ -7,464 +7,151 @@
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
-    <div class="mb-6">
+    <div class="mb-4">
         <h2 class="text-2xl font-bold text-dark-900">System Settings</h2>
-        <p class="text-sm text-dark-500 mt-1">Configure tiered water rates, billing schedules, and penalties</p>
+        <p class="text-sm text-dark-500 mt-1">Configure billing schedules and penalty settings</p>
     </div>
 
     <form method="POST" id="settingsForm">
         {% csrf_token %}
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <!-- LEFT COLUMN: Configuration Cards -->
-            <div class="lg:col-span-2 space-y-6">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <!-- LEFT COLUMN -->
+            <div class="lg:col-span-2 space-y-4">
 
-                <!-- CARD 1: Tiered Water Rates - Residential -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
-                        <i class="bi bi-house-fill text-primary-600"></i>
-                        Residential Water Rates
-                    </h3>
-                    <p class="text-sm text-dark-500 mb-6">Tiered rate structure for residential consumers</p>
-
-                    <div class="space-y-4">
-                        <!-- Tier 1: Minimum Charge -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-blue-50 rounded-lg">
+                <!-- Row 1: Reading Schedule + Billing Schedule side by side -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Reading Schedule -->
+                    <div class="bg-white rounded-xl shadow-md p-5">
+                        <h3 class="text-base font-semibold text-dark-900 flex items-center gap-2 mb-4">
+                            <i class="bi bi-speedometer2 text-info-600"></i>
+                            Reading Schedule
+                        </h3>
+                        <div class="space-y-3">
                             <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 1 (1-5 m³)</span>
-                                <p class="text-xs text-dark-500">Minimum charge</p>
-                            </div>
-                            <div class="col-span-2">
+                                <label for="reading_start_day" class="block text-sm font-medium text-dark-700 mb-1">
+                                    Period Start
+                                </label>
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="residential_minimum_charge"
-                                           id="residential_minimum_charge"
-                                           value="{{ setting.residential_minimum_charge|default:'75.00' }}"
-                                           class="w-full pl-8 pr-4 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                           required oninput="updateTieredPreview()">
+                                    <input type="number" min="1" max="28" name="reading_start_day" id="reading_start_day"
+                                           value="{{ setting.reading_start_day|default:1 }}"
+                                           class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500"
+                                           required oninput="updateTimeline()">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
                                 </div>
                             </div>
-                        </div>
-
-                        <!-- Tier 2 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
                             <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 2 (6-10 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
+                                <label for="reading_end_day" class="block text-sm font-medium text-dark-700 mb-1">
+                                    Period End
+                                </label>
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="residential_tier2_rate"
-                                           id="residential_tier2_rate"
-                                           value="{{ setting.residential_tier2_rate|default:'15.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 3 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 3 (11-20 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="residential_tier3_rate"
-                                           id="residential_tier3_rate"
-                                           value="{{ setting.residential_tier3_rate|default:'16.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 4 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 4 (21-50 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="residential_tier4_rate"
-                                           id="residential_tier4_rate"
-                                           value="{{ setting.residential_tier4_rate|default:'17.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 5 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 5 (51+ m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="residential_tier5_rate"
-                                           id="residential_tier5_rate"
-                                           value="{{ setting.residential_tier5_rate|default:'18.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
+                                    <input type="number" min="1" max="28" name="reading_end_day" id="reading_end_day"
+                                           value="{{ setting.reading_end_day|default:10 }}"
+                                           class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500"
+                                           required oninput="updateTimeline()">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- CARD 2: Tiered Water Rates - Commercial -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
-                        <i class="bi bi-building text-success-600"></i>
-                        Commercial Water Rates
-                    </h3>
-                    <p class="text-sm text-dark-500 mb-6">Tiered rate structure for commercial consumers</p>
-
-                    <div class="space-y-4">
-                        <!-- Tier 1: Minimum Charge -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-green-50 rounded-lg">
+                    <!-- Billing Schedule -->
+                    <div class="bg-white rounded-xl shadow-md p-5">
+                        <h3 class="text-base font-semibold text-dark-900 flex items-center gap-2 mb-4">
+                            <i class="bi bi-calendar-event text-success-600"></i>
+                            Billing Schedule
+                        </h3>
+                        <div class="space-y-3">
                             <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 1 (1-5 m³)</span>
-                                <p class="text-xs text-dark-500">Minimum charge</p>
-                            </div>
-                            <div class="col-span-2">
+                                <label for="billing_day_of_month" class="block text-sm font-medium text-dark-700 mb-1">
+                                    Billing Period Start
+                                </label>
                                 <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="commercial_minimum_charge"
-                                           id="commercial_minimum_charge"
-                                           value="{{ setting.commercial_minimum_charge|default:'100.00' }}"
-                                           class="w-full pl-8 pr-4 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
-                                           required oninput="updateTieredPreview()">
+                                    <input type="number" min="1" max="28" name="billing_day_of_month" id="billing_day_of_month"
+                                           value="{{ setting.billing_day_of_month }}"
+                                           class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
+                                           required oninput="updateTimeline()">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label for="due_day_of_month" class="block text-sm font-medium text-dark-700 mb-1">
+                                    Payment Due Date
+                                </label>
+                                <div class="relative">
+                                    <input type="number" min="1" max="28" name="due_day_of_month" id="due_day_of_month"
+                                           value="{{ setting.due_day_of_month }}"
+                                           class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
+                                           required oninput="updateTimeline()">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">day of month</span>
                                 </div>
                             </div>
                         </div>
-
-                        <!-- Tier 2 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 2 (6-10 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="commercial_tier2_rate"
-                                           id="commercial_tier2_rate"
-                                           value="{{ setting.commercial_tier2_rate|default:'18.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 3 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 3 (11-20 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="commercial_tier3_rate"
-                                           id="commercial_tier3_rate"
-                                           value="{{ setting.commercial_tier3_rate|default:'20.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 4 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 4 (21-50 m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="commercial_tier4_rate"
-                                           id="commercial_tier4_rate"
-                                           value="{{ setting.commercial_tier4_rate|default:'22.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Tier 5 -->
-                        <div class="grid grid-cols-3 gap-4 items-center p-3 bg-light-50 rounded-lg">
-                            <div>
-                                <span class="text-sm font-semibold text-dark-700">Tier 5 (51+ m³)</span>
-                                <p class="text-xs text-dark-500">Per cubic meter</p>
-                            </div>
-                            <div class="col-span-2">
-                                <div class="relative">
-                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-dark-500 text-sm font-semibold">₱</span>
-                                    <input type="number" step="0.01" min="0" name="commercial_tier5_rate"
-                                           id="commercial_tier5_rate"
-                                           value="{{ setting.commercial_tier5_rate|default:'24.00' }}"
-                                           class="w-full pl-8 pr-16 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500"
-                                           required oninput="updateTieredPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-3 text-dark-400 text-xs">/m³</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- CARD 3: Reading Schedule -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
-                        <i class="bi bi-speedometer2 text-info-600"></i>
-                        Reading Schedule
-                    </h3>
-                    <p class="text-base text-dark-500 mb-6">Define when field staff should submit meter readings</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <!-- Reading Start Day -->
-                        <div>
-                            <label for="reading_start_day" class="block text-base font-medium text-dark-700 mb-2">
-                                Reading Period Start
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="28"
-                                    name="reading_start_day"
-                                    id="reading_start_day"
-                                    value="{{ setting.reading_start_day|default:1 }}"
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
-                                    required
-                                    oninput="updateTimeline()">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
-                            </div>
-                            <p class="mt-2 text-sm text-dark-500">
-                                <i class="bi bi-info-circle mr-1"></i>
-                                Day when reading collection starts
-                            </p>
-                        </div>
-
-                        <!-- Reading End Day -->
-                        <div>
-                            <label for="reading_end_day" class="block text-base font-medium text-dark-700 mb-2">
-                                Reading Period End
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="28"
-                                    name="reading_end_day"
-                                    id="reading_end_day"
-                                    value="{{ setting.reading_end_day|default:10 }}"
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-info-500 focus:border-transparent"
-                                    required
-                                    oninput="updateTimeline()">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
-                            </div>
-                            <p class="mt-2 text-sm text-dark-500">
-                                <i class="bi bi-info-circle mr-1"></i>
-                                Deadline for submitting readings
+                        <div class="mt-3 p-2 bg-warning-50 border-l-3 border-warning-500 rounded-r-lg">
+                            <p class="text-xs text-warning-800">
+                                <i class="bi bi-exclamation-triangle-fill mr-1"></i>
+                                Days limited to 1-28 for consistency across all months.
                             </p>
                         </div>
                     </div>
                 </div>
 
-                <!-- CARD 4: Billing Schedule -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-2">
-                        <i class="bi bi-calendar-event text-success-600"></i>
-                        Billing Schedule
-                    </h3>
-                    <p class="text-base text-dark-500 mb-6">Configure billing period and payment due dates</p>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-                        <!-- Billing Day -->
-                        <div>
-                            <label for="billing_day_of_month" class="block text-base font-medium text-dark-700 mb-2">
-                                Billing Period Start
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="28"
-                                    name="billing_day_of_month"
-                                    id="billing_day_of_month"
-                                    value="{{ setting.billing_day_of_month }}"
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
-                                    required
-                                    oninput="updateTimeline()">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
-                            </div>
-                            <p class="mt-2 text-sm text-dark-500">
-                                <i class="bi bi-info-circle mr-1"></i>
-                                Date shown on bills as billing period start
-                            </p>
-                        </div>
-
-                        <!-- Due Day -->
-                        <div>
-                            <label for="due_day_of_month" class="block text-base font-medium text-dark-700 mb-2">
-                                Payment Due Date
-                            </label>
-                            <div class="relative">
-                                <input
-                                    type="number"
-                                    min="1"
-                                    max="28"
-                                    name="due_day_of_month"
-                                    id="due_day_of_month"
-                                    value="{{ setting.due_day_of_month }}"
-                                    class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-transparent"
-                                    required
-                                    oninput="updateTimeline()">
-                                <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-dark-400 text-sm">day of month</span>
-                            </div>
-                            <p class="mt-2 text-sm text-dark-500">
-                                <i class="bi bi-info-circle mr-1"></i>
-                                Deadline for consumer payments
-                            </p>
-                        </div>
-                    </div>
-
-                    <div class="mt-5 p-4 bg-warning-50 border-l-4 border-warning-500 rounded-xl">
-                        <p class="text-sm text-warning-800">
-                            <i class="bi bi-exclamation-triangle-fill mr-1"></i>
-                            <strong>Note:</strong> Days are limited to 1-28 to ensure consistency across all months.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- CARD 5: Late Payment Penalty Settings -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <div class="flex items-center justify-between mb-2">
-                        <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2">
+                <!-- Row 2: Late Payment Penalty -->
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-base font-semibold text-dark-900 flex items-center gap-2">
                             <i class="bi bi-exclamation-triangle-fill text-danger-600"></i>
                             Late Payment Penalty
                         </h3>
-                        <!-- Enable/Disable Toggle -->
                         <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox"
-                                   name="penalty_enabled"
-                                   id="penalty_enabled"
-                                   class="sr-only peer"
+                            <input type="checkbox" name="penalty_enabled" id="penalty_enabled" class="sr-only peer"
                                    {% if setting.penalty_enabled %}checked{% endif %}
                                    onchange="togglePenaltySettings()">
                             <div class="w-11 h-6 bg-light-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-danger-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-light-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-danger-600"></div>
-                            <span class="ml-3 text-sm font-medium text-dark-700" id="penalty-toggle-label">
+                            <span class="ml-2 text-sm font-medium text-dark-700" id="penalty-toggle-label">
                                 {% if setting.penalty_enabled %}Enabled{% else %}Disabled{% endif %}
                             </span>
                         </label>
                     </div>
-                    <p class="text-base text-dark-500 mb-4">Automatic penalty applied after payment due date</p>
-
-                    <!-- Penalty Explanation Box -->
-                    <div class="mb-6 p-4 bg-danger-50 border-l-4 border-danger-500 rounded-r-lg">
-                        <p class="text-sm text-danger-800">
-                            <i class="bi bi-info-circle-fill mr-2"></i>
-                            <strong>How it works:</strong> If due date is the <strong>20th</strong>, penalty is automatically applied starting the <strong>21st</strong>.
-                            The penalty is calculated as a percentage of the total bill amount.
-                        </p>
-                    </div>
 
                     <div id="penalty-settings-container" class="{% if not setting.penalty_enabled %}opacity-50 pointer-events-none{% endif %}">
-                        <!-- Hidden fields for penalty type (always percentage) -->
                         <input type="hidden" name="penalty_type" id="penalty_type" value="percentage">
                         <input type="hidden" name="penalty_grace_period_days" id="penalty_grace_period_days" value="0">
                         <input type="hidden" name="max_penalty_amount" id="max_penalty_amount" value="0">
                         <input type="hidden" name="fixed_penalty_amount" id="fixed_penalty_amount" value="0">
 
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <!-- Penalty Rate -->
                             <div>
-                                <label for="penalty_rate" class="block text-base font-medium text-dark-700 mb-2">
-                                    Penalty Rate
-                                </label>
+                                <label for="penalty_rate" class="block text-sm font-medium text-dark-700 mb-1">Penalty Rate</label>
                                 <div class="relative">
-                                    <input
-                                        type="number"
-                                        step="1"
-                                        min="1"
-                                        max="100"
-                                        name="penalty_rate"
-                                        id="penalty_rate"
-                                        value="{{ setting.penalty_rate|floatformat:0 }}"
-                                        class="w-full px-4 py-3 text-xl font-bold text-danger-700 border-2 border-danger-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-danger-500 focus:border-transparent text-center"
-                                        oninput="updatePenaltyPreview()">
-                                    <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-danger-500 text-xl font-bold">%</span>
+                                    <input type="number" step="1" min="1" max="100" name="penalty_rate" id="penalty_rate"
+                                           value="{{ setting.penalty_rate|floatformat:0 }}"
+                                           class="w-full px-4 py-2.5 text-lg font-bold text-danger-700 border-2 border-danger-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-danger-500 text-center"
+                                           oninput="updatePenaltyPreview()">
+                                    <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-danger-500 text-lg font-bold">%</span>
                                 </div>
-                                <p class="mt-2 text-sm text-dark-500">
+                                <p class="mt-1 text-xs text-dark-500">
                                     <i class="bi bi-info-circle mr-1"></i>
-                                    Percentage added to bill when payment is late
+                                    Added to bill when payment is late
                                 </p>
                             </div>
 
-                            <!-- When Penalty Applies -->
-                            <div>
-                                <label class="block text-base font-medium text-dark-700 mb-2">
-                                    When Penalty Applies
-                                </label>
-                                <div class="px-4 py-3 bg-light-100 border border-light-300 rounded-xl">
-                                    <div class="flex items-center gap-3">
-                                        <i class="bi bi-calendar-x text-danger-600 text-xl"></i>
-                                        <div>
-                                            <p class="text-base font-semibold text-dark-800">Day after due date</p>
-                                            <p class="text-sm text-dark-500">Immediate - no grace period</p>
-                                        </div>
-                                    </div>
+                            <!-- Penalty Example -->
+                            <div class="p-3 bg-danger-50 border border-danger-200 rounded-xl">
+                                <p class="text-xs font-medium text-danger-700 mb-2">Example on ₱500 bill:</p>
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-dark-600">Penalty:</span>
+                                    <span class="font-bold text-danger-700" id="penalty-preview-amount">₱125.00</span>
                                 </div>
-                                <p class="mt-2 text-sm text-dark-500">
-                                    <i class="bi bi-clock mr-1"></i>
-                                    Due date is day <strong id="penalty-due-day">{{ setting.due_day_of_month }}</strong> of each month
+                                <div class="flex items-center justify-between text-sm mt-1 pt-1 border-t border-danger-200">
+                                    <span class="font-semibold text-dark-800">Total if late:</span>
+                                    <span class="font-bold text-danger-700" id="penalty-preview-total">₱625.00</span>
+                                </div>
+                                <p class="text-xs text-danger-600 mt-2">
+                                    <i class="bi bi-calendar-x mr-1"></i>
+                                    Applied day after due date (day <strong id="penalty-due-day">{{ setting.due_day_of_month }}</strong>)
                                 </p>
-                            </div>
-                        </div>
-
-                        <!-- Penalty Calculation Preview -->
-                        <div class="mt-6 p-5 bg-white border-2 border-danger-200 rounded-xl shadow-sm">
-                            <h4 class="text-base font-semibold text-dark-900 mb-4 flex items-center gap-2">
-                                <i class="bi bi-calculator text-danger-600"></i>
-                                Penalty Calculation Example
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                <div class="text-center p-3 bg-light-50 rounded-lg">
-                                    <p class="text-xs text-dark-500 mb-1">Original Bill</p>
-                                    <p class="text-xl font-bold text-dark-800">₱500.00</p>
-                                </div>
-                                <div class="text-center p-3 bg-light-50 rounded-lg flex items-center justify-center">
-                                    <span class="text-2xl text-dark-400">×</span>
-                                </div>
-                                <div class="text-center p-3 bg-danger-50 rounded-lg">
-                                    <p class="text-xs text-danger-600 mb-1">Penalty Rate</p>
-                                    <p class="text-xl font-bold text-danger-700" id="penalty-preview-rate">{{ setting.penalty_rate|floatformat:0 }}%</p>
-                                </div>
-                                <div class="text-center p-3 bg-danger-100 rounded-lg">
-                                    <p class="text-xs text-danger-600 mb-1">Penalty Amount</p>
-                                    <p class="text-xl font-bold text-danger-700" id="penalty-preview-amount">₱125.00</p>
-                                </div>
-                            </div>
-                            <div class="mt-4 pt-4 border-t border-danger-200">
-                                <div class="flex justify-between items-center">
-                                    <span class="text-base font-semibold text-dark-800">Total Amount Due (if late)</span>
-                                    <span class="text-2xl font-bold text-danger-700" id="penalty-preview-total">₱625.00</span>
-                                </div>
                             </div>
                         </div>
                     </div>
@@ -481,65 +168,18 @@
                 </div>
             </div>
 
-            <!-- RIGHT COLUMN: Preview & Info -->
-            <div class="lg:col-span-1 space-y-6">
-
-                <!-- Tiered Bill Calculator Preview -->
-                <div class="bg-white rounded-xl shadow-md sticky top-6 p-6">
-                    <h3 class="text-xl font-semibold text-dark-900 flex items-center gap-2 mb-4">
-                        <i class="bi bi-calculator text-primary-600"></i>
-                        Bill Calculator
-                    </h3>
-
-                    <!-- Consumption Input -->
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-dark-700 mb-2">Test Consumption (m³)</label>
-                        <input type="number" id="test-consumption" value="15" min="0" max="200"
-                               class="w-full px-4 py-2 text-base border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-                               oninput="updateTieredPreview()">
-                    </div>
-
-                    <!-- Residential Preview -->
-                    <div class="p-4 bg-blue-50 rounded-lg mb-4">
-                        <h4 class="text-sm font-semibold text-dark-900 mb-3 flex items-center gap-2">
-                            <i class="bi bi-house text-primary-600"></i>
-                            Residential Bill
-                        </h4>
-                        <div id="res-breakdown" class="space-y-1 text-xs text-dark-600 mb-2">
-                            <!-- Breakdown populated by JS -->
-                        </div>
-                        <div class="flex justify-between text-sm font-bold text-primary-700 pt-2 border-t border-primary-200">
-                            <span>Total</span>
-                            <span id="res-total">₱0.00</span>
-                        </div>
-                    </div>
-
-                    <!-- Commercial Preview -->
-                    <div class="p-4 bg-green-50 rounded-lg">
-                        <h4 class="text-sm font-semibold text-dark-900 mb-3 flex items-center gap-2">
-                            <i class="bi bi-building text-success-600"></i>
-                            Commercial Bill
-                        </h4>
-                        <div id="comm-breakdown" class="space-y-1 text-xs text-dark-600 mb-2">
-                            <!-- Breakdown populated by JS -->
-                        </div>
-                        <div class="flex justify-between text-sm font-bold text-success-700 pt-2 border-t border-success-200">
-                            <span>Total</span>
-                            <span id="comm-total">₱0.00</span>
-                        </div>
-                    </div>
-                </div>
+            <!-- RIGHT COLUMN -->
+            <div class="lg:col-span-1 space-y-4">
 
                 <!-- Billing Cycle Timeline -->
-                <div class="bg-white rounded-xl shadow-md p-6">
-                    <h3 class="text-lg font-semibold text-dark-900 flex items-center gap-2 mb-4">
+                <div class="bg-white rounded-xl shadow-md p-5">
+                    <h3 class="text-base font-semibold text-dark-900 flex items-center gap-2 mb-3">
                         <i class="bi bi-diagram-3 text-primary-600"></i>
                         Monthly Billing Cycle
                     </h3>
-                    <div class="space-y-3">
-                        <!-- Step 1: Reading Period -->
+                    <div class="space-y-2">
                         <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-7 h-7 bg-info-100 text-info-700 rounded-full flex items-center justify-center text-xs font-bold">1</div>
+                            <div class="flex-shrink-0 w-6 h-6 bg-info-100 text-info-700 rounded-full flex items-center justify-center text-xs font-bold">1</div>
                             <div class="flex-1">
                                 <p class="text-sm font-semibold text-dark-800">Reading Period</p>
                                 <p class="text-xs text-dark-500">
@@ -549,33 +189,30 @@
                             </div>
                         </div>
                         <div class="flex justify-center"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <!-- Step 2 -->
                         <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-7 h-7 bg-warning-100 text-warning-700 rounded-full flex items-center justify-center text-xs font-bold">2</div>
+                            <div class="flex-shrink-0 w-6 h-6 bg-warning-100 text-warning-700 rounded-full flex items-center justify-center text-xs font-bold">2</div>
                             <div class="flex-1">
                                 <p class="text-sm font-semibold text-dark-800">Admin Confirmation</p>
                                 <p class="text-xs text-dark-400">Reviews and confirms readings</p>
                             </div>
                         </div>
                         <div class="flex justify-center"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <!-- Step 3 -->
                         <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-7 h-7 bg-success-100 text-success-700 rounded-full flex items-center justify-center text-xs font-bold">3</div>
+                            <div class="flex-shrink-0 w-6 h-6 bg-success-100 text-success-700 rounded-full flex items-center justify-center text-xs font-bold">3</div>
                             <div class="flex-1">
                                 <p class="text-sm font-semibold text-dark-800">Bill Generated</p>
                                 <p class="text-xs text-dark-500">
-                                    Billing Period: Day <span id="timeline-billing" class="font-semibold text-success-600">{{ setting.billing_day_of_month }}</span>
+                                    Billing day: <span id="timeline-billing" class="font-semibold text-success-600">{{ setting.billing_day_of_month }}</span>
                                 </p>
                             </div>
                         </div>
                         <div class="flex justify-center"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <!-- Step 4 -->
                         <div class="flex items-start gap-3">
-                            <div class="flex-shrink-0 w-7 h-7 bg-danger-100 text-danger-700 rounded-full flex items-center justify-center text-xs font-bold">4</div>
+                            <div class="flex-shrink-0 w-6 h-6 bg-danger-100 text-danger-700 rounded-full flex items-center justify-center text-xs font-bold">4</div>
                             <div class="flex-1">
                                 <p class="text-sm font-semibold text-dark-800">Payment Due</p>
                                 <p class="text-xs text-dark-500">
-                                    Due Date: Day <span id="timeline-due" class="font-semibold text-danger-600">{{ setting.due_day_of_month }}</span>
+                                    Due date: Day <span id="timeline-due" class="font-semibold text-danger-600">{{ setting.due_day_of_month }}</span>
                                 </p>
                             </div>
                         </div>
@@ -583,7 +220,7 @@
                 </div>
 
                 <!-- Last Updated -->
-                <div class="bg-light-50 border border-light-200 rounded-lg p-4">
+                <div class="bg-light-50 border border-light-200 rounded-lg p-3">
                     <div class="flex items-center gap-2 text-sm text-dark-600">
                         <i class="bi bi-clock-history"></i>
                         <span>Last Updated: <strong>{{ setting.updated_at|date:"M d, Y g:i A"|default:"Never" }}</strong></span>
@@ -592,12 +229,12 @@
 
                 <!-- Change History -->
                 {% if recent_changes %}
-                <div class="bg-white rounded-xl shadow-md p-4 mt-4">
-                    <h3 class="text-lg font-semibold text-dark-900 flex items-center gap-2 mb-3">
+                <div class="bg-white rounded-xl shadow-md p-4">
+                    <h3 class="text-base font-semibold text-dark-900 flex items-center gap-2 mb-2">
                         <i class="bi bi-journal-text text-primary-600"></i>
                         Recent Changes
                     </h3>
-                    <div class="space-y-2 max-h-48 overflow-y-auto">
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
                         {% for change in recent_changes %}
                         <div class="p-2 bg-light-50 rounded-lg text-xs">
                             <div class="flex justify-between items-start">
@@ -618,101 +255,6 @@
 
 {% block extra_js %}
 <script>
-// Calculate tiered bill for preview
-function calculateTieredBill(consumption, type) {
-    let minimum, tier2, tier3, tier4, tier5;
-
-    if (type === 'residential') {
-        minimum = parseFloat(document.getElementById('residential_minimum_charge').value) || 75;
-        tier2 = parseFloat(document.getElementById('residential_tier2_rate').value) || 15;
-        tier3 = parseFloat(document.getElementById('residential_tier3_rate').value) || 16;
-        tier4 = parseFloat(document.getElementById('residential_tier4_rate').value) || 17;
-        tier5 = parseFloat(document.getElementById('residential_tier5_rate').value) || 18;
-    } else {
-        minimum = parseFloat(document.getElementById('commercial_minimum_charge').value) || 100;
-        tier2 = parseFloat(document.getElementById('commercial_tier2_rate').value) || 18;
-        tier3 = parseFloat(document.getElementById('commercial_tier3_rate').value) || 20;
-        tier4 = parseFloat(document.getElementById('commercial_tier4_rate').value) || 22;
-        tier5 = parseFloat(document.getElementById('commercial_tier5_rate').value) || 24;
-    }
-
-    let breakdown = [];
-    let total = 0;
-
-    if (consumption <= 0) {
-        breakdown.push({label: 'Minimum (0 m³)', amount: minimum});
-        total = minimum;
-    } else if (consumption <= 5) {
-        breakdown.push({label: `Tier 1 (1-5 m³): ${consumption} m³`, amount: minimum});
-        total = minimum;
-    } else {
-        // Tier 1: minimum for first 5
-        breakdown.push({label: 'Tier 1 (1-5 m³): 5 m³', amount: minimum});
-        total = minimum;
-
-        let remaining = consumption - 5;
-
-        // Tier 2: 6-10 (up to 5 units)
-        if (remaining > 0) {
-            let units = Math.min(remaining, 5);
-            let amount = units * tier2;
-            breakdown.push({label: `Tier 2 (6-10 m³): ${units} m³ × ₱${tier2.toFixed(2)}`, amount: amount});
-            total += amount;
-            remaining -= units;
-        }
-
-        // Tier 3: 11-20 (up to 10 units)
-        if (remaining > 0) {
-            let units = Math.min(remaining, 10);
-            let amount = units * tier3;
-            breakdown.push({label: `Tier 3 (11-20 m³): ${units} m³ × ₱${tier3.toFixed(2)}`, amount: amount});
-            total += amount;
-            remaining -= units;
-        }
-
-        // Tier 4: 21-50 (up to 30 units)
-        if (remaining > 0) {
-            let units = Math.min(remaining, 30);
-            let amount = units * tier4;
-            breakdown.push({label: `Tier 4 (21-50 m³): ${units} m³ × ₱${tier4.toFixed(2)}`, amount: amount});
-            total += amount;
-            remaining -= units;
-        }
-
-        // Tier 5: 51+ (all remaining)
-        if (remaining > 0) {
-            let amount = remaining * tier5;
-            breakdown.push({label: `Tier 5 (51+ m³): ${remaining} m³ × ₱${tier5.toFixed(2)}`, amount: amount});
-            total += amount;
-        }
-    }
-
-    return {breakdown, total};
-}
-
-// Update tiered preview
-function updateTieredPreview() {
-    const consumption = parseInt(document.getElementById('test-consumption').value) || 0;
-
-    // Calculate residential
-    const res = calculateTieredBill(consumption, 'residential');
-    let resHtml = '';
-    res.breakdown.forEach(item => {
-        resHtml += `<div class="flex justify-between"><span>${item.label}</span><span class="font-mono">₱${item.amount.toFixed(2)}</span></div>`;
-    });
-    document.getElementById('res-breakdown').innerHTML = resHtml;
-    document.getElementById('res-total').textContent = '₱' + res.total.toFixed(2);
-
-    // Calculate commercial
-    const comm = calculateTieredBill(consumption, 'commercial');
-    let commHtml = '';
-    comm.breakdown.forEach(item => {
-        commHtml += `<div class="flex justify-between"><span>${item.label}</span><span class="font-mono">₱${item.amount.toFixed(2)}</span></div>`;
-    });
-    document.getElementById('comm-breakdown').innerHTML = commHtml;
-    document.getElementById('comm-total').textContent = '₱' + comm.total.toFixed(2);
-}
-
 // Update timeline display
 function updateTimeline() {
     const readingStart = document.getElementById('reading_start_day').value || 1;
@@ -725,7 +267,6 @@ function updateTimeline() {
     document.getElementById('timeline-billing').textContent = billingDay;
     document.getElementById('timeline-due').textContent = dueDay;
 
-    // Also update penalty due day display
     updatePenaltyDueDay();
 }
 
@@ -744,25 +285,18 @@ function togglePenaltySettings() {
     }
 }
 
-// Update penalty preview calculation (simplified for percentage-based penalty)
+// Update penalty preview calculation
 function updatePenaltyPreview() {
     const penaltyRate = parseFloat(document.getElementById('penalty_rate').value) || 25;
     const sampleBill = 500;
-
-    // Calculate penalty as percentage of bill
     const penalty = sampleBill * (penaltyRate / 100);
     const total = sampleBill + penalty;
 
-    // Update preview displays
-    const rateElement = document.getElementById('penalty-preview-rate');
-    if (rateElement) {
-        rateElement.textContent = penaltyRate + '%';
-    }
     document.getElementById('penalty-preview-amount').textContent = '₱' + penalty.toFixed(2);
     document.getElementById('penalty-preview-total').textContent = '₱' + total.toFixed(2);
 }
 
-// Update due day display when billing schedule changes
+// Update due day display
 function updatePenaltyDueDay() {
     const dueDay = document.getElementById('due_day_of_month').value || 20;
     const dueDayElement = document.getElementById('penalty-due-day');
@@ -774,7 +308,6 @@ function updatePenaltyDueDay() {
 // Reset form
 function resetForm() {
     document.getElementById('settingsForm').reset();
-    updateTieredPreview();
     updateTimeline();
     togglePenaltySettings();
     updatePenaltyPreview();
@@ -783,32 +316,24 @@ function resetForm() {
 
 // Confirm before saving
 function confirmSave() {
-    const consumption = parseInt(document.getElementById('test-consumption').value) || 15;
-    const res = calculateTieredBill(consumption, 'residential');
-    const comm = calculateTieredBill(consumption, 'commercial');
-
-    const resMin = document.getElementById('residential_minimum_charge').value;
-    const commMin = document.getElementById('commercial_minimum_charge').value;
-
+    const readingStart = document.getElementById('reading_start_day').value;
+    const readingEnd = document.getElementById('reading_end_day').value;
+    const billingDay = document.getElementById('billing_day_of_month').value;
+    const dueDay = document.getElementById('due_day_of_month').value;
     const penaltyEnabled = document.getElementById('penalty_enabled').checked;
     const penaltyRate = document.getElementById('penalty_rate').value;
-    const dueDay = document.getElementById('due_day_of_month').value;
 
-    let penaltyInfo = '';
-    if (penaltyEnabled) {
-        penaltyInfo = `  Late Payment Penalty: ${penaltyRate}% of bill\n  Applied: Day after due date (${dueDay}th)\n`;
-    } else {
-        penaltyInfo = '  Penalties: DISABLED\n';
-    }
+    let penaltyInfo = penaltyEnabled
+        ? `  Penalty: ${penaltyRate}% of bill (applied day after due date)\n`
+        : '  Penalties: DISABLED\n';
 
     return confirm(
-        `Save these tiered rate settings?\n\n` +
-        `RESIDENTIAL:\n` +
-        `  Minimum (1-5 m³): ₱${resMin}\n` +
-        `  Sample ${consumption} m³ bill: ₱${res.total.toFixed(2)}\n\n` +
-        `COMMERCIAL:\n` +
-        `  Minimum (1-5 m³): ₱${commMin}\n` +
-        `  Sample ${consumption} m³ bill: ₱${comm.total.toFixed(2)}\n\n` +
+        `Save these settings?\n\n` +
+        `READING SCHEDULE:\n` +
+        `  Period: Day ${readingStart} to ${readingEnd}\n\n` +
+        `BILLING SCHEDULE:\n` +
+        `  Billing Day: ${billingDay}\n` +
+        `  Due Date: Day ${dueDay}\n\n` +
         `PENALTY:\n` +
         penaltyInfo + `\n` +
         `This will affect all future bills.`
@@ -817,7 +342,6 @@ function confirmSave() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    updateTieredPreview();
     updateTimeline();
     updatePenaltyPreview();
 });

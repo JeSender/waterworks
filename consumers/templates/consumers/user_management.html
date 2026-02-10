@@ -454,15 +454,10 @@
                         </select>
                         <p class="text-xs text-dark-500 mt-1">Required for Field Staff only</p>
                     </div>
-                    <div class="sm:col-span-2 flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="is_staff" class="w-4 h-4 text-primary-600 rounded focus:ring-primary-500">
-                            <span class="text-sm text-dark-700">Staff Status</span>
-                        </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="checkbox" name="is_superuser" class="w-4 h-4 text-primary-600 rounded focus:ring-primary-500">
-                            <span class="text-sm text-dark-700">Superuser Status</span>
-                        </label>
+                    <div class="sm:col-span-2">
+                        <p class="text-xs text-dark-500 italic">
+                            <i class="bi bi-info-circle"></i> Staff and superuser permissions are automatically set based on the selected role.
+                        </p>
                     </div>
                 </div>
             </div>
