@@ -1921,20 +1921,71 @@ def system_management(request):
                 },
             }
 
-            # Build change description
+            # Build change description - only include what actually changed
             changes_summary = []
-            changes_summary.append(f"Reading schedule: Day {reading_start}-{reading_end}")
-            changes_summary.append(f"Billing: Day {billing_day}, Due: Day {due_day}")
-            if penalty_enabled:
-                changes_summary.append(f"Penalty: {penalty_rate}% ({penalty_type})")
-            else:
-                changes_summary.append("Penalty: Disabled")
+
+            # Check residential rate changes
+            prev_res = previous_values['residential_rates']
+            res_changes = []
+            if prev_res['minimum_charge'] != str(res_minimum):
+                res_changes.append(f"Min: ₱{prev_res['minimum_charge']}→₱{res_minimum}")
+            if prev_res['tier2_rate'] != str(res_tier2):
+                res_changes.append(f"T2: ₱{prev_res['tier2_rate']}→₱{res_tier2}")
+            if prev_res['tier3_rate'] != str(res_tier3):
+                res_changes.append(f"T3: ₱{prev_res['tier3_rate']}→₱{res_tier3}")
+            if prev_res['tier4_rate'] != str(res_tier4):
+                res_changes.append(f"T4: ₱{prev_res['tier4_rate']}→₱{res_tier4}")
+            if prev_res['tier5_rate'] != str(res_tier5):
+                res_changes.append(f"T5: ₱{prev_res['tier5_rate']}→₱{res_tier5}")
+            if res_changes:
+                changes_summary.append(f"Residential rates: {', '.join(res_changes)}")
+
+            # Check commercial rate changes
+            prev_comm = previous_values['commercial_rates']
+            comm_changes = []
+            if prev_comm['minimum_charge'] != str(comm_minimum):
+                comm_changes.append(f"Min: ₱{prev_comm['minimum_charge']}→₱{comm_minimum}")
+            if prev_comm['tier2_rate'] != str(comm_tier2):
+                comm_changes.append(f"T2: ₱{prev_comm['tier2_rate']}→₱{comm_tier2}")
+            if prev_comm['tier3_rate'] != str(comm_tier3):
+                comm_changes.append(f"T3: ₱{prev_comm['tier3_rate']}→₱{comm_tier3}")
+            if prev_comm['tier4_rate'] != str(comm_tier4):
+                comm_changes.append(f"T4: ₱{prev_comm['tier4_rate']}→₱{comm_tier4}")
+            if prev_comm['tier5_rate'] != str(comm_tier5):
+                comm_changes.append(f"T5: ₱{prev_comm['tier5_rate']}→₱{comm_tier5}")
+            if comm_changes:
+                changes_summary.append(f"Commercial rates: {', '.join(comm_changes)}")
+
+            # Check reading schedule changes
+            prev_sched = previous_values['reading_schedule']
+            if prev_sched['start_day'] != reading_start or prev_sched['end_day'] != reading_end:
+                changes_summary.append(f"Reading schedule: Day {prev_sched['start_day']}-{prev_sched['end_day']} → Day {reading_start}-{reading_end}")
+
+            # Check billing schedule changes
+            prev_bill = previous_values['billing_schedule']
+            if prev_bill['billing_day'] != billing_day:
+                changes_summary.append(f"Billing day: {prev_bill['billing_day']} → {billing_day}")
+            if prev_bill['due_day'] != due_day:
+                changes_summary.append(f"Due date: Day {prev_bill['due_day']} → Day {due_day}")
+
+            # Check penalty changes
+            prev_pen = previous_values['penalty_settings']
+            if prev_pen['enabled'] != penalty_enabled:
+                changes_summary.append(f"Penalty: {'Disabled' if prev_pen['enabled'] else 'Enabled'} → {'Enabled' if penalty_enabled else 'Disabled'}")
+            if penalty_enabled and prev_pen['rate'] != str(penalty_rate):
+                changes_summary.append(f"Penalty rate: {prev_pen['rate']}% → {penalty_rate}%")
+
+            # Fallback if nothing detected as changed
+            if not changes_summary:
+                changes_summary.append("Settings saved (no changes detected)")
+
+            change_description = "; ".join(changes_summary)
 
             # Create change log entry
             SystemSettingChangeLog.log_change(
                 user=request.user,
                 change_type='multiple',
-                description=f"Updated system settings: {'; '.join(changes_summary)}",
+                description=change_description,
                 previous_values=previous_values,
                 new_values=new_values,
                 ip_address=get_client_ip(request)
@@ -1945,7 +1996,7 @@ def system_management(request):
                 UserActivity.objects.create(
                     user=request.user,
                     action='system_settings_updated',
-                    description=f"Updated system settings: {'; '.join(changes_summary)}",
+                    description=change_description,
                     ip_address=get_client_ip(request),
                     user_agent=request.META.get('HTTP_USER_AGENT', ''),
                     login_event=request.login_event
