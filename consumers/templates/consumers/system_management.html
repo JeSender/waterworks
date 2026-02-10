@@ -4,6 +4,30 @@
 
 {% block title %}System Settings{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* Custom scrollbar for recent changes */
+    .changes-scroll::-webkit-scrollbar {
+        width: 4px;
+    }
+    .changes-scroll::-webkit-scrollbar-track {
+        background: transparent;
+        border-radius: 10px;
+    }
+    .changes-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 10px;
+    }
+    .changes-scroll::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+    .changes-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: #cbd5e1 transparent;
+    }
+</style>
+{% endblock %}
+
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
@@ -15,9 +39,9 @@
     <form method="POST" id="settingsForm">
         {% csrf_token %}
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-3">
+        <div class="flex flex-col lg:flex-row gap-3">
             <!-- LEFT COLUMN -->
-            <div class="lg:col-span-2 space-y-3" id="left-column">
+            <div class="flex-1 space-y-3" id="left-column">
 
                 <!-- Water Rates - Compact Table -->
                 <div class="bg-white rounded-xl shadow-md p-4">
@@ -39,7 +63,6 @@
                             </tr>
                         </thead>
                         <tbody class="text-sm">
-                            <!-- Tier 1 -->
                             <tr class="border-t border-light-200">
                                 <td class="py-2 font-semibold text-dark-700">Tier 1</td>
                                 <td class="py-2 text-dark-500 text-xs">1-5 m³ <span class="text-dark-400">(min)</span></td>
@@ -60,7 +83,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Tier 2 -->
                             <tr class="border-t border-light-100 bg-light-50">
                                 <td class="py-2 font-semibold text-dark-700">Tier 2</td>
                                 <td class="py-2 text-dark-500 text-xs">6-10 m³ <span class="text-dark-400">/m³</span></td>
@@ -81,7 +103,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Tier 3 -->
                             <tr class="border-t border-light-100">
                                 <td class="py-2 font-semibold text-dark-700">Tier 3</td>
                                 <td class="py-2 text-dark-500 text-xs">11-20 m³ <span class="text-dark-400">/m³</span></td>
@@ -102,7 +123,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Tier 4 -->
                             <tr class="border-t border-light-100 bg-light-50">
                                 <td class="py-2 font-semibold text-dark-700">Tier 4</td>
                                 <td class="py-2 text-dark-500 text-xs">21-50 m³ <span class="text-dark-400">/m³</span></td>
@@ -123,7 +143,6 @@
                                     </div>
                                 </td>
                             </tr>
-                            <!-- Tier 5 -->
                             <tr class="border-t border-light-100">
                                 <td class="py-2 font-semibold text-dark-700">Tier 5</td>
                                 <td class="py-2 text-dark-500 text-xs">51+ m³ <span class="text-dark-400">/m³</span></td>
@@ -159,21 +178,17 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label for="reading_start_day" class="block text-xs font-medium text-dark-600 mb-1">Start</label>
-                                <div class="relative">
-                                    <input type="number" min="1" max="28" name="reading_start_day" id="reading_start_day"
-                                           value="{{ setting.reading_start_day|default:1 }}"
-                                           class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500 text-center"
-                                           required oninput="updateTimeline()">
-                                </div>
+                                <input type="number" min="1" max="28" name="reading_start_day" id="reading_start_day"
+                                       value="{{ setting.reading_start_day|default:1 }}"
+                                       class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500 text-center"
+                                       required oninput="updateTimeline()">
                             </div>
                             <div>
                                 <label for="reading_end_day" class="block text-xs font-medium text-dark-600 mb-1">End</label>
-                                <div class="relative">
-                                    <input type="number" min="1" max="28" name="reading_end_day" id="reading_end_day"
-                                           value="{{ setting.reading_end_day|default:10 }}"
-                                           class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500 text-center"
-                                           required oninput="updateTimeline()">
-                                </div>
+                                <input type="number" min="1" max="28" name="reading_end_day" id="reading_end_day"
+                                       value="{{ setting.reading_end_day|default:10 }}"
+                                       class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-info-500 text-center"
+                                       required oninput="updateTimeline()">
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-dark-400">Day of month (1-28)</p>
@@ -188,21 +203,17 @@
                         <div class="grid grid-cols-2 gap-2">
                             <div>
                                 <label for="billing_day_of_month" class="block text-xs font-medium text-dark-600 mb-1">Billing Day</label>
-                                <div class="relative">
-                                    <input type="number" min="1" max="28" name="billing_day_of_month" id="billing_day_of_month"
-                                           value="{{ setting.billing_day_of_month }}"
-                                           class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 text-center"
-                                           required oninput="updateTimeline()">
-                                </div>
+                                <input type="number" min="1" max="28" name="billing_day_of_month" id="billing_day_of_month"
+                                       value="{{ setting.billing_day_of_month }}"
+                                       class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 text-center"
+                                       required oninput="updateTimeline()">
                             </div>
                             <div>
                                 <label for="due_day_of_month" class="block text-xs font-medium text-dark-600 mb-1">Due Date</label>
-                                <div class="relative">
-                                    <input type="number" min="1" max="28" name="due_day_of_month" id="due_day_of_month"
-                                           value="{{ setting.due_day_of_month }}"
-                                           class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 text-center"
-                                           required oninput="updateTimeline()">
-                                </div>
+                                <input type="number" min="1" max="28" name="due_day_of_month" id="due_day_of_month"
+                                       value="{{ setting.due_day_of_month }}"
+                                       class="w-full px-2 py-1.5 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 text-center"
+                                       required oninput="updateTimeline()">
                             </div>
                         </div>
                         <p class="mt-2 text-xs text-dark-400">Day of month (1-28)</p>
@@ -264,7 +275,7 @@
                 </div>
 
                 <!-- Save Button -->
-                <div class="flex items-center justify-end gap-3">
+                <div class="flex items-center justify-end gap-3" id="save-button-row">
                     <button type="button" onclick="resetForm()" class="btn-secondary">
                         <i class="bi bi-arrow-counterclockwise"></i>Reset
                     </button>
@@ -275,18 +286,18 @@
             </div>
 
             <!-- RIGHT COLUMN -->
-            <div class="lg:col-span-1 flex flex-col gap-3" id="right-column">
+            <div class="lg:w-80 xl:w-96 flex-shrink-0" id="right-column">
+                <div class="flex flex-col gap-3 lg:h-full" id="right-inner">
 
-                <!-- Billing Cycle Timeline -->
-                <div class="bg-white rounded-xl shadow-md p-4">
-                    <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2 mb-3">
-                        <i class="bi bi-diagram-3 text-primary-600"></i>
-                        Monthly Billing Cycle
-                    </h3>
-                    <div class="space-y-1.5">
-                        <div class="flex items-center gap-2">
-                            <div class="flex-shrink-0 w-5 h-5 bg-info-100 text-info-700 rounded-full flex items-center justify-center text-xs font-bold">1</div>
-                            <div class="flex-1">
+                    <!-- Billing Cycle Timeline -->
+                    <div class="bg-white rounded-xl shadow-md p-4 flex-shrink-0">
+                        <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2 mb-3">
+                            <i class="bi bi-diagram-3 text-primary-600"></i>
+                            Monthly Billing Cycle
+                        </h3>
+                        <div class="space-y-1.5">
+                            <div class="flex items-center gap-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-info-100 text-info-700 rounded-full flex items-center justify-center text-xs font-bold">1</div>
                                 <p class="text-xs font-semibold text-dark-800">Reading Period
                                     <span class="font-normal text-dark-500">— Day
                                         <span id="timeline-reading-start" class="font-semibold text-info-600">{{ setting.reading_start_day|default:1 }}</span>
@@ -294,31 +305,25 @@
                                     </span>
                                 </p>
                             </div>
-                        </div>
-                        <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <div class="flex items-center gap-2">
-                            <div class="flex-shrink-0 w-5 h-5 bg-warning-100 text-warning-700 rounded-full flex items-center justify-center text-xs font-bold">2</div>
-                            <div class="flex-1">
+                            <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-warning-100 text-warning-700 rounded-full flex items-center justify-center text-xs font-bold">2</div>
                                 <p class="text-xs font-semibold text-dark-800">Admin Confirmation
                                     <span class="font-normal text-dark-400">— Review readings</span>
                                 </p>
                             </div>
-                        </div>
-                        <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <div class="flex items-center gap-2">
-                            <div class="flex-shrink-0 w-5 h-5 bg-success-100 text-success-700 rounded-full flex items-center justify-center text-xs font-bold">3</div>
-                            <div class="flex-1">
+                            <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-success-100 text-success-700 rounded-full flex items-center justify-center text-xs font-bold">3</div>
                                 <p class="text-xs font-semibold text-dark-800">Bill Generated
                                     <span class="font-normal text-dark-500">— Day
                                         <span id="timeline-billing" class="font-semibold text-success-600">{{ setting.billing_day_of_month }}</span>
                                     </span>
                                 </p>
                             </div>
-                        </div>
-                        <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
-                        <div class="flex items-center gap-2">
-                            <div class="flex-shrink-0 w-5 h-5 bg-danger-100 text-danger-700 rounded-full flex items-center justify-center text-xs font-bold">4</div>
-                            <div class="flex-1">
+                            <div class="pl-2"><i class="bi bi-arrow-down text-light-400 text-xs"></i></div>
+                            <div class="flex items-center gap-2">
+                                <div class="flex-shrink-0 w-5 h-5 bg-danger-100 text-danger-700 rounded-full flex items-center justify-center text-xs font-bold">4</div>
                                 <p class="text-xs font-semibold text-dark-800">Payment Due
                                     <span class="font-normal text-dark-500">— Day
                                         <span id="timeline-due" class="font-semibold text-danger-600">{{ setting.due_day_of_month }}</span>
@@ -327,34 +332,33 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Change History -->
-                {% if recent_changes %}
-                <div class="bg-white rounded-xl shadow-md p-4 flex-1 flex flex-col min-h-0">
-                    <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2 mb-2 flex-shrink-0">
-                        <i class="bi bi-journal-text text-primary-600"></i>
-                        Recent Changes
-                    </h3>
-                    <div class="space-y-1.5 overflow-y-auto min-h-0 flex-1">
-                        {% for change in recent_changes %}
-                        <div class="p-1.5 bg-light-50 rounded-lg text-xs">
-                            <div class="flex justify-between items-start">
-                                <span class="font-medium text-dark-800">{{ change.changed_by.username|default:"System" }}</span>
-                                <span class="text-dark-400">{{ change.changed_at|date:"M d, g:i A" }}</span>
+                    <!-- Recent Changes - scrollable card, bottom aligned with Save button -->
+                    {% if recent_changes %}
+                    <div class="bg-white rounded-xl shadow-md p-4 flex flex-col min-h-0 flex-1" id="recent-changes-card">
+                        <div class="flex items-center justify-between mb-2 flex-shrink-0">
+                            <h3 class="text-sm font-semibold text-dark-900 flex items-center gap-2">
+                                <i class="bi bi-journal-text text-primary-600"></i>
+                                Recent Changes
+                            </h3>
+                            <span class="text-xs text-dark-400">
+                                <i class="bi bi-clock-history mr-1"></i>{{ setting.updated_at|date:"M d, g:i A"|default:"Never" }}
+                            </span>
+                        </div>
+                        <div class="changes-scroll overflow-y-auto flex-1 min-h-0 space-y-0" id="changes-list">
+                            {% for change in recent_changes|slice:":20" %}
+                            <div class="py-2 {% if not forloop.last %}border-b border-light-200{% endif %}">
+                                <div class="flex justify-between items-start">
+                                    <span class="text-xs font-semibold text-dark-800">{{ change.changed_by.username|default:"System" }}</span>
+                                    <span class="text-xs text-dark-400 ml-2 flex-shrink-0">{{ change.changed_at|date:"M d, g:i A" }}</span>
+                                </div>
+                                <p class="text-xs text-dark-600 mt-0.5 leading-relaxed">{{ change.description }}</p>
                             </div>
-                            <p class="text-dark-600">{{ change.description }}</p>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    <div class="flex-shrink-0 pt-2 mt-2 border-t border-light-200">
-                        <div class="flex items-center gap-2 text-xs text-dark-500">
-                            <i class="bi bi-clock-history"></i>
-                            <span>Last Updated: <strong>{{ setting.updated_at|date:"M d, Y g:i A"|default:"Never" }}</strong></span>
+                            {% endfor %}
                         </div>
                     </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
         </div>
     </form>
@@ -363,18 +367,23 @@
 
 {% block extra_js %}
 <script>
+// Sync right column height to match left column exactly
+function syncColumnHeights() {
+    const left = document.getElementById('left-column');
+    const rightInner = document.getElementById('right-inner');
+    if (left && rightInner && window.innerWidth >= 1024) {
+        rightInner.style.height = left.offsetHeight + 'px';
+    } else if (rightInner) {
+        rightInner.style.height = '';
+    }
+}
+
 // Update timeline display
 function updateTimeline() {
-    const readingStart = document.getElementById('reading_start_day').value || 1;
-    const readingEnd = document.getElementById('reading_end_day').value || 10;
-    const billingDay = document.getElementById('billing_day_of_month').value || 1;
-    const dueDay = document.getElementById('due_day_of_month').value || 20;
-
-    document.getElementById('timeline-reading-start').textContent = readingStart;
-    document.getElementById('timeline-reading-end').textContent = readingEnd;
-    document.getElementById('timeline-billing').textContent = billingDay;
-    document.getElementById('timeline-due').textContent = dueDay;
-
+    document.getElementById('timeline-reading-start').textContent = document.getElementById('reading_start_day').value || 1;
+    document.getElementById('timeline-reading-end').textContent = document.getElementById('reading_end_day').value || 10;
+    document.getElementById('timeline-billing').textContent = document.getElementById('billing_day_of_month').value || 1;
+    document.getElementById('timeline-due').textContent = document.getElementById('due_day_of_month').value || 20;
     updatePenaltyDueDay();
 }
 
@@ -383,7 +392,6 @@ function togglePenaltySettings() {
     const checkbox = document.getElementById('penalty_enabled');
     const container = document.getElementById('penalty-settings-container');
     const label = document.getElementById('penalty-toggle-label');
-
     if (checkbox.checked) {
         container.classList.remove('opacity-50', 'pointer-events-none');
         label.textContent = 'Enabled';
@@ -393,24 +401,18 @@ function togglePenaltySettings() {
     }
 }
 
-// Update penalty preview calculation
+// Update penalty preview
 function updatePenaltyPreview() {
-    const penaltyRate = parseFloat(document.getElementById('penalty_rate').value) || 25;
-    const sampleBill = 500;
-    const penalty = sampleBill * (penaltyRate / 100);
-    const total = sampleBill + penalty;
-
+    const rate = parseFloat(document.getElementById('penalty_rate').value) || 25;
+    const penalty = 500 * (rate / 100);
     document.getElementById('penalty-preview-amount').textContent = '₱' + penalty.toFixed(2);
-    document.getElementById('penalty-preview-total').textContent = '₱' + total.toFixed(2);
+    document.getElementById('penalty-preview-total').textContent = '₱' + (500 + penalty).toFixed(2);
 }
 
 // Update due day display
 function updatePenaltyDueDay() {
-    const dueDay = document.getElementById('due_day_of_month').value || 20;
-    const dueDayElement = document.getElementById('penalty-due-day');
-    if (dueDayElement) {
-        dueDayElement.textContent = dueDay;
-    }
+    const el = document.getElementById('penalty-due-day');
+    if (el) el.textContent = document.getElementById('due_day_of_month').value || 20;
 }
 
 // Reset form
@@ -419,49 +421,30 @@ function resetForm() {
     updateTimeline();
     togglePenaltySettings();
     updatePenaltyPreview();
-    updatePenaltyDueDay();
 }
 
 // Confirm before saving
 function confirmSave() {
     const resMin = document.getElementById('residential_minimum_charge').value;
     const commMin = document.getElementById('commercial_minimum_charge').value;
-    const readingStart = document.getElementById('reading_start_day').value;
-    const readingEnd = document.getElementById('reading_end_day').value;
-    const billingDay = document.getElementById('billing_day_of_month').value;
+    const readStart = document.getElementById('reading_start_day').value;
+    const readEnd = document.getElementById('reading_end_day').value;
+    const billDay = document.getElementById('billing_day_of_month').value;
     const dueDay = document.getElementById('due_day_of_month').value;
-    const penaltyEnabled = document.getElementById('penalty_enabled').checked;
-    const penaltyRate = document.getElementById('penalty_rate').value;
-
-    let penaltyInfo = penaltyEnabled
-        ? `  Penalty: ${penaltyRate}% of bill (applied day after due date)\n`
-        : '  Penalties: DISABLED\n';
+    const penOn = document.getElementById('penalty_enabled').checked;
+    const penRate = document.getElementById('penalty_rate').value;
 
     return confirm(
         `Save these settings?\n\n` +
-        `WATER RATES:\n` +
-        `  Residential minimum: ₱${resMin}\n` +
-        `  Commercial minimum: ₱${commMin}\n\n` +
-        `READING: Day ${readingStart} to ${readingEnd}\n` +
-        `BILLING: Day ${billingDay} | Due: Day ${dueDay}\n\n` +
-        `PENALTY:\n` +
-        penaltyInfo + `\n` +
+        `WATER RATES:\n  Residential min: ₱${resMin}\n  Commercial min: ₱${commMin}\n\n` +
+        `READING: Day ${readStart} to ${readEnd}\n` +
+        `BILLING: Day ${billDay} | Due: Day ${dueDay}\n\n` +
+        `PENALTY:\n  ${penOn ? penRate + '% of bill (day after due date)' : 'DISABLED'}\n\n` +
         `This will affect all future bills.`
     );
 }
 
-// Sync right column height to left column so Recent Changes bottom aligns with Save button
-function syncColumnHeights() {
-    const left = document.getElementById('left-column');
-    const right = document.getElementById('right-column');
-    if (left && right && window.innerWidth >= 1024) {
-        right.style.height = left.offsetHeight + 'px';
-    } else if (right) {
-        right.style.height = '';
-    }
-}
-
-// Initialize on page load
+// Initialize
 document.addEventListener('DOMContentLoaded', function() {
     updateTimeline();
     updatePenaltyPreview();
