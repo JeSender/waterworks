@@ -305,7 +305,7 @@
                                     <i class="bi bi-x-lg"></i>
                                 </button>
                             </div>
-                            <form method="POST" action="{% url 'consumers:reset_user_password' user.id %}">
+                            <form method="POST" action="{% url 'consumers:reset_user_password' user.id %}" onsubmit="return submitResetPassword(event, {{ user.id }})">
                                 {% csrf_token %}
                                 <div class="px-5 py-4">
                                     <div class="mb-4 p-3 bg-warning-50 border-l-4 border-warning-500 rounded">
@@ -313,6 +313,9 @@
                                             <i class="bi bi-exclamation-triangle-fill mr-1"></i>
                                             Password must be at least 8 characters and contain uppercase, lowercase, and numbers.
                                         </p>
+                                    </div>
+                                    <div id="resetPasswordError{{ user.id }}" class="hidden mb-3 p-3 bg-danger-50 border-l-4 border-danger-500 rounded">
+                                        <p class="text-xs text-danger-800"><i class="bi bi-exclamation-circle-fill mr-1"></i><span id="resetPasswordErrorMsg{{ user.id }}"></span></p>
                                     </div>
                                     <div class="mb-3">
                                         <label class="block text-xs font-medium text-dark-700 mb-1">New Password</label>
@@ -504,7 +507,70 @@ function openEditModal(userId) {
 }
 
 function openResetPasswordModal(userId) {
+    // Clear previous errors and fields when opening
+    const errorDiv = document.getElementById('resetPasswordError' + userId);
+    if (errorDiv) errorDiv.classList.add('hidden');
+    const newPw = document.getElementById('new_password_' + userId);
+    const confirmPw = document.getElementById('confirm_password_' + userId);
+    if (newPw) newPw.value = '';
+    if (confirmPw) confirmPw.value = '';
     openModal('resetPasswordModal' + userId);
+}
+
+function showResetError(userId, message) {
+    const errorDiv = document.getElementById('resetPasswordError' + userId);
+    const errorMsg = document.getElementById('resetPasswordErrorMsg' + userId);
+    errorMsg.textContent = message;
+    errorDiv.classList.remove('hidden');
+}
+
+function submitResetPassword(event, userId) {
+    event.preventDefault();
+    const form = event.target;
+    const newPassword = document.getElementById('new_password_' + userId).value;
+    const confirmPassword = document.getElementById('confirm_password_' + userId).value;
+    const errorDiv = document.getElementById('resetPasswordError' + userId);
+    errorDiv.classList.add('hidden');
+
+    // Client-side validation
+    if (newPassword !== confirmPassword) {
+        showResetError(userId, 'Passwords do not match.');
+        return false;
+    }
+
+    if (newPassword.length < 8) {
+        showResetError(userId, 'Password must be at least 8 characters.');
+        return false;
+    }
+
+    if (!/[a-z]/.test(newPassword) || !/[A-Z]/.test(newPassword) || !/\d/.test(newPassword)) {
+        showResetError(userId, 'Password must contain uppercase, lowercase, and numbers.');
+        return false;
+    }
+
+    // Submit via AJAX so modal stays open on server-side errors
+    const formData = new FormData(form);
+    fetch(form.action, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            closeModal('resetPasswordModal' + userId);
+            showToast(data.message, 'success');
+        } else {
+            showResetError(userId, data.message);
+        }
+    })
+    .catch(() => {
+        showResetError(userId, 'An unexpected error occurred. Please try again.');
+    });
+
+    return false;
 }
 
 // Toggle barangay field based on role selection

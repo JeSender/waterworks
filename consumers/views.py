@@ -5976,7 +5976,11 @@ def reset_user_password(request, user_id):
     """Reset user password (superuser and admin)."""
     from .decorators import check_password_strength
 
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+
     if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        if is_ajax:
+            return JsonResponse({'status': 'error', 'message': 'Access denied: Administrative privileges required.'})
         messages.error(request, "Access Denied: Administrative privileges required to reset passwords.")
         return redirect('consumers:user_management')
 
@@ -5987,17 +5991,23 @@ def reset_user_password(request, user_id):
         confirm_password = request.POST.get('confirm_password', '')
 
         if new_password != confirm_password:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': 'Passwords do not match.'})
             messages.error(request, "Passwords do not match.")
             return redirect('consumers:user_management')
 
         # Check password strength
         is_strong, msg = check_password_strength(new_password)
         if not is_strong:
+            if is_ajax:
+                return JsonResponse({'status': 'error', 'message': f'Weak password: {msg}'})
             messages.error(request, f"Weak password: {msg}")
             return redirect('consumers:user_management')
 
         user.set_password(new_password)
         user.save()
+        if is_ajax:
+            return JsonResponse({'status': 'success', 'message': f"Password reset successfully for user '{user.username}'!"})
         messages.success(request, f"Password reset successfully for user '{user.username}'!")
         return redirect('consumers:user_management')
 
