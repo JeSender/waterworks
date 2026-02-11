@@ -336,7 +336,14 @@
                         </div>
                         <div class="changes-scroll overflow-y-auto space-y-0" style="max-height: 276px;" id="changes-list">
                             {% for change in recent_changes|slice:":20" %}
-                            <div class="py-1.5 {% if not forloop.last %}border-b border-light-200{% endif %}">
+                            <div class="py-1.5 {% if not forloop.last %}border-b border-light-200{% endif %} cursor-pointer hover:bg-light-50 rounded px-1 -mx-1 transition-colors"
+                                 onclick="showChangeDetail(this)"
+                                 data-username="{{ change.changed_by.username|default:'System' }}"
+                                 data-date="{{ change.changed_at|date:'M d, Y g:i A' }}"
+                                 data-type="{{ change.get_change_type_display }}"
+                                 data-description="{{ change.description }}"
+                                 data-change-id="{{ change.id }}"
+                                 data-ip="{{ change.ip_address|default:'N/A' }}">
                                 <div class="flex justify-between items-start">
                                     <span class="text-xs font-semibold text-dark-800">{{ change.changed_by.username|default:"System" }}</span>
                                     <span class="text-xs text-dark-400 ml-2 flex-shrink-0">{{ change.changed_at|date:"M d, g:i A" }}</span>
@@ -351,6 +358,68 @@
         </div>
     </form>
 </div>
+{{ change_data_json|json_script:"change-data" }}
+
+<!-- Change Detail Modal -->
+<div id="changeDetailModal" class="fixed inset-0 z-50 hidden">
+    <div class="fixed inset-0 bg-black/50 transition-opacity" onclick="closeChangeDetail()"></div>
+    <div class="fixed inset-0 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[85vh] overflow-hidden relative">
+            <!-- Header -->
+            <div class="flex items-center justify-between px-5 py-3 border-b border-light-200 bg-light-50">
+                <div>
+                    <h3 class="text-sm font-bold text-dark-900" id="modal-title">Change Details</h3>
+                    <p class="text-xs text-dark-400 mt-0.5" id="modal-date"></p>
+                </div>
+                <button onclick="closeChangeDetail()" class="text-dark-400 hover:text-dark-600 transition-colors p-1">
+                    <i class="bi bi-x-lg text-base"></i>
+                </button>
+            </div>
+            <!-- Body -->
+            <div class="px-5 py-4 overflow-y-auto" style="max-height: calc(85vh - 56px);">
+                <!-- Info Row -->
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <div class="flex items-center gap-1.5 text-xs text-dark-500">
+                        <i class="bi bi-person-fill text-primary-500"></i>
+                        <span id="modal-user"></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-dark-500">
+                        <i class="bi bi-tag-fill text-primary-500"></i>
+                        <span id="modal-type" class="bg-primary-50 text-primary-700 px-2 py-0.5 rounded-full font-medium"></span>
+                    </div>
+                    <div class="flex items-center gap-1.5 text-xs text-dark-500">
+                        <i class="bi bi-globe text-primary-500"></i>
+                        <span id="modal-ip"></span>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="mb-4">
+                    <h4 class="text-xs font-semibold text-dark-500 uppercase tracking-wide mb-1.5">Description</h4>
+                    <p class="text-sm text-dark-700 leading-relaxed bg-light-50 rounded-lg p-3" id="modal-description"></p>
+                </div>
+
+                <!-- Changes Table -->
+                <div id="modal-changes-section">
+                    <h4 class="text-xs font-semibold text-dark-500 uppercase tracking-wide mb-1.5">Changes</h4>
+                    <div class="border border-light-200 rounded-lg overflow-hidden">
+                        <table class="w-full text-xs">
+                            <thead>
+                                <tr class="bg-light-50">
+                                    <th class="text-left px-3 py-2 font-semibold text-dark-600">Setting</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-dark-600">Previous</th>
+                                    <th class="text-left px-3 py-2 font-semibold text-dark-600">New</th>
+                                </tr>
+                            </thead>
+                            <tbody id="modal-changes-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}
 
 {% block extra_js %}
@@ -410,6 +479,131 @@ function confirmSave() {
 document.addEventListener('DOMContentLoaded', function() {
     updateTimeline();
     updatePenaltyPreview();
+});
+
+// Format setting key to readable label
+function formatSettingKey(key) {
+    return key
+        .replace(/_/g, ' ')
+        .replace(/\b\w/g, function(c) { return c.toUpperCase(); });
+}
+
+// Format section header
+function formatSectionHeader(key) {
+    var labels = {
+        'reading_schedule': 'Reading Schedule',
+        'billing_schedule': 'Billing Schedule',
+        'residential_rates': 'Residential Rates',
+        'commercial_rates': 'Commercial Rates',
+        'penalty_settings': 'Penalty Settings'
+    };
+    return labels[key] || formatSettingKey(key);
+}
+
+// Format setting value for display
+function formatSettingValue(value) {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+    if (typeof value === 'object') return JSON.stringify(value);
+    var str = String(value);
+    // Check if it looks like a currency value (has decimal or is a large number)
+    var num = Number(value);
+    if (!isNaN(num) && str.match(/\.\d+$/) && num > 1) {
+        return '\u20B1' + num.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+    return str;
+}
+
+// Flatten nested objects into rows grouped by section
+function buildChangeRows(prevData, newData) {
+    var rows = [];
+    var allSections = new Set([...Object.keys(prevData), ...Object.keys(newData)]);
+
+    allSections.forEach(function(section) {
+        var prev = prevData[section];
+        var curr = newData[section];
+
+        if (prev && typeof prev === 'object' && !Array.isArray(prev) && curr && typeof curr === 'object' && !Array.isArray(curr)) {
+            // Nested section — add header row then child rows
+            rows.push({type: 'header', label: formatSectionHeader(section)});
+            var subKeys = new Set([...Object.keys(prev), ...Object.keys(curr)]);
+            subKeys.forEach(function(key) {
+                rows.push({
+                    type: 'row',
+                    key: formatSettingKey(key),
+                    prev: prev[key],
+                    curr: curr[key],
+                    changed: JSON.stringify(prev[key]) !== JSON.stringify(curr[key])
+                });
+            });
+        } else {
+            // Flat key
+            rows.push({
+                type: 'row',
+                key: formatSettingKey(section),
+                prev: prev,
+                curr: curr,
+                changed: JSON.stringify(prev) !== JSON.stringify(curr)
+            });
+        }
+    });
+    return rows;
+}
+
+// Show change detail modal
+function showChangeDetail(el) {
+    var modal = document.getElementById('changeDetailModal');
+    document.getElementById('modal-user').textContent = el.dataset.username;
+    document.getElementById('modal-date').textContent = el.dataset.date;
+    document.getElementById('modal-type').textContent = el.dataset.type;
+    document.getElementById('modal-description').textContent = el.dataset.description;
+    document.getElementById('modal-ip').textContent = el.dataset.ip;
+
+    var changeId = el.dataset.changeId;
+    var allChangeData = JSON.parse(document.getElementById('change-data').textContent || '{}');
+    var changeEntry = allChangeData[changeId] || {};
+    var prevData = changeEntry.previous || {};
+    var newData = changeEntry.new || {};
+
+    var tbody = document.getElementById('modal-changes-body');
+    tbody.innerHTML = '';
+
+    var changesSection = document.getElementById('modal-changes-section');
+    var rows = buildChangeRows(prevData, newData);
+
+    if (rows.length === 0) {
+        changesSection.style.display = 'none';
+    } else {
+        changesSection.style.display = '';
+        rows.forEach(function(item) {
+            var row = document.createElement('tr');
+            if (item.type === 'header') {
+                row.className = 'border-t border-light-200 bg-light-100';
+                row.innerHTML = '<td colspan="3" class="px-3 py-1.5 font-semibold text-dark-800 text-xs uppercase tracking-wide">' + item.label + '</td>';
+            } else {
+                row.className = 'border-t border-light-100' + (item.changed ? ' bg-amber-50/50' : '');
+                row.innerHTML =
+                    '<td class="px-3 py-2 font-medium text-dark-700 pl-5">' + item.key + '</td>' +
+                    '<td class="px-3 py-2 text-dark-500">' + (item.changed ? '<span class="line-through text-red-400">' + formatSettingValue(item.prev) + '</span>' : formatSettingValue(item.prev)) + '</td>' +
+                    '<td class="px-3 py-2 ' + (item.changed ? 'text-green-700 font-semibold' : 'text-dark-500') + '">' + formatSettingValue(item.curr) + '</td>';
+            }
+            tbody.appendChild(row);
+        });
+    }
+
+    modal.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+// Close change detail modal
+function closeChangeDetail() {
+    document.getElementById('changeDetailModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Close modal on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeChangeDetail();
 });
 </script>
 {% endblock %}

@@ -2010,10 +2010,19 @@ def system_management(request):
 
         return redirect("consumers:system_management")
 
+    # Serialize change log JSON data for the template modal
+    change_data = {}
+    for change in recent_changes:
+        change_data[str(change.id)] = {
+            'previous': change.previous_values or {},
+            'new': change.new_values or {},
+        }
+
     # For GET requests, pass the setting object to the template
     context = {
         "setting": setting,
         "recent_changes": recent_changes,
+        "change_data_json": json.dumps(change_data),
     }
     return render(request, "consumers/system_management.html", context)
 
