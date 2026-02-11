@@ -315,13 +315,20 @@ def update_bill_penalty(bill, settings=None, save=True) -> Tuple[bool, str]:
     bill.penalty_amount = penalty_amount
     bill.days_overdue = days_overdue
 
+    # Senior citizen discount (5% of penalty)
+    if penalty_amount > 0 and bill.consumer.is_senior_citizen:
+        bill.senior_citizen_discount = (penalty_amount * Decimal('5') / Decimal('100')).quantize(Decimal('0.01'))
+    else:
+        bill.senior_citizen_discount = Decimal('0.00')
+
     # Set penalty applied date if this is the first time penalty is applied
     if penalty_amount > 0 and not bill.penalty_applied_date:
         bill.penalty_applied_date = timezone.now().date()
 
     if save:
         bill.save(update_fields=[
-            'penalty_amount', 'days_overdue', 'penalty_applied_date'
+            'penalty_amount', 'days_overdue', 'penalty_applied_date',
+            'senior_citizen_discount'
         ])
 
     if penalty_amount > old_penalty:
@@ -464,6 +471,10 @@ def get_payment_breakdown(bill, settings=None) -> dict:
         'penalty_waived': bill.penalty_waived,
         'penalty_rate': settings.penalty_rate if settings else Decimal('10.00'),
         'penalty_type': settings.penalty_type if settings else 'percentage',
+
+        # Senior citizen discount
+        'is_senior_citizen': bill.consumer.is_senior_citizen,
+        'senior_citizen_discount': bill.senior_citizen_discount,
 
         # Totals
         'total_amount_due': bill.total_amount_due,

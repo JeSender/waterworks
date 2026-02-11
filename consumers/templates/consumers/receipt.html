@@ -370,6 +370,16 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% if payment.senior_citizen_discount > 0 %}
+                <tr style="background-color: #f0fdf4;">
+                    <td style="color: #059669;">
+                        <strong>SC DISCOUNT (5%)</strong>
+                    </td>
+                    <td class="amount" style="color: #059669;">
+                        -{{ payment.senior_citizen_discount }}
+                    </td>
+                </tr>
+                {% endif %}
                 <tr>
                     <td style="font-size:9px; color: #666;">
                         {{ payment.days_overdue_at_payment }} day{{ payment.days_overdue_at_payment|pluralize }} overdue
@@ -395,10 +405,16 @@
                 <span>Subtotal (Bill)</span>
                 <span>₱ {{ payment.original_bill_amount|default:payment.bill.total_amount }}</span>
             </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #c00; margin-bottom: 5px;">
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #c00; margin-bottom: 3px;">
                 <span>Penalty</span>
                 <span>₱ {{ payment.penalty_amount }}</span>
             </div>
+            {% if payment.senior_citizen_discount > 0 %}
+            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #059669; margin-bottom: 5px;">
+                <span>SC Discount (5%)</span>
+                <span>-₱ {{ payment.senior_citizen_discount }}</span>
+            </div>
+            {% endif %}
             {% endif %}
             <div class="total-row">
                 <span>TOTAL <span style="font-size:10px;">CASH</span></span>

@@ -245,6 +245,15 @@
                                 ({{ system_settings.penalty_grace_period_days }} day grace period)
                                 {% endif %}
                             </p>
+                            {% if payment_breakdown.senior_citizen_discount > 0 %}
+                            <div class="flex justify-between items-center text-success-700 mt-1 pt-1 border-t border-danger-200">
+                                <span class="flex items-center gap-1">
+                                    <i class="bi bi-person-heart"></i>
+                                    Senior Citizen Discount (5%)
+                                </span>
+                                <span class="font-mono font-bold">-₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
                         </div>
                         {% elif latest_bill.penalty_waived %}
                         <div class="mt-2 p-2 bg-success-50 border border-success-200 rounded-lg">
@@ -269,7 +278,7 @@
                         </p>
                         {% if payment_breakdown.penalty_amount > 0 and not latest_bill.penalty_waived %}
                         <p class="text-xs text-dark-400 mt-1">
-                            (Bill: ₱{{ latest_bill.total_amount|floatformat:2 }} + Penalty: ₱{{ payment_breakdown.penalty_amount|floatformat:2 }})
+                            (Bill: ₱{{ latest_bill.total_amount|floatformat:2 }} + Penalty: ₱{{ payment_breakdown.penalty_amount|floatformat:2 }}{% if payment_breakdown.senior_citizen_discount > 0 %} - SC Discount: ₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}{% endif %})
                         </p>
                         {% endif %}
                     </div>
@@ -327,6 +336,12 @@
                                 <span>Penalty:</span>
                                 <span class="font-mono">₱{{ payment_breakdown.penalty_amount|floatformat:2 }}</span>
                             </div>
+                            {% if payment_breakdown.senior_citizen_discount > 0 %}
+                            <div class="flex justify-between text-success-600" id="sc-discount-line">
+                                <span>SC Discount (5%):</span>
+                                <span class="font-mono">-₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}</span>
+                            </div>
+                            {% endif %}
                             {% endif %}
                             <div class="flex justify-between font-bold text-dark-800 pt-1 mt-1 border-t border-light-300">
                                 <span>Total Due:</span>

@@ -5174,6 +5174,7 @@ def inquire(request):
                 penalty_amount=effective_penalty,
                 penalty_waived=bill.penalty_waived,
                 days_overdue_at_payment=bill.days_overdue,
+                senior_citizen_discount=bill.senior_citizen_discount,
                 amount_paid=total_amount_due,
                 received_amount=received_amount,
                 change=received_amount - total_amount_due,

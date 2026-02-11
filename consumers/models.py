@@ -615,6 +615,16 @@ class Consumer(models.Model):
     # Properties
     # ========================
     @property
+    def is_senior_citizen(self):
+        """Check if consumer is 60+ years old (senior citizen)."""
+        from datetime import date
+        today = date.today()
+        age = today.year - self.birth_date.year - (
+            (today.month, today.day) < (self.birth_date.month, self.birth_date.day)
+        )
+        return age >= 60
+
+    @property
     def full_name(self):
         """Returns the full name with optional middle name and suffix."""
         middle = f" {self.middle_name}" if self.middle_name else ""
@@ -942,6 +952,10 @@ class Bill(models.Model):
         default=0,
         help_text="Number of days the bill is/was overdue"
     )
+    senior_citizen_discount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text="5% discount on penalty for senior citizens"
+    )
 
     status = models.CharField(
         max_length=20,
@@ -977,10 +991,10 @@ class Bill(models.Model):
 
     @property
     def effective_penalty(self):
-        """Return the effective penalty (0 if waived)"""
+        """Return the effective penalty (0 if waived, minus senior discount)"""
         if self.penalty_waived:
             return Decimal('0.00')
-        return self.penalty_amount
+        return self.penalty_amount - self.senior_citizen_discount
 
     @property
     def total_amount_due(self):
@@ -1346,6 +1360,10 @@ class Payment(models.Model):
     days_overdue_at_payment = models.IntegerField(
         default=0,
         help_text="Number of days overdue at the time of payment"
+    )
+    senior_citizen_discount = models.DecimalField(
+        max_digits=10, decimal_places=2, default=Decimal('0.00'),
+        help_text="Senior citizen discount applied on penalty"
     )
     # -------------------------
     # PAYMENT AMOUNTS
