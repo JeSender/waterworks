@@ -3170,7 +3170,15 @@ def edit_consumer(request, consumer_id):
     if request.method == 'POST':
         form = ConsumerForm(request.POST, instance=consumer)
         if form.is_valid():
+            old_birth_date = consumer.birth_date
             form.save()
+
+            # Recalculate senior citizen discount on pending bills if birth_date changed
+            if form.cleaned_data.get('birth_date') != old_birth_date:
+                from .utils import update_bill_penalty
+                pending_bills = consumer.bills.filter(status='Pending')
+                for bill in pending_bills:
+                    update_bill_penalty(bill, save=True)
 
             # Track activity
             try:
