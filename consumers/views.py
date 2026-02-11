@@ -3820,9 +3820,25 @@ def meter_reading_overview(request):
     from openpyxl.styles import Font, Alignment, PatternFill
     from django.http import HttpResponse
 
+    import calendar
+
     today = date.today()
-    current_month = today.replace(day=1)
     export_excel = request.GET.get('export', '')
+
+    # Month filter: accept ?month=2026-01 format, default to current month
+    month_param = request.GET.get('month', '')
+    if month_param:
+        try:
+            year, mon = month_param.split('-')
+            current_month = date(int(year), int(mon), 1)
+        except (ValueError, TypeError):
+            current_month = today.replace(day=1)
+    else:
+        current_month = today.replace(day=1)
+
+    # Calculate the end of the selected month
+    last_day = calendar.monthrange(current_month.year, current_month.month)[1]
+    month_end = date(current_month.year, current_month.month, last_day)
 
     # Get all barangays, annotate total consumers, and ORDER BY name for alphabetical sorting
     barangays = Barangay.objects.annotate(
@@ -3839,17 +3855,19 @@ def meter_reading_overview(request):
             ready = not_updated = updated = 0
             completion_percentage = 0
         else:
-            # Count ALL unconfirmed readings (not just current month)
-            # This matches what barangay_meter_readings shows
+            # Count unconfirmed readings for the selected month
             ready = MeterReading.objects.filter(
                 consumer_id__in=consumer_ids,
-                is_confirmed=False
+                is_confirmed=False,
+                reading_date__gte=current_month,
+                reading_date__lte=month_end
             ).values('consumer_id').distinct().count()
 
-            # Count consumers who have at least one reading this month
+            # Count consumers who have at least one reading in the selected month
             updated_consumers = MeterReading.objects.filter(
                 consumer_id__in=consumer_ids,
-                reading_date__gte=current_month
+                reading_date__gte=current_month,
+                reading_date__lte=month_end
             ).values_list('consumer_id', flat=True).distinct()
             updated = len(set(updated_consumers))
             not_updated = total_consumers_count - updated
@@ -3942,9 +3960,13 @@ def meter_reading_overview(request):
         wb.save(response)
         return response
 
+    # Format month param for template links
+    month_filter_value = current_month.strftime('%Y-%m')
+
     context = {
         'barangay_data': barangay_data,
         'current_month': current_month,
+        'month_filter_value': month_filter_value,
         'total_barangays': total_barangays,
         'total_consumers_sum': total_consumers_sum,
         'total_ready_sum': total_ready_sum,
@@ -3964,16 +3986,41 @@ def meter_reading_overview(request):
 
 @login_required
 def barangay_meter_readings(request, barangay_id):
+    import calendar
+
     barangay = get_object_or_404(Barangay, id=barangay_id)
     today = date.today()
+
+    # Month filter: accept ?month=2026-01 format
+    month_param = request.GET.get('month', '')
+    filter_month = None
+    month_start = None
+    month_end = None
+    if month_param:
+        try:
+            year, mon = month_param.split('-')
+            month_start = date(int(year), int(mon), 1)
+            last_day = calendar.monthrange(month_start.year, month_start.month)[1]
+            month_end = date(month_start.year, month_start.month, last_day)
+            filter_month = month_start
+        except (ValueError, TypeError):
+            pass
 
     # Get all active consumers in this barangay
     consumers = Consumer.objects.filter(barangay=barangay, status='active').select_related('barangay').order_by('id')
 
     readings_with_data = []
     for consumer in consumers:
-        # Get latest reading for this consumer (unconfirmed takes priority for display)
-        latest_reading = MeterReading.objects.filter(consumer=consumer).order_by('-reading_date', '-created_at').first()
+        if filter_month:
+            # Get latest reading for this consumer within the filtered month
+            latest_reading = MeterReading.objects.filter(
+                consumer=consumer,
+                reading_date__gte=month_start,
+                reading_date__lte=month_end
+            ).order_by('-reading_date', '-created_at').first()
+        else:
+            # Get latest reading for this consumer (unconfirmed takes priority for display)
+            latest_reading = MeterReading.objects.filter(consumer=consumer).order_by('-reading_date', '-created_at').first()
 
         if latest_reading:
             # Find previous confirmed reading
@@ -4015,6 +4062,8 @@ def barangay_meter_readings(request, barangay_id):
         'pending_count': pending_count,
         'confirmed_count': confirmed_count,
         'no_reading_count': no_reading_count,
+        'filter_month': filter_month,
+        'month_filter_value': month_param,
     })
 
 

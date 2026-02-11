@@ -13,7 +13,7 @@
                     <i class="bi bi-grid-3x3-gap-fill text-primary-600"></i>
                     Meter Reading Overview
                 </h2>
-                <p class="text-sm text-dark-500 mt-1">Track meter reading progress by barangay - {{ current_month|date:"F Y" }}</p>
+                <p class="text-sm text-dark-500 mt-1">Track meter reading progress by barangay — {{ current_month|date:"F Y" }}</p>
             </div>
             <div class="flex gap-2">
                 {% if pending_proof_readings_count %}
@@ -23,11 +23,11 @@
                     <span class="bg-white text-warning-600 text-xs font-bold px-2 py-0.5 rounded-full">{{ pending_proof_readings_count }}</span>
                 </a>
                 {% endif %}
-                <a href="?export=print"
+                <a href="?export=print&month={{ month_filter_value }}"
                    class="btn-primary btn-sm">
                     <i class="bi bi-printer-fill"></i> Print Report
                 </a>
-                <a href="?export=excel"
+                <a href="?export=excel&month={{ month_filter_value }}"
                    class="btn-success btn-sm">
                     <i class="bi bi-file-earmark-excel"></i> Excel
                 </a>
@@ -113,22 +113,31 @@
         <div class="px-6 py-4 bg-gradient-to-r from-primary-600 to-primary-700">
             <h3 class="text-white font-semibold text-base flex items-center gap-2">
                 <i class="bi bi-funnel-fill"></i>
-                Search Barangays
+                Filters
             </h3>
         </div>
         <div class="p-6">
             <div class="flex flex-col md:flex-row gap-4">
                 <div class="flex-1">
+                    <label class="block text-xs font-medium text-dark-600 mb-1">Search Barangay</label>
                     <input type="text"
                            class="w-full px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                            placeholder="Search by barangay name..."
                            id="search-barangay">
                 </div>
-                <div class="flex gap-3">
+                <div>
+                    <label class="block text-xs font-medium text-dark-600 mb-1">Month</label>
+                    <input type="month"
+                           id="month-filter"
+                           value="{{ month_filter_value }}"
+                           class="w-full px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                           onchange="applyMonthFilter(this.value)">
+                </div>
+                <div class="flex gap-3 items-end">
                     <button onclick="filterBarangays()" class="btn-primary">
                         <i class="bi bi-search"></i> Search
                     </button>
-                    <button onclick="resetFilter()" class="btn-secondary">
+                    <button onclick="resetAllFilters()" class="btn-secondary">
                         <i class="bi bi-arrow-counterclockwise"></i> Reset
                     </button>
                 </div>
@@ -232,7 +241,7 @@
 
                         <!-- Actions -->
                         <td class="px-6 py-4 text-center">
-                            <a href="{% url 'consumers:barangay_meter_readings' item.barangay.id %}"
+                            <a href="{% url 'consumers:barangay_meter_readings' item.barangay.id %}?month={{ month_filter_value }}"
                                class="btn-primary btn-sm">
                                 <i class="bi bi-eye-fill"></i> View
                             </a>
@@ -333,6 +342,20 @@ function resetFilter() {
     }
 
     input.focus();
+}
+
+function applyMonthFilter(value) {
+    const url = new URL(window.location.href);
+    if (value) {
+        url.searchParams.set('month', value);
+    } else {
+        url.searchParams.delete('month');
+    }
+    window.location.href = url.toString();
+}
+
+function resetAllFilters() {
+    window.location.href = '{% url "consumers:meter_reading_overview" %}';
 }
 
 // Allow Enter key to trigger search
