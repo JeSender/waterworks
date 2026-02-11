@@ -975,14 +975,41 @@
             });
         }
 
-        // Set active nav link
+        // Set active nav link based on current path with prefix matching
         function setActiveNavLink() {
-            const currentPath = window.location.pathname;
+            const path = window.location.pathname;
+            const active = ['bg-primary-100', 'text-primary-700', 'border-l-4', 'border-primary-600', 'font-semibold'];
+
+            // Map each nav link href to URL prefixes that should keep it highlighted
+            // Ordered from most specific to least specific for conflict resolution
+            const navPrefixes = [
+                { href: '/payment/history/',       prefixes: ['/payment/history/', '/payment/receipt/'] },
+                { href: '/payment/',               prefixes: ['/payment/'] },
+                { href: '/meter-readings/pending/', prefixes: ['/meter-readings/pending/'] },
+                { href: '/meter-reading-overview/', prefixes: ['/meter-reading-overview/', '/meter-readings/'] },
+                { href: '/consumer-management/',   prefixes: ['/consumer-management/', '/consumer/', '/consumers/', '/connected-consumers/', '/disconnected/', '/disconnect/', '/reconnect/', '/delinquent-consumers/', '/delinquent-report/', '/delinquent-consumers/export/'] },
+                { href: '/reports/',               prefixes: ['/reports/'] },
+                { href: '/system-management/',     prefixes: ['/system-management/', '/database-documentation/'] },
+                { href: '/admin-verification/',    prefixes: ['/admin-verification/', '/user-management/', '/user/'] },
+                { href: '/user-login-history/',    prefixes: ['/user-login-history/', '/session/'] },
+                { href: '/home/',                  prefixes: ['/home/'] },
+            ];
+
+            // Find which nav entry matches the current path (first match wins = most specific)
+            let activeHref = null;
+            for (const entry of navPrefixes) {
+                if (entry.prefixes.some(prefix => path.startsWith(prefix))) {
+                    activeHref = entry.href;
+                    break;
+                }
+            }
+
             document.querySelectorAll('.nav-link-modern').forEach(link => {
-                if (link.getAttribute('href') === currentPath) {
-                    link.classList.add('bg-primary-100', 'text-primary-700', 'border-l-4', 'border-primary-600', 'font-semibold');
+                const href = link.getAttribute('href');
+                if (activeHref && href === activeHref) {
+                    link.classList.add(...active);
                 } else {
-                    link.classList.remove('bg-primary-100', 'text-primary-700', 'border-l-4', 'border-primary-600', 'font-semibold');
+                    link.classList.remove(...active);
                 }
             });
         }
