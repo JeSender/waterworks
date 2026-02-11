@@ -63,6 +63,7 @@ urlpatterns = [
     path('reports/', views.reports, name='reports'),
     path('reports/export-excel/', views.export_report_excel, name='export_report_excel'),
 
+    path('system-settings-verification/', views.system_settings_verification, name='system_settings_verification'),
     path('system-management/', views.system_management, name='system_management'),
 
     # Database Documentation

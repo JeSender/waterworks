@@ -731,7 +731,7 @@
             {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">System</div>
-                <a href="{% url 'consumers:system_management' %}"
+                <a href="{% url 'consumers:system_settings_verification' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-gear-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">System Settings</span>
@@ -989,7 +989,7 @@
                 '{% url "consumers:meter_reading_overview" %}': ['/meter-readings/'],
                 '{% url "consumers:pending_readings" %}':    [],
                 '{% url "consumers:reports" %}':             ['/reports/export-excel/'],
-                '{% url "consumers:system_management" %}':   ['/database-documentation/'],
+                '{% url "consumers:system_settings_verification" %}':   ['/system-management/', '/database-documentation/'],
                 '{% url "consumers:admin_verification" %}':  ['/user-management/', '/user/'],
                 '{% url "consumers:user_login_history" %}':  ['/session/'],
             };
