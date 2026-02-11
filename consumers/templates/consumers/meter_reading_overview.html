@@ -126,12 +126,30 @@
                            id="search-barangay">
                 </div>
                 <div>
+                    <label class="block text-xs font-medium text-dark-600 mb-1">Year</label>
+                    <select id="year-filter"
+                            class="w-full px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            onchange="applyYearMonthFilter()">
+                    </select>
+                </div>
+                <div>
                     <label class="block text-xs font-medium text-dark-600 mb-1">Month</label>
-                    <input type="month"
-                           id="month-filter"
-                           value="{{ month_filter_value }}"
-                           class="w-full px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                           onchange="applyMonthFilter(this.value)">
+                    <select id="month-filter"
+                            class="w-full px-4 py-3 border border-light-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                            onchange="applyYearMonthFilter()">
+                        <option value="01" {% if current_month.month == 1 %}selected{% endif %}>January</option>
+                        <option value="02" {% if current_month.month == 2 %}selected{% endif %}>February</option>
+                        <option value="03" {% if current_month.month == 3 %}selected{% endif %}>March</option>
+                        <option value="04" {% if current_month.month == 4 %}selected{% endif %}>April</option>
+                        <option value="05" {% if current_month.month == 5 %}selected{% endif %}>May</option>
+                        <option value="06" {% if current_month.month == 6 %}selected{% endif %}>June</option>
+                        <option value="07" {% if current_month.month == 7 %}selected{% endif %}>July</option>
+                        <option value="08" {% if current_month.month == 8 %}selected{% endif %}>August</option>
+                        <option value="09" {% if current_month.month == 9 %}selected{% endif %}>September</option>
+                        <option value="10" {% if current_month.month == 10 %}selected{% endif %}>October</option>
+                        <option value="11" {% if current_month.month == 11 %}selected{% endif %}>November</option>
+                        <option value="12" {% if current_month.month == 12 %}selected{% endif %}>December</option>
+                    </select>
                 </div>
                 <div class="flex gap-3 items-end">
                     <button onclick="filterBarangays()" class="btn-primary">
@@ -344,19 +362,33 @@ function resetFilter() {
     input.focus();
 }
 
-function applyMonthFilter(value) {
+function applyYearMonthFilter() {
+    const year = document.getElementById('year-filter').value;
+    const month = document.getElementById('month-filter').value;
     const url = new URL(window.location.href);
-    if (value) {
-        url.searchParams.set('month', value);
-    } else {
-        url.searchParams.delete('month');
-    }
+    url.searchParams.set('month', year + '-' + month);
     window.location.href = url.toString();
 }
 
 function resetAllFilters() {
     window.location.href = '{% url "consumers:meter_reading_overview" %}';
 }
+
+// Populate year dropdown dynamically (from 2020 to current year)
+(function() {
+    const yearSelect = document.getElementById('year-filter');
+    const currentYear = {{ current_month.year }};
+    const thisYear = new Date().getFullYear();
+    const startYear = 2020;
+
+    for (let y = thisYear; y >= startYear; y--) {
+        const opt = document.createElement('option');
+        opt.value = y;
+        opt.textContent = y;
+        if (y === currentYear) opt.selected = true;
+        yearSelect.appendChild(opt);
+    }
+})();
 
 // Allow Enter key to trigger search
 document.addEventListener('DOMContentLoaded', function() {
