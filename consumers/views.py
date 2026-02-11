@@ -5329,9 +5329,25 @@ def payment_history(request):
 
     # Get filter parameters
     search_query = request.GET.get('search', '').strip()
-    date_from = request.GET.get('date_from', '')
-    date_to = request.GET.get('date_to', '')
     penalty_filter = request.GET.get('penalty', '')  # 'with_penalty', 'waived', 'no_penalty'
+
+    # Default date range: 1 month (today back to 1 month ago)
+    today = timezone.now().date()
+    default_to = today.strftime('%Y-%m-%d')
+    # Go back 1 month, handling month boundaries
+    if today.month == 1:
+        default_from = today.replace(year=today.year - 1, month=12).strftime('%Y-%m-%d')
+    else:
+        try:
+            default_from = today.replace(month=today.month - 1).strftime('%Y-%m-%d')
+        except ValueError:
+            # Handle cases like March 31 -> Feb 28
+            import calendar
+            last_day = calendar.monthrange(today.year, today.month - 1)[1]
+            default_from = today.replace(month=today.month - 1, day=last_day).strftime('%Y-%m-%d')
+
+    date_from = request.GET.get('date_from', default_from)
+    date_to = request.GET.get('date_to', default_to)
 
     # Base query with related data
     payments = Payment.objects.select_related(
