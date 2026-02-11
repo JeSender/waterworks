@@ -1724,6 +1724,32 @@ def system_management(request):
     - Tiered rates: Affects newly generated bills
     - Penalty settings: Affects penalty calculations on all overdue bills
     """
+    # Check if admin verification is required and not expired
+    admin_verified = request.session.get('admin_verified', False)
+    admin_verified_time_str = request.session.get('admin_verified_time')
+
+    verification_expired = False
+    if admin_verified and admin_verified_time_str:
+        try:
+            from datetime import timedelta
+            verified_time = timezone.datetime.fromisoformat(admin_verified_time_str)
+            if timezone.is_naive(verified_time):
+                verified_time = timezone.make_aware(verified_time)
+            time_since_verification = timezone.now() - verified_time
+            if time_since_verification > timedelta(minutes=15):
+                verification_expired = True
+                request.session.pop('admin_verified', None)
+                request.session.pop('admin_verified_time', None)
+        except (ValueError, TypeError):
+            verification_expired = True
+
+    if not admin_verified or verification_expired:
+        if verification_expired:
+            messages.warning(request, "Admin verification expired. Please verify again.")
+        else:
+            messages.warning(request, "Admin verification required to access System Settings.")
+        return redirect(f"{reverse('consumers:admin_verification')}?next=system_management")
+
     # Get the first (or only) SystemSetting instance (assumes singleton pattern)
     setting, created = SystemSetting.objects.get_or_create(id=1)
 
@@ -5622,6 +5648,8 @@ def admin_verification(request):
             # Redirect to requested destination
             if destination == 'django_admin':
                 return redirect('/admin/')
+            elif destination == 'system_management':
+                return redirect('consumers:system_management')
             else:
                 return redirect('consumers:user_management')
         else:
@@ -5635,7 +5663,9 @@ def admin_verification(request):
                 status='failed'
             )
 
-    return render(request, 'consumers/admin_verification.html')
+    # Pass destination from query string so the template can set the hidden field
+    destination = request.GET.get('next', 'user_management')
+    return render(request, 'consumers/admin_verification.html', {'destination': destination})
 
 
 @login_required

@@ -24,7 +24,7 @@
         <!-- Verification Form -->
         <form method="POST" id="verificationForm" class="px-8 pb-8">
             {% csrf_token %}
-            <input type="hidden" name="destination" value="user_management">
+            <input type="hidden" name="destination" value="{{ destination|default:'user_management' }}">
 
             <!-- Username Display -->
             <div class="mb-4">
