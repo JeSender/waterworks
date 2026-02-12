@@ -5648,50 +5648,128 @@ def session_activities(request, session_id):
 @login_required
 def consumer_bill(request, consumer_id):
     """
-    Display all bills for a specific consumer with summary statistics.
-    Includes year filter and service connection history.
+    Display bills in a yearly ledger card format (Jan-Dec grid per year).
+    Each month row shows billing, payment, and connection status.
     """
-    from django.db.models import Sum
-    from datetime import datetime
+    from django.db.models import Sum, Prefetch
+    from datetime import datetime, date
+    from collections import OrderedDict
 
     consumer = get_object_or_404(Consumer, id=consumer_id)
     all_bills = consumer.bills.select_related(
         'current_reading__consumer',
         'previous_reading__consumer'
-    ).order_by('-billing_period')
+    ).prefetch_related(
+        Prefetch('payments', queryset=Payment.objects.select_related('processed_by').order_by('-payment_date'))
+    ).order_by('billing_period')
 
     # Get available years for filter
     bill_years = all_bills.dates('billing_period', 'year', order='DESC')
     available_years = [d.year for d in bill_years]
 
-    # Apply year filter
+    # Apply year filter - default to latest year if available
     selected_year = request.GET.get('year', '')
     if selected_year:
-        bills = all_bills.filter(billing_period__year=int(selected_year))
+        filtered_bills = all_bills.filter(billing_period__year=int(selected_year))
     else:
-        bills = all_bills
+        filtered_bills = all_bills
 
-    # Calculate summary statistics (for filtered bills)
-    total_billed = bills.aggregate(total=Sum('total_amount'))['total'] or 0
-    outstanding_balance = bills.filter(status='Pending').aggregate(total=Sum('total_amount'))['total'] or 0
-    outstanding_balance += bills.filter(status='Overdue').aggregate(total=Sum('total_amount'))['total'] or 0
-
-    # Get service history (disconnect/reconnect events) for this consumer
+    # Get service history events for this consumer
     consumer_name = f"{consumer.first_name} {consumer.last_name}"
-    service_history = UserActivity.objects.filter(
+    service_events = UserActivity.objects.filter(
         action__in=['consumer_disconnected', 'consumer_reconnected'],
         description__icontains=consumer.id_number or consumer_name
-    ).order_by('-created_at')
+    ).order_by('created_at')
+
+    # Build a timeline of connection status changes
+    # Each event marks a status change at a point in time
+    status_changes = []
+    for event in service_events:
+        status_changes.append({
+            'date': event.created_at.date(),
+            'status': 'disconnected' if event.action == 'consumer_disconnected' else 'active',
+        })
+
+    def get_month_status(year, month):
+        """Determine connection status for a given month."""
+        check_date = date(year, month, 1)
+        # Start with 'active' (consumer was connected at registration)
+        current_status = 'active'
+        for change in status_changes:
+            if change['date'] <= check_date:
+                current_status = change['status']
+            else:
+                break
+        return current_status
+
+    # Build ledger data: group bills by year, create 12-month grid
+    month_names = [
+        'January', 'February', 'March', 'April', 'May', 'June',
+        'July', 'August', 'September', 'October', 'November', 'December'
+    ]
+
+    # Index bills by (year, month) for quick lookup
+    bill_map = {}
+    for bill in filtered_bills:
+        key = (bill.billing_period.year, bill.billing_period.month)
+        bill_map[key] = bill
+
+    # Determine which years to show
+    if selected_year:
+        years_to_show = [int(selected_year)]
+    else:
+        years_to_show = sorted(available_years, reverse=True)
+
+    # Build ledger cards
+    ledger_cards = []
+    for year in years_to_show:
+        months = []
+        for month_num in range(1, 13):
+            bill = bill_map.get((year, month_num))
+            payment = None
+            if bill:
+                payments = list(bill.payments.all())
+                payment = payments[0] if payments else None
+
+            connection_status = get_month_status(year, month_num)
+
+            months.append({
+                'month_name': month_names[month_num - 1],
+                'month_num': month_num,
+                'bill': bill,
+                'consumption': bill.consumption if bill else None,
+                'amount_due': bill.total_amount if bill else None,
+                'penalty': bill.effective_penalty if bill else None,
+                'amount_paid': payment.amount_paid if payment else None,
+                'receipt_number': payment.or_number if payment else None,
+                'date_issued': payment.payment_date if payment else None,
+                'processed_by': payment.processed_by if payment else None,
+                'status': bill.status if bill else None,
+                'connection_status': connection_status,
+            })
+
+        ledger_cards.append({
+            'year': year,
+            'months': months,
+        })
+
+    # Calculate summary statistics
+    total_bills = filtered_bills.count()
+    total_billed = filtered_bills.aggregate(total=Sum('total_amount'))['total'] or 0
+    outstanding_balance = filtered_bills.filter(
+        status__in=['Pending', 'Overdue']
+    ).aggregate(total=Sum('total_amount'))['total'] or 0
 
     return render(request, 'consumers/consumer_bill.html', {
         'consumer': consumer,
-        'bills': bills,
+        'ledger_cards': ledger_cards,
+        'total_bills': total_bills,
         'total_billed': total_billed,
         'outstanding_balance': outstanding_balance,
         'today': datetime.now(),
         'available_years': available_years,
         'selected_year': selected_year,
-        'service_history': service_history,
+        'service_events': service_events,
     })
 
 
