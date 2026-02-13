@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Official Receipt - OR #{{ payment.or_number }}</title>
+    <title>Water Bill - {{ consumer.last_name }}, {{ consumer.first_name }}</title>
     {% load static %}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -13,461 +13,331 @@
             line-height: 1.4;
             background: #f0f0f0;
         }
-        .receipt {
-            width: 90mm;
-            max-width: 100%;
-            margin: 10px auto;
-            padding: 10px;
-            background: #fff;
-            border: 1px solid #000;
-        }
-        .text-center { text-align: center; }
-        .text-right { text-align: right; }
-        .bold { font-weight: bold; }
-        .uppercase { text-transform: uppercase; }
 
-        /* Header with logos */
+        .water-bill {
+            width: 148mm;
+            max-width: 100%;
+            margin: 15px auto;
+            padding: 15px 20px;
+            background: #fff;
+            border: 2px solid #000;
+        }
+
+        /* Header */
         .header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            border-bottom: 1px solid #000;
-            padding-bottom: 5px;
-            margin-bottom: 5px;
+            gap: 10px;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 8px;
         }
         .header-logo {
-            width: 40px;
-            height: 40px;
+            width: 45px;
+            height: 45px;
             object-fit: contain;
             flex-shrink: 0;
         }
         .header-text {
             text-align: center;
-            padding: 0 3px;
         }
-        .header-text p {
-            margin: 0;
-            line-height: 1.2;
-        }
-        .header-title {
-            font-size: 12px;
-            font-weight: bold;
-            font-style: italic;
-        }
-        .header-subtitle {
-            font-size: 9px;
-        }
-        .office-title {
-            font-size: 10px;
-            font-weight: bold;
-            margin-top: 3px;
-        }
-
-        /* OR Number Section */
-        .or-section {
-            display: flex;
-            justify-content: space-between;
-            border-bottom: 1px solid #000;
-            padding: 5px 0;
-        }
-        .or-left {
-            font-size: 9px;
-        }
-        .or-right {
-            text-align: right;
-        }
-        .or-number {
+        .header-text .title {
             font-size: 14px;
             font-weight: bold;
-            color: #c00;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .header-text .subtitle {
+            font-size: 10px;
+            text-transform: uppercase;
+            color: #333;
         }
 
-        /* Date Section */
-        .date-section {
-            border-bottom: 1px solid #000;
-            padding: 5px 0;
-        }
-        .date-row {
+        /* Title & Date Row */
+        .title-row {
             display: flex;
             justify-content: space-between;
-        }
-
-        /* Payor Section */
-        .payor-section {
+            align-items: center;
             border-bottom: 1px solid #000;
-            padding: 5px 0;
+            padding: 6px 0;
         }
-        .payor-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 3px;
-        }
-        .payor-name {
+        .bill-title {
+            font-size: 13px;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 11px;
-            text-align: center;
-            padding: 3px 0;
         }
-        .payor-address {
-            text-align: center;
-            font-size: 10px;
-            text-transform: uppercase;
+        .bill-date {
+            font-size: 11px;
+        }
+        .bill-date span {
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            padding: 0 5px 1px;
         }
 
-        /* Collection Table */
-        .collection-table {
+        /* Consumer Info */
+        .consumer-info {
+            padding: 8px 0;
+            border-bottom: 1px solid #000;
+        }
+        .info-row {
+            display: flex;
+            align-items: baseline;
+            margin-bottom: 4px;
+        }
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+        .info-label {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            width: 85px;
+            flex-shrink: 0;
+            color: #333;
+        }
+        .info-value {
+            font-size: 12px;
+            font-weight: bold;
+            border-bottom: 1px solid #999;
+            flex: 1;
+            padding-bottom: 1px;
+        }
+
+        /* Section Label */
+        .section-label {
+            font-size: 10px;
+            font-weight: bold;
+            text-transform: uppercase;
+            padding: 6px 0 4px;
+        }
+
+        /* Billing Table */
+        .billing-table {
             width: 100%;
             border-collapse: collapse;
-            margin: 5px 0;
+            margin-bottom: 8px;
         }
-        .collection-table th {
-            background: #f5f5f5;
+        .billing-table th {
+            background: #e8e8e8;
             border: 1px solid #000;
-            padding: 3px;
-            font-size: 9px;
+            padding: 4px 6px;
+            font-size: 10px;
+            font-weight: bold;
+            text-align: center;
+            text-transform: uppercase;
+        }
+        .billing-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            font-size: 11px;
+        }
+        .billing-table .num-col {
+            width: 25px;
             text-align: center;
         }
-        .collection-table td {
-            border: 1px solid #000;
-            padding: 3px 5px;
-            font-size: 10px;
+        .billing-table .consumed-col {
+            text-align: center;
         }
-        .collection-table .amount {
+        .billing-table .amount-col {
             text-align: right;
+            font-family: 'Courier New', monospace;
         }
-        .collection-table .empty-row td {
-            height: 18px;
+        .billing-table .penalty-col {
+            text-align: right;
+            font-family: 'Courier New', monospace;
+        }
+        .billing-table .empty-row td {
+            height: 22px;
+        }
+        .billing-table .overdue-row {
+            background-color: #fff5f5;
         }
 
         /* Total Section */
         .total-section {
             border-top: 2px solid #000;
-            padding: 5px 0;
-        }
-        .total-row {
+            padding: 8px 0;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+        }
+        .total-label {
+            font-size: 13px;
             font-weight: bold;
-            font-size: 12px;
+            text-transform: uppercase;
         }
         .total-amount {
-            font-size: 14px;
-            color: #000;
+            font-size: 16px;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+            border-bottom: 2px solid #000;
+            padding: 0 10px 2px;
         }
 
-        /* Amount in Words */
-        .words-section {
-            border-top: 1px solid #000;
-            border-bottom: 1px solid #000;
-            padding: 5px 0;
+        /* Issued By */
+        .issued-section {
+            padding: 10px 0 0;
+            border-top: 1px solid #ccc;
+            margin-top: 8px;
         }
-        .words-label {
-            font-size: 9px;
+        .issued-row {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
         }
-        .words-value {
+        .issued-label {
+            font-size: 10px;
             font-weight: bold;
             text-transform: uppercase;
-            font-size: 10px;
-            text-align: center;
-            padding: 3px 0;
+            color: #333;
         }
-
-        /* Payment Method */
-        .payment-method {
-            display: flex;
-            border-bottom: 1px solid #000;
-            padding: 5px 0;
-            font-size: 9px;
-        }
-        .payment-options {
-            width: 35%;
-        }
-        .payment-option {
-            display: flex;
-            align-items: center;
-            margin: 2px 0;
-        }
-        .checkbox {
-            width: 12px;
-            height: 12px;
-            border: 1px solid #000;
-            margin-right: 5px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .checkbox.checked::after {
-            content: "✓";
-            font-size: 10px;
-        }
-        .payment-details {
-            flex: 1;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr;
-            gap: 3px;
-            font-size: 8px;
-            text-align: center;
-        }
-        .payment-details div {
-            border-bottom: 1px solid #000;
-            padding: 2px;
-        }
-
-        /* Signature Section */
-        .signature-section {
-            padding: 8px 0;
-            text-align: center;
-        }
-        .signature-text {
-            font-size: 9px;
-            margin-bottom: 15px;
-        }
-        .signature-name {
-            font-weight: bold;
-            text-transform: uppercase;
+        .issued-value {
             font-size: 11px;
-            border-top: 1px solid #000;
-            padding-top: 3px;
-            width: 60%;
-            margin: 0 auto;
-        }
-        .signature-title {
-            font-size: 9px;
-            text-transform: uppercase;
-        }
-
-        /* Footer Note */
-        .footer-note {
-            font-size: 8px;
-            border-top: 1px solid #000;
-            padding-top: 5px;
-            margin-top: 5px;
+            font-weight: bold;
+            border-bottom: 1px solid #000;
+            flex: 1;
+            padding-bottom: 2px;
+            min-width: 120px;
         }
 
         /* Action Buttons */
         .no-print {
             text-align: center;
             margin: 15px auto;
-            max-width: 90mm;
+            max-width: 148mm;
         }
         .no-print button, .no-print a {
-            padding: 10px 20px;
+            padding: 10px 24px;
             margin: 5px;
             border: none;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: bold;
             text-decoration: none;
             display: inline-block;
         }
         .btn-print { background: #2563eb; color: #fff; }
-        .btn-new { background: #16a34a; color: #fff; }
+        .btn-print:hover { background: #1d4ed8; }
+        .btn-back { background: #6b7280; color: #fff; }
+        .btn-back:hover { background: #4b5563; }
 
         @media print {
             body { background: #fff; margin: 0; padding: 0; }
-            .receipt {
-                width: 90mm;
-                border: none;
-                margin: 0;
-                padding: 5px;
+            .water-bill {
+                width: 148mm;
+                border: 2px solid #000;
+                margin: 0 auto;
+                padding: 12px 18px;
             }
             .no-print { display: none !important; }
         }
         @page {
-            size: 90mm auto;
-            margin: 2mm;
+            size: A5 portrait;
+            margin: 5mm;
         }
     </style>
 </head>
 <body>
-    <div class="receipt">
+    <div class="water-bill">
         <!-- Header with Logos -->
         <div class="header">
             <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Seal" class="header-logo">
             <div class="header-text">
-                <p class="header-title">OFFICIAL RECEIPT</p>
-                <p class="header-subtitle">Republic of the Philippines</p>
-                <p class="header-subtitle bold">OFFICE OF THE TREASURER</p>
-                <p class="header-subtitle">Province of Bohol</p>
-                <p class="office-title">MTO-BALILIHAN</p>
+                <p class="title">Balilihan Waterworks System</p>
+                <p class="subtitle">LGU - Balilihan</p>
             </div>
             <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="header-logo">
         </div>
 
-        <!-- OR Number Section -->
-        <div class="or-section">
-            <div class="or-left">
-                <p>Accountable Form No. 51</p>
-                <p>(Revised August 1994)</p>
+        <!-- Title & Date -->
+        <div class="title-row">
+            <div class="bill-title">Water Bill</div>
+            <div class="bill-date">Date: <span>{% now "n-d-Y" %}</span></div>
+        </div>
+
+        <!-- Consumer Info -->
+        <div class="consumer-info">
+            <div class="info-row">
+                <span class="info-label">Name:</span>
+                <span class="info-value">{{ consumer.last_name }}, {{ consumer.first_name }}{% if consumer.suffix %} {{ consumer.suffix }}{% endif %}</span>
             </div>
-            <div class="or-right">
-                <p style="font-size:9px;">OR <span style="font-size:8px;">SERIAL</span></p>
-                <p class="or-number">{{ payment.or_number }}</p>
+            <div class="info-row">
+                <span class="info-label">Barangay:</span>
+                <span class="info-value">{{ consumer.barangay.name|default:"—" }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">ID Number:</span>
+                <span class="info-value">{{ consumer.id_number|default:"—" }}</span>
             </div>
         </div>
 
-        <!-- Date Section -->
-        <div class="date-section">
-            <div class="date-row">
-                <span>DATE</span>
-                <span class="bold">{{ payment.payment_date|date:"F d, Y" }}</span>
-            </div>
-        </div>
-
-        <!-- Payor Section -->
-        <div class="payor-section">
-            <div class="payor-row">
-                <span>PAYOR</span>
-                <span>FUND</span>
-            </div>
-            <p class="payor-name">{{ payment.bill.consumer.last_name }}, {{ payment.bill.consumer.first_name }}</p>
-            <p style="text-align:center; font-size:10px; color:#666; margin-top:2px;">ID Number: {{ payment.bill.consumer.id_number|default:"—" }}</p>
-            <p class="payor-address">{{ payment.bill.consumer.barangay.name|default:"" }}, BALILIHAN, BOHOL</p>
-        </div>
-
-        <!-- Nature of Collection Table -->
-        <table class="collection-table">
+        <!-- Billing Table -->
+        <p class="section-label">For the Month</p>
+        <table class="billing-table">
             <thead>
                 <tr>
-                    <th style="width:70%;">NATURE OF COLLECTION</th>
-                    <th style="width:30%;">AMOUNT</th>
+                    <th class="num-col">#</th>
+                    <th>Month/Year</th>
+                    <th>Consumed<br>(Cu.m.)</th>
+                    <th>Amount</th>
+                    <th>Penalty</th>
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>WATER BILL</td>
-                    <td class="amount">{{ payment.original_bill_amount|default:payment.bill.total_amount }}</td>
-                </tr>
-                <tr>
-                    <td style="font-size:9px;">{{ payment.bill.billing_period|date:"F Y" }} ({{ breakdown.usage_type }})</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td style="font-size:9px;">Prev: {{ previous_reading_value }}m³ → Curr: {{ payment.bill.current_reading.reading_value }}m³</td>
-                    <td></td>
-                </tr>
-                <tr>
-                    <td style="font-size:9px; font-weight:bold;">Consumption: {{ payment.bill.consumption }}m³</td>
-                    <td></td>
-                </tr>
-                {% if payment.penalty_amount > 0 %}
-                <!-- Penalty Row -->
-                <tr style="background-color: #fff5f5;">
-                    <td style="color: #c00;">
-                        <strong>LATE PAYMENT PENALTY</strong>
-                        {% if payment.penalty_waived %}
-                        <span style="color: #059669;">(WAIVED)</span>
-                        {% endif %}
-                    </td>
-                    <td class="amount" style="color: #c00;">
-                        {% if payment.penalty_waived %}
-                        <span style="text-decoration: line-through;">{{ payment.penalty_amount }}</span>
-                        <span style="color: #059669;"> 0.00</span>
+                {% for bill in pending_bills %}
+                <tr{% if bill.is_overdue %} class="overdue-row"{% endif %}>
+                    <td class="num-col">{{ forloop.counter }}.</td>
+                    <td style="font-weight:bold;">{{ bill.billing_period|date:"M Y" }}</td>
+                    <td class="consumed-col" style="font-weight:bold;">{{ bill.consumption }}</td>
+                    <td class="amount-col">{{ bill.total_amount|floatformat:2 }}</td>
+                    <td class="penalty-col">
+                        {% if bill.effective_penalty > 0 %}
+                        {{ bill.effective_penalty|floatformat:2 }}
                         {% else %}
-                        {{ payment.penalty_amount }}
+                        —
                         {% endif %}
                     </td>
                 </tr>
-                {% if payment.senior_citizen_discount > 0 %}
-                <tr style="background-color: #f0fdf4;">
-                    <td style="color: #059669;">
-                        <strong>SC DISCOUNT (5%)</strong>
-                    </td>
-                    <td class="amount" style="color: #059669;">
-                        -{{ payment.senior_citizen_discount }}
-                    </td>
+                {% endfor %}
+
+                {% if pending_bills|length < 6 %}
+                {% for i in "123456" %}
+                {% if forloop.counter > pending_bills|length and forloop.counter <= 6 %}
+                <tr class="empty-row">
+                    <td class="num-col">{{ forloop.counter }}.</td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
+                    <td></td>
                 </tr>
                 {% endif %}
-                <tr>
-                    <td style="font-size:9px; color: #666;">
-                        {{ payment.days_overdue_at_payment }} day{{ payment.days_overdue_at_payment|pluralize }} overdue
-                        {% if payment.penalty_waived %}
-                        - Waived by {{ payment.bill.penalty_waived_by.get_full_name|default:payment.bill.penalty_waived_by.username }}
-                        {% endif %}
-                    </td>
-                    <td></td>
-                </tr>
-                {% else %}
-                <tr class="empty-row">
-                    <td></td>
-                    <td></td>
-                </tr>
+                {% endfor %}
                 {% endif %}
             </tbody>
         </table>
 
-        <!-- Total Section -->
+        <!-- Total Amount -->
         <div class="total-section">
-            {% if payment.penalty_amount > 0 and not payment.penalty_waived %}
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 3px;">
-                <span>Subtotal (Bill)</span>
-                <span>₱ {{ payment.original_bill_amount|default:payment.bill.total_amount }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #c00; margin-bottom: 3px;">
-                <span>Penalty</span>
-                <span>₱ {{ payment.penalty_amount }}</span>
-            </div>
-            {% if payment.senior_citizen_discount > 0 %}
-            <div style="display: flex; justify-content: space-between; font-size: 10px; color: #059669; margin-bottom: 5px;">
-                <span>SC Discount (5%)</span>
-                <span>-₱ {{ payment.senior_citizen_discount }}</span>
-            </div>
-            {% endif %}
-            {% endif %}
-            <div class="total-row">
-                <span>TOTAL <span style="font-size:10px;">CASH</span></span>
-                <span>₱ <span class="total-amount">{{ payment.amount_paid }}</span></span>
-            </div>
+            <span class="total-label">Total Amount:</span>
+            <span class="total-amount">{{ grand_total|floatformat:2 }}</span>
         </div>
 
-        <!-- Amount in Words -->
-        <div class="words-section">
-            <p class="words-label">AMOUNT IN WORDS</p>
-            <p class="words-value">{{ payment.amount_in_words|default:"" }}</p>
-        </div>
-
-        <!-- Payment Method -->
-        <div class="payment-method">
-            <div class="payment-options">
-                <div class="payment-option">
-                    <span class="checkbox checked"></span>
-                    <span>Cash</span>
-                </div>
-                <div class="payment-option">
-                    <span class="checkbox"></span>
-                    <span>Check</span>
-                </div>
-                <div class="payment-option">
-                    <span class="checkbox"></span>
-                    <span>Money Order</span>
-                </div>
+        <!-- Issued By -->
+        <div class="issued-section">
+            <div class="issued-row">
+                <span class="issued-label">Issued by:</span>
+                <span class="issued-value">{{ issued_by.get_full_name|default:issued_by.username }}</span>
             </div>
-            <div class="payment-details">
-                <div>DRAWEE<br>BANK</div>
-                <div>NUMBER</div>
-                <div>DATE</div>
-            </div>
-        </div>
-
-        <!-- Signature Section -->
-        <div class="signature-section">
-            <p class="signature-text">Received the amount stated above</p>
-            <div class="signature-name">{{ request.user.get_full_name|default:request.user.username }}</div>
-            <p class="signature-title">Revenue Collection Clerk</p>
-        </div>
-
-        <!-- Footer Note -->
-        <div class="footer-note">
-            <p>NOTE: Write the number and date of this receipt on the back of check or money order received.</p>
         </div>
     </div>
 
     <!-- Action Buttons -->
     <div class="no-print">
-        <button class="btn-print" onclick="window.print()">Print Receipt</button>
-        <a href="{% url 'consumers:inquire' %}" class="btn-new">New Payment</a>
+        <button class="btn-print" onclick="window.print()">Print Water Bill</button>
+        <a href="{% url 'consumers:inquire' %}" class="btn-back">Back to Payment</a>
     </div>
 </body>
 </html>

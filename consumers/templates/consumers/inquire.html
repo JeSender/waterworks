@@ -126,274 +126,149 @@
     </div>
 
     {% else %}
-    <!-- ============ PAYMENT FORM VIEW ============ -->
-    <div class="grid lg:grid-cols-3 gap-4">
-        <!-- Left: Consumer Info -->
-        <div class="space-y-3">
-            <a href="{% url 'consumers:inquire' %}" class="inline-flex items-center px-2 py-1 bg-light-100 hover:bg-light-200 text-dark-700 text-xs font-medium rounded-lg transition-colors">
-                <i class="bi bi-arrow-left mr-1"></i>Back
-            </a>
+    <!-- ============ WATER BILL VIEW ============ -->
+    <div class="max-w-lg mx-auto">
+        <!-- Back Button -->
+        <a href="{% url 'consumers:inquire' %}" class="inline-flex items-center px-3 py-1.5 mb-3 bg-light-100 hover:bg-light-200 text-dark-700 text-xs font-medium rounded-lg transition-colors">
+            <i class="bi bi-arrow-left mr-1.5"></i>Back to List
+        </a>
 
-            <div class="bg-white rounded-lg border border-light-300 shadow-sm overflow-hidden">
-                <div class="px-3 py-2 bg-primary-600">
-                    <h3 class="text-white font-semibold text-sm flex items-center gap-1">
-                        <i class="bi bi-person-fill"></i>Consumer
-                    </h3>
-                </div>
-                <div class="p-3">
-                    <div class="flex items-center gap-2 mb-3">
-                        <div class="w-10 h-10 bg-primary-100 rounded-full flex items-center justify-center">
-                            <i class="bi bi-person-fill text-primary-600 text-lg"></i>
-                        </div>
-                        <div>
-                            <h4 class="text-sm font-bold text-dark-900">{{ selected_consumer.first_name }} {{ selected_consumer.last_name }}</h4>
-                            <p class="text-xs text-primary-600 font-mono font-semibold">{{ selected_consumer.account_number }}</p>
-                        </div>
+        <!-- Water Bill Card -->
+        <div class="bg-white rounded-xl border-2 border-dark-300 shadow-md overflow-hidden">
+
+            <!-- Header -->
+            <div class="px-5 py-4 border-b-2 border-dark-300 text-center">
+                <div class="flex items-center justify-center gap-3 mb-1">
+                    <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Seal" class="w-10 h-10 object-contain">
+                    <div>
+                        <h2 class="text-base font-bold text-dark-900 uppercase tracking-wide">Balilihan Waterworks System</h2>
+                        <p class="text-xs text-dark-500 uppercase">LGU - Balilihan</p>
                     </div>
-                    <div class="grid grid-cols-2 gap-2 text-xs">
-                        <div>
-                            <p class="text-dark-400">Barangay</p>
-                            <p class="font-semibold text-dark-900">{{ selected_consumer.barangay.name|default:"—" }}</p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Purok</p>
-                            <p class="font-semibold text-dark-900">{{ selected_consumer.purok.name|default:"—" }}</p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Type</p>
-                            <p class="font-semibold text-dark-900">{{ selected_consumer.usage_type }}</p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Phone</p>
-                            <p class="font-semibold text-dark-900">{{ selected_consumer.phone_number|default:"N/A" }}</p>
-                        </div>
-                    </div>
+                    <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="w-10 h-10 object-contain">
                 </div>
             </div>
-        </div>
 
-        {% if latest_bill %}
-        <!-- Center: Bill Details -->
-        <div>
-            <div class="bg-white rounded-lg border {% if payment_breakdown.is_overdue %}border-danger-300{% else %}border-warning-300{% endif %} shadow-sm overflow-hidden mt-7">
-                <div class="px-3 py-2 {% if payment_breakdown.is_overdue %}bg-danger-500{% else %}bg-warning-500{% endif %}">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-white font-semibold text-sm flex items-center gap-1">
-                            <i class="bi bi-receipt-cutoff"></i>Bill Details
-                        </h3>
-                        {% if payment_breakdown.is_overdue %}
-                        <span class="px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded flex items-center gap-1">
-                            <i class="bi bi-exclamation-triangle-fill"></i>
-                            {{ payment_breakdown.days_overdue }} days overdue
-                        </span>
-                        {% else %}
-                        <span class="px-2 py-0.5 bg-white/20 text-white text-xs font-semibold rounded">Pending</span>
-                        {% endif %}
-                    </div>
+            <!-- Title & Date -->
+            <div class="px-5 py-3 border-b border-dark-200 flex items-center justify-between">
+                <h3 class="text-sm font-bold text-dark-900 uppercase">Water Bill</h3>
+                <p class="text-xs text-dark-600">
+                    Date: <span class="font-semibold">{% now "n-d-Y" %}</span>
+                </p>
+            </div>
+
+            <!-- Consumer Info -->
+            <div class="px-5 py-3 border-b border-dark-200 space-y-1.5">
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">Name:</span>
+                    <span class="text-sm font-bold text-dark-900">{{ selected_consumer.last_name }}, {{ selected_consumer.first_name }}{% if selected_consumer.suffix %} {{ selected_consumer.suffix }}{% endif %}</span>
                 </div>
-                <div class="p-3">
-                    <div class="grid grid-cols-2 gap-2 text-xs mb-3">
-                        <div>
-                            <p class="text-dark-400">Period</p>
-                            <p class="font-semibold text-dark-900">{{ latest_bill.billing_period|date:"M Y" }}</p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Due Date</p>
-                            <p class="font-semibold {% if payment_breakdown.is_overdue %}text-danger-600{% else %}text-dark-900{% endif %}">
-                                {{ latest_bill.due_date|date:"M d, Y" }}
-                            </p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Consumption</p>
-                            <p class="font-semibold text-dark-900">{{ latest_bill.consumption }} m³</p>
-                        </div>
-                        <div>
-                            <p class="text-dark-400">Rate</p>
-                            <p class="font-semibold text-dark-900">₱{{ latest_bill.rate_per_cubic|floatformat:2 }}/m³</p>
-                        </div>
-                    </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">Barangay:</span>
+                    <span class="text-sm font-semibold text-dark-800">{{ selected_consumer.barangay.name|default:"—" }}</span>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">ID Number:</span>
+                    <span class="text-sm font-mono font-semibold text-primary-700">{{ selected_consumer.id_number|default:"—" }}</span>
+                </div>
+            </div>
 
-                    <div class="border-t border-light-200 pt-2 space-y-1 text-xs">
-                        <div class="flex justify-between text-dark-600">
-                            <span>Water Charge ({{ latest_bill.consumption }} m³ × ₱{{ latest_bill.rate_per_cubic }})</span>
-                            <span class="font-mono">₱{{ payment_breakdown.consumption_charge|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex justify-between text-dark-600">
-                            <span>Fixed Charge</span>
-                            <span class="font-mono">₱{{ latest_bill.fixed_charge|floatformat:2 }}</span>
-                        </div>
-                        <div class="flex justify-between font-semibold text-dark-800 pt-1 border-t border-dashed border-light-300">
-                            <span>Subtotal</span>
-                            <span class="font-mono">₱{{ latest_bill.total_amount|floatformat:2 }}</span>
-                        </div>
+            <!-- Billing Table -->
+            <div class="px-5 py-3">
+                <p class="text-xs font-bold text-dark-700 uppercase mb-2">For the Month</p>
 
-                        {% if payment_breakdown.is_overdue and payment_breakdown.penalty_amount > 0 %}
-                        <div class="mt-2 p-2 bg-danger-50 border border-danger-200 rounded-lg">
-                            <div class="flex justify-between items-center text-danger-700">
-                                <span class="flex items-center gap-1">
-                                    <i class="bi bi-exclamation-circle-fill"></i>
-                                    Late Payment Penalty
-                                    {% if system_settings.penalty_type == 'percentage' %}
-                                    <span class="text-danger-500">({{ system_settings.penalty_rate }}%)</span>
-                                    {% endif %}
-                                </span>
-                                <span class="font-mono font-bold">₱{{ payment_breakdown.penalty_amount|floatformat:2 }}</span>
-                            </div>
-                            <p class="text-xs text-danger-500 mt-1">
-                                {{ payment_breakdown.days_overdue }} days past due date
-                                {% if system_settings.penalty_grace_period_days > 0 %}
-                                ({{ system_settings.penalty_grace_period_days }} day grace period)
+                {% if pending_bills %}
+                <table class="w-full border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-dark-100">
+                            <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700 w-8">#</th>
+                            <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700">Month/Year</th>
+                            <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">Consumed<br>(Cu.m.)</th>
+                            <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Amount</th>
+                            <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Penalty</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bill in pending_bills %}
+                        <tr class="{% if bill.is_overdue %}bg-danger-50{% endif %}">
+                            <td class="border border-dark-300 px-2 py-1.5 text-dark-600">{{ forloop.counter }}.</td>
+                            <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
+                            <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
+                            <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2 }}</td>
+                            <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.effective_penalty > 0 %}text-danger-600 font-semibold{% else %}text-dark-400{% endif %}">
+                                {% if bill.effective_penalty > 0 %}
+                                {{ bill.effective_penalty|floatformat:2 }}
+                                {% else %}
+                                —
                                 {% endif %}
-                            </p>
-                            {% if payment_breakdown.senior_citizen_discount > 0 %}
-                            <div class="flex justify-between items-center text-success-700 mt-1 pt-1 border-t border-danger-200">
-                                <span class="flex items-center gap-1">
-                                    <i class="bi bi-person-heart"></i>
-                                    Senior Citizen Discount (5%)
-                                </span>
-                                <span class="font-mono font-bold">-₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}</span>
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% elif latest_bill.penalty_waived %}
-                        <div class="mt-2 p-2 bg-success-50 border border-success-200 rounded-lg">
-                            <div class="flex justify-between items-center text-success-700">
-                                <span class="flex items-center gap-1">
-                                    <i class="bi bi-check-circle-fill"></i>
-                                    Penalty Waived
-                                </span>
-                                <span class="font-mono line-through text-dark-400">₱{{ latest_bill.penalty_amount|floatformat:2 }}</span>
-                            </div>
-                            {% if latest_bill.penalty_waived_reason %}
-                            <p class="text-xs text-success-600 mt-1">Reason: {{ latest_bill.penalty_waived_reason }}</p>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                    </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
 
-                    <div class="pt-3 mt-2 border-t-2 border-dark-200 text-center">
-                        <p class="text-dark-500 text-xs uppercase tracking-wide">Total Amount Due</p>
-                        <p class="text-3xl font-bold {% if payment_breakdown.is_overdue and payment_breakdown.penalty_amount > 0 %}text-danger-600{% else %}text-warning-600{% endif %}">
-                            ₱{{ payment_breakdown.total_amount_due|floatformat:2 }}
-                        </p>
-                        {% if payment_breakdown.penalty_amount > 0 and not latest_bill.penalty_waived %}
-                        <p class="text-xs text-dark-400 mt-1">
-                            (Bill: ₱{{ latest_bill.total_amount|floatformat:2 }} + Penalty: ₱{{ payment_breakdown.penalty_amount|floatformat:2 }}{% if payment_breakdown.senior_citizen_discount > 0 %} - SC Discount: ₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}{% endif %})
-                        </p>
+                        <!-- Empty rows to match paper form (fill up to 6 rows) -->
+                        {% with remaining=6 %}
+                        {% for bill in pending_bills %}{% endfor %}
+                        {% if pending_bills|length < 6 %}
+                        {% for i in "123456" %}
+                        {% if forloop.counter > pending_bills|length and forloop.counter <= 6 %}
+                        <tr>
+                            <td class="border border-dark-300 px-2 py-1.5 text-dark-300">{{ forloop.counter }}.</td>
+                            <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
+                            <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
+                            <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
+                            <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
+                        </tr>
                         {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                        {% endwith %}
+                    </tbody>
+                </table>
+
+                <!-- Total Amount -->
+                <div class="mt-3 pt-3 border-t-2 border-dark-400 flex items-center justify-between">
+                    <span class="text-sm font-bold text-dark-800 uppercase">Total Amount:</span>
+                    <span class="text-xl font-bold text-dark-900 font-mono">
+                        ₱{{ payment_breakdown.total_amount_due|floatformat:2 }}
+                    </span>
+                </div>
+
+                {% if payment_breakdown.penalty_amount > 0 and not latest_bill.penalty_waived %}
+                <div class="mt-1 flex items-center justify-between text-xs text-dark-500">
+                    <span>(Bill: ₱{{ latest_bill.total_amount|floatformat:2 }} + Penalty: ₱{{ payment_breakdown.penalty_amount|floatformat:2 }}{% if payment_breakdown.senior_citizen_discount > 0 %} - SC: ₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}{% endif %})</span>
+                </div>
+                {% endif %}
+
+                {% else %}
+                <!-- No Bills -->
+                <div class="text-center py-8">
+                    <div class="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                        <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
                     </div>
+                    <h4 class="text-sm font-bold text-dark-900 mb-1">No Pending Bills</h4>
+                    <p class="text-xs text-dark-500">This consumer has no pending bills.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Issued By -->
+            <div class="px-5 py-3 border-t border-dark-200">
+                <div class="flex items-baseline gap-2">
+                    <span class="text-xs text-dark-500 font-semibold uppercase">Issued by:</span>
+                    <span class="text-xs font-semibold text-dark-700 border-b border-dark-300 flex-1 pb-0.5">
+                        {{ request.user.get_full_name|default:request.user.username }}
+                    </span>
                 </div>
             </div>
         </div>
 
-        <!-- Right: Payment Form -->
-        <div>
-            <div class="bg-white rounded-lg border border-success-300 shadow-sm overflow-hidden mt-7">
-                <div class="px-3 py-2 bg-success-600">
-                    <h3 class="text-white font-semibold text-sm flex items-center gap-1">
-                        <i class="bi bi-cash-coin"></i>Process Payment
-                    </h3>
-                </div>
-                <div class="p-3">
-                    <form method="post" id="payment-form">
-                        {% csrf_token %}
-                        <input type="hidden" name="bill_id" value="{{ latest_bill.id }}">
-                        <input type="hidden" id="bill-amount" value="{{ payment_breakdown.total_amount_due }}">
-                        <input type="hidden" id="original-bill" value="{{ latest_bill.total_amount }}">
-                        <input type="hidden" id="penalty-amount" value="{{ payment_breakdown.penalty_amount|default:0 }}">
-
-                        {% if can_waive_penalty and payment_breakdown.penalty_amount > 0 and not latest_bill.penalty_waived %}
-                        <div class="mb-3 p-2 bg-warning-50 border border-warning-200 rounded-lg">
-                            <label class="flex items-center gap-2 cursor-pointer">
-                                <input type="checkbox"
-                                       name="waive_penalty_checkbox"
-                                       id="waive-penalty-checkbox"
-                                       class="w-4 h-4 text-warning-600 border-warning-300 rounded focus:ring-warning-500"
-                                       onchange="togglePenaltyWaiver()">
-                                <span class="text-xs font-semibold text-warning-700">
-                                    <i class="bi bi-shield-check"></i>
-                                    Waive Penalty (₱{{ payment_breakdown.penalty_amount|floatformat:2 }})
-                                </span>
-                            </label>
-                            <div id="waive-reason-container" class="hidden mt-2">
-                                <input type="hidden" name="waive_penalty" id="waive-penalty-input" value="false">
-                                <input type="text"
-                                       name="waive_reason"
-                                       id="waive-reason"
-                                       placeholder="Reason for waiving penalty..."
-                                       class="w-full px-2 py-1.5 text-xs border border-warning-300 rounded focus:outline-none focus:ring-1 focus:ring-warning-500">
-                            </div>
-                        </div>
-                        {% endif %}
-
-                        <div class="mb-3 p-2 bg-light-50 border border-light-200 rounded-lg text-xs">
-                            <div class="flex justify-between text-dark-600">
-                                <span>Bill Amount:</span>
-                                <span class="font-mono">₱{{ latest_bill.total_amount|floatformat:2 }}</span>
-                            </div>
-                            {% if payment_breakdown.penalty_amount > 0 and not latest_bill.penalty_waived %}
-                            <div class="flex justify-between text-danger-600" id="penalty-line">
-                                <span>Penalty:</span>
-                                <span class="font-mono">₱{{ payment_breakdown.penalty_amount|floatformat:2 }}</span>
-                            </div>
-                            {% if payment_breakdown.senior_citizen_discount > 0 %}
-                            <div class="flex justify-between text-success-600" id="sc-discount-line">
-                                <span>SC Discount (5%):</span>
-                                <span class="font-mono">-₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}</span>
-                            </div>
-                            {% endif %}
-                            {% endif %}
-                            <div class="flex justify-between font-bold text-dark-800 pt-1 mt-1 border-t border-light-300">
-                                <span>Total Due:</span>
-                                <span class="font-mono" id="total-due-display">₱{{ payment_breakdown.total_amount_due|floatformat:2 }}</span>
-                            </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label class="block text-xs font-semibold text-dark-700 mb-1">Cash Received</label>
-                            <div class="relative">
-                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 font-bold">₱</span>
-                                <input type="number"
-                                       step="0.01"
-                                       name="received_amount"
-                                       id="received-amount"
-                                       class="w-full pl-8 pr-3 py-2.5 text-lg font-bold border-2 border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-success-500 focus:border-success-500"
-                                       min="{{ payment_breakdown.total_amount_due }}"
-                                       placeholder="0.00"
-                                       oninput="calculateChange()"
-                                       required>
-                            </div>
-                            <p class="text-xs text-dark-400 mt-1" id="min-amount-hint">Min: ₱<span id="min-amount">{{ payment_breakdown.total_amount_due|floatformat:2 }}</span></p>
-                        </div>
-
-                        <div id="change-display" class="hidden mb-3 p-2 bg-success-50 border border-success-200 rounded-lg">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="font-medium text-dark-700">Change:</span>
-                                <span class="font-bold text-success-600">₱<span id="change-amount">0.00</span></span>
-                            </div>
-                        </div>
-
-                        <button type="submit" class="w-full py-2.5 bg-success-600 hover:bg-success-700 text-white text-sm font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <i class="bi bi-check-circle-fill"></i>
-                            Process Payment
-                        </button>
-                    </form>
-                </div>
-            </div>
-        </div>
-        {% else %}
-        <!-- No Pending Bill -->
-        <div class="lg:col-span-2">
-            <div class="bg-white rounded-lg border border-light-300 shadow-sm p-6 text-center mt-7">
-                <div class="w-12 h-12 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                    <i class="bi bi-check-circle-fill text-success-600 text-xl"></i>
-                </div>
-                <h4 class="text-base font-bold text-dark-900 mb-1">No Pending Bills</h4>
-                <p class="text-sm text-dark-500 mb-4">This consumer has no pending bills.</p>
-                <a href="{% url 'consumers:meter_reading_overview' %}" class="inline-flex items-center px-3 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded-lg transition-colors">
-                    <i class="bi bi-speedometer2 mr-1"></i>Meter Readings
-                </a>
-            </div>
+        <!-- Action Buttons -->
+        {% if pending_bills %}
+        <div class="flex gap-3 mt-4 justify-center">
+            <a href="{% url 'consumers:water_bill_print' selected_consumer.id %}"
+               target="_blank"
+               class="inline-flex items-center px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
+                <i class="bi bi-printer-fill mr-2"></i>Print Water Bill
+            </a>
         </div>
         {% endif %}
     </div>
@@ -451,68 +326,6 @@ function filterConsumers() {
     }
 }
 
-// Toggle penalty waiver option
-function togglePenaltyWaiver() {
-    const checkbox = document.getElementById('waive-penalty-checkbox');
-    const reasonContainer = document.getElementById('waive-reason-container');
-    const waiveInput = document.getElementById('waive-penalty-input');
-    const billAmountEl = document.getElementById('bill-amount');
-    const originalBill = document.getElementById('original-bill');
-    const penaltyAmount = document.getElementById('penalty-amount');
-    const totalDueDisplay = document.getElementById('total-due-display');
-    const minAmountDisplay = document.getElementById('min-amount');
-    const penaltyLine = document.getElementById('penalty-line');
-    const receivedInput = document.getElementById('received-amount');
-
-    if (!checkbox) return;
-
-    const isWaiving = checkbox.checked;
-    const originalBillAmount = parseFloat(originalBill?.value) || 0;
-    const penalty = parseFloat(penaltyAmount?.value) || 0;
-
-    if (isWaiving) {
-        reasonContainer?.classList.remove('hidden');
-        waiveInput.value = 'true';
-        billAmountEl.value = originalBillAmount;
-        if (totalDueDisplay) totalDueDisplay.textContent = '₱' + originalBillAmount.toFixed(2);
-        if (minAmountDisplay) minAmountDisplay.textContent = originalBillAmount.toFixed(2);
-        if (penaltyLine) penaltyLine.classList.add('hidden');
-        if (receivedInput) receivedInput.min = originalBillAmount;
-    } else {
-        reasonContainer?.classList.add('hidden');
-        waiveInput.value = 'false';
-        const totalWithPenalty = originalBillAmount + penalty;
-        billAmountEl.value = totalWithPenalty;
-        if (totalDueDisplay) totalDueDisplay.textContent = '₱' + totalWithPenalty.toFixed(2);
-        if (minAmountDisplay) minAmountDisplay.textContent = totalWithPenalty.toFixed(2);
-        if (penaltyLine) penaltyLine.classList.remove('hidden');
-        if (receivedInput) receivedInput.min = totalWithPenalty;
-    }
-
-    calculateChange();
-}
-
-// Calculate change in real-time
-function calculateChange() {
-    const receivedInput = document.getElementById('received-amount');
-    const billAmountEl = document.getElementById('bill-amount');
-    const changeDisplay = document.getElementById('change-display');
-    const changeAmount = document.getElementById('change-amount');
-
-    if (!receivedInput || !billAmountEl) return;
-
-    const billAmount = parseFloat(billAmountEl.value) || 0;
-    const received = parseFloat(receivedInput.value) || 0;
-    const change = received - billAmount;
-
-    if (change >= 0 && received > 0) {
-        changeAmount.textContent = change.toFixed(2);
-        changeDisplay.classList.remove('hidden');
-    } else {
-        changeDisplay.classList.add('hidden');
-    }
-}
-
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-consumer');
@@ -526,66 +339,6 @@ document.addEventListener('DOMContentLoaded', function() {
             if (e.key === 'Enter') {
                 e.preventDefault();
                 filterConsumers();
-            }
-        });
-    }
-
-    const paymentForm = document.getElementById('payment-form');
-    if (paymentForm) {
-        paymentForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-
-            const receivedAmount = parseFloat(document.getElementById('received-amount').value);
-            const billAmount = parseFloat(document.getElementById('bill-amount').value);
-            const originalBill = parseFloat(document.getElementById('original-bill')?.value) || billAmount;
-            const penaltyAmount = parseFloat(document.getElementById('penalty-amount')?.value) || 0;
-            const isWaiving = document.getElementById('waive-penalty-checkbox')?.checked || false;
-            const waiveReason = document.getElementById('waive-reason')?.value || '';
-
-            if (receivedAmount < billAmount) {
-                showToast('error', `Cash received must be at least ₱${billAmount.toFixed(2)}`);
-                return;
-            }
-
-            const change = receivedAmount - billAmount;
-
-            let confirmHtml = `<div class="text-left space-y-2">`;
-            confirmHtml += `<p><strong>Bill Amount:</strong> ₱${originalBill.toFixed(2)}</p>`;
-
-            if (penaltyAmount > 0) {
-                if (isWaiving) {
-                    confirmHtml += `<p><strong>Penalty:</strong> <span class="line-through text-gray-400">₱${penaltyAmount.toFixed(2)}</span> <span class="text-green-600">(Waived)</span></p>`;
-                    if (waiveReason) {
-                        confirmHtml += `<p class="text-sm text-gray-500">Reason: ${waiveReason}</p>`;
-                    }
-                } else {
-                    confirmHtml += `<p><strong>Penalty:</strong> <span class="text-red-600">₱${penaltyAmount.toFixed(2)}</span></p>`;
-                }
-            }
-
-            confirmHtml += `<p class="pt-2 border-t"><strong>Total Due:</strong> ₱${billAmount.toFixed(2)}</p>`;
-            confirmHtml += `<p><strong>Cash Received:</strong> ₱${receivedAmount.toFixed(2)}</p>`;
-            confirmHtml += `<p><strong>Change:</strong> ₱${change.toFixed(2)}</p>`;
-            confirmHtml += `</div>`;
-
-            const result = await Swal.fire({
-                title: 'Confirm Payment',
-                html: confirmHtml,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#10b981',
-                cancelButtonColor: '#6b7280',
-                confirmButtonText: 'Confirm Payment',
-                cancelButtonText: 'Cancel'
-            });
-
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Processing...',
-                    allowOutsideClick: false,
-                    didOpen: () => Swal.showLoading()
-                });
-                paymentForm.submit();
             }
         });
     }

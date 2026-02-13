@@ -5381,6 +5381,11 @@ def inquire(request):
         if latest_bill:
             payment_breakdown = get_payment_breakdown(latest_bill, system_settings)
 
+        # Get all pending bills for ledger-style water bill display
+        pending_bills = selected_consumer.bills.filter(status='Pending').order_by('billing_period')
+        for bill in pending_bills:
+            update_bill_penalty(bill, system_settings, save=True)
+
     # Count total pending bills
     total_pending_bills = Bill.objects.filter(status='Pending').count()
 
@@ -5394,6 +5399,7 @@ def inquire(request):
         'consumer_bills': consumer_bills,
         'selected_consumer': selected_consumer,
         'latest_bill': latest_bill,
+        'pending_bills': pending_bills if selected_consumer_id else [],
         'payment_breakdown': payment_breakdown,
         'total_pending_bills': total_pending_bills,
         'system_settings': system_settings,
@@ -5402,6 +5408,35 @@ def inquire(request):
         'selected_barangay': selected_barangay,
     }
     return render(request, 'consumers/inquire.html', context)
+
+@login_required
+def water_bill_print(request, consumer_id):
+    """
+    Display a printable water bill for a consumer matching the official paper form.
+    Shows all pending bills in a ledger-style table.
+    """
+    from .utils import update_bill_penalty
+
+    system_settings = SystemSetting.objects.first()
+    consumer = get_object_or_404(Consumer.objects.select_related('barangay', 'purok'), id=consumer_id)
+
+    pending_bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+    for bill in pending_bills:
+        update_bill_penalty(bill, system_settings, save=True)
+
+    total_amount = sum(bill.total_amount for bill in pending_bills)
+    total_penalty = sum(bill.effective_penalty for bill in pending_bills)
+    grand_total = sum(bill.total_amount_due for bill in pending_bills)
+
+    return render(request, 'consumers/receipt.html', {
+        'consumer': consumer,
+        'pending_bills': pending_bills,
+        'total_amount': total_amount,
+        'total_penalty': total_penalty,
+        'grand_total': grand_total,
+        'issued_by': request.user,
+    })
+
 
 @login_required
 def payment_receipt(request, payment_id):
@@ -5429,7 +5464,7 @@ def payment_receipt(request, payment_id):
         usage_type=payment.bill.consumer.usage_type
     )
 
-    return render(request, 'consumers/receipt.html', {
+    return render(request, 'consumers/official_receipt.html', {
         'payment': payment,
         'previous_reading_value': previous_reading_value,
         'breakdown': breakdown
