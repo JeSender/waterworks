@@ -52,8 +52,8 @@ urlpatterns = [
          ),
          name='password_reset_complete'),
 
-    # Redirect root (/) to staff login
-    path('', lambda request: redirect('consumers:staff_login'), name='root_redirect'),
+    # Redirect root (/) to staff login (HEAD returns 200 for Render health check)
+    path('', lambda request: HttpResponse("OK", status=200) if request.method == 'HEAD' else redirect('consumers:staff_login'), name='root_redirect'),
     # Include all consumer app URLs under root namespace
     path('', include('consumers.urls')),
 ]
