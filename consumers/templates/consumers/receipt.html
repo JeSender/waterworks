@@ -337,7 +337,7 @@
     <!-- Action Buttons -->
     <div class="no-print">
         <button class="btn-print" onclick="window.print()">Print Water Bill</button>
-        <a href="{% url 'consumers:inquire' %}" class="btn-back">Back to Payment</a>
+        <a href="{% url 'consumers:inquire' %}?consumer={{ consumer.id }}" class="btn-back">Back to Water Bill</a>
     </div>
 </body>
 </html>
