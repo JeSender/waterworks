@@ -5262,81 +5262,109 @@ def inquire(request):
 
     if request.method == "POST":
         # ====================================================================
-        # PAYMENT PROCESSING (Final step in billing flow)
+        # PAYMENT PROCESSING - Multi-bill support (oldest-first order)
         # ====================================================================
-        bill_id = request.POST.get('bill_id')
+        bill_ids_str = request.POST.get('bill_ids', '')
+        consumer_id = request.POST.get('consumer_id')
         received_amount = request.POST.get('received_amount')
-        waive_penalty = request.POST.get('waive_penalty') == 'true'
-        waive_reason = request.POST.get('waive_reason', '').strip()
 
-        if not bill_id or not received_amount:
-            messages.error(request, "Missing bill or payment amount.")
-            return redirect('consumers:payment_counter')
+        if not bill_ids_str or not received_amount or not consumer_id:
+            messages.error(request, "Missing bill selection or payment amount.")
+            return redirect('consumers:inquire')
 
         try:
-            bill = get_object_or_404(Bill, id=bill_id)
             received_amount = Decimal(received_amount)
+            bill_id_list = [int(bid.strip()) for bid in bill_ids_str.split(',') if bid.strip()]
 
-            # Update penalty calculation before processing payment
-            update_bill_penalty(bill, system_settings, save=True)
+            if not bill_id_list:
+                messages.error(request, "No bills selected.")
+                return redirect(f"{request.path}?consumer={consumer_id}")
 
-            # Handle penalty waiver if requested (admin only)
-            if waive_penalty and bill.penalty_amount > 0:
-                if request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin'):
-                    bill.penalty_waived = True
-                    bill.penalty_waived_by = request.user
-                    bill.penalty_waived_reason = waive_reason or "Waived at payment"
-                    bill.penalty_waived_date = timezone.now()
-                    bill.save()
-                else:
-                    messages.warning(request, "Only administrators can waive penalties.")
+            consumer = get_object_or_404(Consumer, id=consumer_id)
 
-            # Calculate total amount due (bill + effective penalty)
-            original_bill_amount = bill.total_amount
-            effective_penalty = bill.effective_penalty
-            total_amount_due = bill.total_amount_due
+            # Fetch selected bills - must all be Pending and belong to this consumer
+            bills = list(Bill.objects.filter(
+                id__in=bill_id_list,
+                consumer=consumer,
+                status='Pending'
+            ).order_by('billing_period'))
+
+            if len(bills) != len(bill_id_list):
+                messages.error(request, "Some selected bills are invalid or already paid.")
+                return redirect(f"{request.path}?consumer={consumer_id}")
+
+            # Validate oldest-first: selected bills must be the N oldest pending bills
+            all_pending = list(consumer.bills.filter(status='Pending').order_by('billing_period'))
+            oldest_n = all_pending[:len(bills)]
+            if [b.id for b in oldest_n] != [b.id for b in bills]:
+                messages.error(request, "You must pay bills in order starting from the oldest month.")
+                return redirect(f"{request.path}?consumer={consumer_id}")
+
+            # Update penalties and calculate total
+            total_amount_due = Decimal('0.00')
+            for bill in bills:
+                update_bill_penalty(bill, system_settings, save=True)
+                total_amount_due += bill.total_amount_due
 
             # Validate payment amount
             if received_amount < total_amount_due:
-                messages.error(request, f"Insufficient payment. Total amount due is ₱{total_amount_due:,.2f} (Bill: ₱{original_bill_amount:,.2f} + Penalty: ₱{effective_penalty:,.2f}).")
-                return redirect(f"{request.path}?consumer={bill.consumer.id}")
+                messages.error(request, f"Insufficient payment. Total amount due is ₱{total_amount_due:,.2f}.")
+                return redirect(f"{request.path}?consumer={consumer_id}")
 
-            # CREATE PAYMENT RECORD with penalty tracking
-            # OR number format: OR-YYYYMMDD-XXXXXX (auto-generated)
-            payment = Payment.objects.create(
-                bill=bill,
-                original_bill_amount=original_bill_amount,
-                penalty_amount=effective_penalty,
-                penalty_waived=bill.penalty_waived,
-                days_overdue_at_payment=bill.days_overdue,
-                senior_citizen_discount=bill.senior_citizen_discount,
-                amount_paid=total_amount_due,
-                received_amount=received_amount,
-                change=received_amount - total_amount_due,
-                payment_date=timezone.now(),
-                or_number=f"OR-{timezone.now().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}",
-                processed_by=request.user,
-            )
+            # Process each bill - create Payment record, mark as Paid
+            first_payment = None
+            now = timezone.now()
+            date_str = now.strftime('%Y%m%d')
 
-            # MARK BILL AS PAID - This completes the billing cycle
-            bill.status = 'Paid'
-            bill.save()
+            for i, bill in enumerate(bills):
+                original_bill_amount = bill.total_amount
+                effective_penalty = bill.effective_penalty
+                bill_due = bill.total_amount_due
 
-            # Log the activity
-            if hasattr(request, 'login_event') and request.login_event:
-                UserActivity.objects.create(
-                    user=request.user,
-                    action='payment_processed',
-                    description=f"Processed payment OR#{payment.or_number} for {bill.consumer.full_name}. Amount: ₱{total_amount_due:,.2f}" +
-                               (f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""),
-                    ip_address=get_client_ip(request),
-                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                    login_event=request.login_event
+                # Only the first payment gets the full received_amount and change
+                if i == 0:
+                    pay_received = received_amount
+                    pay_change = received_amount - total_amount_due
+                else:
+                    pay_received = bill_due
+                    pay_change = Decimal('0.00')
+
+                payment = Payment.objects.create(
+                    bill=bill,
+                    original_bill_amount=original_bill_amount,
+                    penalty_amount=effective_penalty,
+                    penalty_waived=bill.penalty_waived,
+                    days_overdue_at_payment=bill.days_overdue,
+                    senior_citizen_discount=bill.senior_citizen_discount,
+                    amount_paid=bill_due,
+                    received_amount=pay_received,
+                    change=pay_change,
+                    payment_date=now,
+                    or_number=f"OR-{date_str}-{uuid.uuid4().hex[:6].upper()}",
+                    processed_by=request.user,
                 )
 
-            penalty_msg = f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""
-            messages.success(request, f"Payment processed successfully! OR: {payment.or_number}{penalty_msg}")
-            return redirect('consumers:payment_receipt', payment_id=payment.id)
+                bill.status = 'Paid'
+                bill.save()
+
+                if first_payment is None:
+                    first_payment = payment
+
+                # Log activity
+                if hasattr(request, 'login_event') and request.login_event:
+                    UserActivity.objects.create(
+                        user=request.user,
+                        action='payment_processed',
+                        description=f"Processed payment OR#{payment.or_number} for {consumer.full_name} ({bill.billing_period.strftime('%b %Y')}). Amount: ₱{bill_due:,.2f}" +
+                                   (f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""),
+                        ip_address=get_client_ip(request),
+                        user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                        login_event=request.login_event
+                    )
+
+            bill_count = len(bills)
+            messages.success(request, f"Payment processed for {bill_count} month{'s' if bill_count > 1 else ''}! Total: ₱{total_amount_due:,.2f}")
+            return redirect('consumers:payment_receipt', payment_id=first_payment.id)
 
         except (ValueError, InvalidOperation):
             messages.error(request, "Invalid payment amount.")

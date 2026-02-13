@@ -180,7 +180,9 @@
                 <table class="w-full border-collapse text-xs">
                     <thead>
                         <tr class="bg-dark-100">
-                            <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700 w-8">#</th>
+                            <th class="border border-dark-300 px-1.5 py-1.5 text-center font-bold text-dark-700 w-8">
+                                <input type="checkbox" id="select-all-bills" title="Select all" class="w-3.5 h-3.5 rounded cursor-pointer accent-primary-600">
+                            </th>
                             <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700">Month/Year</th>
                             <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">Consumed<br>(Cu.m.)</th>
                             <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Amount</th>
@@ -189,8 +191,16 @@
                     </thead>
                     <tbody>
                         {% for bill in pending_bills %}
-                        <tr class="{% if bill.is_overdue %}bg-danger-50{% endif %}">
-                            <td class="border border-dark-300 px-2 py-1.5 text-dark-600">{{ forloop.counter }}.</td>
+                        <tr class="bill-row {% if bill.is_overdue %}bg-danger-50{% endif %}" data-index="{{ forloop.counter0 }}">
+                            <td class="border border-dark-300 px-1.5 py-1.5 text-center">
+                                <input type="checkbox"
+                                       class="bill-checkbox w-3.5 h-3.5 rounded cursor-pointer accent-primary-600"
+                                       data-index="{{ forloop.counter0 }}"
+                                       data-bill-id="{{ bill.id }}"
+                                       data-amount="{{ bill.total_amount }}"
+                                       data-penalty="{{ bill.effective_penalty }}"
+                                       data-total="{{ bill.total_amount_due }}">
+                            </td>
                             <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
                             <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
                             <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2 }}</td>
@@ -211,7 +221,7 @@
                         {% for i in "123456" %}
                         {% if forloop.counter > pending_bills|length and forloop.counter <= 6 %}
                         <tr>
-                            <td class="border border-dark-300 px-2 py-1.5 text-dark-300">{{ forloop.counter }}.</td>
+                            <td class="border border-dark-300 px-1.5 py-1.5">&nbsp;</td>
                             <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
                             <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
                             <td class="border border-dark-300 px-2 py-1.5">&nbsp;</td>
@@ -224,7 +234,7 @@
                     </tbody>
                 </table>
 
-                <!-- Total Amount -->
+                <!-- Total Amount (all pending) -->
                 <div class="mt-3 pt-3 border-t-2 border-dark-400 flex items-center justify-between">
                     <span class="text-sm font-bold text-dark-800 uppercase">Total Amount:</span>
                     <span class="text-xl font-bold text-dark-900 font-mono">
@@ -237,6 +247,80 @@
                     <span>(Bill: ₱{{ latest_bill.total_amount|floatformat:2 }} + Penalty: ₱{{ payment_breakdown.penalty_amount|floatformat:2 }}{% if payment_breakdown.senior_citizen_discount > 0 %} - SC: ₱{{ payment_breakdown.senior_citizen_discount|floatformat:2 }}{% endif %})</span>
                 </div>
                 {% endif %}
+
+                <!-- ============ PAYMENT SECTION ============ -->
+                <div id="payment-section" class="hidden mt-4 pt-4 border-t-2 border-primary-300">
+                    <form method="post" id="payment-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="bill_ids" id="bill-ids-input">
+                        <input type="hidden" name="consumer_id" value="{{ selected_consumer.id }}">
+
+                        <!-- Selected Bills Summary -->
+                        <div class="bg-primary-50 rounded-lg px-4 py-3 mb-3">
+                            <h4 class="text-xs font-bold text-primary-800 uppercase mb-2">
+                                <i class="bi bi-receipt-cutoff mr-1"></i>Payment Summary
+                            </h4>
+                            <div class="space-y-1 text-xs">
+                                <div class="flex justify-between text-dark-700">
+                                    <span>Selected months:</span>
+                                    <span id="selected-count" class="font-bold">0</span>
+                                </div>
+                                <div class="flex justify-between text-dark-700">
+                                    <span>Bill amount:</span>
+                                    <span id="selected-bill-amount" class="font-mono">₱0.00</span>
+                                </div>
+                                <div class="flex justify-between text-dark-700">
+                                    <span>Penalty:</span>
+                                    <span id="selected-penalty-amount" class="font-mono text-danger-600">₱0.00</span>
+                                </div>
+                                <div class="flex justify-between text-sm font-bold text-dark-900 pt-1 border-t border-primary-200">
+                                    <span>Total Due:</span>
+                                    <span id="selected-total-due" class="font-mono">₱0.00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cash Received -->
+                        <div class="mb-3">
+                            <label class="text-xs font-bold text-dark-700 uppercase mb-1 block">Cash Received</label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-400 text-sm font-bold">₱</span>
+                                <input type="number"
+                                       name="received_amount"
+                                       id="received-amount"
+                                       step="0.01"
+                                       min="0"
+                                       placeholder="0.00"
+                                       class="w-full pl-8 pr-4 py-2.5 text-sm font-mono border-2 border-dark-300 rounded-lg focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500"
+                                       required>
+                            </div>
+                        </div>
+
+                        <!-- Change -->
+                        <div id="change-display" class="hidden mb-3 bg-success-50 rounded-lg px-4 py-2.5">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-success-800 uppercase">Change:</span>
+                                <span id="change-amount" class="text-lg font-bold text-success-700 font-mono">₱0.00</span>
+                            </div>
+                        </div>
+
+                        <!-- Insufficient warning -->
+                        <div id="insufficient-warning" class="hidden mb-3 bg-danger-50 rounded-lg px-4 py-2.5">
+                            <p class="text-xs font-semibold text-danger-700">
+                                <i class="bi bi-exclamation-triangle-fill mr-1"></i>Insufficient amount
+                            </p>
+                        </div>
+
+                        <!-- Process Button -->
+                        <button type="submit"
+                                id="process-payment-btn"
+                                disabled
+                                class="w-full py-2.5 bg-success-600 hover:bg-success-700 disabled:bg-dark-300 disabled:cursor-not-allowed text-white text-sm font-bold rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2">
+                            <i class="bi bi-cash-coin"></i>
+                            Process Payment
+                        </button>
+                    </form>
+                </div>
 
                 {% else %}
                 <!-- No Bills -->
@@ -326,6 +410,118 @@ function filterConsumers() {
     }
 }
 
+// ============ BILL SELECTION & PAYMENT LOGIC ============
+function initPaymentUI() {
+    const checkboxes = document.querySelectorAll('.bill-checkbox');
+    const selectAll = document.getElementById('select-all-bills');
+    const receivedInput = document.getElementById('received-amount');
+
+    if (!checkboxes.length) return;
+
+    // Enforce oldest-first: checking month N auto-checks months 0..N-1
+    // Unchecking month N auto-unchecks months N+1..last
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function() {
+            const idx = parseInt(this.dataset.index);
+            if (this.checked) {
+                // Auto-check all older months (0 to idx-1)
+                checkboxes.forEach(other => {
+                    if (parseInt(other.dataset.index) < idx) other.checked = true;
+                });
+            } else {
+                // Auto-uncheck all newer months (idx+1 to last)
+                checkboxes.forEach(other => {
+                    if (parseInt(other.dataset.index) > idx) other.checked = false;
+                });
+            }
+            updateSelectAll();
+            updatePaymentSummary();
+        });
+    });
+
+    // Select-all toggle
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updatePaymentSummary();
+        });
+    }
+
+    function updateSelectAll() {
+        if (!selectAll) return;
+        const total = checkboxes.length;
+        const checked = document.querySelectorAll('.bill-checkbox:checked').length;
+        selectAll.checked = checked === total;
+        selectAll.indeterminate = checked > 0 && checked < total;
+    }
+
+    // Cash received → calculate change
+    if (receivedInput) {
+        receivedInput.addEventListener('input', updateChange);
+    }
+
+    function updatePaymentSummary() {
+        const checked = document.querySelectorAll('.bill-checkbox:checked');
+        const section = document.getElementById('payment-section');
+        const billIdsInput = document.getElementById('bill-ids-input');
+
+        let totalBill = 0, totalPenalty = 0, totalDue = 0;
+        const billIds = [];
+
+        checked.forEach(cb => {
+            totalBill += parseFloat(cb.dataset.amount) || 0;
+            totalPenalty += parseFloat(cb.dataset.penalty) || 0;
+            totalDue += parseFloat(cb.dataset.total) || 0;
+            billIds.push(cb.dataset.billId);
+        });
+
+        document.getElementById('selected-count').textContent = checked.length;
+        document.getElementById('selected-bill-amount').textContent = '₱' + totalBill.toFixed(2);
+        document.getElementById('selected-penalty-amount').textContent = '₱' + totalPenalty.toFixed(2);
+        document.getElementById('selected-total-due').textContent = '₱' + totalDue.toFixed(2);
+        billIdsInput.value = billIds.join(',');
+
+        // Show/hide payment section
+        if (checked.length > 0) {
+            section.classList.remove('hidden');
+        } else {
+            section.classList.add('hidden');
+        }
+
+        // Store total due for change calculation
+        section.dataset.totalDue = totalDue.toFixed(2);
+        updateChange();
+    }
+
+    function updateChange() {
+        const section = document.getElementById('payment-section');
+        const receivedVal = parseFloat(receivedInput?.value) || 0;
+        const totalDue = parseFloat(section?.dataset.totalDue) || 0;
+        const changeDisplay = document.getElementById('change-display');
+        const changeAmount = document.getElementById('change-amount');
+        const insufficientWarning = document.getElementById('insufficient-warning');
+        const processBtn = document.getElementById('process-payment-btn');
+
+        if (receivedVal > 0 && totalDue > 0) {
+            const change = receivedVal - totalDue;
+            if (change >= 0) {
+                changeDisplay.classList.remove('hidden');
+                insufficientWarning.classList.add('hidden');
+                changeAmount.textContent = '₱' + change.toFixed(2);
+                processBtn.disabled = false;
+            } else {
+                changeDisplay.classList.add('hidden');
+                insufficientWarning.classList.remove('hidden');
+                processBtn.disabled = true;
+            }
+        } else {
+            changeDisplay.classList.add('hidden');
+            insufficientWarning.classList.add('hidden');
+            processBtn.disabled = true;
+        }
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('search-consumer');
@@ -342,6 +538,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Init payment UI on water bill view
+    initPaymentUI();
 });
 </script>
 {% endblock %}
