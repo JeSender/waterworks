@@ -5240,138 +5240,15 @@ def confirm_selected_readings(request, barangay_id):
 @login_required
 def inquire(request):
     """
-    Bill Inquiry and Payment Processing page with Penalty Support.
+    Water Bill Inquiry page.
 
-    TESTING: After confirming a meter reading, come here to pay the bill.
-
-    GET: Display bill inquiry form
-        - Select Barangay → Purok → Consumer
-        - Shows pending bills for selected consumer
-        - Calculates and displays any applicable penalties
-
-    POST: Process payment
-        - Creates Payment record with auto-generated OR number
-        - Includes penalty amount in payment if applicable
-        - Updates Bill status to 'Paid'
-        - Redirects to receipt page
+    Displays consumers with pending bills and shows a water bill for the selected consumer.
+    Users can uncheck newer months to issue a partial bill (oldest months first).
     """
     from .utils import calculate_penalty, update_bill_penalty, get_payment_breakdown
 
     # Get system settings for penalty calculation
     system_settings = SystemSetting.objects.first()
-
-    if request.method == "POST":
-        # ====================================================================
-        # PAYMENT PROCESSING - Multi-bill support (oldest-first order)
-        # ====================================================================
-        bill_ids_str = request.POST.get('bill_ids', '')
-        consumer_id = request.POST.get('consumer_id')
-        received_amount = request.POST.get('received_amount')
-
-        if not bill_ids_str or not received_amount or not consumer_id:
-            messages.error(request, "Missing bill selection or payment amount.")
-            return redirect('consumers:inquire')
-
-        try:
-            received_amount = Decimal(received_amount)
-            bill_id_list = [int(bid.strip()) for bid in bill_ids_str.split(',') if bid.strip()]
-
-            if not bill_id_list:
-                messages.error(request, "No bills selected.")
-                return redirect(f"{request.path}?consumer={consumer_id}")
-
-            consumer = get_object_or_404(Consumer, id=consumer_id)
-
-            # Fetch selected bills - must all be Pending and belong to this consumer
-            bills = list(Bill.objects.filter(
-                id__in=bill_id_list,
-                consumer=consumer,
-                status='Pending'
-            ).order_by('billing_period'))
-
-            if len(bills) != len(bill_id_list):
-                messages.error(request, "Some selected bills are invalid or already paid.")
-                return redirect(f"{request.path}?consumer={consumer_id}")
-
-            # Validate oldest-first: selected bills must be the N oldest pending bills
-            all_pending = list(consumer.bills.filter(status='Pending').order_by('billing_period'))
-            oldest_n = all_pending[:len(bills)]
-            if [b.id for b in oldest_n] != [b.id for b in bills]:
-                messages.error(request, "You must pay bills in order starting from the oldest month.")
-                return redirect(f"{request.path}?consumer={consumer_id}")
-
-            # Update penalties and calculate total
-            total_amount_due = Decimal('0.00')
-            for bill in bills:
-                update_bill_penalty(bill, system_settings, save=True)
-                total_amount_due += bill.total_amount_due
-
-            # Validate payment amount
-            if received_amount < total_amount_due:
-                messages.error(request, f"Insufficient payment. Total amount due is ₱{total_amount_due:,.2f}.")
-                return redirect(f"{request.path}?consumer={consumer_id}")
-
-            # Process each bill - create Payment record, mark as Paid
-            first_payment = None
-            now = timezone.now()
-            date_str = now.strftime('%Y%m%d')
-
-            for i, bill in enumerate(bills):
-                original_bill_amount = bill.total_amount
-                effective_penalty = bill.effective_penalty
-                bill_due = bill.total_amount_due
-
-                # Only the first payment gets the full received_amount and change
-                if i == 0:
-                    pay_received = received_amount
-                    pay_change = received_amount - total_amount_due
-                else:
-                    pay_received = bill_due
-                    pay_change = Decimal('0.00')
-
-                payment = Payment.objects.create(
-                    bill=bill,
-                    original_bill_amount=original_bill_amount,
-                    penalty_amount=effective_penalty,
-                    penalty_waived=bill.penalty_waived,
-                    days_overdue_at_payment=bill.days_overdue,
-                    senior_citizen_discount=bill.senior_citizen_discount,
-                    amount_paid=bill_due,
-                    received_amount=pay_received,
-                    change=pay_change,
-                    payment_date=now,
-                    or_number=f"OR-{date_str}-{uuid.uuid4().hex[:6].upper()}",
-                    processed_by=request.user,
-                )
-
-                bill.status = 'Paid'
-                bill.save()
-
-                if first_payment is None:
-                    first_payment = payment
-
-                # Log activity
-                if hasattr(request, 'login_event') and request.login_event:
-                    UserActivity.objects.create(
-                        user=request.user,
-                        action='payment_processed',
-                        description=f"Processed payment OR#{payment.or_number} for {consumer.full_name} ({bill.billing_period.strftime('%b %Y')}). Amount: ₱{bill_due:,.2f}" +
-                                   (f" (includes ₱{effective_penalty:,.2f} penalty)" if effective_penalty > 0 else ""),
-                        ip_address=get_client_ip(request),
-                        user_agent=request.META.get('HTTP_USER_AGENT', ''),
-                        login_event=request.login_event
-                    )
-
-            bill_count = len(bills)
-            messages.success(request, f"Payment processed for {bill_count} month{'s' if bill_count > 1 else ''}! Total: ₱{total_amount_due:,.2f}")
-            return redirect('consumers:payment_receipt', payment_id=first_payment.id)
-
-        except (ValueError, InvalidOperation):
-            messages.error(request, "Invalid payment amount.")
-            return redirect(request.get_full_path())
-        except Exception as e:
-            messages.error(request, f"Error processing payment: {e}")
-            return redirect(request.get_full_path())
 
     # ===== GET REQUEST - Show only consumers with pending bills =====
     selected_consumer_id = request.GET.get('consumer')
@@ -5441,14 +5318,21 @@ def inquire(request):
 def water_bill_print(request, consumer_id):
     """
     Display a printable water bill for a consumer matching the official paper form.
-    Shows all pending bills in a ledger-style table.
+    Shows all pending bills or a subset if ?bills=id1,id2 is passed (partial bill).
     """
     from .utils import update_bill_penalty
 
     system_settings = SystemSetting.objects.first()
     consumer = get_object_or_404(Consumer.objects.select_related('barangay', 'purok'), id=consumer_id)
 
-    pending_bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+    # Support partial bill: ?bills=id1,id2,id3
+    bills_param = request.GET.get('bills', '')
+    if bills_param:
+        bill_id_list = [int(bid.strip()) for bid in bills_param.split(',') if bid.strip()]
+        pending_bills = consumer.bills.filter(id__in=bill_id_list, status='Pending').order_by('billing_period')
+    else:
+        pending_bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+
     for bill in pending_bills:
         update_bill_penalty(bill, system_settings, save=True)
 
