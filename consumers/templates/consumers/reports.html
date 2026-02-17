@@ -2,385 +2,153 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}System Reports{% endblock %}
+{% block title %}Income Reports{% endblock %}
 
 {% block main_content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto income-dashboard">
 
-    <!-- Page Header -->
-    <div class="mb-6">
+    <!-- Page Header with Year Selector -->
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-4">
         <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
-            <i class="bi bi-file-earmark-bar-graph-fill text-primary-600"></i>
-            System Reports
+            <i class="bi bi-graph-up-arrow text-primary-600"></i>
+            Income Reports
         </h2>
-       
-    </div>
-
-    <!-- Horizontal Filter Bar -->
-    <div class="bg-white rounded-lg shadow-md mb-4">
-        <div class="p-4">
-            <form method="GET" action="{% url 'consumers:reports' %}" id="reportForm" class="flex flex-wrap items-end gap-3">
-                <!-- Date From -->
-                <div class="flex-shrink-0" style="width: 160px;">
-                    <label for="date_from" class="block text-xs font-semibold text-gray-700 mb-1">From Date</label>
-                    <input
-                        type="date"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                        id="date_from"
-                        name="date_from"
-                        value="{{ date_from_value }}"
-                        required>
-                </div>
-
-                <!-- Date To -->
-                <div class="flex-shrink-0" style="width: 160px;">
-                    <label for="date_to" class="block text-xs font-semibold text-gray-700 mb-1">To Date</label>
-                    <input
-                        type="date"
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                        id="date_to"
-                        name="date_to"
-                        value="{{ date_to_value }}"
-                        required>
-                </div>
-
-                <!-- Report Type -->
-                <div class="flex-shrink-0" style="width: 200px;">
-                    <label for="report_type" class="block text-xs font-semibold text-gray-700 mb-1">Report Type</label>
-                    <select
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                        id="report_type"
-                        name="report_type"
-                        required>
-                        <option value="revenue" {% if report_type == 'revenue' %}selected{% endif %}>Revenue (Detailed)</option>
-                        <option value="revenue_barangay" {% if report_type == 'revenue_barangay' %}selected{% endif %}>Revenue by Barangay</option>
-                        <option value="delinquency" {% if report_type == 'delinquency' %}selected{% endif %}>Delinquent Accounts</option>
-                        <option value="summary" {% if report_type == 'summary' %}selected{% endif %}>Payment Summary</option>
-                    </select>
-                </div>
-
-                <!-- Barangay Filter -->
-                <div class="flex-shrink-0" id="barangayFilterDiv" style="width: 180px;">
-                    <label for="barangay" class="block text-xs font-semibold text-gray-700 mb-1">Barangay</label>
-                    <select
-                        class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500"
-                        id="barangay"
-                        name="barangay">
-                        <option value="">All Barangays</option>
-                        {% for brgy in barangays %}
-                        <option value="{{ brgy.id }}" {% if barangay_id == brgy.id|stringformat:"s" %}selected{% endif %}>{{ brgy.name }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-
-                <!-- Generate Button -->
-                <div class="flex-shrink-0">
-                    <button
-                        type="submit"
-                        id="generateBtn"
-                        class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded transition-all flex items-center gap-2">
-                        <i class="bi bi-play-circle-fill"></i>
-                        <span id="btnText">Generate</span>
-                        <i class="bi bi-arrow-clockwise animate-spin hidden" id="btnSpinner"></i>
-                    </button>
-                </div>
-
-                <!-- Print Button (shown when report is generated) -->
-                {% if report_data is not None %}
-                <div class="flex-shrink-0 ml-auto">
-                    <button type="button" onclick="window.print()" class="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-semibold rounded transition-all flex items-center gap-2">
-                        <i class="bi bi-printer"></i>
-                        Print
-                    </button>
-                </div>
-                {% endif %}
+        <div class="flex items-center gap-3">
+            <form method="GET" action="{% url 'consumers:reports' %}" class="flex items-center gap-2">
+                <label for="year" class="text-sm font-semibold text-gray-700">Year:</label>
+                <select name="year" id="year" onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                    {% for y in year_choices %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
             </form>
+            <button type="button" onclick="window.print()"
+                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-semibold rounded-lg transition-all flex items-center gap-2 screen-only">
+                <i class="bi bi-printer"></i>
+                Print
+            </button>
         </div>
     </div>
 
-    <!-- Full Width Content Area -->
-    <div class="w-full">
-                {% if report_data is not None %}
-                <div class="bg-white p-6 rounded-xl shadow-md report-container">
-
-                    <!-- Report Header with Logos (Hidden on screen, shown on print) -->
-                    <!-- Unified Header: Logo + Text + Logo in single row -->
-                    <div class="print-header hidden">
-                        {% load static %}
-                        <div class="header-row">
-                            <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" class="logo-print">
-                            <div class="header-text-center">
-                                <p class="republic">REPUBLIC OF THE PHILIPPINES</p>
-                                <p class="province">PROVINCE OF BOHOL</p>
-                                <p class="municipality">MUNICIPALITY OF BALILIHAN</p>
-                                <p class="waterworks">BALILIHAN WATERWORKS</p>
-                                <p class="report-type-title">{{ report_title }}</p>
-                                <p class="report-period">As of {{ month_display }}</p>
-                            </div>
-                            <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="logo-print logo-circle">
-                        </div>
-                    </div>
-
-                    <!-- Report Title (Screen only) -->
-                    <div class="mb-3 screen-only">
-                        <h3 class="text-lg font-bold text-gray-800">{{ report_title }}</h3>
-                        <p class="text-xs text-gray-600">{{ month_display }}</p>
-                    </div>
-
-                    <!-- Compact Summary Cards - 3 in a row -->
-                    <div class="grid grid-cols-3 gap-3 mb-4 screen-only">
-                        <!-- Total Records Card -->
-                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" style="height: 95px;">
-                            <div class="flex flex-col justify-between h-full">
-                                <p class="text-xs font-semibold text-gray-600 uppercase">Total Records</p>
-                                <p class="text-3xl font-bold text-gray-900">{{ record_count }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Total Amount Card -->
-                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" style="height: 95px;">
-                            <div class="flex flex-col justify-between h-full">
-                                <p class="text-xs font-semibold text-gray-600 uppercase">Total Revenue</p>
-                                <p class="text-3xl font-bold text-green-700">₱{{ total_amount|floatformat:2|intcomma }}</p>
-                            </div>
-                        </div>
-
-                        <!-- Period Card -->
-                        <div class="bg-gray-50 rounded-lg p-4 border border-gray-200" style="height: 95px;">
-                            <div class="flex flex-col justify-between h-full">
-                                <p class="text-xs font-semibold text-gray-600 uppercase">Report Period</p>
-                                <p class="text-sm font-semibold text-gray-900 leading-tight mt-auto">{{ month_display }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    {% if record_count > 0 %}
-                    <!-- Data Table with Optimized Widths -->
-                    <div class="overflow-x-auto rounded-lg border border-gray-200 print-table-wrapper">
-                        <table class="print-table" style="width: 730px; font-size: 12px;">
-
-                            {% comment %} REVENUE REPORT TABLE {% endcomment %}
-                            {% if report_type == 'revenue' %}
-                            <thead class="print-thead" style="background-color: #4F46E5;">
-                                <tr>
-                                    <th class="px-3 py-2 text-white text-left uppercase border-r border-indigo-400" style="width: 120px; font-size: 13px; font-weight: 600;">OR No.</th>
-                                    <th class="px-3 py-2 text-white text-left uppercase border-r border-indigo-400" style="width: 150px; font-size: 13px; font-weight: 600;">Consumer Name</th>
-                                    <th class="px-3 py-2 text-white text-left uppercase border-r border-indigo-400" style="width: 100px; font-size: 13px; font-weight: 600;">ID Number</th>
-                                    <th class="px-3 py-2 text-white text-left uppercase border-r border-indigo-400" style="width: 90px; font-size: 13px; font-weight: 600;">Pay Date</th>
-                                    <th class="px-3 py-2 text-white text-center uppercase border-r border-indigo-400" style="width: 80px; font-size: 13px; font-weight: 600;">Consumption</th>
-                                    <th class="px-3 py-2 text-white text-center uppercase border-r border-indigo-400" style="width: 90px; font-size: 13px; font-weight: 600;">Billing</th>
-                                    <th class="px-3 py-2 text-white text-right uppercase" style="width: 100px; font-size: 13px; font-weight: 600;">Amount Paid</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {% for payment in report_data %}
-                                <tr class="even:bg-gray-50 hover:bg-indigo-50 transition-colors" style="height: 44px;">
-                                    <td class="px-3 py-2 text-gray-800 font-medium border-r border-gray-200" style="font-size: 12px;">{{ payment.or_number }}</td>
-                                    <td class="px-3 py-2 text-gray-900 font-semibold border-r border-gray-200" style="font-size: 12px;">{{ payment.bill.consumer.full_name }}</td>
-                                    <td class="px-3 py-2 text-gray-700 border-r border-gray-200" style="font-size: 12px;">{{ payment.bill.consumer.id_number|default:"—" }}</td>
-                                    <td class="px-3 py-2 text-gray-700 border-r border-gray-200" style="font-size: 12px;">{{ payment.payment_date|date:"m/d/Y" }}</td>
-                                    <td class="px-3 py-2 text-center text-gray-800 font-medium border-r border-gray-200" style="font-size: 12px;">{{ payment.bill.consumption }} m³</td>
-                                    <td class="px-3 py-2 text-center text-gray-700 border-r border-gray-200" style="font-size: 12px;">{{ payment.bill.billing_period|date:"M Y" }}</td>
-                                    <td class="px-3 py-2 text-right text-gray-900 font-bold" style="font-size: 12px;">₱{{ payment.amount_paid|floatformat:2|intcomma }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot class="print-tfoot" style="background-color: #E8F5E9;">
-                                <tr>
-                                    <td colspan="6" class="px-3 py-3 font-bold text-right uppercase" style="font-size: 13px; color: #2E7D32;">Total Revenue</td>
-                                    <td class="px-3 py-3 font-bold text-right" style="font-size: 13px; color: #2E7D32;">₱{{ total_amount|floatformat:2|intcomma }}</td>
-                                </tr>
-                                <tr class="print-only">
-                                    <td colspan="7" class="px-4 py-8">
-                                        <div class="mt-8 pt-4">
-                                            <p class="text-sm font-semibold text-gray-800 mb-6">Prepared by:</p>
-                                            <div class="mt-12 border-t border-gray-800 w-64">
-                                                <p class="text-xs text-gray-600 mt-1 text-center">Signature over Printed Name</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-
-                            {% comment %} DELINQUENCY REPORT TABLE {% endcomment %}
-                            {% elif report_type == 'delinquency' %}
-                            <thead class="bg-red-600 text-white print-thead">
-                                <tr>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">ID Number</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Consumer Name</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Barangay</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Billing Period</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Due Date</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Amount Due</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-center uppercase">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white">
-                                {% for bill in report_data %}
-                                <tr class="border-b border-gray-200 even:bg-gray-50 hover:bg-red-50 transition-all">
-                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.consumer.id_number|default:"—" }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-900 font-medium">{{ bill.consumer.full_name }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.consumer.barangay.name|default:"N/A" }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.billing_period|date:"F Y" }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-700">{{ bill.due_date|date:"M d, Y" }}</td>
-                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ bill.total_amount|floatformat:2|intcomma }}</td>
-                                    <td class="px-3 py-2 text-xs text-center">
-                                        {% if bill.status == 'Overdue' %}
-                                        <span class="inline-block px-2 py-0.5 text-xs font-bold bg-red-600 text-white rounded">Overdue</span>
-                                        {% else %}
-                                        <span class="inline-block px-2 py-0.5 text-xs font-bold bg-yellow-500 text-white rounded">Pending</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot class="bg-red-50 border-t-2 border-red-200 print-tfoot">
-                                <tr>
-                                    <td colspan="5" class="px-3 py-2 text-sm font-bold text-right uppercase">Total Delinquent Amount</td>
-                                    <td class="px-3 py-2 text-sm font-bold text-right">₱{{ total_amount|floatformat:2|intcomma }}</td>
-                                    <td></td>
-                                </tr>
-                            </tfoot>
-
-                            {% comment %} REVENUE SUMMARY BY BARANGAY TABLE {% endcomment %}
-                            {% elif report_type == 'revenue_barangay' %}
-                            <thead class="bg-green-600 text-white print-thead">
-                                <tr>
-                                    <th class="px-6 py-4 text-sm font-bold text-left uppercase border-r border-green-500">Barangay</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-center uppercase border-r border-green-500">Total Payments</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-center uppercase border-r border-green-500">Total Consumption</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-right uppercase">Total Amount</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                {% for item in report_data %}
-                                <tr class="even:bg-gray-50 hover:bg-green-50 transition-colors">
-                                    <td class="px-6 py-4 text-base text-gray-900 font-bold border-r border-gray-200">
-                                        <i class="bi bi-geo-alt-fill text-green-600 mr-2"></i>{{ item.barangay_name }}
-                                    </td>
-                                    <td class="px-6 py-4 text-base text-center text-gray-800 font-semibold border-r border-gray-200">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-blue-800">
-                                            <i class="bi bi-receipt mr-2"></i>{{ item.payment_count }}
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-base text-center text-gray-800 font-semibold border-r border-gray-200">
-                                        <span class="inline-flex items-center px-3 py-1 rounded-full bg-cyan-100 text-cyan-800">
-                                            <i class="bi bi-droplet-fill mr-2"></i>{{ item.total_consumption|floatformat:0|intcomma }} m³
-                                        </span>
-                                    </td>
-                                    <td class="px-6 py-4 text-lg text-right text-green-700 font-bold">
-                                        ₱{{ item.total_amount|floatformat:2|intcomma }}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot class="bg-green-100 border-t-2 border-green-600 print-tfoot">
-                                <tr>
-                                    <td colspan="3" class="px-6 py-4 text-lg font-bold text-right uppercase text-green-900">Grand Total Revenue</td>
-                                    <td class="px-6 py-4 text-xl font-bold text-right text-green-900">₱{{ total_amount|floatformat:2|intcomma }}</td>
-                                </tr>
-                                <tr>
-                                    <td colspan="4" class="px-6 py-8">
-                                        <div class="grid grid-cols-2 gap-8 mb-8">
-                                            <!-- Summary Cards -->
-                                            <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200">
-                                                <div class="flex items-center gap-4">
-                                                    <div class="bg-blue-600 text-white rounded-full p-4">
-                                                        <i class="bi bi-receipt-cutoff text-2xl"></i>
-                                                    </div>
-                                                    <div>
-                                                        <p class="text-sm font-medium text-blue-700">Total Payments</p>
-                                                        <p class="text-3xl font-bold text-blue-900">{{ record_count }}</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                            <div class="bg-gradient-to-br from-cyan-50 to-cyan-100 rounded-xl p-6 border-2 border-cyan-200">
-                                                <div class="flex items-center gap-4">
-                                                    <div class="bg-cyan-600 text-white rounded-full p-4">
-                                                        <i class="bi bi-droplet-fill text-2xl"></i>
-                                                    </div>
-                                                    <div>
-                                                        <p class="text-sm font-medium text-cyan-700">Total Consumption</p>
-                                                        <p class="text-3xl font-bold text-cyan-900">{{ total_consumption|floatformat:0|intcomma }} m³</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="mt-8 pt-4 border-t-2 border-gray-300 print-only">
-                                            <p class="text-base font-bold text-gray-800 mb-6">Prepared by:</p>
-                                            <div class="mt-16 border-t-2 border-gray-800 w-80">
-                                                <p class="text-sm text-gray-600 mt-2 text-center font-medium">Signature over Printed Name</p>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                            </tfoot>
-
-                            {% comment %} SUMMARY REPORT TABLE {% endcomment %}
-                            {% elif report_type == 'summary' %}
-                            <thead class="bg-indigo-600 text-white print-thead">
-                                <tr>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">ID Number</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-left uppercase">Consumer Name</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-right uppercase">Total Paid</th>
-                                    <th class="px-3 py-2 text-xs font-semibold text-center uppercase">Number of Payments</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white">
-                                {% for item in report_data %}
-                                <tr class="border-b border-gray-200 even:bg-gray-50 hover:bg-indigo-50 transition-all">
-                                    <td class="px-3 py-2 text-xs text-gray-700">{{ item.bill__consumer__id_number|default:"—" }}</td>
-                                    <td class="px-3 py-2 text-xs text-gray-900 font-medium">{{ item.bill__consumer__full_name }}</td>
-                                    <td class="px-3 py-2 text-xs text-right text-gray-900 font-semibold">₱{{ item.total_paid|floatformat:2|intcomma }}</td>
-                                    <td class="px-3 py-2 text-xs text-center text-gray-700 font-medium">{{ item.payment_count }}</td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                            <tfoot class="bg-indigo-50 border-t-2 border-indigo-200 print-tfoot">
-                                <tr>
-                                    <td colspan="2" class="px-3 py-2 text-sm font-bold text-right uppercase">Grand Total</td>
-                                    <td class="px-3 py-2 text-sm font-bold text-right">₱{{ total_amount|floatformat:2|intcomma }}</td>
-                                    <td class="px-3 py-2 text-sm font-bold text-center">{{ record_count }} consumers</td>
-                                </tr>
-                            </tfoot>
-                            {% endif %}
-                        </table>
-                    </div>
-                    {% else %}
-                    <!-- No Data Found State -->
-                    <div class="flex flex-col items-center justify-center py-16 px-6">
-                        <div class="text-center">
-                            <i class="bi bi-database-x text-6xl text-gray-300 mb-4"></i>
-                            <h4 class="text-xl font-bold text-gray-600 mb-3">No Data Found</h4>
-                            <p class="text-sm text-gray-500 max-w-md">
-                                There are no records for the selected date range and report type.
-                                Try a different date range or select a different report type.
-                            </p>
-                        </div>
-                    </div>
-                    {% endif %}
-                </div>
-                {% else %}
-                <!-- Initial State - No Report Generated Yet -->
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <div class="flex flex-col items-center justify-center py-20 px-6">
-                        <div class="text-center">
-                            <i class="bi bi-file-earmark-bar-graph text-6xl text-gray-300 mb-4"></i>
-                            <h4 class="text-xl font-bold text-gray-600 mb-3">No Report Generated</h4>
-                            <p class="text-sm text-gray-500 max-w-md">
-                                Select a date range and report type from the filter bar above,
-                                then click "Generate" to view your report.
-                            </p>
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
+    <!-- Print Header -->
+    <div class="print-header hidden">
+        <div class="header-row">
+            <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Logo" class="logo-print">
+            <div class="header-text-center">
+                <p class="republic">REPUBLIC OF THE PHILIPPINES</p>
+                <p class="province">PROVINCE OF BOHOL</p>
+                <p class="municipality">MUNICIPALITY OF BALILIHAN</p>
+                <p class="waterworks">BALILIHAN WATERWORKS</p>
+                <p class="report-type-title">INCOME REPORT — {{ year }}</p>
             </div>
-
+            <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="logo-print logo-circle">
         </div>
+    </div>
 
-    <!-- Barangay Ledger Report Section -->
-    <div class="mt-6">
+    <!-- Yearly Summary Card -->
+    <div class="bg-gradient-to-r from-green-600 to-green-700 rounded-xl p-6 mb-6 text-white shadow-lg print-summary-card">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-sm font-medium text-green-100 uppercase tracking-wide">Total Income for {{ year }}</p>
+                <p class="text-4xl font-bold mt-1">₱{{ grand_total|floatformat:2|intcomma }}</p>
+            </div>
+            <div class="bg-white bg-opacity-20 rounded-full p-4 screen-only">
+                <i class="bi bi-cash-stack text-4xl"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Income Table (All Barangays) -->
+    <div class="bg-white rounded-xl shadow-md mb-6 overflow-hidden print-section">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                <i class="bi bi-calendar3 text-primary-600 screen-only"></i>
+                Monthly Income — All Barangays ({{ year }})
+            </h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full print-table">
+                <thead>
+                    <tr class="bg-gray-50">
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-600 uppercase tracking-wider">Month</th>
+                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-600 uppercase tracking-wider">Income</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for row in monthly_data %}
+                    <tr class="hover:bg-gray-50 transition-colors">
+                        <td class="px-6 py-3 text-sm font-medium text-gray-800">{{ row.month }}</td>
+                        <td class="px-6 py-3 text-sm text-right font-semibold {% if row.total > 0 %}text-green-700{% else %}text-gray-400{% endif %}">
+                            ₱{{ row.total|floatformat:2|intcomma }}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="bg-green-50 border-t-2 border-green-200">
+                        <td class="px-6 py-3 text-sm font-bold text-green-900 uppercase">Total</td>
+                        <td class="px-6 py-3 text-sm text-right font-bold text-green-900">₱{{ grand_total|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+
+    <!-- Per Barangay Section -->
+    <div class="mb-6 print-section">
+        <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2 mb-4">
+            <i class="bi bi-geo-alt-fill text-primary-600 screen-only"></i>
+            Income Per Barangay ({{ year }})
+        </h3>
+
+        {% if barangay_data %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 print-brgy-grid">
+            {% for brgy in barangay_data %}
+            <div class="bg-white rounded-xl shadow-md overflow-hidden print-brgy-card">
+                <!-- Barangay Header -->
+                <div class="px-5 py-3 bg-primary-50 border-b border-primary-100 flex items-center justify-between">
+                    <span class="text-sm font-bold text-primary-800">{{ brgy.name }}</span>
+                    <span class="text-sm font-bold text-green-700">₱{{ brgy.yearly_total|floatformat:2|intcomma }}</span>
+                </div>
+                <!-- Monthly Table -->
+                <table class="w-full print-table">
+                    <thead>
+                        <tr class="bg-gray-50">
+                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Month</th>
+                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Income</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for row in brgy.months %}
+                        <tr>
+                            <td class="px-4 py-1.5 text-xs text-gray-700">{{ row.month }}</td>
+                            <td class="px-4 py-1.5 text-xs text-right {% if row.total > 0 %}text-green-700 font-semibold{% else %}text-gray-400{% endif %}">
+                                ₱{{ row.total|floatformat:2|intcomma }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot>
+                        <tr class="bg-green-50 border-t border-green-200">
+                            <td class="px-4 py-2 text-xs font-bold text-green-900 uppercase">Total</td>
+                            <td class="px-4 py-2 text-xs text-right font-bold text-green-900">₱{{ brgy.yearly_total|floatformat:2|intcomma }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="bg-white rounded-xl shadow-md p-8 text-center">
+            <i class="bi bi-inbox text-4xl text-gray-300"></i>
+            <p class="text-sm text-gray-500 mt-2">No payment data for {{ year }}.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Barangay Ledger Report Section (kept as-is) -->
+    <div class="mt-6 screen-only">
         <div class="mb-4">
             <h3 class="text-lg font-bold text-dark-900 flex items-center gap-2">
                 <i class="bi bi-journal-text text-primary-600"></i>
@@ -401,96 +169,54 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-        <div class="bg-white rounded-xl p-8 shadow-2xl flex flex-col items-center">
-            <i class="bi bi-hourglass-split text-5xl text-blue-600 animate-spin mb-4"></i>
-            <p class="text-lg font-semibold text-gray-700">Generating Report...</p>
-            <p class="text-sm text-gray-500 mt-2">Please wait</p>
-        </div>
-    </div>
-
 </div>
 
 <style>
-/* Print Header - Hidden on Screen */
-.print-header {
-    display: none;
-}
+.screen-only { display: flex; }
+.print-header { display: none; }
 
-.screen-only {
-    display: block;
-}
-
-/* Print Only - Hidden on Screen, Visible on Print */
-.print-only {
-    display: none;
-}
-
-/* Print Styles */
 @media print {
+    /* Remove browser header/footer */
+    @page { margin: 0; }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+
+    /* Content padding since @page margin is 0 */
+    .income-dashboard {
+        padding: 12mm 15mm !important;
+        max-width: 100% !important;
+    }
+
     /* Hide screen-only elements */
     .screen-only,
-    form,
-    button,
-    nav,
-    header,
-    footer {
+    nav, header, footer,
+    form, button,
+    [class*="screen-only"] {
         display: none !important;
-    }
-
-    /* Show print-only elements */
-    .print-only {
-        display: table-row !important;
-    }
-
-    /* Hide horizontal filter bar on print */
-    form#reportForm,
-    form#reportForm + div,
-    .bg-white.rounded-lg.shadow-md.mb-4 {
-        display: none !important;
-    }
-
-    /* Hide page header (System Reports title) */
-    .max-w-7xl > .mb-6:first-child {
-        display: none !important;
-    }
-
-    /* Make report full width */
-    .w-full {
-        width: 100% !important;
-    }
-
-    .max-w-7xl {
-        max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    .shadow-md, .shadow-lg {
-        box-shadow: none !important;
     }
 
     /* Show print header */
     .print-header {
         display: block !important;
-        margin-bottom: 18px;
+        margin-bottom: 15px;
     }
 
-    /* Unified Header Row - Logo + Text + Logo */
     .header-row {
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
         gap: 12px;
-        padding-bottom: 12px;
+        padding-bottom: 10px;
         border-bottom: 2px solid #000;
-        margin-bottom: 18px;
+        margin-bottom: 15px;
     }
 
     .logo-print {
-        width: 60px;
-        height: 60px;
+        width: 55px;
+        height: 55px;
         object-fit: contain;
         flex-shrink: 0;
     }
@@ -501,237 +227,117 @@
         border: 2px solid #000;
     }
 
-    /* Header Text - Centered between logos */
     .header-text-center {
         text-align: center;
         padding: 0 8px;
     }
 
     .header-text-center p {
-        margin: 2px 0;
-        line-height: 1.4;
+        margin: 1px 0;
+        line-height: 1.3;
     }
 
-    .header-text-center .republic {
-        font-size: 12pt;
-        font-weight: bold;
-        color: #000;
-    }
-
+    .header-text-center .republic { font-size: 11pt; font-weight: bold; }
     .header-text-center .province,
-    .header-text-center .municipality {
-        font-size: 11pt;
-        font-weight: 600;
-        color: #000;
-    }
+    .header-text-center .municipality { font-size: 10pt; font-weight: 600; }
+    .header-text-center .waterworks { font-size: 12pt; font-weight: bold; margin-top: 3px; }
+    .header-text-center .report-type-title { font-size: 11pt; font-weight: bold; margin-top: 4px; text-transform: uppercase; }
 
-    .header-text-center .waterworks {
-        font-size: 13pt;
-        font-weight: bold;
-        color: #000;
-        margin-top: 4px;
-    }
-
-    .header-text-center .report-type-title {
-        font-size: 12pt;
-        font-weight: bold;
-        color: #000;
-        margin-top: 5px;
-        text-transform: uppercase;
-    }
-
-    .header-text-center .report-period {
-        font-size: 10pt;
-        color: #333;
-        margin-top: 4px;
-    }
-
-    /* Report Container - Clean and Simple */
-    .report-container {
-        border: 1px solid #000 !important;
-        padding: 15px !important;
-        background: white !important;
-    }
-
-    /* Table wrapper for print */
-    .print-table-wrapper {
-        border: none !important;
+    /* Summary card */
+    .print-summary-card {
+        background: #fff !important;
+        color: #000 !important;
+        border: 2px solid #000 !important;
         border-radius: 0 !important;
+        padding: 10px 15px !important;
+        margin-bottom: 12px !important;
+        box-shadow: none !important;
     }
 
-    /* Table styles for print - repeating header */
+    .print-summary-card p {
+        color: #000 !important;
+    }
+
+    .print-summary-card .text-4xl {
+        font-size: 18pt !important;
+    }
+
+    .print-summary-card .text-sm {
+        font-size: 9pt !important;
+    }
+
+    /* Shadows off */
+    .shadow-md, .shadow-lg { box-shadow: none !important; }
+
+    /* Tables */
     .print-table {
         width: 100% !important;
         border-collapse: collapse !important;
-        font-size: 11pt !important;
+        font-size: 9pt !important;
     }
 
-    /* IMPORTANT: Make thead repeat on each page */
-    .print-table thead {
-        display: table-header-group !important;
+    .print-table th,
+    .print-table td {
+        border: 1px solid #999 !important;
+        padding: 4px 8px !important;
     }
 
-    .print-table tfoot {
-        display: table-footer-group !important;
-    }
-
-    .print-table tbody {
-        display: table-row-group !important;
-    }
-
-    /* Header styling for print */
-    .print-thead {
+    .print-table thead tr {
         background: #e0e0e0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    .print-thead tr {
-        border: 1px solid #000 !important;
-    }
-
-    .print-thead th {
-        color: #000 !important;
-        font-weight: bold !important;
-        font-size: 11pt !important;
-        padding: 8px 10px !important;
-        border: 1px solid #000 !important;
-        background: #e0e0e0 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    /* Body rows */
-    .print-table tbody tr {
-        border-bottom: 1px solid #999 !important;
-        page-break-inside: avoid !important;
-    }
-
-    .print-table tbody tr:nth-child(even) {
-        background: #f5f5f5 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    .print-table tbody td {
-        padding: 6px 10px !important;
-        font-size: 11pt !important;
-        border-left: 1px solid #999 !important;
-        border-right: 1px solid #999 !important;
-    }
-
-    /* Footer row */
-    .print-tfoot {
+    .print-table tfoot tr {
         background: #e8e8e8 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    .print-tfoot tr {
-        border: 1px solid #000 !important;
+    /* Per-barangay grid: 2 columns on print */
+    .print-brgy-grid {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
     }
 
-    .print-tfoot td {
-        color: #000 !important;
-        font-weight: bold !important;
-        font-size: 11pt !important;
-        padding: 8px 10px !important;
-        border: 1px solid #000 !important;
+    .print-brgy-card {
+        border: 1px solid #999 !important;
+        border-radius: 0 !important;
+        page-break-inside: avoid !important;
+        box-shadow: none !important;
     }
 
-    /* Page setup */
-    @page {
-        margin: 12mm;
-        size: portrait;
+    .print-brgy-card .bg-primary-50 {
+        background: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    /* Prevent page break inside rows */
+    /* Section headers */
+    .print-section h3 {
+        font-size: 12pt !important;
+        margin-bottom: 6px !important;
+    }
+
+    .print-section {
+        margin-bottom: 12px !important;
+    }
+
+    /* Prevent break inside sections */
+    .print-section {
+        page-break-inside: avoid;
+    }
+
     tr {
         page-break-inside: avoid !important;
     }
 
-    /* Status badges for print */
-    .print-table span.rounded,
-    .print-table span.rounded-full {
-        background: #555 !important;
-        color: #fff !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        padding: 3px 8px !important;
-        font-size: 10pt !important;
+    /* Page title */
+    h2 {
+        font-size: 14pt !important;
+        margin-bottom: 8px !important;
     }
-}
-
-/* Smooth transitions */
-button, a, input, select {
-    transition: all 0.2s ease-in-out;
 }
 </style>
-{% endblock %}
-
-{% block extra_js %}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.getElementById('reportForm');
-    const generateBtn = document.getElementById('generateBtn');
-    const btnText = document.getElementById('btnText');
-    const btnSpinner = document.getElementById('btnSpinner');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    const reportTypeSelect = document.getElementById('report_type');
-    const barangayFilterDiv = document.getElementById('barangayFilterDiv');
-
-    // Show/hide barangay filter based on report type
-    function toggleBarangayFilter() {
-        const reportType = reportTypeSelect.value;
-        // Show barangay filter only for detailed revenue report
-        if (reportType === 'revenue') {
-            barangayFilterDiv.style.display = 'block';
-        } else {
-            barangayFilterDiv.style.display = 'none';
-        }
-    }
-
-    // Initialize on page load
-    toggleBarangayFilter();
-
-    // Update when report type changes
-    reportTypeSelect.addEventListener('change', toggleBarangayFilter);
-
-    // Form submission with loading state
-    form.addEventListener('submit', function(e) {
-        const dateFrom = document.getElementById('date_from').value;
-        const dateTo = document.getElementById('date_to').value;
-        const reportType = document.getElementById('report_type').value;
-
-        if (!dateFrom || !dateTo || !reportType) {
-            e.preventDefault();
-            alert('Please select date range and report type.');
-            return;
-        }
-
-        // Validate that date_from is not after date_to
-        if (new Date(dateFrom) > new Date(dateTo)) {
-            e.preventDefault();
-            alert('Start date cannot be after end date.');
-            return;
-        }
-
-        // Show loading state
-        generateBtn.disabled = true;
-        btnText.textContent = 'Generating...';
-        btnSpinner.classList.remove('hidden');
-        loadingOverlay.classList.remove('hidden');
-    });
-
-    // Reset loading state on page show (browser back button)
-    window.addEventListener('pageshow', function(event) {
-        if (event.persisted) {
-            generateBtn.disabled = false;
-            btnText.textContent = 'Generate Report';
-            btnSpinner.classList.add('hidden');
-            loadingOverlay.classList.add('hidden');
-        }
-    });
-});
-</script>
 {% endblock %}

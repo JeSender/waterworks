@@ -10,7 +10,7 @@ from .decorators import (
     billing_permission_required, reports_permission_required, view_only_for_admin,
     rate_limit_login
 )
-from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value
+from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value, F
 from django.db.models.functions import Concat, TruncMonth
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -3360,141 +3360,80 @@ def consumer_detail(request, consumer_id):
 @login_required
 def reports(request):
     """
-    Simplified reports view - displays reports inline on the page with date range filtering.
-    No AJAX, no modals, just simple form submission and display.
+    Income dashboard showing monthly and yearly income — all barangays combined and per barangay.
     """
-    from datetime import datetime, date
+    import calendar as cal
+    from django.db.models.functions import ExtractMonth
 
-    # Get parameters from GET or POST
-    report_type = request.GET.get('report_type') or request.POST.get('report_type', 'revenue')
-    date_from_str = request.GET.get('date_from') or request.POST.get('date_from')
-    date_to_str = request.GET.get('date_to') or request.POST.get('date_to')
-    barangay_id_str = request.GET.get('barangay') or request.POST.get('barangay', '')
+    current_year = datetime.now().year
+    year = request.GET.get('year', current_year)
+    try:
+        year = int(year)
+    except (ValueError, TypeError):
+        year = current_year
 
-    # Convert barangay_id to integer if provided
-    barangay_id = None
-    if barangay_id_str and barangay_id_str.strip():
-        try:
-            barangay_id = int(barangay_id_str)
-        except (ValueError, TypeError):
-            barangay_id = None
+    # Year choices: from earliest payment year to current year
+    earliest_payment = Payment.objects.order_by('payment_date').first()
+    start_year = earliest_payment.payment_date.year if earliest_payment else current_year
+    year_choices = list(range(current_year, start_year - 1, -1))
 
-    # Default to current month (first day to last day)
-    now = datetime.now()
-    if date_from_str and date_to_str:
-        try:
-            date_from = datetime.strptime(date_from_str, '%Y-%m-%d').date()
-            date_to = datetime.strptime(date_to_str, '%Y-%m-%d').date()
-        except:
-            # Fallback to current month
-            from calendar import monthrange
-            date_from = date(now.year, now.month, 1)
-            last_day = monthrange(now.year, now.month)[1]
-            date_to = date(now.year, now.month, last_day)
-    else:
-        # Default to current month
-        from calendar import monthrange
-        date_from = date(now.year, now.month, 1)
-        last_day = monthrange(now.year, now.month)[1]
-        date_to = date(now.year, now.month, last_day)
+    month_names = [cal.month_name[m] for m in range(1, 13)]
 
-    # Format dates for display and form values
-    date_from_value = date_from.strftime('%Y-%m-%d')
-    date_to_value = date_to.strftime('%Y-%m-%d')
-    date_range_display = f"{date_from.strftime('%B %d, %Y')} - {date_to.strftime('%B %d, %Y')}"
+    # --- All Barangays: monthly totals ---
+    monthly_qs = (
+        Payment.objects.filter(payment_date__year=year)
+        .annotate(month=ExtractMonth('payment_date'))
+        .values('month')
+        .annotate(total=Sum('amount_paid'))
+        .order_by('month')
+    )
+    monthly_dict = {row['month']: row['total'] for row in monthly_qs}
+    monthly_data = []
+    grand_total = 0
+    for m in range(1, 13):
+        amount = monthly_dict.get(m, 0) or 0
+        monthly_data.append({'month': month_names[m - 1], 'total': amount})
+        grand_total += amount
 
-    # Initialize report data
-    report_data = None
-    report_title = ""
-    total_amount = 0
-    record_count = 0
-    total_consumption = 0
+    # --- Per Barangay: monthly totals ---
+    per_brgy_qs = (
+        Payment.objects.filter(payment_date__year=year)
+        .annotate(month=ExtractMonth('payment_date'))
+        .values('bill__consumer__barangay__id', 'bill__consumer__barangay__name', 'month')
+        .annotate(total=Sum('amount_paid'))
+        .order_by('bill__consumer__barangay__name', 'month')
+    )
+    brgy_map = {}
+    for row in per_brgy_qs:
+        brgy_id = row['bill__consumer__barangay__id']
+        brgy_name = row['bill__consumer__barangay__name']
+        if brgy_id not in brgy_map:
+            brgy_map[brgy_id] = {'name': brgy_name, 'months': {}, 'yearly_total': 0}
+        amount = row['total'] or 0
+        brgy_map[brgy_id]['months'][row['month']] = amount
+        brgy_map[brgy_id]['yearly_total'] += amount
 
-    # Generate report based on type
-    if report_type == 'revenue':
-        report_title = f"Revenue Report (Detailed)"
-        payments_query = Payment.objects.filter(
-            payment_date__gte=date_from,
-            payment_date__lte=date_to
-        ).select_related('bill__consumer', 'bill__consumer__barangay')
+    barangay_data = []
+    for brgy_id in sorted(brgy_map, key=lambda x: brgy_map[x]['name']):
+        entry = brgy_map[brgy_id]
+        months = []
+        for m in range(1, 13):
+            months.append({'month': month_names[m - 1], 'total': entry['months'].get(m, 0) or 0})
+        barangay_data.append({
+            'name': entry['name'],
+            'yearly_total': entry['yearly_total'],
+            'months': months,
+        })
 
-        # Apply barangay filter if selected
-        if barangay_id:
-            payments_query = payments_query.filter(bill__consumer__barangay_id=barangay_id)
-
-        report_data = payments_query.order_by('payment_date')
-        total_amount = report_data.aggregate(total=Sum('amount_paid'))['total'] or 0
-        record_count = report_data.count()
-
-    elif report_type == 'revenue_barangay':
-        report_title = f"Revenue Summary by Barangay"
-        from django.db.models import Q
-
-        # Aggregate by barangay
-        report_data = Payment.objects.filter(
-            payment_date__gte=date_from,
-            payment_date__lte=date_to
-        ).values(
-            'bill__consumer__barangay__name'
-        ).annotate(
-            barangay_name=F('bill__consumer__barangay__name'),
-            payment_count=Count('id'),
-            total_amount=Sum('amount_paid'),
-            total_consumption=Sum('bill__consumption')
-        ).order_by('barangay_name')
-
-        total_amount = report_data.aggregate(total=Sum('total_amount'))['total'] or 0
-        total_consumption = report_data.aggregate(total=Sum('total_consumption'))['total'] or 0
-        record_count = report_data.aggregate(total=Sum('payment_count'))['payment_count'] or 0
-
-    elif report_type == 'delinquency':
-        report_title = f"Delinquent Accounts Report"
-        report_data = Bill.objects.filter(
-            billing_period__gte=date_from,
-            billing_period__lte=date_to,
-            status__in=['Pending', 'Overdue']
-        ).select_related('consumer', 'consumer__barangay').order_by('consumer__id_number')
-
-        total_amount = report_data.aggregate(total=Sum('total_amount'))['total'] or 0
-        record_count = report_data.count()
-
-    elif report_type == 'summary':
-        report_title = f"Payment Summary Report"
-        report_data = Payment.objects.filter(
-            payment_date__gte=date_from,
-            payment_date__lte=date_to
-        ).values('bill__consumer__id_number').annotate(
-            bill__consumer__full_name=Concat(
-                'bill__consumer__first_name',
-                Value(' '),
-                'bill__consumer__middle_name',
-                Value(' '),
-                'bill__consumer__last_name'
-            ),
-            total_paid=Sum('amount_paid'),
-            payment_count=Count('id')
-        ).order_by('bill__consumer__id_number')
-
-        total_amount = report_data.aggregate(total=Sum('total_paid'))['total'] or 0
-        record_count = report_data.count()
-
-    # Get all barangays for filter dropdown
     barangays = Barangay.objects.all().order_by('name')
 
     context = {
-        'report_type': report_type,
-        'date_from_value': date_from_value,
-        'date_to_value': date_to_value,
-        'month_display': date_range_display,  # Keep same variable name for template compatibility
-        'date_from': date_from,
-        'date_to': date_to,
-        'report_title': report_title,
-        'report_data': report_data,
-        'total_amount': total_amount,
-        'record_count': record_count,
-        'total_consumption': total_consumption,
+        'year': year,
+        'year_choices': year_choices,
+        'monthly_data': monthly_data,
+        'grand_total': grand_total,
+        'barangay_data': barangay_data,
         'barangays': barangays,
-        'barangay_id': barangay_id_str if barangay_id else '',
     }
 
     return render(request, 'consumers/reports.html', context)
