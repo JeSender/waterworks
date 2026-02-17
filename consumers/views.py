@@ -3501,6 +3501,87 @@ def reports(request):
 
 
 @login_required
+def barangay_report(request, barangay_id):
+    """
+    Ledger-style barangay report showing 12-month billing tables per consumer.
+    Replicates the physical ledger book used by the waterworks office.
+    """
+    from datetime import date
+    import calendar
+
+    barangay = get_object_or_404(Barangay, id=barangay_id)
+
+    # Year selector (default: current year)
+    year = request.GET.get('year')
+    try:
+        year = int(year)
+    except (TypeError, ValueError):
+        year = date.today().year
+
+    # Get all active consumers in this barangay, sorted by last name
+    consumers = Consumer.objects.filter(
+        barangay=barangay,
+        status='active'
+    ).order_by('last_name', 'first_name')
+
+    # Build ledger data for each consumer
+    month_names = [calendar.month_name[m] for m in range(1, 13)]
+    consumer_ledger = []
+
+    for consumer in consumers:
+        # Get all bills for this consumer in the selected year
+        bills = Bill.objects.filter(
+            consumer=consumer,
+            billing_period__year=year
+        ).select_related('consumer')
+
+        # Get all payments for bills in this year
+        payments = Payment.objects.filter(
+            bill__consumer=consumer,
+            bill__billing_period__year=year
+        ).select_related('bill')
+
+        # Build month-by-month data
+        months_data = []
+        for month_num in range(1, 13):
+            bill = bills.filter(billing_period__month=month_num).first()
+            payment = payments.filter(bill__billing_period__month=month_num).first()
+
+            month_entry = {
+                'month': month_names[month_num - 1],
+                'consumption': bill.consumption if bill else '',
+                'amount_due': bill.total_amount if bill else '',
+                'penalty': bill.effective_penalty if bill and bill.effective_penalty > 0 else '',
+                'amount_paid': payment.amount_paid if payment else '',
+                'receipt_number': payment.or_number if payment else '',
+                'date_issued': payment.payment_date if payment else '',
+                'initial': '',
+            }
+            months_data.append(month_entry)
+
+        consumer_ledger.append({
+            'consumer': consumer,
+            'months': months_data,
+        })
+
+    # Year range for selector (registration year of earliest consumer to current year + 1)
+    current_year = date.today().year
+    earliest = Consumer.objects.filter(barangay=barangay).order_by('registration_date').first()
+    start_year = earliest.registration_date.year if earliest else current_year
+    year_choices = list(range(current_year + 1, start_year - 1, -1))
+
+    context = {
+        'barangay': barangay,
+        'year': year,
+        'year_choices': year_choices,
+        'consumer_ledger': consumer_ledger,
+        'consumer_count': consumers.count(),
+    }
+
+    return render(request, 'consumers/barangay_report.html', context)
+
+
+@login_required
 def export_report_excel(request):
     """Export report as Excel (.xlsx) file with formatting"""
     from openpyxl import Workbook

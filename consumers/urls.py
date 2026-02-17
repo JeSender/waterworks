@@ -61,6 +61,7 @@ urlpatterns = [
 
     # Reports
     path('reports/', views.reports, name='reports'),
+    path('reports/barangay/<int:barangay_id>/', views.barangay_report, name='barangay_report'),
     path('reports/export-excel/', views.export_report_excel, name='export_report_excel'),
 
     path('system-settings-verification/', views.system_settings_verification, name='system_settings_verification'),

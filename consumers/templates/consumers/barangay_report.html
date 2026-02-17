@@ -1,0 +1,355 @@
+{% extends "consumers/base.html" %}
+{% load humanize %}
+{% load static %}
+
+{% block title %}Barangay Report - {{ barangay.name }}{% endblock %}
+
+{% block main_content %}
+<div class="max-w-7xl mx-auto">
+
+    <!-- Page Header (screen only) -->
+    <div class="mb-4 screen-only">
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
+                    <i class="bi bi-journal-text text-primary-600"></i>
+                    Barangay Ledger Report
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">{{ barangay.name }} &mdash; {{ consumer_count }} consumer{{ consumer_count|pluralize }}</p>
+            </div>
+            <a href="{% url 'consumers:reports' %}" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 text-sm font-semibold rounded transition-all flex items-center gap-2">
+                <i class="bi bi-arrow-left"></i> Back to Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- Controls Bar (screen only) -->
+    <div class="bg-white rounded-lg shadow-md mb-4 p-4 screen-only">
+        <div class="flex flex-wrap items-end gap-3">
+            <!-- Year Selector -->
+            <div style="width: 140px;">
+                <label for="yearSelect" class="block text-xs font-semibold text-gray-700 mb-1">Year</label>
+                <select id="yearSelect" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500" onchange="changeYear(this.value)">
+                    {% for y in year_choices %}
+                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Select/Deselect All -->
+            <div class="flex items-end gap-2">
+                <button type="button" onclick="toggleAll(true)" class="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-semibold rounded transition-all">
+                    <i class="bi bi-check-all"></i> Select All
+                </button>
+                <button type="button" onclick="toggleAll(false)" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-semibold rounded transition-all">
+                    <i class="bi bi-x-lg"></i> Deselect All
+                </button>
+            </div>
+
+            <!-- Print Buttons -->
+            <div class="flex items-end gap-2 ml-auto">
+                <button type="button" onclick="printSelected()" class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded transition-all flex items-center gap-2">
+                    <i class="bi bi-printer"></i> Print Selected
+                </button>
+                <button type="button" onclick="printAll()" class="px-5 py-2 bg-gray-600 hover:bg-gray-700 text-white text-sm font-semibold rounded transition-all flex items-center gap-2">
+                    <i class="bi bi-printer-fill"></i> Print All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    {% if consumer_ledger %}
+    <!-- Consumer Ledger Cards -->
+    <div id="ledgerContainer">
+        {% for entry in consumer_ledger %}
+        <div class="consumer-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" data-consumer-id="{{ entry.consumer.id }}">
+            <!-- Consumer Header with Checkbox -->
+            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <input type="checkbox" class="consumer-checkbox w-4 h-4 text-primary-600 rounded screen-only" data-consumer-id="{{ entry.consumer.id }}" checked>
+                <div class="flex-1">
+                    <span class="font-bold text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}{% if entry.consumer.suffix %} {{ entry.consumer.suffix }}{% endif %}</span>
+                    <span class="text-xs text-gray-500 ml-3">ID: {{ entry.consumer.id_number|default:"N/A" }}</span>
+                </div>
+            </div>
+
+            <!-- Ledger Table -->
+            <div class="ledger-block p-4">
+                <!-- Consumer Info Row -->
+                <div class="flex flex-wrap gap-x-6 gap-y-1 mb-2 text-sm">
+                    <div><span class="font-semibold text-gray-600">Name:</span> <span class="text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}</span></div>
+                    <div><span class="font-semibold text-gray-600">Service No:</span> <span class="text-gray-900">{{ entry.consumer.id_number|default:"" }}</span></div>
+                </div>
+                <div class="flex flex-wrap gap-x-6 gap-y-1 mb-3 text-sm">
+                    <div><span class="font-semibold text-gray-600">Address:</span> <span class="text-gray-900">{% if entry.consumer.purok %}{{ entry.consumer.purok.name }}, {% endif %}{{ entry.consumer.barangay.name }}</span></div>
+                    <div><span class="font-semibold text-gray-600">Street:</span> <span class="text-gray-900"></span></div>
+                </div>
+
+                <!-- 12-Month Table -->
+                <table class="ledger-table w-full border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 130px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 55px;">Cu.m.</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Amount Due</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 65px;">Penalty</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Amount Paid</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 100px;">Receipt Number</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 80px;">Date Issued</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 50px;">Initial</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for month in entry.months %}
+                        <tr class="{% if month.amount_paid %}bg-green-50{% endif %}">
+                            <td class="border border-gray-400 px-2 py-1 font-semibold text-gray-800">{{ month.month }}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.consumption }}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-right">{% if month.amount_due %}{{ month.amount_due|floatformat:2 }}{% endif %}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-right">{% if month.penalty %}{{ month.penalty|floatformat:2 }}{% endif %}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-right font-semibold">{% if month.amount_paid %}{{ month.amount_paid|floatformat:2 }}{% endif %}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center text-xs">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.initial }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% else %}
+    <!-- No Consumers -->
+    <div class="bg-white p-6 rounded-lg shadow-md">
+        <div class="flex flex-col items-center justify-center py-16">
+            <i class="bi bi-people text-6xl text-gray-300 mb-4"></i>
+            <h4 class="text-xl font-bold text-gray-600 mb-2">No Active Consumers</h4>
+            <p class="text-sm text-gray-500">There are no active consumers in {{ barangay.name }}.</p>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<style>
+/* Screen styles */
+.screen-only { display: flex; }
+
+/* Ledger table base styles */
+.ledger-table {
+    font-size: 11px;
+}
+
+.ledger-table th, .ledger-table td {
+    border: 1px solid #9ca3af;
+}
+
+/* Print Styles */
+@media print {
+    /* Hide screen-only elements */
+    .screen-only,
+    nav, header, footer,
+    .consumer-checkbox {
+        display: none !important;
+    }
+
+    /* Reset page layout */
+    body {
+        margin: 0;
+        padding: 0;
+        background: white;
+    }
+
+    .max-w-7xl {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Page setup: short bond paper (8.5 x 5.5 inches) landscape */
+    @page {
+        size: 8.5in 5.5in;
+        margin: 8mm 10mm;
+    }
+
+    /* Hide non-selected consumers */
+    .consumer-card.print-hidden {
+        display: none !important;
+    }
+
+    /* Consumer card styling for print */
+    .consumer-card {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        margin-bottom: 0 !important;
+        page-break-inside: avoid;
+    }
+
+    /* Hide the checkbox header bar in print */
+    .consumer-card > .flex.items-center.gap-3 {
+        display: none !important;
+    }
+
+    /* Ledger block */
+    .ledger-block {
+        padding: 3mm 0 !important;
+    }
+
+    /* Print header - shown before each pair of consumers */
+    .print-page-header {
+        display: block !important;
+        text-align: center;
+        margin-bottom: 4mm;
+        padding-bottom: 3mm;
+        border-bottom: 2px solid #000;
+    }
+
+    .print-page-header .header-row {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .print-page-header .logo-print {
+        width: 40px;
+        height: 40px;
+        object-fit: contain;
+    }
+
+    .print-page-header .logo-circle {
+        border-radius: 50%;
+        border: 1.5px solid #000;
+    }
+
+    .print-page-header p {
+        margin: 1px 0;
+        line-height: 1.3;
+    }
+
+    .print-page-header .republic { font-size: 9pt; font-weight: bold; }
+    .print-page-header .province,
+    .print-page-header .municipality { font-size: 8pt; font-weight: 600; }
+    .print-page-header .waterworks { font-size: 9pt; font-weight: bold; margin-top: 2px; }
+    .print-page-header .report-title { font-size: 8pt; font-weight: bold; text-transform: uppercase; margin-top: 2px; }
+
+    /* Table styles for print */
+    .ledger-table {
+        font-size: 8pt !important;
+        width: 100% !important;
+    }
+
+    .ledger-table th {
+        background: #e0e0e0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 7pt !important;
+        padding: 2px 3px !important;
+    }
+
+    .ledger-table td {
+        padding: 1.5px 3px !important;
+        font-size: 8pt !important;
+    }
+
+    .ledger-table th, .ledger-table td {
+        border: 1px solid #000 !important;
+    }
+
+    /* Consumer info text */
+    .ledger-block .text-sm {
+        font-size: 8pt !important;
+    }
+
+    /* Paid row highlight */
+    tr.bg-green-50 {
+        background: #f0fdf4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Page break control: every 3rd consumer starts a new page */
+    .consumer-card.page-break-before {
+        page-break-before: always;
+    }
+
+    #ledgerContainer {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* Transitions */
+button, a, input, select {
+    transition: all 0.2s ease-in-out;
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function changeYear(year) {
+    const url = new URL(window.location.href);
+    url.searchParams.set('year', year);
+    window.location.href = url.toString();
+}
+
+function toggleAll(checked) {
+    document.querySelectorAll('.consumer-checkbox').forEach(cb => {
+        cb.checked = checked;
+    });
+}
+
+function printSelected() {
+    // Mark unchecked consumers as hidden for print
+    document.querySelectorAll('.consumer-card').forEach(card => {
+        const cb = card.querySelector('.consumer-checkbox');
+        if (cb && !cb.checked) {
+            card.classList.add('print-hidden');
+        } else {
+            card.classList.remove('print-hidden');
+        }
+    });
+
+    // Add page breaks every 3 visible consumers
+    addPageBreaks();
+
+    window.print();
+
+    // Clean up after print
+    setTimeout(() => {
+        document.querySelectorAll('.consumer-card').forEach(card => {
+            card.classList.remove('print-hidden');
+            card.classList.remove('page-break-before');
+        });
+    }, 500);
+}
+
+function printAll() {
+    document.querySelectorAll('.consumer-card').forEach(card => {
+        card.classList.remove('print-hidden');
+    });
+
+    addPageBreaks();
+    window.print();
+
+    setTimeout(() => {
+        document.querySelectorAll('.consumer-card').forEach(card => {
+            card.classList.remove('page-break-before');
+        });
+    }, 500);
+}
+
+function addPageBreaks() {
+    // Add page break before every 3rd visible consumer
+    const visibleCards = document.querySelectorAll('.consumer-card:not(.print-hidden)');
+    visibleCards.forEach((card, index) => {
+        card.classList.remove('page-break-before');
+        if (index > 0 && index % 3 === 0) {
+            card.classList.add('page-break-before');
+        }
+    });
+}
+</script>
+{% endblock %}
