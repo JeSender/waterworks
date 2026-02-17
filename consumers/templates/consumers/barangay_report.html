@@ -63,9 +63,9 @@
     <div id="ledgerContainer">
         {% for entry in consumer_ledger %}
         <div class="consumer-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" data-consumer-id="{{ entry.consumer.id }}">
-            <!-- Consumer Header with Checkbox -->
-            <div class="flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
-                <input type="checkbox" class="consumer-checkbox w-4 h-4 text-primary-600 rounded screen-only" data-consumer-id="{{ entry.consumer.id }}" checked>
+            <!-- Consumer Header with Checkbox (screen only) -->
+            <div class="consumer-header flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
+                <input type="checkbox" class="consumer-checkbox w-4 h-4 text-primary-600 rounded" data-consumer-id="{{ entry.consumer.id }}" checked>
                 <div class="flex-1">
                     <span class="font-bold text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}{% if entry.consumer.suffix %} {{ entry.consumer.suffix }}{% endif %}</span>
                     <span class="text-xs text-gray-500 ml-3">ID: {{ entry.consumer.id_number|default:"N/A" }}</span>
@@ -77,25 +77,26 @@
                 <!-- Consumer Info Row -->
                 <div class="flex flex-wrap gap-x-6 gap-y-1 mb-2 text-sm">
                     <div><span class="font-semibold text-gray-600">Name:</span> <span class="text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}</span></div>
-                    <div><span class="font-semibold text-gray-600">Service No:</span> <span class="text-gray-900">{{ entry.consumer.id_number|default:"" }}</span></div>
+                    <div class="ml-auto"><span class="font-semibold text-gray-600">Service No:</span> <span class="text-gray-900">{{ entry.consumer.id_number|default:"" }}</span></div>
                 </div>
                 <div class="flex flex-wrap gap-x-6 gap-y-1 mb-3 text-sm">
                     <div><span class="font-semibold text-gray-600">Address:</span> <span class="text-gray-900">{% if entry.consumer.purok %}{{ entry.consumer.purok.name }}, {% endif %}{{ entry.consumer.barangay.name }}</span></div>
-                    <div><span class="font-semibold text-gray-600">Street:</span> <span class="text-gray-900"></span></div>
+                    <div class="ml-auto"><span class="font-semibold text-gray-600">Street:</span> <span class="text-gray-900"></span></div>
                 </div>
 
                 <!-- 12-Month Table -->
                 <table class="ledger-table w-full border-collapse text-xs">
                     <thead>
                         <tr class="bg-gray-100">
-                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 130px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 55px;">Cu.m.</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Amount Due</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 65px;">Penalty</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Amount Paid</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 100px;">Receipt Number</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 80px;">Date Issued</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 50px;">Initial</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 120px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 50px;">Cu.m.</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Due</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 60px;">Penalty</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Paid</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 95px;">Receipt Number</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Date Issued</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 45px;">Initial</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 65px;">Reading</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -109,6 +110,7 @@
                             <td class="border border-gray-400 px-2 py-1 text-center text-xs">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
                             <td class="border border-gray-400 px-2 py-1 text-center">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
                             <td class="border border-gray-400 px-2 py-1 text-center">{{ month.initial }}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.reading }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -146,30 +148,37 @@
 
 /* Print Styles */
 @media print {
-    /* Hide screen-only elements */
+    /* Hide all screen UI elements */
     .screen-only,
+    .consumer-header,
     nav, header, footer,
+    aside, .sidebar,
     .consumer-checkbox {
         display: none !important;
     }
 
     /* Reset page layout */
-    body {
+    * {
         margin: 0;
         padding: 0;
-        background: white;
+    }
+
+    html, body {
+        margin: 0 !important;
+        padding: 0 !important;
+        background: white !important;
+    }
+
+    /* Page setup: short bond paper (8.5 x 5.5 inches) - NO browser headers/footers */
+    @page {
+        size: 8.5in 5.5in;
+        margin: 6mm 8mm;
     }
 
     .max-w-7xl {
         max-width: 100% !important;
         padding: 0 !important;
         margin: 0 !important;
-    }
-
-    /* Page setup: short bond paper (8.5 x 5.5 inches) landscape */
-    @page {
-        size: 8.5in 5.5in;
-        margin: 8mm 10mm;
     }
 
     /* Hide non-selected consumers */
@@ -182,57 +191,25 @@
         box-shadow: none !important;
         border: none !important;
         border-radius: 0 !important;
-        margin-bottom: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
         page-break-inside: avoid;
-    }
-
-    /* Hide the checkbox header bar in print */
-    .consumer-card > .flex.items-center.gap-3 {
-        display: none !important;
     }
 
     /* Ledger block */
     .ledger-block {
-        padding: 3mm 0 !important;
+        padding: 2mm 0 3mm 0 !important;
     }
 
-    /* Print header - shown before each pair of consumers */
-    .print-page-header {
-        display: block !important;
-        text-align: center;
-        margin-bottom: 4mm;
-        padding-bottom: 3mm;
-        border-bottom: 2px solid #000;
+    /* Consumer info text for print */
+    .ledger-block .text-sm {
+        font-size: 8pt !important;
+        margin-bottom: 1mm !important;
     }
 
-    .print-page-header .header-row {
-        display: flex !important;
-        align-items: center;
-        justify-content: center;
-        gap: 10px;
-    }
-
-    .print-page-header .logo-print {
-        width: 40px;
-        height: 40px;
-        object-fit: contain;
-    }
-
-    .print-page-header .logo-circle {
-        border-radius: 50%;
-        border: 1.5px solid #000;
-    }
-
-    .print-page-header p {
-        margin: 1px 0;
-        line-height: 1.3;
-    }
-
-    .print-page-header .republic { font-size: 9pt; font-weight: bold; }
-    .print-page-header .province,
-    .print-page-header .municipality { font-size: 8pt; font-weight: 600; }
-    .print-page-header .waterworks { font-size: 9pt; font-weight: bold; margin-top: 2px; }
-    .print-page-header .report-title { font-size: 8pt; font-weight: bold; text-transform: uppercase; margin-top: 2px; }
+    .ledger-block .mb-2 { margin-bottom: 1mm !important; }
+    .ledger-block .mb-3 { margin-bottom: 2mm !important; }
 
     /* Table styles for print */
     .ledger-table {
@@ -245,21 +222,17 @@
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
         font-size: 7pt !important;
-        padding: 2px 3px !important;
+        padding: 1.5px 2px !important;
+        font-weight: bold !important;
     }
 
     .ledger-table td {
-        padding: 1.5px 3px !important;
-        font-size: 8pt !important;
+        padding: 1px 2px !important;
+        font-size: 7.5pt !important;
     }
 
     .ledger-table th, .ledger-table td {
         border: 1px solid #000 !important;
-    }
-
-    /* Consumer info text */
-    .ledger-block .text-sm {
-        font-size: 8pt !important;
     }
 
     /* Paid row highlight */
@@ -269,7 +242,7 @@
         print-color-adjust: exact !important;
     }
 
-    /* Page break control: every 3rd consumer starts a new page */
+    /* Page break control: every 2nd consumer starts a new page */
     .consumer-card.page-break-before {
         page-break-before: always;
     }
@@ -277,6 +250,14 @@
     #ledgerContainer {
         margin: 0;
         padding: 0;
+    }
+
+    /* Remove all shadows and rounded corners */
+    .shadow-md, .shadow-lg, .shadow-sm {
+        box-shadow: none !important;
+    }
+    .rounded-lg, .rounded {
+        border-radius: 0 !important;
     }
 }
 
@@ -312,9 +293,7 @@ function printSelected() {
         }
     });
 
-    // Add page breaks every 3 visible consumers
     addPageBreaks();
-
     window.print();
 
     // Clean up after print
@@ -342,11 +321,11 @@ function printAll() {
 }
 
 function addPageBreaks() {
-    // Add page break before every 3rd visible consumer
+    // Add page break before every 2nd visible consumer (2 per page)
     const visibleCards = document.querySelectorAll('.consumer-card:not(.print-hidden)');
     visibleCards.forEach((card, index) => {
         card.classList.remove('page-break-before');
-        if (index > 0 && index % 3 === 0) {
+        if (index > 0 && index % 2 === 0) {
             card.classList.add('page-break-before');
         }
     });

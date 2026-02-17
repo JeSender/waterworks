@@ -3533,7 +3533,7 @@ def barangay_report(request, barangay_id):
         bills = Bill.objects.filter(
             consumer=consumer,
             billing_period__year=year
-        ).select_related('consumer')
+        ).select_related('consumer', 'current_reading')
 
         # Get all payments for bills in this year
         payments = Payment.objects.filter(
@@ -3555,6 +3555,7 @@ def barangay_report(request, barangay_id):
                 'amount_paid': payment.amount_paid if payment else '',
                 'receipt_number': payment.or_number if payment else '',
                 'date_issued': payment.payment_date if payment else '',
+                'reading': bill.current_reading.reading_value if bill and bill.current_reading else '',
                 'initial': '',
             }
             months_data.append(month_entry)
