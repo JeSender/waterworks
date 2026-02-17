@@ -31,6 +31,29 @@
         </div>
     </div>
 
+    <!-- Barangay Ledger Report Section -->
+    <div class="bg-white rounded-xl shadow-md overflow-hidden mb-6 screen-only">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="text-lg font-bold text-dark-900 flex items-center gap-2">
+                <i class="bi bi-journal-text text-primary-600"></i>
+                Barangay Ledger Report
+            </h3>
+        </div>
+        <div class="p-5">
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                {% for brgy in barangays %}
+                <a href="{% url 'consumers:barangay_report' brgy.id %}"
+                   class="bg-gray-50 rounded-lg border border-gray-200 hover:shadow-md hover:border-primary-300 hover:bg-primary-50 transition-all p-4 flex items-center gap-3 group">
+                    <div class="w-9 h-9 rounded-full bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center flex-shrink-0 transition-colors">
+                        <i class="bi bi-geo-alt-fill text-primary-600 text-sm"></i>
+                    </div>
+                    <span class="text-sm font-semibold text-gray-800 group-hover:text-primary-700 transition-colors">{{ brgy.name }}</span>
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
     <!-- Print Header -->
     <div class="print-header hidden">
         <div class="header-row">
@@ -147,27 +170,6 @@
         {% endif %}
     </div>
 
-    <!-- Barangay Ledger Report Section (kept as-is) -->
-    <div class="mt-6 screen-only">
-        <div class="mb-4">
-            <h3 class="text-lg font-bold text-dark-900 flex items-center gap-2">
-                <i class="bi bi-journal-text text-primary-600"></i>
-                Barangay Ledger Report
-            </h3>
-            <p class="text-xs text-gray-500 mt-1">Click a barangay to view the ledger-style report with 12-month billing tables per consumer.</p>
-        </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-            {% for brgy in barangays %}
-            <a href="{% url 'consumers:barangay_report' brgy.id %}"
-               class="bg-white rounded-lg border border-gray-200 shadow-sm hover:shadow-md hover:border-primary-300 hover:bg-primary-50 transition-all p-4 flex items-center gap-3 group">
-                <div class="w-9 h-9 rounded-full bg-primary-100 group-hover:bg-primary-200 flex items-center justify-center flex-shrink-0 transition-colors">
-                    <i class="bi bi-geo-alt-fill text-primary-600 text-sm"></i>
-                </div>
-                <span class="text-sm font-semibold text-gray-800 group-hover:text-primary-700 transition-colors">{{ brgy.name }}</span>
-            </a>
-            {% endfor %}
-        </div>
-    </div>
 
 </div>
 
