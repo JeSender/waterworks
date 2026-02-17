@@ -5,10 +5,10 @@
 {% block title %}Barangay Report - {{ barangay.name }}{% endblock %}
 
 {% block main_content %}
-<div class="max-w-7xl mx-auto">
+<div class="max-w-7xl mx-auto" id="reportPage">
 
     <!-- Page Header (screen only) -->
-    <div class="mb-4 screen-only">
+    <div class="mb-4 no-print">
         <div class="flex items-center justify-between">
             <div>
                 <h2 class="text-2xl font-bold text-dark-900 flex items-center gap-2">
@@ -24,9 +24,8 @@
     </div>
 
     <!-- Controls Bar (screen only) -->
-    <div class="bg-white rounded-lg shadow-md mb-4 p-4 screen-only">
+    <div class="bg-white rounded-lg shadow-md mb-4 p-4 no-print">
         <div class="flex flex-wrap items-end gap-3">
-            <!-- Year Selector -->
             <div style="width: 140px;">
                 <label for="yearSelect" class="block text-xs font-semibold text-gray-700 mb-1">Year</label>
                 <select id="yearSelect" class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-1 focus:ring-primary-500 focus:border-primary-500" onchange="changeYear(this.value)">
@@ -35,8 +34,6 @@
                     {% endfor %}
                 </select>
             </div>
-
-            <!-- Select/Deselect All -->
             <div class="flex items-end gap-2">
                 <button type="button" onclick="toggleAll(true)" class="px-4 py-2 bg-primary-100 hover:bg-primary-200 text-primary-700 text-sm font-semibold rounded transition-all">
                     <i class="bi bi-check-all"></i> Select All
@@ -45,8 +42,6 @@
                     <i class="bi bi-x-lg"></i> Deselect All
                 </button>
             </div>
-
-            <!-- Print Buttons -->
             <div class="flex items-end gap-2 ml-auto">
                 <button type="button" onclick="printSelected()" class="px-5 py-2 bg-primary-600 hover:bg-primary-700 text-white text-sm font-semibold rounded transition-all flex items-center gap-2">
                     <i class="bi bi-printer"></i> Print Selected
@@ -59,12 +54,11 @@
     </div>
 
     {% if consumer_ledger %}
-    <!-- Consumer Ledger Cards -->
     <div id="ledgerContainer">
         {% for entry in consumer_ledger %}
         <div class="consumer-card bg-white rounded-lg shadow-md mb-4 overflow-hidden" data-consumer-id="{{ entry.consumer.id }}">
-            <!-- Consumer Header with Checkbox (screen only) -->
-            <div class="consumer-header flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
+            <!-- Checkbox bar (screen only) -->
+            <div class="no-print flex items-center gap-3 px-4 py-3 bg-gray-50 border-b border-gray-200">
                 <input type="checkbox" class="consumer-checkbox w-4 h-4 text-primary-600 rounded" data-consumer-id="{{ entry.consumer.id }}" checked>
                 <div class="flex-1">
                     <span class="font-bold text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}{% if entry.consumer.suffix %} {{ entry.consumer.suffix }}{% endif %}</span>
@@ -72,45 +66,44 @@
                 </div>
             </div>
 
-            <!-- Ledger Table -->
+            <!-- Ledger content -->
             <div class="ledger-block p-4">
-                <!-- Consumer Info Row -->
-                <div class="flex flex-wrap gap-x-6 gap-y-1 mb-2 text-sm">
-                    <div><span class="font-semibold text-gray-600">Name:</span> <span class="text-gray-900">{{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}</span></div>
-                    <div class="ml-auto"><span class="font-semibold text-gray-600">Service No:</span> <span class="text-gray-900">{{ entry.consumer.id_number|default:"" }}</span></div>
-                </div>
-                <div class="flex flex-wrap gap-x-6 gap-y-1 mb-3 text-sm">
-                    <div><span class="font-semibold text-gray-600">Address:</span> <span class="text-gray-900">{% if entry.consumer.purok %}{{ entry.consumer.purok.name }}, {% endif %}{{ entry.consumer.barangay.name }}</span></div>
-                    <div class="ml-auto"><span class="font-semibold text-gray-600">Street:</span> <span class="text-gray-900"></span></div>
+                <div class="consumer-info">
+                    <div class="info-row">
+                        <span><b>Name:</b> {{ entry.consumer.last_name }}, {{ entry.consumer.first_name }}{% if entry.consumer.middle_name %} {{ entry.consumer.middle_name }}{% endif %}</span>
+                        <span><b>Service No:</b> {{ entry.consumer.id_number|default:"" }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span><b>Address:</b> {% if entry.consumer.purok %}{{ entry.consumer.purok.name }}, {% endif %}{{ entry.consumer.barangay.name }}</span>
+                    </div>
                 </div>
 
-                <!-- 12-Month Table -->
-                <table class="ledger-table w-full border-collapse text-xs">
+                <table class="ledger-table">
                     <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 110px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 60px;">Reading</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 45px;">Cu.m.</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Due</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 55px;">Penalty</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Paid</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 90px;">Receipt Number</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Date Issued</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 45px;">Initial</th>
+                        <tr>
+                            <th class="col-month">Month and Year<br><span class="year-label">{{ year }}</span></th>
+                            <th class="col-reading">Reading</th>
+                            <th class="col-cum">Cu.m.</th>
+                            <th class="col-due">Amount Due</th>
+                            <th class="col-penalty">Penalty</th>
+                            <th class="col-paid">Amount Paid</th>
+                            <th class="col-receipt">Receipt Number</th>
+                            <th class="col-date">Date Issued</th>
+                            <th class="col-initial">Initial</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for month in entry.months %}
-                        <tr class="{% if month.amount_paid %}bg-green-50{% endif %}">
-                            <td class="border border-gray-400 px-2 py-1 font-semibold text-gray-800">{{ month.month }}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.reading }}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.consumption }}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-right">{% if month.amount_due %}{{ month.amount_due|floatformat:2 }}{% endif %}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-right">{% if month.penalty %}{{ month.penalty|floatformat:2 }}{% endif %}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-right font-semibold">{% if month.amount_paid %}{{ month.amount_paid|floatformat:2 }}{% endif %}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center text-xs">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.initial }}</td>
+                        <tr{% if month.amount_paid %} class="paid-row"{% endif %}>
+                            <td class="month-cell">{{ month.month }}</td>
+                            <td class="center-cell">{{ month.reading }}</td>
+                            <td class="center-cell">{{ month.consumption }}</td>
+                            <td class="right-cell">{% if month.amount_due %}{{ month.amount_due|floatformat:2 }}{% endif %}</td>
+                            <td class="right-cell">{% if month.penalty %}{{ month.penalty|floatformat:2 }}{% endif %}</td>
+                            <td class="right-cell bold-cell">{% if month.amount_paid %}{{ month.amount_paid|floatformat:2 }}{% endif %}</td>
+                            <td class="center-cell small-cell">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
+                            <td class="center-cell">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
+                            <td class="center-cell">{{ month.initial }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -121,7 +114,6 @@
     </div>
 
     {% else %}
-    <!-- No Consumers -->
     <div class="bg-white p-6 rounded-lg shadow-md">
         <div class="flex flex-col items-center justify-center py-16">
             <i class="bi bi-people text-6xl text-gray-300 mb-4"></i>
@@ -134,128 +126,85 @@
 </div>
 
 <style>
-/* Screen styles */
-.screen-only { display: flex; }
+/* ===== SCREEN STYLES ===== */
+.consumer-info {
+    margin-bottom: 8px;
+}
+.consumer-info .info-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 2px;
+}
+.consumer-info .info-row b {
+    color: #6b7280;
+}
 
-/* Ledger table base styles */
 .ledger-table {
+    width: 100%;
+    border-collapse: collapse;
     font-size: 11px;
 }
-
 .ledger-table th, .ledger-table td {
     border: 1px solid #9ca3af;
+    padding: 4px 6px;
 }
+.ledger-table th {
+    background: #f3f4f6;
+    font-weight: 700;
+    text-align: center;
+    font-size: 11px;
+}
+.ledger-table th.col-month { text-align: left; width: 110px; }
+.ledger-table th.col-reading { width: 60px; }
+.ledger-table th.col-cum { width: 45px; }
+.ledger-table th.col-due { width: 70px; }
+.ledger-table th.col-penalty { width: 55px; }
+.ledger-table th.col-paid { width: 70px; }
+.ledger-table th.col-receipt { width: 90px; }
+.ledger-table th.col-date { width: 70px; }
+.ledger-table th.col-initial { width: 45px; }
 
-/* Print Styles */
+.year-label { color: #4338ca; font-weight: 700; }
+.month-cell { font-weight: 600; color: #1f2937; }
+.center-cell { text-align: center; }
+.right-cell { text-align: right; }
+.bold-cell { font-weight: 600; }
+.small-cell { font-size: 10px; }
+.paid-row { background: #f0fdf4; }
+
+/* ===== PRINT STYLES ===== */
 @media print {
-    /* Hide all screen UI elements */
-    .screen-only,
-    .consumer-header,
-    nav, header, footer,
-    aside, .sidebar,
-    .consumer-checkbox {
+    /* Hide everything that's not the report */
+    .no-print,
+    .sidebar, #sidebar,
+    .header-bar,
+    nav, header, footer, aside {
         display: none !important;
     }
 
-    /* Reset page layout */
-    * {
-        margin: 0;
-        padding: 0;
-    }
-
+    /* Reset everything */
     html, body {
         margin: 0 !important;
         padding: 0 !important;
         background: white !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
-    /* Page setup: short bond paper (8.5 x 5.5 inches) */
+    /* Short bond paper: 8.5 x 5.5 inches, minimal margins */
     @page {
         size: 8.5in 5.5in;
-        margin: 4mm 6mm;
+        margin: 3mm 5mm;
     }
 
-    .max-w-7xl {
+    /* Full width content */
+    .main-content, #main-content, .max-w-7xl, #reportPage {
+        margin: 0 !important;
+        padding: 0 !important;
         max-width: 100% !important;
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Hide non-selected consumers */
-    .consumer-card.print-hidden {
-        display: none !important;
-    }
-
-    /* Consumer card styling for print */
-    .consumer-card {
-        box-shadow: none !important;
-        border: none !important;
-        border-radius: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        overflow: visible !important;
-        page-break-inside: avoid;
-    }
-
-    /* Ledger block - tight spacing to fit 3 per page */
-    .ledger-block {
-        padding: 1mm 0 2mm 0 !important;
-    }
-
-    /* Consumer info text for print */
-    .ledger-block .text-sm {
-        font-size: 7pt !important;
-        margin-bottom: 0.5mm !important;
-    }
-
-    .ledger-block .mb-2 { margin-bottom: 0.5mm !important; }
-    .ledger-block .mb-3 { margin-bottom: 1mm !important; }
-    .ledger-block .gap-y-1 { gap: 0 !important; }
-    .ledger-block .gap-x-6 { gap: 0 4mm !important; }
-    .ledger-block .p-4 { padding: 1mm 0 !important; }
-
-    /* Table styles for print - compact */
-    .ledger-table {
-        font-size: 7pt !important;
         width: 100% !important;
-    }
-
-    .ledger-table th {
-        background: #e0e0e0 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        font-size: 6pt !important;
-        padding: 1px 2px !important;
-        font-weight: bold !important;
-        line-height: 1.2 !important;
-    }
-
-    .ledger-table td {
-        padding: 0.5px 2px !important;
-        font-size: 7pt !important;
-        line-height: 1.2 !important;
-    }
-
-    .ledger-table th, .ledger-table td {
-        border: 1px solid #000 !important;
-    }
-
-    /* Paid row highlight */
-    tr.bg-green-50 {
-        background: #f0fdf4 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    /* Page break control */
-    .consumer-card.page-break-before {
-        page-break-before: always;
-    }
-
-    /* Separator line between consumers on same page */
-    .consumer-card + .consumer-card:not(.page-break-before) {
-        border-top: 1px solid #999 !important;
-        padding-top: 1mm !important;
     }
 
     #ledgerContainer {
@@ -263,11 +212,82 @@
         padding: 0;
     }
 
-    /* Remove all shadows and rounded corners */
-    .shadow-md, .shadow-lg, .shadow-sm {
-        box-shadow: none !important;
+    /* Hide non-selected */
+    .consumer-card.print-hidden {
+        display: none !important;
     }
-    .rounded-lg, .rounded {
+
+    /* Consumer card - no decoration */
+    .consumer-card {
+        box-shadow: none !important;
+        border: none !important;
+        border-radius: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        overflow: visible !important;
+        page-break-inside: avoid !important;
+    }
+
+    /* Ledger block spacing */
+    .ledger-block {
+        padding: 1mm 0 !important;
+    }
+
+    /* Consumer info - compact */
+    .consumer-info {
+        margin-bottom: 1mm !important;
+    }
+    .consumer-info .info-row {
+        font-size: 7pt !important;
+        margin-bottom: 0 !important;
+        line-height: 1.3 !important;
+    }
+
+    /* Table - very compact to fit 2 per page */
+    .ledger-table {
+        font-size: 7pt !important;
+        width: 100% !important;
+    }
+
+    .ledger-table th {
+        background: #d4d4d4 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        font-size: 6.5pt !important;
+        padding: 1px 2px !important;
+        font-weight: 700 !important;
+        line-height: 1.1 !important;
+        border: 1px solid #000 !important;
+    }
+
+    .ledger-table td {
+        padding: 0.8px 2px !important;
+        font-size: 7pt !important;
+        line-height: 1.1 !important;
+        border: 1px solid #000 !important;
+    }
+
+    .paid-row {
+        background: #e8f5e9 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* PAGE BREAKS: every 2 consumers */
+    .consumer-card.page-break-before {
+        page-break-before: always !important;
+    }
+
+    /* Separator between 2 consumers on same page */
+    .consumer-card + .consumer-card:not(.page-break-before):not(.print-hidden) {
+        border-top: 1px dashed #666 !important;
+        margin-top: 2mm !important;
+        padding-top: 1mm !important;
+    }
+
+    /* Kill shadows/radius */
+    * {
+        box-shadow: none !important;
         border-radius: 0 !important;
     }
 }
@@ -294,7 +314,6 @@ function toggleAll(checked) {
 }
 
 function printSelected() {
-    // Mark unchecked consumers as hidden for print
     document.querySelectorAll('.consumer-card').forEach(card => {
         const cb = card.querySelector('.consumer-checkbox');
         if (cb && !cb.checked) {
@@ -303,12 +322,25 @@ function printSelected() {
             card.classList.remove('print-hidden');
         }
     });
-
     addPageBreaks();
-    window.print();
+    doPrint();
+}
 
-    // Clean up after print
-    setTimeout(() => {
+function printAll() {
+    document.querySelectorAll('.consumer-card').forEach(card => {
+        card.classList.remove('print-hidden');
+    });
+    addPageBreaks();
+    doPrint();
+}
+
+function doPrint() {
+    // Blank the title to remove browser header text
+    var origTitle = document.title;
+    document.title = ' ';
+    window.print();
+    setTimeout(function() {
+        document.title = origTitle;
         document.querySelectorAll('.consumer-card').forEach(card => {
             card.classList.remove('print-hidden');
             card.classList.remove('page-break-before');
@@ -316,27 +348,12 @@ function printSelected() {
     }, 500);
 }
 
-function printAll() {
-    document.querySelectorAll('.consumer-card').forEach(card => {
-        card.classList.remove('print-hidden');
-    });
-
-    addPageBreaks();
-    window.print();
-
-    setTimeout(() => {
-        document.querySelectorAll('.consumer-card').forEach(card => {
-            card.classList.remove('page-break-before');
-        });
-    }, 500);
-}
-
 function addPageBreaks() {
-    // Add page break before every 3rd visible consumer (3 per page)
+    // 2 consumers per page
     const visibleCards = document.querySelectorAll('.consumer-card:not(.print-hidden)');
     visibleCards.forEach((card, index) => {
         card.classList.remove('page-break-before');
-        if (index > 0 && index % 3 === 0) {
+        if (index > 0 && index % 2 === 0) {
             card.classList.add('page-break-before');
         }
     });
