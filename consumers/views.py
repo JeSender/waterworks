@@ -3425,6 +3425,12 @@ def reports(request):
             'months': months,
         })
 
+    # Current month income
+    now = datetime.now()
+    current_month = now.month
+    current_month_name = cal.month_name[current_month]
+    current_month_income = monthly_dict.get(current_month, 0) or 0
+
     barangays = Barangay.objects.all().order_by('name')
 
     context = {
@@ -3432,6 +3438,8 @@ def reports(request):
         'year_choices': year_choices,
         'monthly_data': monthly_data,
         'grand_total': grand_total,
+        'current_month_name': current_month_name,
+        'current_month_income': current_month_income,
         'barangay_data': barangay_data,
         'barangays': barangays,
     }
