@@ -88,21 +88,22 @@
                 <table class="ledger-table w-full border-collapse text-xs">
                     <thead>
                         <tr class="bg-gray-100">
-                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 120px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 50px;">Cu.m.</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-left font-bold" style="width: 110px;">Month and Year<br><span class="text-primary-700 font-bold">{{ year }}</span></th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 60px;">Reading</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 45px;">Cu.m.</th>
                             <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Due</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 60px;">Penalty</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 55px;">Penalty</th>
                             <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Amount Paid</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 95px;">Receipt Number</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 75px;">Date Issued</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 90px;">Receipt Number</th>
+                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 70px;">Date Issued</th>
                             <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 45px;">Initial</th>
-                            <th class="border border-gray-400 px-2 py-1.5 text-center font-bold" style="width: 65px;">Reading</th>
                         </tr>
                     </thead>
                     <tbody>
                         {% for month in entry.months %}
                         <tr class="{% if month.amount_paid %}bg-green-50{% endif %}">
                             <td class="border border-gray-400 px-2 py-1 font-semibold text-gray-800">{{ month.month }}</td>
+                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.reading }}</td>
                             <td class="border border-gray-400 px-2 py-1 text-center">{{ month.consumption }}</td>
                             <td class="border border-gray-400 px-2 py-1 text-right">{% if month.amount_due %}{{ month.amount_due|floatformat:2 }}{% endif %}</td>
                             <td class="border border-gray-400 px-2 py-1 text-right">{% if month.penalty %}{{ month.penalty|floatformat:2 }}{% endif %}</td>
@@ -110,7 +111,6 @@
                             <td class="border border-gray-400 px-2 py-1 text-center text-xs">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
                             <td class="border border-gray-400 px-2 py-1 text-center">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
                             <td class="border border-gray-400 px-2 py-1 text-center">{{ month.initial }}</td>
-                            <td class="border border-gray-400 px-2 py-1 text-center">{{ month.reading }}</td>
                         </tr>
                         {% endfor %}
                     </tbody>
@@ -169,10 +169,10 @@
         background: white !important;
     }
 
-    /* Page setup: short bond paper (8.5 x 5.5 inches) - NO browser headers/footers */
+    /* Page setup: short bond paper (8.5 x 5.5 inches) */
     @page {
         size: 8.5in 5.5in;
-        margin: 6mm 8mm;
+        margin: 4mm 6mm;
     }
 
     .max-w-7xl {
@@ -197,23 +197,26 @@
         page-break-inside: avoid;
     }
 
-    /* Ledger block */
+    /* Ledger block - tight spacing to fit 3 per page */
     .ledger-block {
-        padding: 2mm 0 3mm 0 !important;
+        padding: 1mm 0 2mm 0 !important;
     }
 
     /* Consumer info text for print */
     .ledger-block .text-sm {
-        font-size: 8pt !important;
-        margin-bottom: 1mm !important;
+        font-size: 7pt !important;
+        margin-bottom: 0.5mm !important;
     }
 
-    .ledger-block .mb-2 { margin-bottom: 1mm !important; }
-    .ledger-block .mb-3 { margin-bottom: 2mm !important; }
+    .ledger-block .mb-2 { margin-bottom: 0.5mm !important; }
+    .ledger-block .mb-3 { margin-bottom: 1mm !important; }
+    .ledger-block .gap-y-1 { gap: 0 !important; }
+    .ledger-block .gap-x-6 { gap: 0 4mm !important; }
+    .ledger-block .p-4 { padding: 1mm 0 !important; }
 
-    /* Table styles for print */
+    /* Table styles for print - compact */
     .ledger-table {
-        font-size: 8pt !important;
+        font-size: 7pt !important;
         width: 100% !important;
     }
 
@@ -221,14 +224,16 @@
         background: #e0e0e0 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
-        font-size: 7pt !important;
-        padding: 1.5px 2px !important;
+        font-size: 6pt !important;
+        padding: 1px 2px !important;
         font-weight: bold !important;
+        line-height: 1.2 !important;
     }
 
     .ledger-table td {
-        padding: 1px 2px !important;
-        font-size: 7.5pt !important;
+        padding: 0.5px 2px !important;
+        font-size: 7pt !important;
+        line-height: 1.2 !important;
     }
 
     .ledger-table th, .ledger-table td {
@@ -242,9 +247,15 @@
         print-color-adjust: exact !important;
     }
 
-    /* Page break control: every 2nd consumer starts a new page */
+    /* Page break control */
     .consumer-card.page-break-before {
         page-break-before: always;
+    }
+
+    /* Separator line between consumers on same page */
+    .consumer-card + .consumer-card:not(.page-break-before) {
+        border-top: 1px solid #999 !important;
+        padding-top: 1mm !important;
     }
 
     #ledgerContainer {
@@ -321,11 +332,11 @@ function printAll() {
 }
 
 function addPageBreaks() {
-    // Add page break before every 2nd visible consumer (2 per page)
+    // Add page break before every 3rd visible consumer (3 per page)
     const visibleCards = document.querySelectorAll('.consumer-card:not(.print-hidden)');
     visibleCards.forEach((card, index) => {
         card.classList.remove('page-break-before');
-        if (index > 0 && index % 2 === 0) {
+        if (index > 0 && index % 3 === 0) {
             card.classList.add('page-break-before');
         }
     });
