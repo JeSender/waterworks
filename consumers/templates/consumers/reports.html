@@ -13,13 +13,27 @@
             <i class="bi bi-graph-up-arrow text-primary-600"></i>
             Income Reports
         </h2>
-        <div class="flex items-center gap-3">
-            <form method="GET" action="{% url 'consumers:reports' %}" class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-3">
+            <form method="GET" action="{% url 'consumers:reports' %}" id="filterForm" class="flex flex-wrap items-center gap-2">
                 <label for="year" class="text-sm font-semibold text-gray-700">Year:</label>
                 <select name="year" id="year" onchange="this.form.submit()"
                     class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
                     {% for y in year_choices %}
                     <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <label for="month_from" class="text-sm font-semibold text-gray-700 ml-2">From:</label>
+                <select name="month_from" id="month_from" onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                    {% for mc in month_choices %}
+                    <option value="{{ mc.num }}" {% if mc.num == month_from %}selected{% endif %}>{{ mc.name }}</option>
+                    {% endfor %}
+                </select>
+                <label for="month_to" class="text-sm font-semibold text-gray-700">To:</label>
+                <select name="month_to" id="month_to" onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                    {% for mc in month_choices %}
+                    <option value="{{ mc.num }}" {% if mc.num == month_to %}selected{% endif %}>{{ mc.name }}</option>
                     {% endfor %}
                 </select>
             </form>
@@ -40,64 +54,38 @@
                 <p class="province">PROVINCE OF BOHOL</p>
                 <p class="municipality">MUNICIPALITY OF BALILIHAN</p>
                 <p class="waterworks">BALILIHAN WATERWORKS</p>
-                <p class="report-type-title">INCOME REPORT — {{ year }}</p>
+                <p class="report-type-title">INCOME REPORT — {{ range_label }}</p>
             </div>
             <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="logo-print logo-circle">
         </div>
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <!-- Monthly Income Card -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <!-- Total Income Card -->
         <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex items-center justify-between print-card">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Monthly Income</p>
-                <p class="text-xs text-gray-400">{{ current_month_name }} {{ year }}</p>
-                <p class="text-2xl font-bold mt-2 {% if current_month_income > 0 %}text-green-700{% else %}text-gray-400{% endif %}">
-                    ₱{{ current_month_income|floatformat:2|intcomma }}
-                </p>
-            </div>
-            <div class="bg-blue-100 rounded-full p-3 screen-only">
-                <i class="bi bi-calendar-month text-2xl text-blue-600"></i>
-            </div>
-        </div>
-        <!-- Yearly Income Card -->
-        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex items-center justify-between print-card">
-            <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yearly Income</p>
-                <p class="text-xs text-gray-400">{{ year }}</p>
-                <p class="text-2xl font-bold mt-2 {% if grand_total > 0 %}text-green-700{% else %}text-gray-400{% endif %}">
-                    ₱{{ grand_total|floatformat:2|intcomma }}
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Income</p>
+                <p class="text-xs text-gray-400">{{ range_label }}</p>
+                <p class="text-2xl font-bold mt-2 {% if range_total_income > 0 %}text-green-700{% else %}text-gray-400{% endif %}">
+                    ₱{{ range_total_income|floatformat:2|intcomma }}
                 </p>
             </div>
             <div class="bg-green-100 rounded-full p-3 screen-only">
                 <i class="bi bi-cash-stack text-2xl text-green-600"></i>
             </div>
         </div>
-        <!-- Monthly Consumption Card -->
+        <!-- Total Consumption Card -->
         <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex items-center justify-between print-card">
             <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Monthly Consumption</p>
-                <p class="text-xs text-gray-400">{{ current_month_name }} {{ year }}</p>
-                <p class="text-2xl font-bold mt-2 {% if current_month_consumption > 0 %}text-cyan-700{% else %}text-gray-400{% endif %}">
-                    {{ current_month_consumption|floatformat:0|intcomma }} m³
+                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Consumption</p>
+                <p class="text-xs text-gray-400">{{ range_label }}</p>
+                <p class="text-2xl font-bold mt-2 {% if range_total_consumption > 0 %}text-cyan-700{% else %}text-gray-400{% endif %}">
+                    {{ range_total_consumption|floatformat:0|intcomma }} m³
                 </p>
             </div>
             <div class="bg-cyan-100 rounded-full p-3 screen-only">
                 <i class="bi bi-droplet-fill text-2xl text-cyan-600"></i>
-            </div>
-        </div>
-        <!-- Yearly Consumption Card -->
-        <div class="bg-white rounded-xl shadow-md border border-gray-200 p-5 flex items-center justify-between print-card">
-            <div>
-                <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide">Yearly Consumption</p>
-                <p class="text-xs text-gray-400">{{ year }}</p>
-                <p class="text-2xl font-bold mt-2 {% if total_consumption > 0 %}text-cyan-700{% else %}text-gray-400{% endif %}">
-                    {{ total_consumption|floatformat:0|intcomma }} m³
-                </p>
-            </div>
-            <div class="bg-cyan-100 rounded-full p-3 screen-only">
-                <i class="bi bi-droplet-half text-2xl text-cyan-600"></i>
             </div>
         </div>
     </div>
@@ -107,7 +95,7 @@
         <div class="px-6 py-4 border-b border-gray-200 flex flex-wrap items-center justify-between gap-3">
             <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
                 <i class="bi bi-geo-alt-fill text-primary-600 screen-only"></i>
-                Income Per Barangay ({{ year }})
+                Income Per Barangay ({{ range_label }})
             </h3>
             <div class="flex items-center gap-2 screen-only">
                 <select id="barangaySelect"
@@ -132,8 +120,8 @@
             <div class="px-5 py-3 bg-primary-50 border-b border-primary-100 flex items-center justify-between flex-wrap gap-2">
                 <span class="text-sm font-bold text-primary-800">{{ brgy.name }}</span>
                 <div class="flex gap-4">
-                    <span class="text-xs font-bold text-green-700">Income: ₱{{ brgy.yearly_total|floatformat:2|intcomma }}</span>
-                    <span class="text-xs font-bold text-cyan-700">Consumption: {{ brgy.yearly_consumption|floatformat:0|intcomma }} m³</span>
+                    <span class="text-xs font-bold text-green-700">Income: ₱{{ brgy.range_total|floatformat:2|intcomma }}</span>
+                    <span class="text-xs font-bold text-cyan-700">Consumption: {{ brgy.range_consumption|floatformat:0|intcomma }} m³</span>
                 </div>
             </div>
             <div class="overflow-x-auto">
@@ -161,8 +149,8 @@
                     <tfoot>
                         <tr class="bg-green-50 border-t border-green-200">
                             <td class="px-6 py-2 text-sm font-bold text-green-900 uppercase">Total</td>
-                            <td class="px-6 py-2 text-sm text-right font-bold text-cyan-800">{{ brgy.yearly_consumption|floatformat:0|intcomma }} m³</td>
-                            <td class="px-6 py-2 text-sm text-right font-bold text-green-900">₱{{ brgy.yearly_total|floatformat:2|intcomma }}</td>
+                            <td class="px-6 py-2 text-sm text-right font-bold text-cyan-800">{{ brgy.range_consumption|floatformat:0|intcomma }} m³</td>
+                            <td class="px-6 py-2 text-sm text-right font-bold text-green-900">₱{{ brgy.range_total|floatformat:2|intcomma }}</td>
                         </tr>
                     </tfoot>
                 </table>
