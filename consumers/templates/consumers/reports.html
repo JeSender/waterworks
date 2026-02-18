@@ -169,9 +169,14 @@
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[80vh] overflow-hidden flex flex-col">
             <div class="flex items-center justify-between px-5 py-3 border-b border-gray-200">
                 <h4 id="modalTitle" class="text-base font-bold text-gray-800"></h4>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
-                    <i class="bi bi-x-lg text-lg"></i>
-                </button>
+                <div class="flex items-center gap-2">
+                    <button onclick="printModal()" class="text-gray-500 hover:text-primary-600 transition-colors" title="Print">
+                        <i class="bi bi-printer text-lg"></i>
+                    </button>
+                    <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 transition-colors">
+                        <i class="bi bi-x-lg text-lg"></i>
+                    </button>
+                </div>
             </div>
             <div id="modalBody" class="overflow-y-auto flex-1"></div>
         </div>
@@ -302,6 +307,46 @@ function closeModal() {
     const modal = document.getElementById('brgyModal');
     modal.classList.add('hidden');
     document.body.style.overflow = '';
+}
+
+function printModal() {
+    const title = document.getElementById('modalTitle').textContent;
+    const body = document.getElementById('modalBody').innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h2 { font-size: 14pt; margin-bottom: 12px; }
+        table { width: 100%; border-collapse: collapse; font-size: 10pt; }
+        th, td { border: 1px solid #999; padding: 5px 10px; }
+        th { background: #e0e0e0; text-align: left; font-size: 9pt; text-transform: uppercase; }
+        tfoot td { background: #e8e8e8; font-weight: bold; }
+        .text-right { text-align: right; }
+        .text-left { text-align: left; }
+        .font-bold { font-weight: bold; }
+        .font-semibold { font-weight: 600; }
+        .text-green-700, .text-green-900 { color: #15803d; }
+        .text-cyan-700, .text-cyan-800 { color: #0e7490; }
+        .text-gray-400 { color: #9ca3af; }
+        .text-gray-700 { color: #374151; }
+        .text-primary-800 { color: #1e40af; }
+        .bg-primary-50 { background: #eff6ff; }
+        .bg-green-50 { background: #f0fdf4; }
+        .flex { display: flex; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-3 { gap: 12px; }
+        .px-4 { padding-left: 16px; padding-right: 16px; }
+        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .text-sm { font-size: 10pt; }
+        .text-xs { font-size: 9pt; }
+        .uppercase { text-transform: uppercase; }
+        @page { margin: 15mm; }
+    </style></head><body>
+    <h2>${title}</h2>${body}
+    </body></html>`);
+    win.document.close();
+    win.onload = function() { win.print(); win.close(); };
 }
 
 document.addEventListener('DOMContentLoaded', function() {
