@@ -1039,6 +1039,7 @@
         // Initialize on page load
         document.addEventListener('DOMContentLoaded', function() {
             setActiveNavLink();
+            initAutoLogout();
             showDjangoMessages(); // Show any Django flash messages
         });
 
@@ -1065,6 +1066,85 @@
                 }, index * 200);
             });
             {% endif %}
+        }
+
+        // =====================================================
+        // AUTO-LOGOUT: 3 min inactivity → 30 sec countdown
+        // =====================================================
+        let _idleTimer = null, _countdownTimer = null, _countdownActive = false;
+
+        function initAutoLogout() {
+            if (!document.querySelector('a[href*="logout"]')) return;
+
+            // Build warning modal
+            document.body.insertAdjacentHTML('beforeend', `
+                <div id="idleModal" class="fixed inset-0 z-50 hidden">
+                    <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+                    <div class="fixed inset-0 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center">
+                            <div class="w-14 h-14 bg-warning-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="bi bi-exclamation-triangle-fill text-2xl text-warning-600"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-dark-900 mb-1">Session Timeout</h3>
+                            <p class="text-sm text-dark-600 mb-4">You will be logged out in</p>
+                            <span id="idleCount" class="text-4xl font-bold text-danger-600">30</span>
+                            <span class="text-dark-500 ml-1">seconds</span>
+                            <div class="w-full bg-light-200 rounded-full h-1.5 my-4">
+                                <div id="idleBar" class="bg-danger-500 h-1.5 rounded-full transition-all duration-1000" style="width:100%"></div>
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="_stayIn()" class="flex-1 btn-primary py-2.5 text-sm font-semibold">
+                                    <i class="bi bi-check-circle mr-1"></i>Stay Logged In
+                                </button>
+                                <button onclick="_doLogout()" class="flex-1 btn-danger py-2.5 text-sm font-semibold">
+                                    <i class="bi bi-box-arrow-right mr-1"></i>Logout
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+
+            ['mousedown','mousemove','keydown','scroll','touchstart','click'].forEach(e => {
+                document.addEventListener(e, _resetIdle, { passive: true });
+            });
+            _resetIdle();
+        }
+
+        function _resetIdle() {
+            if (_countdownActive) return;
+            clearTimeout(_idleTimer);
+            _idleTimer = setTimeout(_showWarning, 3 * 60 * 1000); // 3 minutes
+        }
+
+        function _showWarning() {
+            _countdownActive = true;
+            let sec = 30;
+            const modal = document.getElementById('idleModal');
+            const countEl = document.getElementById('idleCount');
+            const bar = document.getElementById('idleBar');
+            modal.classList.remove('hidden');
+
+            _countdownTimer = setInterval(() => {
+                sec--;
+                countEl.textContent = sec;
+                bar.style.width = `${(sec / 30) * 100}%`;
+                if (sec <= 0) { clearInterval(_countdownTimer); _doLogout(); }
+            }, 1000);
+        }
+
+        function _stayIn() {
+            _countdownActive = false;
+            clearInterval(_countdownTimer);
+            document.getElementById('idleModal').classList.add('hidden');
+            _resetIdle();
+            if (typeof showToast === 'function') showToast('success', 'Session extended.');
+        }
+
+        function _doLogout() {
+            clearTimeout(_idleTimer);
+            clearInterval(_countdownTimer);
+            window.location.href = '{% url "consumers:staff_logout" %}';
         }
 
     </script>
