@@ -5747,10 +5747,15 @@ def consumer_bill(request, consumer_id):
 
             connection_status = get_month_status(year, month_num)
 
+            reading_value = None
+            if bill and bill.current_reading:
+                reading_value = bill.current_reading.reading_value
+
             months.append({
                 'month_name': month_names[month_num - 1],
                 'month_num': month_num,
                 'bill': bill,
+                'reading_value': reading_value,
                 'consumption': bill.consumption if bill else None,
                 'amount_due': bill.total_amount if bill else None,
                 'penalty': bill.effective_penalty if bill else None,

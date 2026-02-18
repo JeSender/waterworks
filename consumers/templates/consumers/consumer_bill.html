@@ -90,28 +90,26 @@
             </div>
         </div>
 
-        <!-- Year Filter Tabs (Hide on Print) -->
+        <!-- Year Filter (Hide on Print) -->
         <div class="px-8 pt-5 pb-3 print:hidden">
-            <div class="flex items-center justify-between mb-3">
+            <div class="flex items-center justify-between">
                 <h3 class="text-lg font-bold text-dark-900 flex items-center gap-2">
                     <i class="bi bi-journal-text text-primary-600"></i>
                     Billing Ledger
                 </h3>
+                {% if available_years %}
+                <div class="flex items-center gap-2">
+                    <label class="text-sm text-dark-500">Year:</label>
+                    <select id="yearFilter" onchange="filterYear(this.value)"
+                            class="px-3 py-1.5 text-sm font-medium border border-light-300 rounded-lg bg-white text-dark-700 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer">
+                        <option value="" {% if not selected_year %}selected{% endif %}>All Years</option>
+                        {% for year in available_years %}
+                        <option value="{{ year }}" {% if selected_year == year|stringformat:'d' %}selected{% endif %}>{{ year }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
             </div>
-            {% if available_years %}
-            <div class="flex items-center gap-2 flex-wrap">
-                <a href="{% url 'consumers:consumer_bill' consumer.id %}"
-                   class="px-4 py-1.5 text-sm font-medium rounded-full transition-colors {% if not selected_year %}bg-primary-600 text-white shadow-sm{% else %}bg-light-100 text-dark-600 hover:bg-light-200{% endif %}">
-                    All Years
-                </a>
-                {% for year in available_years %}
-                <a href="{% url 'consumers:consumer_bill' consumer.id %}?year={{ year }}"
-                   class="px-4 py-1.5 text-sm font-medium rounded-full transition-colors {% if selected_year == year|stringformat:'d' %}bg-primary-600 text-white shadow-sm{% else %}bg-light-100 text-dark-600 hover:bg-light-200{% endif %}">
-                    {{ year }}
-                </a>
-                {% endfor %}
-            </div>
-            {% endif %}
         </div>
 
         <!-- Ledger Cards -->
@@ -127,8 +125,8 @@
                                     Month & Year<br>
                                     <span class="text-base font-black">{{ card.year }}</span>
                                 </th>
-                                <th class="px-3 py-2.5 text-center text-xs font-bold uppercase tracking-wider border-r border-dark-700 print:border-gray-400 w-16">
-                                    Status
+                                <th class="px-3 py-2.5 text-right text-xs font-bold uppercase tracking-wider border-r border-dark-700 print:border-gray-400 w-20">
+                                    Reading
                                 </th>
                                 <th class="px-3 py-2.5 text-right text-xs font-bold uppercase tracking-wider border-r border-dark-700 print:border-gray-400 w-16">
                                     Cu.m.
@@ -156,25 +154,19 @@
                         <tbody>
                             {% for row in card.months %}
                             <tr class="border-b border-light-200 print:border-gray-300
-                                {% if row.status == 'Overdue' %}bg-danger-50
+                                {% if row.connection_status == 'disconnected' %}bg-red-50 cursor-pointer hover:bg-red-100
+                                {% elif row.status == 'Overdue' %}bg-danger-50
                                 {% elif row.status == 'Paid' %}bg-success-50/30
-                                {% elif row.connection_status == 'disconnected' and not row.bill %}bg-light-100
-                                {% else %}hover:bg-light-50{% endif %} transition-colors">
+                                {% else %}hover:bg-light-50{% endif %} transition-colors"
+                                {% if row.connection_status == 'disconnected' %}onclick="showDisconnectedInfo('{{ row.month_name }}', '{{ card.year }}')" title="Click for details"{% endif %}>
                                 <!-- Month -->
-                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 font-semibold text-dark-900">
+                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 font-semibold {% if row.connection_status == 'disconnected' %}text-red-700{% else %}text-dark-900{% endif %}">
                                     {{ row.month_name }}
+                                    {% if row.connection_status == 'disconnected' %}<i class="bi bi-info-circle text-red-400 text-xs ml-1"></i>{% endif %}
                                 </td>
-                                <!-- Connection Status -->
-                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 text-center">
-                                    {% if row.connection_status == 'active' %}
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-success-100 print:bg-transparent" title="Connected">
-                                        <i class="bi bi-check-circle-fill text-success-600 text-xs"></i>
-                                    </span>
-                                    {% else %}
-                                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-danger-100 print:bg-transparent" title="Disconnected">
-                                        <i class="bi bi-x-circle-fill text-danger-500 text-xs"></i>
-                                    </span>
-                                    {% endif %}
+                                <!-- Reading -->
+                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 text-right font-mono text-dark-700">
+                                    {% if row.reading_value is not None %}{{ row.reading_value }}{% endif %}
                                 </td>
                                 <!-- Cu.m. -->
                                 <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 text-right font-mono text-dark-700">
@@ -282,16 +274,13 @@
             <!-- Legend -->
             <div class="mt-4 flex items-center gap-6 text-xs text-dark-500">
                 <span class="flex items-center gap-1.5">
-                    <i class="bi bi-check-circle-fill text-success-600"></i> Connected
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <i class="bi bi-x-circle-fill text-danger-500"></i> Disconnected
-                </span>
-                <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 rounded bg-success-50 border border-success-200 inline-block"></span> Paid
                 </span>
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 rounded bg-danger-50 border border-danger-200 inline-block"></span> Overdue
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="w-3 h-3 rounded bg-red-50 border border-red-200 inline-block"></span> Disconnected
                 </span>
             </div>
         </div>
@@ -312,6 +301,49 @@
     </div>
 </div>
 
+<!-- Disconnected Info Modal -->
+<div id="disconnectedModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 print:hidden">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-red-600 text-white px-6 py-4 flex items-center justify-between">
+            <h3 class="font-bold flex items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span id="modalTitle">Disconnected</span>
+            </h3>
+            <button onclick="closeDisconnectedModal()" class="text-white/80 hover:text-white text-xl">&times;</button>
+        </div>
+        <div class="px-6 py-5">
+            <div class="flex items-start gap-3 mb-4">
+                <i class="bi bi-x-circle-fill text-red-500 text-2xl mt-0.5"></i>
+                <div>
+                    <p class="text-sm text-dark-700 font-medium mb-1">Service was disconnected during this period.</p>
+                    <p class="text-xs text-dark-500">No billing was generated for this month because the water service was inactive.</p>
+                </div>
+            </div>
+            <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                <p class="text-xs text-dark-500 mb-1">Consumer</p>
+                <p class="text-sm font-semibold text-dark-900">{{ consumer.last_name }}, {{ consumer.first_name }} ({{ consumer.id_number }})</p>
+                <p class="text-xs text-dark-500 mt-2 mb-1">Current Status</p>
+                <p class="text-sm">
+                    {% if consumer.status == 'Active' %}
+                    <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-success-100 text-success-700">
+                        <i class="bi bi-check-circle-fill mr-1"></i>Reconnected
+                    </span>
+                    {% else %}
+                    <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
+                        <i class="bi bi-x-circle-fill mr-1"></i>Disconnected
+                    </span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+        <div class="px-6 py-3 bg-light-50 border-t border-light-200 flex justify-end">
+            <button onclick="closeDisconnectedModal()" class="px-4 py-2 bg-dark-700 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors">
+                Close
+            </button>
+        </div>
+    </div>
+</div>
+
 <!-- Print Styles -->
 <style>
 @media print {
@@ -328,5 +360,40 @@
     .ledger-card { page-break-inside: avoid; }
 }
 </style>
+
+<script>
+function filterYear(year) {
+    const url = new URL(window.location.href);
+    if (year) {
+        url.searchParams.set('year', year);
+    } else {
+        url.searchParams.delete('year');
+    }
+    window.location.href = url.toString();
+}
+
+function showDisconnectedInfo(month, year) {
+    document.getElementById('modalTitle').textContent = month + ' ' + year + ' — Disconnected';
+    const modal = document.getElementById('disconnectedModal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeDisconnectedModal() {
+    const modal = document.getElementById('disconnectedModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
+
+// Close modal on backdrop click
+document.getElementById('disconnectedModal').addEventListener('click', function(e) {
+    if (e.target === this) closeDisconnectedModal();
+});
+
+// Close on Escape key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closeDisconnectedModal();
+});
+</script>
 
 {% endblock %}
