@@ -83,7 +83,7 @@
             <select id="barangaySelect"
                 class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 screen-only">
                 <option value="">— Select Barangay —</option>
-                <option value="brgy-all">All Barangays</option>
+                <option value="brgy-all">Consolidated Summary</option>
                 {% for brgy in barangay_data %}
                 <option value="brgy-{{ forloop.counter }}">{{ brgy.name }}</option>
                 {% endfor %}
@@ -94,7 +94,7 @@
     <!-- Hidden data containers for modal (not displayed inline) -->
     <div id="brgyDataAll" class="hidden">
         <div class="px-4 py-2 bg-primary-50 border-b border-primary-100 flex items-center justify-between flex-wrap gap-2">
-            <span class="text-sm font-bold text-primary-800">All Barangays</span>
+            <span class="text-sm font-bold text-primary-800">Consolidated Summary</span>
             <div class="flex gap-3">
                 <span class="text-xs font-bold text-green-700">₱{{ range_total_income|floatformat:2|intcomma }}</span>
                 <span class="text-xs font-bold text-cyan-700">{{ range_total_consumption|floatformat:0|intcomma }} m³</span>
@@ -312,14 +312,47 @@ function closeModal() {
 function printModal() {
     const title = document.getElementById('modalTitle').textContent;
     const body = document.getElementById('modalBody').innerHTML;
+    const municipalLogo = '{% static "consumers/images/municipal.jpg" %}';
+    const waterworksLogo = '{% static "consumers/images/logo.png" %}';
     const win = window.open('', '_blank');
     win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        h2 { font-size: 14pt; margin-bottom: 12px; }
-        table { width: 100%; border-collapse: collapse; font-size: 10pt; }
-        th, td { border: 1px solid #999; padding: 5px 10px; }
-        th { background: #e0e0e0; text-align: left; font-size: 9pt; text-transform: uppercase; }
+        body { font-family: Arial, sans-serif; margin: 0; padding: 15mm 20mm; color: #000; }
+
+        /* Official Header */
+        .official-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            padding-bottom: 12px;
+            border-bottom: 3px double #000;
+            margin-bottom: 20px;
+        }
+        .official-header img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+        }
+        .official-header img.circle {
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #000;
+        }
+        .header-center {
+            text-align: center;
+        }
+        .header-center p { margin: 2px 0; }
+        .header-center .republic { font-size: 11pt; font-weight: bold; }
+        .header-center .province { font-size: 10pt; }
+        .header-center .municipality { font-size: 10pt; font-weight: 600; }
+        .header-center .office { font-size: 13pt; font-weight: bold; letter-spacing: 1px; margin-top: 4px; }
+        .header-center .report-title { font-size: 11pt; font-weight: bold; margin-top: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+
+        /* Table */
+        table { width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 5px; }
+        th, td { border: 1px solid #555; padding: 6px 10px; }
+        th { background: #e0e0e0; text-align: left; font-size: 9pt; text-transform: uppercase; font-weight: 700; }
         tfoot td { background: #e8e8e8; font-weight: bold; }
         .text-right { text-align: right; }
         .text-left { text-align: left; }
@@ -328,22 +361,65 @@ function printModal() {
         .text-green-700, .text-green-900 { color: #15803d; }
         .text-cyan-700, .text-cyan-800 { color: #0e7490; }
         .text-gray-400 { color: #9ca3af; }
-        .text-gray-700 { color: #374151; }
+        .text-gray-700 { color: #333; }
         .text-primary-800 { color: #1e40af; }
         .bg-primary-50 { background: #eff6ff; }
         .bg-green-50 { background: #f0fdf4; }
+
+        /* Summary bar */
+        .summary-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f0f4ff;
+            border: 1px solid #ddd;
+            border-bottom: none;
+            font-size: 10pt;
+        }
         .flex { display: flex; }
         .items-center { align-items: center; }
         .justify-between { justify-content: space-between; }
         .gap-3 { gap: 12px; }
-        .px-4 { padding-left: 16px; padding-right: 16px; }
-        .py-2 { padding-top: 8px; padding-bottom: 8px; }
+        .px-4 { padding-left: 12px; padding-right: 12px; }
+        .py-2 { padding-top: 6px; padding-bottom: 6px; }
         .text-sm { font-size: 10pt; }
         .text-xs { font-size: 9pt; }
         .uppercase { text-transform: uppercase; }
-        @page { margin: 15mm; }
+
+        /* Signature */
+        .signature-block {
+            margin-top: 50px;
+            padding-top: 10px;
+        }
+        .signature-line {
+            margin-top: 40px;
+            border-top: 1px solid #000;
+            width: 250px;
+            text-align: center;
+            padding-top: 4px;
+            font-size: 9pt;
+            color: #555;
+        }
+
+        @page { margin: 0; }
     </style></head><body>
-    <h2>${title}</h2>${body}
+    <div class="official-header">
+        <img src="${municipalLogo}" alt="Municipal Logo">
+        <div class="header-center">
+            <p class="republic">Republic of the Philippines</p>
+            <p class="province">Province of Bohol</p>
+            <p class="municipality">Municipality of Balilihan</p>
+            <p class="office">Balilihan Waterworks</p>
+            <p class="report-title">${title}</p>
+        </div>
+        <img src="${waterworksLogo}" alt="Waterworks Logo" class="circle">
+    </div>
+    ${body}
+    <div class="signature-block">
+        <p style="font-size:10pt; font-weight:600;">Prepared by:</p>
+        <div class="signature-line">Signature over Printed Name</div>
+    </div>
     </body></html>`);
     win.document.close();
     win.onload = function() { win.print(); win.close(); };
@@ -356,7 +432,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!this.value) return;
 
         if (this.value === 'brgy-all') {
-            openModal('All Barangays — {{ range_label }}', 'brgyDataAll');
+            openModal('Consolidated Summary — {{ range_label }}', 'brgyDataAll');
         } else {
             const idx = this.value.replace('brgy-', '');
             const label = this.options[this.selectedIndex].text;
