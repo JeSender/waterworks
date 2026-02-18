@@ -83,7 +83,7 @@
             <select id="barangaySelect"
                 class="px-3 py-1.5 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500 screen-only">
                 <option value="">— Select Barangay —</option>
-                <option value="brgy-all">Consolidated Summary</option>
+                <option value="brgy-all">All Barangays (Total)</option>
                 {% for brgy in barangay_data %}
                 <option value="brgy-{{ forloop.counter }}">{{ brgy.name }}</option>
                 {% endfor %}
@@ -94,7 +94,7 @@
     <!-- Hidden data containers for modal (not displayed inline) -->
     <div id="brgyDataAll" class="hidden">
         <div class="px-4 py-2 bg-primary-50 border-b border-primary-100 flex items-center justify-between flex-wrap gap-2">
-            <span class="text-sm font-bold text-primary-800">Consolidated Summary</span>
+            <span class="text-sm font-bold text-primary-800">All Barangays (Total)</span>
             <div class="flex gap-3">
                 <span class="text-xs font-bold text-green-700">₱{{ range_total_income|floatformat:2|intcomma }}</span>
                 <span class="text-xs font-bold text-cyan-700">{{ range_total_consumption|floatformat:0|intcomma }} m³</span>
@@ -314,7 +314,15 @@ function printModal() {
     const body = document.getElementById('modalBody').innerHTML;
     const municipalLogo = '{% static "consumers/images/municipal.jpg" %}';
     const waterworksLogo = '{% static "consumers/images/logo.png" %}';
-    const win = window.open('', '_blank');
+    let iframe = document.getElementById('printFrame');
+    if (!iframe) {
+        iframe = document.createElement('iframe');
+        iframe.id = 'printFrame';
+        iframe.style.cssText = 'position:fixed;width:0;height:0;border:none;left:-9999px;';
+        document.body.appendChild(iframe);
+    }
+    const win = iframe.contentWindow;
+    win.document.open();
     win.document.write(`<!DOCTYPE html><html><head><title>${title}</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 15mm 20mm; color: #000; }
@@ -422,7 +430,7 @@ function printModal() {
     </div>
     </body></html>`);
     win.document.close();
-    win.onload = function() { win.print(); win.close(); };
+    setTimeout(function() { win.focus(); win.print(); }, 300);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -432,7 +440,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (!this.value) return;
 
         if (this.value === 'brgy-all') {
-            openModal('Consolidated Summary — {{ range_label }}', 'brgyDataAll');
+            openModal('All Barangays (Total) — {{ range_label }}', 'brgyDataAll');
         } else {
             const idx = this.value.replace('brgy-', '');
             const label = this.options[this.selectedIndex].text;
