@@ -3379,28 +3379,32 @@ def reports(request):
 
     month_names = [cal.month_name[m] for m in range(1, 13)]
 
-    # --- All Barangays: monthly totals ---
+    # --- All Barangays: monthly totals (income + consumption) ---
     monthly_qs = (
         Payment.objects.filter(payment_date__year=year)
         .annotate(month=ExtractMonth('payment_date'))
         .values('month')
-        .annotate(total=Sum('amount_paid'))
+        .annotate(total=Sum('amount_paid'), consumption=Sum('bill__consumption'))
         .order_by('month')
     )
-    monthly_dict = {row['month']: row['total'] for row in monthly_qs}
+    monthly_dict = {row['month']: row for row in monthly_qs}
     monthly_data = []
     grand_total = 0
+    total_consumption = 0
     for m in range(1, 13):
-        amount = monthly_dict.get(m, 0) or 0
-        monthly_data.append({'month': month_names[m - 1], 'total': amount})
+        row = monthly_dict.get(m, {})
+        amount = row.get('total', 0) or 0
+        cons = row.get('consumption', 0) or 0
+        monthly_data.append({'month': month_names[m - 1], 'total': amount, 'consumption': cons})
         grand_total += amount
+        total_consumption += cons
 
-    # --- Per Barangay: monthly totals ---
+    # --- Per Barangay: monthly totals (income + consumption) ---
     per_brgy_qs = (
         Payment.objects.filter(payment_date__year=year)
         .annotate(month=ExtractMonth('payment_date'))
         .values('bill__consumer__barangay__id', 'bill__consumer__barangay__name', 'month')
-        .annotate(total=Sum('amount_paid'))
+        .annotate(total=Sum('amount_paid'), consumption=Sum('bill__consumption'))
         .order_by('bill__consumer__barangay__name', 'month')
     )
     brgy_map = {}
@@ -3408,28 +3412,38 @@ def reports(request):
         brgy_id = row['bill__consumer__barangay__id']
         brgy_name = row['bill__consumer__barangay__name']
         if brgy_id not in brgy_map:
-            brgy_map[brgy_id] = {'name': brgy_name, 'months': {}, 'yearly_total': 0}
+            brgy_map[brgy_id] = {'name': brgy_name, 'months': {}, 'yearly_total': 0, 'yearly_consumption': 0}
         amount = row['total'] or 0
-        brgy_map[brgy_id]['months'][row['month']] = amount
+        cons = row['consumption'] or 0
+        brgy_map[brgy_id]['months'][row['month']] = {'total': amount, 'consumption': cons}
         brgy_map[brgy_id]['yearly_total'] += amount
+        brgy_map[brgy_id]['yearly_consumption'] += cons
 
     barangay_data = []
     for brgy_id in sorted(brgy_map, key=lambda x: brgy_map[x]['name']):
         entry = brgy_map[brgy_id]
         months = []
         for m in range(1, 13):
-            months.append({'month': month_names[m - 1], 'total': entry['months'].get(m, 0) or 0})
+            md = entry['months'].get(m, {})
+            months.append({
+                'month': month_names[m - 1],
+                'total': md.get('total', 0) or 0,
+                'consumption': md.get('consumption', 0) or 0,
+            })
         barangay_data.append({
             'name': entry['name'],
             'yearly_total': entry['yearly_total'],
+            'yearly_consumption': entry['yearly_consumption'],
             'months': months,
         })
 
-    # Current month income
+    # Current month income & consumption
     now = datetime.now()
     current_month = now.month
     current_month_name = cal.month_name[current_month]
-    current_month_income = monthly_dict.get(current_month, 0) or 0
+    current_month_row = monthly_dict.get(current_month, {})
+    current_month_income = current_month_row.get('total', 0) or 0
+    current_month_consumption = current_month_row.get('consumption', 0) or 0
 
     barangays = Barangay.objects.all().order_by('name')
 
@@ -3438,8 +3452,10 @@ def reports(request):
         'year_choices': year_choices,
         'monthly_data': monthly_data,
         'grand_total': grand_total,
+        'total_consumption': total_consumption,
         'current_month_name': current_month_name,
         'current_month_income': current_month_income,
+        'current_month_consumption': current_month_consumption,
         'barangay_data': barangay_data,
         'barangays': barangays,
     }
