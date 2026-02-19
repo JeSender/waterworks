@@ -107,45 +107,6 @@
         .summary-card.warning .value { color: #d97706; }
         .summary-card.primary .value { color: #2563eb; }
 
-        /* Progress bar */
-        .progress-section {
-            margin: 20px 0;
-            padding: 15px;
-            background: #f0f8ff;
-            border: 1px solid #cce5ff;
-            border-radius: 5px;
-        }
-        .progress-section h4 {
-            margin: 0 0 10px 0;
-            font-size: 12px;
-            color: #003366;
-        }
-        .progress-bar-container {
-            background: #e0e0e0;
-            border-radius: 10px;
-            height: 20px;
-            overflow: hidden;
-        }
-        .progress-bar {
-            background: linear-gradient(to right, #16a34a, #22c55e);
-            height: 100%;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-end;
-            padding-right: 10px;
-            color: white;
-            font-size: 11px;
-            font-weight: bold;
-        }
-        .progress-text {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 5px;
-            font-size: 11px;
-            color: #666;
-        }
-
         table {
             width: 100%;
             border-collapse: collapse;
@@ -323,22 +284,6 @@
             <div class="summary-card warning">
                 <p>Pending Updates</p>
                 <p class="value">{{ total_pending_sum }}</p>
-            </div>
-        </div>
-
-        <!-- Overall Progress -->
-        <div class="progress-section">
-            <h4>Overall Completion: {{ overall_completion_percentage }}%</h4>
-            <div class="progress-bar-container">
-                <div class="progress-bar" style="width: {{ overall_completion_percentage }}%">
-                    {% if overall_completion_percentage > 20 %}
-                    {{ total_updated_sum }} / {{ total_consumers_sum }}
-                    {% endif %}
-                </div>
-            </div>
-            <div class="progress-text">
-                <span>{{ total_updated_sum }} consumers updated this month</span>
-                <span>{{ total_pending_sum }} still pending</span>
             </div>
         </div>
 
