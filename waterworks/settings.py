@@ -80,11 +80,11 @@ WSGI_APPLICATION = 'waterworks.wsgi.application'
 # Database
 # DATABASE_URL must be provided via environment variable
 # For local development, use SQLite by not setting DATABASE_URL
-# For production (Vercel/Neon), set DATABASE_URL in environment
+# For production (Render/Neon), set DATABASE_URL in environment
 DATABASE_URL = config('DATABASE_URL', default=None)
 
 if DATABASE_URL:
-    # Use PostgreSQL database (Neon/Vercel) from environment variable
+    # Use PostgreSQL database (Neon/Render) from environment variable
     DATABASES = {
         'default': dj_database_url.parse(DATABASE_URL, conn_max_age=600)
     }
@@ -121,8 +121,7 @@ if os.path.exists(static_dir):
     STATICFILES_DIRS = [static_dir]
 
 # WhiteNoise configuration for serving static files
-# Use CompressedStaticFilesStorage (NOT Manifest version) for Vercel compatibility
-# The Manifest version requires staticfiles.json which causes issues on serverless
+# Use CompressedStaticFilesStorage (NOT Manifest version) for Render compatibility
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
@@ -132,7 +131,7 @@ STORAGES = {
     },
 }
 
-# WhiteNoise settings for Vercel
+# WhiteNoise settings
 WHITENOISE_USE_FINDERS = True
 WHITENOISE_AUTOREFRESH = DEBUG
 
