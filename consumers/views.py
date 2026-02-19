@@ -5702,19 +5702,23 @@ def consumer_bill(request, consumer_id):
         status_changes.append({
             'date': event.created_at.date(),
             'status': 'disconnected' if event.action == 'consumer_disconnected' else 'active',
+            'user': event.user,
+            'description': event.description,
+            'created_at': event.created_at,
         })
 
     def get_month_status(year, month):
-        """Determine connection status for a given month."""
+        """Determine connection status and event details for a given month."""
         check_date = date(year, month, 1)
-        # Start with 'active' (consumer was connected at registration)
         current_status = 'active'
+        current_event = None
         for change in status_changes:
             if change['date'] <= check_date:
                 current_status = change['status']
+                current_event = change
             else:
                 break
-        return current_status
+        return current_status, current_event
 
     # Build ledger data: group bills by year, create 12-month grid
     month_names = [
@@ -5745,17 +5749,38 @@ def consumer_bill(request, consumer_id):
                 payments = list(bill.payments.all())
                 payment = payments[0] if payments else None
 
-            connection_status = get_month_status(year, month_num)
+            connection_status, disconnect_event = get_month_status(year, month_num)
 
             reading_value = None
+            reading_details = None
             if bill and bill.current_reading:
-                reading_value = bill.current_reading.reading_value
+                r = bill.current_reading
+                reading_value = r.reading_value
+                reading_details = {
+                    'reading_value': r.reading_value,
+                    'reading_date': r.reading_date,
+                    'source': r.get_source_display(),
+                    'submitted_by': r.submitted_by,
+                    'is_confirmed': r.is_confirmed,
+                    'confirmed_by': r.confirmed_by,
+                    'confirmed_at': r.confirmed_at,
+                }
+
+            disconnect_details = None
+            if connection_status == 'disconnected' and disconnect_event:
+                evt_user = disconnect_event['user']
+                disconnect_details = {
+                    'date': disconnect_event['created_at'],
+                    'by': f"{evt_user.first_name} {evt_user.last_name}" if evt_user else 'System',
+                    'description': disconnect_event['description'],
+                }
 
             months.append({
                 'month_name': month_names[month_num - 1],
                 'month_num': month_num,
                 'bill': bill,
                 'reading_value': reading_value,
+                'reading_details': reading_details,
                 'consumption': bill.consumption if bill else None,
                 'amount_due': bill.total_amount if bill else None,
                 'penalty': bill.effective_penalty if bill else None,
@@ -5765,6 +5790,7 @@ def consumer_bill(request, consumer_id):
                 'processed_by': payment.processed_by if payment else None,
                 'status': bill.status if bill else None,
                 'connection_status': connection_status,
+                'disconnect_details': disconnect_details,
             })
 
         ledger_cards.append({

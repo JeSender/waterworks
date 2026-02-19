@@ -154,19 +154,32 @@
                         <tbody>
                             {% for row in card.months %}
                             <tr class="border-b border-light-200 print:border-gray-300
-                                {% if row.connection_status == 'disconnected' %}bg-red-50 cursor-pointer hover:bg-red-100
+                                {% if row.connection_status == 'disconnected' %}bg-red-50
                                 {% elif row.status == 'Overdue' %}bg-danger-50
                                 {% elif row.status == 'Paid' %}bg-success-50/30
-                                {% else %}hover:bg-light-50{% endif %} transition-colors"
-                                {% if row.connection_status == 'disconnected' %}onclick="showDisconnectedInfo('{{ row.month_name }}', '{{ card.year }}')" title="Click for details"{% endif %}>
-                                <!-- Month -->
-                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 font-semibold {% if row.connection_status == 'disconnected' %}text-red-700{% else %}text-dark-900{% endif %}">
-                                    {{ row.month_name }}
-                                    {% if row.connection_status == 'disconnected' %}<i class="bi bi-info-circle text-red-400 text-xs ml-1"></i>{% endif %}
+                                {% else %}hover:bg-light-50{% endif %} transition-colors">
+                                <!-- Month + Badge -->
+                                <td class="px-3 py-2 border-r border-light-200 print:border-gray-300">
+                                    <div class="flex items-center gap-1.5">
+                                        <span class="font-semibold {% if row.connection_status == 'disconnected' %}text-red-700{% else %}text-dark-900{% endif %}">{{ row.month_name }}</span>
+                                        {% if row.connection_status == 'disconnected' %}
+                                        <span onclick="showDisconnectedInfo('{{ row.month_name }}', '{{ card.year }}', '{{ row.disconnect_details.by|default:"" }}', '{{ row.disconnect_details.date|date:"M d, Y h:i A"|default:"" }}', '{{ row.disconnect_details.description|default:"" }}')"
+                                              class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700 cursor-pointer hover:bg-red-200 transition-colors print:border print:border-red-300" title="Click for details">
+                                            <i class="bi bi-x-circle-fill mr-0.5"></i>DC
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-success-100 text-success-700 print:border print:border-success-300">
+                                            <i class="bi bi-check-circle-fill mr-0.5"></i>OK
+                                        </span>
+                                        {% endif %}
+                                    </div>
                                 </td>
-                                <!-- Reading -->
+                                <!-- Reading (clickable) -->
                                 <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 text-right font-mono text-dark-700">
-                                    {% if row.reading_value is not None %}{{ row.reading_value }}{% endif %}
+                                    {% if row.reading_value is not None %}
+                                    <span onclick="showReadingInfo('{{ row.month_name }} {{ card.year }}', '{{ row.reading_value }}', '{{ row.reading_details.reading_date|date:"M d, Y"|default:"" }}', '{{ row.reading_details.source|default:"" }}', '{{ row.reading_details.submitted_by.first_name|default:"" }} {{ row.reading_details.submitted_by.last_name|default:"" }}', '{{ row.reading_details.is_confirmed|yesno:"Confirmed,Pending" }}', '{{ row.reading_details.confirmed_by.first_name|default:"" }} {{ row.reading_details.confirmed_by.last_name|default:"" }}', '{{ row.reading_details.confirmed_at|date:"M d, Y h:i A"|default:"" }}')"
+                                          class="cursor-pointer hover:text-primary-600 hover:underline transition-colors" title="Click for reading details">{{ row.reading_value }}</span>
+                                    {% endif %}
                                 </td>
                                 <!-- Cu.m. -->
                                 <td class="px-3 py-2 border-r border-light-200 print:border-gray-300 text-right font-mono text-dark-700">
@@ -272,15 +285,18 @@
             </div>
 
             <!-- Legend -->
-            <div class="mt-4 flex items-center gap-6 text-xs text-dark-500">
+            <div class="mt-4 flex items-center gap-5 text-xs text-dark-500">
+                <span class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-success-100 text-success-700"><i class="bi bi-check-circle-fill mr-0.5"></i>OK</span> Connected
+                </span>
+                <span class="flex items-center gap-1.5">
+                    <span class="inline-flex items-center px-1.5 py-0.5 text-[10px] font-bold rounded bg-red-100 text-red-700"><i class="bi bi-x-circle-fill mr-0.5"></i>DC</span> Disconnected
+                </span>
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 rounded bg-success-50 border border-success-200 inline-block"></span> Paid
                 </span>
                 <span class="flex items-center gap-1.5">
                     <span class="w-3 h-3 rounded bg-danger-50 border border-danger-200 inline-block"></span> Overdue
-                </span>
-                <span class="flex items-center gap-1.5">
-                    <span class="w-3 h-3 rounded bg-red-50 border border-red-200 inline-block"></span> Disconnected
                 </span>
             </div>
         </div>
@@ -307,22 +323,31 @@
         <div class="bg-red-600 text-white px-6 py-4 flex items-center justify-between">
             <h3 class="font-bold flex items-center gap-2">
                 <i class="bi bi-exclamation-triangle-fill"></i>
-                <span id="modalTitle">Disconnected</span>
+                <span id="dcModalTitle">Disconnected</span>
             </h3>
-            <button onclick="closeDisconnectedModal()" class="text-white/80 hover:text-white text-xl">&times;</button>
+            <button onclick="closeModal('disconnectedModal')" class="text-white/80 hover:text-white text-xl">&times;</button>
         </div>
-        <div class="px-6 py-5">
-            <div class="flex items-start gap-3 mb-4">
-                <i class="bi bi-x-circle-fill text-red-500 text-2xl mt-0.5"></i>
-                <div>
-                    <p class="text-sm text-dark-700 font-medium mb-1">Service was disconnected during this period.</p>
-                    <p class="text-xs text-dark-500">No billing was generated for this month because the water service was inactive.</p>
+        <div class="px-6 py-5 space-y-3">
+            <div class="bg-red-50 rounded-lg p-3 border border-red-200">
+                <p class="text-xs text-dark-500 mb-1">Status</p>
+                <p class="text-sm font-semibold text-red-700"><i class="bi bi-x-circle-fill mr-1"></i>Service Disconnected</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Disconnected By</p>
+                    <p class="text-sm font-semibold text-dark-900" id="dcBy">—</p>
+                </div>
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Date</p>
+                    <p class="text-sm font-semibold text-dark-900" id="dcDate">—</p>
                 </div>
             </div>
             <div class="bg-light-50 rounded-lg p-3 border border-light-200">
-                <p class="text-xs text-dark-500 mb-1">Consumer</p>
-                <p class="text-sm font-semibold text-dark-900">{{ consumer.last_name }}, {{ consumer.first_name }} ({{ consumer.id_number }})</p>
-                <p class="text-xs text-dark-500 mt-2 mb-1">Current Status</p>
+                <p class="text-xs text-dark-500 mb-1">Details</p>
+                <p class="text-sm text-dark-700" id="dcDescription">—</p>
+            </div>
+            <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                <p class="text-xs text-dark-500 mb-1">Current Status</p>
                 <p class="text-sm">
                     {% if consumer.status == 'Active' %}
                     <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-success-100 text-success-700">
@@ -330,16 +355,66 @@
                     </span>
                     {% else %}
                     <span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-red-100 text-red-700">
-                        <i class="bi bi-x-circle-fill mr-1"></i>Disconnected
+                        <i class="bi bi-x-circle-fill mr-1"></i>Still Disconnected
                     </span>
                     {% endif %}
                 </p>
             </div>
         </div>
         <div class="px-6 py-3 bg-light-50 border-t border-light-200 flex justify-end">
-            <button onclick="closeDisconnectedModal()" class="px-4 py-2 bg-dark-700 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors">
-                Close
-            </button>
+            <button onclick="closeModal('disconnectedModal')" class="px-4 py-2 bg-dark-700 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors">Close</button>
+        </div>
+    </div>
+</div>
+
+<!-- Reading Details Modal -->
+<div id="readingModal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/50 print:hidden">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 overflow-hidden">
+        <div class="bg-primary-600 text-white px-6 py-4 flex items-center justify-between">
+            <h3 class="font-bold flex items-center gap-2">
+                <i class="bi bi-speedometer2"></i>
+                <span id="rdModalTitle">Reading Details</span>
+            </h3>
+            <button onclick="closeModal('readingModal')" class="text-white/80 hover:text-white text-xl">&times;</button>
+        </div>
+        <div class="px-6 py-5 space-y-3">
+            <div class="bg-primary-50 rounded-lg p-4 border border-primary-200 text-center">
+                <p class="text-xs text-dark-500 mb-1">Meter Reading</p>
+                <p class="text-3xl font-bold text-primary-700" id="rdValue">—</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Reading Date</p>
+                    <p class="text-sm font-semibold text-dark-900" id="rdDate">—</p>
+                </div>
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Source</p>
+                    <p class="text-sm font-semibold text-dark-900" id="rdSource">—</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Submitted By</p>
+                    <p class="text-sm font-semibold text-dark-900" id="rdSubmittedBy">—</p>
+                </div>
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Status</p>
+                    <p class="text-sm" id="rdStatus">—</p>
+                </div>
+            </div>
+            <div id="rdConfirmedSection" class="grid grid-cols-2 gap-3 hidden">
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Confirmed By</p>
+                    <p class="text-sm font-semibold text-dark-900" id="rdConfirmedBy">—</p>
+                </div>
+                <div class="bg-light-50 rounded-lg p-3 border border-light-200">
+                    <p class="text-xs text-dark-500 mb-1">Confirmed At</p>
+                    <p class="text-sm font-semibold text-dark-900" id="rdConfirmedAt">—</p>
+                </div>
+            </div>
+        </div>
+        <div class="px-6 py-3 bg-light-50 border-t border-light-200 flex justify-end">
+            <button onclick="closeModal('readingModal')" class="px-4 py-2 bg-dark-700 text-white text-sm rounded-lg hover:bg-dark-800 transition-colors">Close</button>
         </div>
     </div>
 </div>
@@ -372,27 +447,59 @@ function filterYear(year) {
     window.location.href = url.toString();
 }
 
-function showDisconnectedInfo(month, year) {
-    document.getElementById('modalTitle').textContent = month + ' ' + year + ' — Disconnected';
-    const modal = document.getElementById('disconnectedModal');
+function openModal(id) {
+    const modal = document.getElementById(id);
     modal.classList.remove('hidden');
     modal.classList.add('flex');
 }
 
-function closeDisconnectedModal() {
-    const modal = document.getElementById('disconnectedModal');
+function closeModal(id) {
+    const modal = document.getElementById(id);
     modal.classList.add('hidden');
     modal.classList.remove('flex');
 }
 
-// Close modal on backdrop click
-document.getElementById('disconnectedModal').addEventListener('click', function(e) {
-    if (e.target === this) closeDisconnectedModal();
+function showDisconnectedInfo(month, year, by, date, description) {
+    document.getElementById('dcModalTitle').textContent = month + ' ' + year + ' — Disconnected';
+    document.getElementById('dcBy').textContent = by || '—';
+    document.getElementById('dcDate').textContent = date || '—';
+    document.getElementById('dcDescription').textContent = description || 'No additional details available.';
+    openModal('disconnectedModal');
+}
+
+function showReadingInfo(period, value, date, source, submittedBy, status, confirmedBy, confirmedAt) {
+    document.getElementById('rdModalTitle').textContent = period + ' — Reading Details';
+    document.getElementById('rdValue').textContent = value;
+    document.getElementById('rdDate').textContent = date || '—';
+    document.getElementById('rdSource').textContent = source || '—';
+    document.getElementById('rdSubmittedBy').textContent = submittedBy.trim() || '—';
+
+    const statusEl = document.getElementById('rdStatus');
+    if (status === 'Confirmed') {
+        statusEl.innerHTML = '<span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-success-100 text-success-700"><i class="bi bi-check-circle-fill mr-1"></i>Confirmed</span>';
+        document.getElementById('rdConfirmedSection').classList.remove('hidden');
+        document.getElementById('rdConfirmedBy').textContent = confirmedBy.trim() || '—';
+        document.getElementById('rdConfirmedAt').textContent = confirmedAt || '—';
+    } else {
+        statusEl.innerHTML = '<span class="inline-flex items-center px-2 py-0.5 text-xs rounded-full bg-warning-100 text-warning-700"><i class="bi bi-clock-fill mr-1"></i>Pending</span>';
+        document.getElementById('rdConfirmedSection').classList.add('hidden');
+    }
+    openModal('readingModal');
+}
+
+// Close modals on backdrop click
+['disconnectedModal', 'readingModal'].forEach(function(id) {
+    document.getElementById(id).addEventListener('click', function(e) {
+        if (e.target === this) closeModal(id);
+    });
 });
 
 // Close on Escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeDisconnectedModal();
+    if (e.key === 'Escape') {
+        closeModal('disconnectedModal');
+        closeModal('readingModal');
+    }
 });
 </script>
 
