@@ -178,6 +178,10 @@
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-danger-100 text-danger-800">
                                 <i class="bi bi-shield-fill-check mr-1"></i>Superadmin
                             </span>
+                            {% elif user.staffprofile and user.staffprofile.role == 'admin' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-info-100 text-info-800">
+                                <i class="bi bi-person-badge-fill mr-1"></i>Admin
+                            </span>
                             {% elif user.staffprofile and user.staffprofile.role == 'cashier' %}
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
                                 <i class="bi bi-cash-coin mr-1"></i>Cashier
@@ -266,7 +270,8 @@
                                             <select name="role" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
                                                 <option value="field_staff" {% if user.staffprofile and user.staffprofile.role == 'field_staff' %}selected{% endif %}>Field Staff (Mobile App Only)</option>
                                                 <option value="cashier" {% if user.staffprofile and user.staffprofile.role == 'cashier' %}selected{% endif %}>Cashier (Web Access)</option>
-                                                <option value="superadmin" {% if user.staffprofile and user.staffprofile.role == 'superadmin' %}selected{% endif %}>Superadmin (Web Access)</option>
+                                                <option value="admin" {% if user.staffprofile and user.staffprofile.role == 'admin' %}selected{% endif %}>Admin (View Only)</option>
+                                                <option value="superadmin" {% if user.staffprofile and user.staffprofile.role == 'superadmin' %}selected{% endif %}>Superadmin (Full Access)</option>
                                             </select>
                                             <p class="text-xs text-warning-700 mt-1 italic">
                                                 <i class="bi bi-phone-fill"></i> Field Staff can only login via mobile app
@@ -441,7 +446,8 @@
                         <select name="role" id="createUserRole" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="toggleBarangayField()">
                             <option value="field_staff">Field Staff (Mobile App Only)</option>
                             <option value="cashier">Cashier (Web Access)</option>
-                            <option value="superadmin">Superadmin (Web Access)</option>
+                            <option value="admin">Admin (View Only)</option>
+                            <option value="superadmin">Superadmin (Full Access)</option>
                         </select>
                         <p class="text-xs text-warning-700 mt-1 italic">
                             <i class="bi bi-phone-fill"></i> Field Staff can only login via Smart Meter Reader mobile app
