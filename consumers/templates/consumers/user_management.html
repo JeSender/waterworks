@@ -270,7 +270,7 @@
                                             <select name="role" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
                                                 <option value="field_staff" {% if user.staffprofile and user.staffprofile.role == 'field_staff' %}selected{% endif %}>Field Staff (Mobile App Only)</option>
                                                 <option value="cashier" {% if user.staffprofile and user.staffprofile.role == 'cashier' %}selected{% endif %}>Cashier (Web Access)</option>
-                                                <option value="admin" {% if user.staffprofile and user.staffprofile.role == 'admin' %}selected{% endif %}>Admin (View Only)</option>
+                                                <option value="admin" {% if user.staffprofile and user.staffprofile.role == 'admin' %}selected{% endif %}>Admin (Web Access)</option>
                                                 <option value="superadmin" {% if user.staffprofile and user.staffprofile.role == 'superadmin' %}selected{% endif %}>Superadmin (Full Access)</option>
                                             </select>
                                             <p class="text-xs text-warning-700 mt-1 italic">
@@ -446,7 +446,7 @@
                         <select name="role" id="createUserRole" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="toggleBarangayField()">
                             <option value="field_staff">Field Staff (Mobile App Only)</option>
                             <option value="cashier">Cashier (Web Access)</option>
-                            <option value="admin">Admin (View Only)</option>
+                            <option value="admin">Admin (Web Access)</option>
                             <option value="superadmin">Superadmin (Full Access)</option>
                         </select>
                         <p class="text-xs text-warning-700 mt-1 italic">
