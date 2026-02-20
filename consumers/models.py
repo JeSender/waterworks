@@ -418,6 +418,7 @@ class StaffProfile(models.Model):
     """
     ROLE_CHOICES = [
         ('superadmin', 'Superadmin'),
+        ('admin', 'Admin'),
         ('cashier', 'Cashier'),
         ('field_staff', 'Field Staff'),
     ]
@@ -459,6 +460,7 @@ class StaffProfile(models.Model):
         """Return a short display name for the role"""
         role_map = {
             'superadmin': 'Superadmin',
+            'admin': 'Admin',
             'cashier': 'Cashier',
             'field_staff': 'Field Staff',
         }
@@ -471,8 +473,8 @@ class StaffProfile(models.Model):
 
     @property
     def is_admin(self):
-        """Check if user is admin (legacy - maps to superadmin)"""
-        return self.role == 'superadmin'
+        """Check if user is admin"""
+        return self.role == 'admin'
 
     @property
     def is_cashier(self):
@@ -488,6 +490,8 @@ class StaffProfile(models.Model):
         """Check if user has specific permission based on role"""
         permissions = {
             'superadmin': ['all'],
+            'admin': ['view_dashboard', 'view_consumers', 'view_bills', 'view_readings',
+                      'view_reports', 'view_payments'],
             'cashier': ['view_dashboard', 'view_consumers', 'view_bills', 'accept_payment',
                        'view_payments', 'view_readings', 'view_reports', 'print_receipt'],
             'field_staff': ['view_assigned_consumers', 'submit_reading', 'view_own_readings'],

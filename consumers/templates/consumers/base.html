@@ -595,13 +595,19 @@
                     type="button"
                     id="userDropdown"
                     onclick="toggleDropdown('userDropdown', event)">
-                <!-- Role-based Icon with Letter (Superadmin & Cashier only - Field Staff use mobile app) -->
+                <!-- Role-based Icon with Letter -->
                 {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
                     <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
                          style="background: linear-gradient(135deg, #dc2626, #ef4444);">
                         S
                     </div>
                     <span class="text-dark-900 text-sm font-semibold">Superadmin</span>
+                {% elif user.staffprofile.role == 'admin' %}
+                    <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
+                         style="background: linear-gradient(135deg, #0369a1, #0ea5e9);">
+                        A
+                    </div>
+                    <span class="text-dark-900 text-sm font-semibold">Admin</span>
                 {% elif user.staffprofile.role == 'cashier' %}
                     <div class="flex items-center justify-center w-9 h-9 rounded-full text-white font-bold text-lg shadow-md"
                          style="background: linear-gradient(135deg, #059669, #10b981);">
@@ -619,11 +625,16 @@
             <div class="dropdown-menu" id="userDropdown-menu">
                 <div class="px-3 py-2 border-b border-light-300">
                     <div class="flex items-center gap-3 mb-2">
-                        <!-- Role-based Icon in Dropdown (Superadmin & Cashier only - Field Staff use mobile app) -->
+                        <!-- Role-based Icon in Dropdown -->
                         {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
                             <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
                                  style="background: linear-gradient(135deg, #dc2626, #ef4444);">
                                 S
+                            </div>
+                        {% elif user.staffprofile.role == 'admin' %}
+                            <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
+                                 style="background: linear-gradient(135deg, #0369a1, #0ea5e9);">
+                                A
                             </div>
                         {% elif user.staffprofile.role == 'cashier' %}
                             <div class="flex items-center justify-center w-12 h-12 rounded-full text-white font-bold text-xl shadow-md"
@@ -656,8 +667,8 @@
          style="width: var(--sidebar-width); top: var(--header-height); z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
          id="sidebar">
         <nav class="flex-grow overflow-y-auto scrollbar-thin">
-            <!-- Main Section: Superadmin only -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+            <!-- Main Section: Superadmin & Admin -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'admin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Main</div>
                 <a href="{% url 'consumers:home' %}"
@@ -668,8 +679,8 @@
             </div>
             {% endif %}
 
-            <!-- Consumer Operations: Superadmin only -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+            <!-- Consumer Operations: Superadmin & Admin -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'admin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Consumer Ops</div>
 
@@ -704,8 +715,8 @@
 
             <!-- Note: Field Staff can only access via Smart Meter Reader mobile app -->
 
-            <!-- Reports: Superadmin only -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+            <!-- Reports: Superadmin & Admin -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'admin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Reports</div>
                 <a href="{% url 'consumers:reports' %}"
