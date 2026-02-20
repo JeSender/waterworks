@@ -2291,7 +2291,7 @@ def staff_login(request):
             messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
             # Cashier goes directly to payment processing page
             if hasattr(user, 'staffprofile') and user.staffprofile.role == 'cashier':
-                return redirect('consumers:inquire')
+                return redirect('consumers:process_payment')
             return redirect('consumers:home')
         else:
             # Failed login attempt
@@ -2773,7 +2773,7 @@ def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
     # Cashier role only has access to payment and transaction history
     if hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'cashier':
-        return redirect('consumers:inquire')
+        return redirect('consumers:process_payment')
 
     from .models import Notification
 
@@ -5387,6 +5387,144 @@ def inquire(request):
         'selected_barangay': selected_barangay,
     }
     return render(request, 'consumers/inquire.html', context)
+
+
+@login_required
+def process_payment(request):
+    """
+    Cashier payment processing page.
+    GET  (no consumer): consumer selection list
+    GET  (?consumer=X): show pending bills + cash/change form
+    POST (?consumer=X): create Payment, mark bill Paid, redirect to receipt
+    """
+    from .utils import update_bill_penalty, get_payment_breakdown
+    from .models import Notification
+
+    system_settings = SystemSetting.objects.first()
+
+    selected_consumer_id = request.GET.get('consumer')
+    selected_barangay = request.GET.get('barangay', '')
+    barangays = Barangay.objects.all().order_by('name')
+
+    # ---------- POST: process the payment ----------
+    if request.method == 'POST':
+        selected_consumer_id = request.POST.get('consumer_id')
+        bill_ids_raw = request.POST.get('bill_ids', '')
+        received_amount_raw = request.POST.get('received_amount', '0')
+        remarks = request.POST.get('remarks', '').strip()
+
+        try:
+            received_amount = Decimal(received_amount_raw)
+        except Exception:
+            messages.error(request, "Invalid cash amount entered.")
+            return redirect(f"{request.path}?consumer={selected_consumer_id}")
+
+        consumer = get_object_or_404(Consumer, id=selected_consumer_id)
+
+        # Resolve selected bill IDs
+        if bill_ids_raw:
+            bill_id_list = [int(b) for b in bill_ids_raw.split(',') if b.strip()]
+            bills = consumer.bills.filter(id__in=bill_id_list, status='Pending').order_by('billing_period')
+        else:
+            bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+
+        if not bills.exists():
+            messages.error(request, "No pending bills found for this consumer.")
+            return redirect(f"{request.path}?consumer={selected_consumer_id}")
+
+        # Calculate total amount due across selected bills
+        total_due = Decimal('0.00')
+        for bill in bills:
+            update_bill_penalty(bill, system_settings, save=True)
+            total_due += bill.total_amount_due
+
+        if received_amount < total_due:
+            messages.error(request, f"Cash received (₱{received_amount:.2f}) is less than the amount due (₱{total_due:.2f}).")
+            return redirect(f"{request.path}?consumer={selected_consumer_id}")
+
+        # Create one payment per bill (split received proportionally if multiple bills)
+        last_payment = None
+        for i, bill in enumerate(bills):
+            update_bill_penalty(bill, system_settings, save=True)
+            bill_total = bill.total_amount_due
+
+            if i == len(list(bills)) - 1:
+                # Last bill gets the remainder of received amount
+                bill_received = received_amount - sum(
+                    b.total_amount_due for j, b in enumerate(bills) if j < i
+                )
+            else:
+                bill_received = bill_total
+
+            payment = Payment(
+                bill=bill,
+                original_bill_amount=bill.total_amount,
+                penalty_amount=bill.effective_penalty,
+                penalty_waived=bill.penalty_waived,
+                days_overdue_at_payment=bill.days_overdue,
+                senior_citizen_discount=bill.senior_citizen_discount,
+                amount_paid=bill_total,
+                received_amount=bill_received if i == len(list(bills)) - 1 else bill_total,
+                processed_by=request.user,
+                remarks=remarks,
+            )
+            payment.save()
+
+            # Mark bill as paid
+            bill.status = 'Paid'
+            bill.save()
+
+            last_payment = payment
+
+        # Create notification for superadmin
+        Notification.objects.create(
+            notification_type='payment',
+            title='Payment Processed',
+            message=f"Payment of ₱{total_due:.2f} received from {consumer.full_name} (ID: {consumer.id_number}) — processed by {request.user.get_full_name() or request.user.username}.",
+            redirect_url=f"/payment/receipt/{last_payment.id}/",
+        )
+
+        messages.success(request, f"Payment of ₱{total_due:.2f} processed successfully. OR#: {last_payment.or_number}")
+        return redirect('consumers:payment_receipt', payment_id=last_payment.id)
+
+    # ---------- GET: show consumer list or bill+payment form ----------
+    consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok').order_by('last_name', 'first_name')
+
+    if selected_barangay:
+        consumers = consumers.filter(barangay_id=selected_barangay)
+
+    # Build consumer → pending bill map
+    consumer_bills = {}
+    for c in consumers:
+        bill = c.bills.filter(status='Pending').order_by('-billing_period').first()
+        if bill:
+            update_bill_penalty(bill, system_settings, save=True)
+            consumer_bills[c.id] = bill
+
+    consumers = [c for c in consumers if c.id in consumer_bills]
+
+    selected_consumer = None
+    pending_bills = []
+    total_due = Decimal('0.00')
+
+    if selected_consumer_id:
+        selected_consumer = get_object_or_404(Consumer, id=selected_consumer_id)
+        pending_bills = list(selected_consumer.bills.filter(status='Pending').order_by('billing_period'))
+        for bill in pending_bills:
+            update_bill_penalty(bill, system_settings, save=True)
+            total_due += bill.total_amount_due
+
+    context = {
+        'consumers': consumers,
+        'consumer_bills': consumer_bills,
+        'selected_consumer': selected_consumer,
+        'pending_bills': pending_bills,
+        'total_due': total_due,
+        'barangays': barangays,
+        'selected_barangay': selected_barangay,
+    }
+    return render(request, 'consumers/process_payment.html', context)
+
 
 @login_required
 def water_bill_print(request, consumer_id):

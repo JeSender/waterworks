@@ -1444,6 +1444,41 @@ class Payment(models.Model):
         """Total amount including any penalty"""
         return self.original_bill_amount + self.penalty_amount
 
+    @property
+    def amount_in_words(self):
+        """Convert amount_paid to words (e.g., 'ONE HUNDRED TWENTY PESOS AND 50/100')."""
+        try:
+            amount = self.amount_paid
+            pesos = int(amount)
+            centavos = round((amount - pesos) * 100)
+
+            ones = ['', 'ONE', 'TWO', 'THREE', 'FOUR', 'FIVE', 'SIX', 'SEVEN', 'EIGHT', 'NINE',
+                    'TEN', 'ELEVEN', 'TWELVE', 'THIRTEEN', 'FOURTEEN', 'FIFTEEN', 'SIXTEEN',
+                    'SEVENTEEN', 'EIGHTEEN', 'NINETEEN']
+            tens = ['', '', 'TWENTY', 'THIRTY', 'FORTY', 'FIFTY', 'SIXTY', 'SEVENTY', 'EIGHTY', 'NINETY']
+
+            def say(n):
+                if n == 0:
+                    return ''
+                elif n < 20:
+                    return ones[n]
+                elif n < 100:
+                    return tens[n // 10] + (f' {ones[n % 10]}' if n % 10 else '')
+                elif n < 1000:
+                    rest = say(n % 100)
+                    return ones[n // 100] + ' HUNDRED' + (f' AND {rest}' if rest else '')
+                elif n < 1000000:
+                    rest = say(n % 1000)
+                    return say(n // 1000) + ' THOUSAND' + (f' {rest}' if rest else '')
+                else:
+                    rest = say(n % 1000000)
+                    return say(n // 1000000) + ' MILLION' + (f' {rest}' if rest else '')
+
+            peso_words = say(pesos) or 'ZERO'
+            return f"{peso_words} PESOS AND {centavos:02d}/100"
+        except Exception:
+            return ''
+
     def __str__(self):
         penalty_info = f" (incl. ₱{self.penalty_amount} penalty)" if self.penalty_amount > 0 else ""
         return f"OR#{self.or_number} - {self.bill.consumer.id_number}{penalty_info}"

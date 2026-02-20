@@ -720,7 +720,7 @@
             {% if user.staffprofile.role == 'cashier' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Payment</div>
-                <a href="{% url 'consumers:inquire' %}"
+                <a href="{% url 'consumers:process_payment' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-cash-coin me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Process Payment</span>
@@ -991,6 +991,7 @@
             const extraPrefixes = {
                 '{% url "consumers:consumer_management" %}': ['/consumer/', '/consumers/', '/connected-consumers/', '/disconnected/', '/disconnect/', '/reconnect/', '/delinquent-consumers/', '/delinquent-report/'],
                 '{% url "consumers:inquire" %}':             [],
+                '{% url "consumers:process_payment" %}':     ['/payment/process/'],
                 '{% url "consumers:payment_history" %}':     ['/payment/receipt/'],
                 '{% url "consumers:meter_reading_overview" %}': ['/meter-readings/'],
                 '{% url "consumers:pending_readings" %}':    [],

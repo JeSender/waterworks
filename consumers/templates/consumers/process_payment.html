@@ -1,0 +1,465 @@
+{% extends "consumers/base.html" %}
+{% load dict_extras %}
+{% load static %}
+
+{% block title %}Process Payment - Balilihan Waterworks{% endblock %}
+
+{% block main_content %}
+<div class="max-w-7xl mx-auto">
+
+    {% if not selected_consumer %}
+    <!-- ============ CONSUMER SELECTION ============ -->
+    <div class="bg-white rounded-2xl shadow-sm border border-light-200 overflow-hidden">
+
+        <!-- Top Bar -->
+        <div class="px-4 sm:px-5 pt-4 sm:pt-5 pb-4 border-b border-light-200 bg-gradient-to-r from-success-600 to-success-700">
+            <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                <!-- Barangay Filter -->
+                <div class="sm:w-56">
+                    <select id="filter-barangay"
+                            onchange="applyFilters()"
+                            class="w-full px-3 py-2.5 text-sm bg-white/95 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 text-dark-700 cursor-pointer shadow-sm">
+                        <option value="">All Barangays</option>
+                        {% for barangay in barangays %}
+                        <option value="{{ barangay.id }}" {% if selected_barangay == barangay.id|stringformat:"d" %}selected{% endif %}>
+                            {{ barangay.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <!-- Search -->
+                <div class="flex-1 relative">
+                    <i class="bi bi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 text-sm"></i>
+                    <input type="text"
+                           id="search-consumer"
+                           placeholder="Search by name or ID number..."
+                           class="w-full pl-10 pr-4 py-2.5 text-sm bg-white/95 border-0 rounded-xl focus:outline-none focus:ring-2 focus:ring-white/50 placeholder-dark-400 shadow-sm"
+                           autofocus>
+                </div>
+            </div>
+            <div class="flex items-center justify-between">
+                <p class="text-sm text-white/80">
+                    <span id="visible-count" class="font-bold text-white">{{ consumers|length }}</span>
+                    consumers with pending bills
+                </p>
+                {% if selected_barangay %}
+                <button onclick="clearFilters()" class="text-xs text-white/70 hover:text-white transition-colors flex items-center gap-1">
+                    <i class="bi bi-x-circle"></i> Clear filter
+                </button>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Consumer List -->
+        <div class="max-h-[520px] overflow-y-auto">
+            {% if consumers %}
+            <div id="consumer-list">
+                {% for consumer in consumers %}
+                <a href="?consumer={{ consumer.id }}"
+                   class="consumer-card flex items-center justify-between px-4 sm:px-5 py-3.5 border-b border-light-100 hover:bg-success-50 transition-colors duration-150 cursor-pointer"
+                   data-name="{{ consumer.first_name|lower }} {{ consumer.last_name|lower }}"
+                   data-id="{{ consumer.id_number|lower }}">
+                    <div class="flex items-center gap-3 min-w-0">
+                        <div class="w-9 h-9 bg-success-100 rounded-full flex items-center justify-center flex-shrink-0">
+                            <i class="bi bi-person-fill text-success-600 text-sm"></i>
+                        </div>
+                        <div class="min-w-0">
+                            <h6 class="text-sm font-semibold text-dark-900 truncate">
+                                {{ consumer.last_name }}, {{ consumer.first_name }}
+                            </h6>
+                            <div class="flex items-center gap-1.5 text-xs text-dark-500 mt-0.5">
+                                <span class="font-mono font-medium text-success-700">{{ consumer.id_number }}</span>
+                                <span class="text-dark-300">&#8226;</span>
+                                <span class="truncate">{{ consumer.barangay.name|default:"—" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-shrink-0 ml-3">
+                        {% if consumer.is_delinquent %}
+                        <span class="px-2 py-0.5 bg-danger-100 text-danger-700 text-xs font-bold rounded flex items-center gap-1">
+                            <i class="bi bi-exclamation-triangle-fill text-[10px]"></i> Delinquent
+                        </span>
+                        {% endif %}
+                        {% with bill=consumer_bills|get_item:consumer.id %}
+                        {% if bill %}
+                        <div class="text-right">
+                            <div class="text-sm font-bold text-warning-700">₱{{ bill.total_amount_due|floatformat:2 }}</div>
+                            <span class="text-[10px] uppercase tracking-wider font-semibold text-warning-600">Due</span>
+                        </div>
+                        {% endif %}
+                        {% endwith %}
+                        <i class="bi bi-chevron-right text-dark-300 text-xs"></i>
+                    </div>
+                </a>
+                {% endfor %}
+            </div>
+            <div id="no-results" class="hidden text-center py-16 px-4">
+                <i class="bi bi-search text-5xl text-light-300 mb-3 block"></i>
+                <h5 class="text-base font-bold text-dark-600 mb-1">No Results Found</h5>
+                <p class="text-sm text-dark-400">Try a different name or ID number</p>
+            </div>
+            {% else %}
+            <div class="text-center py-16 px-4">
+                <div class="w-14 h-14 bg-success-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="bi bi-check-circle-fill text-2xl text-success-500"></i>
+                </div>
+                <h5 class="text-base font-bold text-dark-600 mb-1">No Pending Bills</h5>
+                <p class="text-sm text-dark-400">All consumers are up to date</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% else %}
+    <!-- ============ PAYMENT FORM ============ -->
+    <div class="max-w-lg mx-auto">
+
+        <!-- Back -->
+        <a href="{% url 'consumers:process_payment' %}"
+           class="inline-flex items-center px-3 py-1.5 mb-3 bg-light-100 hover:bg-light-200 text-dark-700 text-xs font-medium rounded-lg transition-colors">
+            <i class="bi bi-arrow-left mr-1.5"></i>Back to List
+        </a>
+
+        <form method="post" action="{% url 'consumers:process_payment' %}?consumer={{ selected_consumer.id }}" id="payment-form">
+            {% csrf_token %}
+            <input type="hidden" name="consumer_id" value="{{ selected_consumer.id }}">
+            <input type="hidden" name="bill_ids" id="hidden-bill-ids"
+                   value="{% for b in pending_bills %}{{ b.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+
+            <!-- Bill Card -->
+            <div class="bg-white rounded-xl border-2 border-dark-300 shadow-md overflow-hidden mb-4">
+
+                <!-- Header -->
+                <div class="px-5 py-4 border-b-2 border-dark-300 text-center">
+                    <div class="flex items-center justify-center gap-3 mb-1">
+                        <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Seal" class="w-10 h-10 object-contain">
+                        <div>
+                            <h2 class="text-base font-bold text-dark-900 uppercase tracking-wide">Balilihan Waterworks System</h2>
+                            <p class="text-xs text-dark-500 uppercase">LGU - Balilihan</p>
+                        </div>
+                        <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" class="w-10 h-10 object-contain">
+                    </div>
+                </div>
+
+                <!-- Title & Date -->
+                <div class="px-5 py-3 border-b border-dark-200 flex items-center justify-between">
+                    <h3 class="text-sm font-bold text-dark-900 uppercase">Payment Collection</h3>
+                    <p class="text-xs text-dark-600">Date: <span class="font-semibold">{% now "n-d-Y" %}</span></p>
+                </div>
+
+                <!-- Consumer Info -->
+                <div class="px-5 py-3 border-b border-dark-200 space-y-1.5">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">Name:</span>
+                        <span class="text-sm font-bold text-dark-900">
+                            {{ selected_consumer.last_name }}, {{ selected_consumer.first_name }}{% if selected_consumer.suffix %} {{ selected_consumer.suffix }}{% endif %}
+                        </span>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">Barangay:</span>
+                        <span class="text-sm font-semibold text-dark-800">{{ selected_consumer.barangay.name|default:"—" }}</span>
+                    </div>
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">ID Number:</span>
+                        <span class="text-sm font-mono font-semibold text-success-700">{{ selected_consumer.id_number|default:"—" }}</span>
+                    </div>
+                </div>
+
+                <!-- Bills Table -->
+                <div class="px-5 py-3 border-b border-dark-200">
+                    <p class="text-xs font-bold text-dark-700 uppercase mb-2">Bills to Pay</p>
+                    {% if pending_bills %}
+                    <table class="w-full border-collapse text-xs" id="bill-table">
+                        <thead>
+                            <tr class="bg-dark-100">
+                                <th class="border border-dark-300 px-1.5 py-1.5 text-center w-8">
+                                    <input type="checkbox" id="select-all-bills" checked title="Select/Deselect all"
+                                           class="w-3.5 h-3.5 rounded cursor-pointer accent-success-600">
+                                </th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700">Month</th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">m³</th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Bill</th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Penalty</th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bill in pending_bills %}
+                            <tr class="bill-row {% if bill.is_overdue %}bg-danger-50{% endif %}" data-index="{{ forloop.counter0 }}">
+                                <td class="border border-dark-300 px-1.5 py-1.5 text-center">
+                                    <input type="checkbox"
+                                           class="bill-checkbox w-3.5 h-3.5 rounded cursor-pointer accent-success-600"
+                                           checked
+                                           data-index="{{ forloop.counter0 }}"
+                                           data-bill-id="{{ bill.id }}"
+                                           data-amount="{{ bill.total_amount }}"
+                                           data-penalty="{{ bill.effective_penalty }}"
+                                           data-total="{{ bill.total_amount_due }}">
+                                </td>
+                                <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2 }}</td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.effective_penalty > 0 %}text-danger-600 font-semibold{% else %}text-dark-400{% endif %}">
+                                    {% if bill.effective_penalty > 0 %}{{ bill.effective_penalty|floatformat:2 }}{% else %}—{% endif %}
+                                </td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono font-bold text-dark-900">{{ bill.total_amount_due|floatformat:2 }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p class="text-[10px] text-dark-400 mt-1 italic">
+                        <i class="bi bi-info-circle mr-0.5"></i>Uncheck newer months to issue a partial bill (oldest first)
+                    </p>
+                    {% else %}
+                    <div class="text-center py-6">
+                        <i class="bi bi-check-circle-fill text-2xl text-success-500 mb-2 block"></i>
+                        <p class="text-sm font-bold text-dark-600">No Pending Bills</p>
+                    </div>
+                    {% endif %}
+                </div>
+
+                {% if pending_bills %}
+                <!-- Amount Due -->
+                <div class="px-5 py-3 border-b border-dark-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm font-bold text-dark-800 uppercase">Total Amount Due:</span>
+                        <span id="total-due-display" class="text-xl font-bold text-dark-900 font-mono">
+                            ₱{{ total_due|floatformat:2 }}
+                        </span>
+                    </div>
+                </div>
+
+                <!-- Cash / Change Section -->
+                <div class="px-5 py-4 bg-success-50 border-b border-dark-200">
+                    <p class="text-xs font-bold text-dark-700 uppercase mb-3">Cash Transaction</p>
+
+                    <!-- Cash Received -->
+                    <div class="mb-3">
+                        <label for="received_amount" class="block text-xs font-semibold text-dark-700 mb-1 uppercase">
+                            Cash Received (₱)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500 font-bold text-sm">₱</span>
+                            <input type="number"
+                                   id="received_amount"
+                                   name="received_amount"
+                                   min="{{ total_due|floatformat:2 }}"
+                                   step="0.01"
+                                   placeholder="0.00"
+                                   required
+                                   autofocus
+                                   class="w-full pl-8 pr-4 py-3 text-lg font-bold border-2 border-success-400 rounded-xl focus:outline-none focus:border-success-600 focus:ring-2 focus:ring-success-200 bg-white text-dark-900 text-right"
+                                   oninput="updateChange()">
+                        </div>
+                        <p id="amount-error" class="text-xs text-danger-600 mt-1 hidden">
+                            <i class="bi bi-exclamation-circle mr-1"></i>Cash received must be at least ₱<span id="min-amount">0.00</span>
+                        </p>
+                    </div>
+
+                    <!-- Change -->
+                    <div class="bg-white rounded-xl border-2 border-dark-200 px-4 py-3 flex items-center justify-between">
+                        <span class="text-sm font-bold text-dark-700 uppercase">Change:</span>
+                        <span id="change-display" class="text-2xl font-bold font-mono text-success-600">₱0.00</span>
+                    </div>
+                </div>
+
+                <!-- Remarks -->
+                <div class="px-5 py-3 border-b border-dark-200">
+                    <label for="remarks" class="block text-xs font-semibold text-dark-700 mb-1 uppercase">
+                        Remarks <span class="text-dark-400 font-normal">(optional)</span>
+                    </label>
+                    <input type="text"
+                           id="remarks"
+                           name="remarks"
+                           placeholder="e.g. partial payment, penalty waived by admin..."
+                           class="w-full px-3 py-2 text-sm border border-dark-200 rounded-lg focus:outline-none focus:border-success-500 focus:ring-1 focus:ring-success-200 bg-white">
+                </div>
+
+                <!-- Issued By -->
+                <div class="px-5 py-3">
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-xs text-dark-500 font-semibold uppercase">Cashier:</span>
+                        <span class="text-xs font-semibold text-dark-700 border-b border-dark-300 flex-1 pb-0.5">
+                            {{ request.user.get_full_name|default:request.user.username }}
+                        </span>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Action Buttons -->
+            {% if pending_bills %}
+            <div class="flex gap-3 justify-center">
+                <a href="{% url 'consumers:process_payment' %}"
+                   class="inline-flex items-center px-5 py-2.5 bg-light-100 hover:bg-light-200 text-dark-700 text-sm font-semibold rounded-lg transition-colors border border-light-300">
+                    <i class="bi bi-x-lg mr-2"></i>Cancel
+                </a>
+                <button type="submit"
+                        id="submit-btn"
+                        class="inline-flex items-center px-6 py-2.5 bg-success-600 hover:bg-success-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled>
+                    <i class="bi bi-cash-coin mr-2"></i>Process Payment & Print Receipt
+                </button>
+            </div>
+            {% endif %}
+        </form>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ---- Filters ----
+function applyFilters() {
+    const barangay = document.getElementById('filter-barangay')?.value || '';
+    const params = new URLSearchParams();
+    if (barangay) params.set('barangay', barangay);
+    window.location.href = '{% url "consumers:process_payment" %}?' + params.toString();
+}
+function clearFilters() {
+    window.location.href = '{% url "consumers:process_payment" %}';
+}
+
+// ---- Consumer search ----
+function filterConsumers() {
+    const searchInput = document.getElementById('search-consumer');
+    if (!searchInput) return;
+    const filter = searchInput.value.toLowerCase().trim();
+    const cards = document.querySelectorAll('.consumer-card');
+    const noResults = document.getElementById('no-results');
+    const consumerList = document.getElementById('consumer-list');
+    let visibleCount = 0;
+    cards.forEach(card => {
+        const name = card.getAttribute('data-name') || '';
+        const id = card.getAttribute('data-id') || '';
+        const show = name.includes(filter) || id.includes(filter);
+        card.style.display = show ? '' : 'none';
+        if (show) visibleCount++;
+    });
+    document.getElementById('visible-count').textContent = visibleCount;
+    if (noResults && consumerList) {
+        noResults.classList.toggle('hidden', visibleCount > 0);
+        consumerList.classList.toggle('hidden', visibleCount === 0);
+    }
+}
+
+// ---- Bill selection (oldest-first rule) ----
+function initBillSelection() {
+    const checkboxes = document.querySelectorAll('.bill-checkbox');
+    const selectAll = document.getElementById('select-all-bills');
+    if (!checkboxes.length) return;
+
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', function () {
+            const idx = parseInt(this.dataset.index);
+            if (this.checked) {
+                checkboxes.forEach(o => { if (parseInt(o.dataset.index) < idx) o.checked = true; });
+            } else {
+                checkboxes.forEach(o => { if (parseInt(o.dataset.index) > idx) o.checked = false; });
+            }
+            syncSelectAll();
+            updateTotals();
+        });
+    });
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function () {
+            checkboxes.forEach(cb => cb.checked = this.checked);
+            updateTotals();
+        });
+    }
+
+    function syncSelectAll() {
+        if (!selectAll) return;
+        const checked = document.querySelectorAll('.bill-checkbox:checked').length;
+        selectAll.checked = checked === checkboxes.length;
+        selectAll.indeterminate = checked > 0 && checked < checkboxes.length;
+    }
+
+    function updateTotals() {
+        let total = 0;
+        const ids = [];
+        checkboxes.forEach(cb => {
+            const row = cb.closest('tr');
+            if (cb.checked) {
+                row.classList.remove('opacity-30');
+                total += parseFloat(cb.dataset.total) || 0;
+                ids.push(cb.dataset.billId);
+            } else {
+                row.classList.add('opacity-30');
+            }
+        });
+
+        // Update total-due display
+        const totalDueDisplay = document.getElementById('total-due-display');
+        if (totalDueDisplay) totalDueDisplay.textContent = '₱' + total.toFixed(2);
+
+        // Update hidden bill IDs
+        const hiddenIds = document.getElementById('hidden-bill-ids');
+        if (hiddenIds) hiddenIds.value = ids.join(',');
+
+        // Update cash input minimum
+        const receivedInput = document.getElementById('received_amount');
+        if (receivedInput) {
+            receivedInput.min = total.toFixed(2);
+            document.getElementById('min-amount').textContent = total.toFixed(2);
+        }
+
+        window._totalDue = total;
+        updateChange();
+    }
+}
+
+// ---- Cash / Change calculator ----
+window._totalDue = parseFloat("{{ total_due|floatformat:2 }}") || 0;
+
+function updateChange() {
+    const received = parseFloat(document.getElementById('received_amount')?.value) || 0;
+    const due = window._totalDue;
+    const change = received - due;
+
+    const changeDisplay = document.getElementById('change-display');
+    const submitBtn = document.getElementById('submit-btn');
+    const amountError = document.getElementById('amount-error');
+
+    if (changeDisplay) {
+        changeDisplay.textContent = '₱' + Math.max(change, 0).toFixed(2);
+        changeDisplay.classList.toggle('text-success-600', change >= 0);
+        changeDisplay.classList.toggle('text-danger-600', change < 0);
+    }
+
+    if (submitBtn) {
+        submitBtn.disabled = received < due || received === 0;
+    }
+
+    if (amountError) {
+        amountError.classList.toggle('hidden', received >= due || received === 0);
+    }
+}
+
+// ---- Receipt redirect after form submit ----
+document.getElementById('payment-form')?.addEventListener('submit', function (e) {
+    const submitBtn = document.getElementById('submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<i class="bi bi-hourglass-split mr-2"></i>Processing...';
+    }
+});
+
+// ---- Init ----
+document.addEventListener('DOMContentLoaded', function () {
+    const searchInput = document.getElementById('search-consumer');
+    if (searchInput) {
+        let timeout;
+        searchInput.addEventListener('input', function () {
+            clearTimeout(timeout);
+            timeout = setTimeout(filterConsumers, 200);
+        });
+    }
+    initBillSelection();
+    updateChange();
+});
+</script>
+{% endblock %}
