@@ -743,8 +743,8 @@
 
             <!-- Note: Field Staff can only access via Smart Meter Reader mobile app -->
 
-            <!-- Reports: Superadmin only -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
+            <!-- Reports: Superadmin & Admin -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'admin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Reports</div>
                 <a href="{% url 'consumers:reports' %}"
