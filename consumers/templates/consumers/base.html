@@ -656,8 +656,8 @@
          style="width: var(--sidebar-width); top: var(--header-height); z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
          id="sidebar">
         <nav class="flex-grow overflow-y-auto scrollbar-thin">
-            <!-- Main Section: Superadmin and Cashier only (Field Staff uses mobile app) -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
+            <!-- Main Section: Superadmin only -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Main</div>
                 <a href="{% url 'consumers:home' %}"
@@ -668,33 +668,29 @@
             </div>
             {% endif %}
 
-            <!-- Consumer Operations: Superadmin and Cashier -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
+            <!-- Consumer Operations: Superadmin only -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Consumer Ops</div>
 
-                <!-- Consumers: Superadmin and Cashier -->
                 <a href="{% url 'consumers:consumer_management' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-people-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Consumers</span>
                 </a>
 
-                <!-- Inquire Bill: Superadmin and Cashier -->
                 <a href="{% url 'consumers:inquire' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-search me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Inquire Bill</span>
                 </a>
 
-                <!-- Meter Readings: Superadmin and Cashier -->
                 <a href="{% url 'consumers:meter_reading_overview' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-speedometer2 me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Meter Readings</span>
                 </a>
 
-                <!-- Pending Readings: Superadmin and Cashier -->
                 <a href="{% url 'consumers:pending_readings' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-camera-fill me-2.5 text-base" style="width: 20px;"></i>
@@ -708,14 +704,31 @@
 
             <!-- Note: Field Staff can only access via Smart Meter Reader mobile app -->
 
-            <!-- Reports: Superadmin and Cashier -->
-            {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'cashier' %}
+            <!-- Reports: Superadmin only -->
+            {% if user.is_superuser or user.staffprofile.role == 'superadmin' %}
             <div class="nav-section mb-2">
                 <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Reports</div>
                 <a href="{% url 'consumers:reports' %}"
                    class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
                     <i class="bi bi-file-earmark-text-fill me-2.5 text-base" style="width: 20px;"></i>
                     <span class="font-medium">Reports</span>
+                </a>
+            </div>
+            {% endif %}
+
+            <!-- Payment Section: Cashier only -->
+            {% if user.staffprofile.role == 'cashier' %}
+            <div class="nav-section mb-2">
+                <div class="text-dark-500 uppercase font-semibold mb-1.5 text-xxs tracking-wider px-2" style="font-size: 0.65rem;">Payment</div>
+                <a href="{% url 'consumers:inquire' %}"
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-cash-coin me-2.5 text-base" style="width: 20px;"></i>
+                    <span class="font-medium">Process Payment</span>
+                </a>
+                <a href="{% url 'consumers:payment_history' %}"
+                   class="nav-link-modern flex items-center text-dark-900 no-underline py-2 px-2.5 rounded-lg mb-0.5 transition-all duration-200 hover:bg-light-100 hover:text-primary-600 text-sm">
+                    <i class="bi bi-receipt me-2.5 text-base" style="width: 20px;"></i>
+                    <span class="font-medium">Transaction History</span>
                 </a>
             </div>
             {% endif %}

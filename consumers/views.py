@@ -2289,6 +2289,9 @@ def staff_login(request):
             )
 
             messages.success(request, f"Welcome back, {user.get_full_name() or user.username}!")
+            # Cashier goes directly to payment processing page
+            if hasattr(user, 'staffprofile') and user.staffprofile.role == 'cashier':
+                return redirect('consumers:inquire')
             return redirect('consumers:home')
         else:
             # Failed login attempt
@@ -2768,6 +2771,10 @@ def password_reset_complete(request):
 @login_required
 def home(request):
     """Staff dashboard showing key metrics and delinquent bills."""
+    # Cashier role only has access to payment and transaction history
+    if hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'cashier':
+        return redirect('consumers:inquire')
+
     from .models import Notification
 
     # Auto-cleanup: Delete notifications older than 1 month
