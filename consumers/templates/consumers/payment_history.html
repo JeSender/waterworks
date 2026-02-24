@@ -149,7 +149,7 @@
                         <th class="px-4 py-3 text-right font-semibold text-dark-700">Bill</th>
                         <th class="px-4 py-3 text-right font-semibold text-dark-700">Penalty</th>
                         <th class="px-4 py-3 text-right font-semibold text-dark-700">Total Paid</th>
-                        <th class="px-4 py-3 text-center font-semibold text-dark-700">Status</th>
+
                         <th class="px-4 py-3 text-center font-semibold text-dark-700">Actions</th>
                     </tr>
                 </thead>
@@ -186,24 +186,7 @@
                         <td class="px-4 py-3 text-right font-mono font-semibold text-success-600">
                             ₱{{ payment.amount_paid|floatformat:2|intcomma }}
                         </td>
-                        <td class="px-4 py-3 text-center">
-                            {% if payment.penalty_amount > 0 and not payment.penalty_waived %}
-                            <span class="inline-flex items-center px-2 py-1 bg-danger-100 text-danger-700 text-xs font-medium rounded">
-                                <i class="bi bi-exclamation-circle mr-1"></i>
-                                Late
-                            </span>
-                            {% elif payment.penalty_waived %}
-                            <span class="inline-flex items-center px-2 py-1 bg-info-100 text-info-700 text-xs font-medium rounded">
-                                <i class="bi bi-shield-check mr-1"></i>
-                                Waived
-                            </span>
-                            {% else %}
-                            <span class="inline-flex items-center px-2 py-1 bg-success-100 text-success-700 text-xs font-medium rounded">
-                                <i class="bi bi-check-circle mr-1"></i>
-                                On Time
-                            </span>
-                            {% endif %}
-                        </td>
+
                         <td class="px-4 py-3 text-center">
                             <a href="{% url 'consumers:payment_receipt' payment.id %}"
                                class="inline-flex items-center px-2 py-1 bg-primary-100 hover:bg-primary-200 text-primary-700 text-xs font-medium rounded transition-colors"

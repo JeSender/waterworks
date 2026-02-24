@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Official Receipt - OR #{{ payment.or_number }}</title>
-    {% load static %}
+    {% load static humanize %}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -338,7 +338,7 @@
             <tbody>
                 <tr>
                     <td>WATER BILL</td>
-                    <td class="amount">{{ payment.original_bill_amount|default:payment.bill.total_amount }}</td>
+                    <td class="amount">{{ payment.original_bill_amount|default:payment.bill.total_amount|floatformat:2|intcomma }}</td>
                 </tr>
                 <tr>
                     <td style="font-size:9px;">{{ payment.bill.billing_period|date:"F Y" }} ({{ breakdown.usage_type }})</td>
@@ -363,10 +363,10 @@
                     </td>
                     <td class="amount" style="color: #c00;">
                         {% if payment.penalty_waived %}
-                        <span style="text-decoration: line-through;">{{ payment.penalty_amount }}</span>
+                        <span style="text-decoration: line-through;">{{ payment.penalty_amount|floatformat:2|intcomma }}</span>
                         <span style="color: #059669;"> 0.00</span>
                         {% else %}
-                        {{ payment.penalty_amount }}
+                        {{ payment.penalty_amount|floatformat:2|intcomma }}
                         {% endif %}
                     </td>
                 </tr>
@@ -376,7 +376,7 @@
                         <strong>SC DISCOUNT (5%)</strong>
                     </td>
                     <td class="amount" style="color: #059669;">
-                        -{{ payment.senior_citizen_discount }}
+                        -{{ payment.senior_citizen_discount|floatformat:2|intcomma }}
                     </td>
                 </tr>
                 {% endif %}
@@ -403,22 +403,22 @@
             {% if payment.penalty_amount > 0 and not payment.penalty_waived %}
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #666; margin-bottom: 3px;">
                 <span>Subtotal (Bill)</span>
-                <span>₱ {{ payment.original_bill_amount|default:payment.bill.total_amount }}</span>
+                <span>₱ {{ payment.original_bill_amount|default:payment.bill.total_amount|floatformat:2|intcomma }}</span>
             </div>
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #c00; margin-bottom: 3px;">
                 <span>Penalty</span>
-                <span>₱ {{ payment.penalty_amount }}</span>
+                <span>₱ {{ payment.penalty_amount|floatformat:2|intcomma }}</span>
             </div>
             {% if payment.senior_citizen_discount > 0 %}
             <div style="display: flex; justify-content: space-between; font-size: 10px; color: #059669; margin-bottom: 5px;">
                 <span>SC Discount (5%)</span>
-                <span>-₱ {{ payment.senior_citizen_discount }}</span>
+                <span>-₱ {{ payment.senior_citizen_discount|floatformat:2|intcomma }}</span>
             </div>
             {% endif %}
             {% endif %}
             <div class="total-row">
                 <span>TOTAL <span style="font-size:10px;">CASH</span></span>
-                <span>₱ <span class="total-amount">{{ payment.amount_paid }}</span></span>
+                <span>₱ <span class="total-amount">{{ payment.amount_paid|floatformat:2|intcomma }}</span></span>
             </div>
         </div>
 
