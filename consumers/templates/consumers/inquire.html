@@ -186,6 +186,7 @@
                             <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700">Month/Year</th>
                             <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">Consumed<br>(Cu.m.)</th>
                             <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Amount</th>
+                             <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-success-700">SC Disc.</th>
                             <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Penalty</th>
                         </tr>
                     </thead>
@@ -205,6 +206,9 @@
                             <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
                             <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
                             <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2|intcomma }}</td>
+                             <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.senior_citizen_discount > 0 %}text-success-600 font-semibold{% else %}text-dark-400{% endif %}">
+                                 {% if bill.senior_citizen_discount > 0 %}-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
+                             </td>
                             <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.effective_penalty > 0 %}text-danger-600 font-semibold{% else %}text-dark-400{% endif %}">
                                 {% if bill.effective_penalty > 0 %}
                                 {{ bill.effective_penalty|floatformat:2|intcomma }}

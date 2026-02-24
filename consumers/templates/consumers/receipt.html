@@ -304,6 +304,12 @@
                         {% endif %}
                     </td>
                 </tr>
+                {% if bill.senior_citizen_discount > 0 %}
+                <tr style="color: #059669;">
+                    <td colspan="3">SC Discount (5%) <small>&#x2264;30m&#179;</small></td>
+                    <td class="amount-col">-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}</td>
+                </tr>
+                {% endif %}
                 {% endfor %}
 
                 {% if pending_bills|length < 6 %}

@@ -340,6 +340,12 @@
                     <td>WATER BILL</td>
                     <td class="amount">{{ payment.original_bill_amount|default:payment.bill.total_amount|floatformat:2|intcomma }}</td>
                 </tr>
+                {% if payment.senior_citizen_discount > 0 %}
+                <tr style="color: #059669;">
+                    <td>SC DISCOUNT (5%) &#x2264;30m&#179;</td>
+                    <td class="amount" style="color:#059669;">-{{ payment.senior_citizen_discount|floatformat:2|intcomma }}</td>
+                </tr>
+                {% endif %}
                 <tr>
                     <td style="font-size:9px;">{{ payment.bill.billing_period|date:"F Y" }} ({{ breakdown.usage_type }})</td>
                     <td></td>

@@ -958,7 +958,7 @@ class Bill(models.Model):
     )
     senior_citizen_discount = models.DecimalField(
         max_digits=10, decimal_places=2, default=Decimal('0.00'),
-        help_text="5% discount on penalty for senior citizens"
+        help_text="5% discount on water bill for senior citizens with consumption ≤ 30 m³"
     )
 
     status = models.CharField(
@@ -995,15 +995,16 @@ class Bill(models.Model):
 
     @property
     def effective_penalty(self):
-        """Return the effective penalty (0 if waived, minus senior discount)"""
+        """Return the effective penalty (0 if waived). SC discount does NOT apply to penalty."""
         if self.penalty_waived:
             return Decimal('0.00')
-        return self.penalty_amount - self.senior_citizen_discount
+        return self.penalty_amount
 
     @property
     def total_amount_due(self):
-        """Total amount including penalty (if not waived)"""
-        return self.total_amount + self.effective_penalty
+        """Total amount due = (water bill - SC discount) + penalty"""
+        discounted_bill = self.total_amount - self.senior_citizen_discount
+        return discounted_bill + self.effective_penalty
 
     def __str__(self):
         penalty_str = f" + ₱{self.penalty_amount} penalty" if self.penalty_amount > 0 and not self.penalty_waived else ""

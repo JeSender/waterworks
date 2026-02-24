@@ -289,6 +289,12 @@ def api_submit_reading(request):
                 billing_day = 1
                 due_day = 20
 
+            # Compute senior citizen water bill discount
+            # 5% of total bill if consumer is SC AND consumption <= 30 m³
+            sc_discount = Decimal('0.00')
+            if consumer.is_senior_citizen and consumption <= 30:
+                sc_discount = (Decimal(str(total_amount)) * Decimal('5') / Decimal('100')).quantize(Decimal('0.01'))
+
             # Create Bill automatically with ACTUAL tier breakdown (not averages)
             Bill.objects.create(
                 consumer=consumer,
@@ -315,6 +321,7 @@ def api_submit_reading(request):
                 rate_per_cubic=Decimal(str(rate)),
                 fixed_charge=Decimal('0.00'),
                 total_amount=Decimal(str(total_amount)),
+                senior_citizen_discount=sc_discount,
                 status='Pending'
             )
 
@@ -632,6 +639,12 @@ def api_confirm_reading(request, reading_id):
             settings=setting
         )
 
+        # Compute senior citizen water bill discount
+        # 5% of total bill if consumer is SC AND consumption <= 30 m³
+        sc_discount = Decimal('0.00')
+        if consumer.is_senior_citizen and consumption <= 30:
+            sc_discount = (total * Decimal('5') / Decimal('100')).quantize(Decimal('0.01'))
+
         # Create bill
         Bill.objects.create(
             consumer=consumer,
@@ -657,6 +670,7 @@ def api_confirm_reading(request, reading_id):
             rate_per_cubic=average_rate,
             fixed_charge=Decimal('0.00'),
             total_amount=total,
+            senior_citizen_discount=sc_discount,
             status='Pending'
         )
 
