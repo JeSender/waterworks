@@ -420,6 +420,14 @@
                 <span>TOTAL <span style="font-size:10px;">CASH</span></span>
                 <span>₱ <span class="total-amount">{{ payment.amount_paid|floatformat:2|intcomma }}</span></span>
             </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:5px; padding-top:5px; border-top:1px solid #ccc;">
+                <span>Cash Received</span>
+                <span style="font-weight:bold;">₱ {{ payment.received_amount|floatformat:2|intcomma }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; margin-top:3px;">
+                <span>Change</span>
+                <span style="font-weight:bold;">₱ {{ payment.change|floatformat:2|intcomma }}</span>
+            </div>
         </div>
 
         <!-- Amount in Words -->
