@@ -1,5 +1,5 @@
 {% extends "consumers/base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Payment History - Balilihan Waterworks{% endblock %}
 
@@ -27,7 +27,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-dark-500 uppercase tracking-wide">Total Collected</p>
-                    <p class="text-xl font-bold text-success-600">₱{{ total_stats.total_collected|floatformat:2|default:"0.00" }}</p>
+                    <p class="text-xl font-bold text-success-600">₱{{ total_stats.total_collected|floatformat:2|intcomma|default:"0.00" }}</p>
                 </div>
             </div>
         </div>
@@ -40,7 +40,7 @@
                 </div>
                 <div>
                     <p class="text-xs text-dark-500 uppercase tracking-wide">Penalties Collected</p>
-                    <p class="text-xl font-bold text-danger-600">₱{{ total_stats.total_penalties|floatformat:2|default:"0.00" }}</p>
+                    <p class="text-xl font-bold text-danger-600">₱{{ total_stats.total_penalties|floatformat:2|intcomma|default:"0.00" }}</p>
                 </div>
             </div>
         </div>
@@ -168,15 +168,15 @@
                             <div class="text-xs text-dark-500">{{ payment.bill.consumer.id_number|default:"—" }}</div>
                         </td>
                         <td class="px-4 py-3 text-right font-mono text-dark-700">
-                            ₱{{ payment.original_bill_amount|floatformat:2|default:payment.bill.total_amount|floatformat:2 }}
+                            ₱{{ payment.original_bill_amount|floatformat:2|intcomma|default:payment.bill.total_amount|floatformat:2|intcomma }}
                         </td>
                         <td class="px-4 py-3 text-right">
                             {% if payment.penalty_amount > 0 %}
                                 {% if payment.penalty_waived %}
-                                <span class="text-dark-400 line-through font-mono">₱{{ payment.penalty_amount|floatformat:2 }}</span>
+                                <span class="text-dark-400 line-through font-mono">₱{{ payment.penalty_amount|floatformat:2|intcomma }}</span>
                                 <span class="block text-xs text-success-600">Waived</span>
                                 {% else %}
-                                <span class="font-mono text-danger-600 font-semibold">₱{{ payment.penalty_amount|floatformat:2 }}</span>
+                                <span class="font-mono text-danger-600 font-semibold">₱{{ payment.penalty_amount|floatformat:2|intcomma }}</span>
                                 <span class="block text-xs text-dark-400">{{ payment.days_overdue_at_payment }} days late</span>
                                 {% endif %}
                             {% else %}
@@ -184,7 +184,7 @@
                             {% endif %}
                         </td>
                         <td class="px-4 py-3 text-right font-mono font-semibold text-success-600">
-                            ₱{{ payment.amount_paid|floatformat:2 }}
+                            ₱{{ payment.amount_paid|floatformat:2|intcomma }}
                         </td>
                         <td class="px-4 py-3 text-center">
                             {% if payment.penalty_amount > 0 and not payment.penalty_waived %}

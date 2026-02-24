@@ -98,9 +98,9 @@
                             <td class="month-cell">{{ month.month }}</td>
                             <td class="center-cell">{{ month.reading }}</td>
                             <td class="center-cell">{{ month.consumption }}</td>
-                            <td class="right-cell">{% if month.amount_due %}{{ month.amount_due|floatformat:2 }}{% endif %}</td>
-                            <td class="right-cell">{% if month.penalty %}{{ month.penalty|floatformat:2 }}{% endif %}</td>
-                            <td class="right-cell bold-cell">{% if month.amount_paid %}{{ month.amount_paid|floatformat:2 }}{% endif %}</td>
+                            <td class="right-cell">{% if month.amount_due %}{{ month.amount_due|floatformat:2|intcomma }}{% endif %}</td>
+                            <td class="right-cell">{% if month.penalty %}{{ month.penalty|floatformat:2|intcomma }}{% endif %}</td>
+                            <td class="right-cell bold-cell">{% if month.amount_paid %}{{ month.amount_paid|floatformat:2|intcomma }}{% endif %}</td>
                             <td class="center-cell small-cell">{% if month.receipt_number %}{{ month.receipt_number }}{% endif %}</td>
                             <td class="center-cell">{% if month.date_issued %}{{ month.date_issued|date:"m/d/Y" }}{% endif %}</td>
                             <td class="center-cell">{{ month.initial }}</td>

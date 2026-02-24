@@ -1,5 +1,5 @@
 {% extends "consumers/base.html" %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Consumer Details{% endblock %}
 
@@ -151,7 +151,7 @@
                         <td class="px-4 py-2.5 text-right text-dark-700">{{ bill.previous_reading.reading_value|floatformat:0 }} m³</td>
                         <td class="px-4 py-2.5 text-right text-dark-700">{{ bill.current_reading.reading_value|floatformat:0 }} m³</td>
                         <td class="px-4 py-2.5 text-right font-medium text-dark-900">{{ bill.consumption|floatformat:0 }} m³</td>
-                        <td class="px-4 py-2.5 text-right font-semibold text-success-700">₱{{ bill.total_amount|floatformat:2 }}</td>
+                        <td class="px-4 py-2.5 text-right font-semibold text-success-700">₱{{ bill.total_amount|floatformat:2|intcomma }}</td>
                         <td class="px-4 py-2.5 text-center">
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-warning-100 text-warning-800">
                                 {{ bill.status }}

@@ -1,6 +1,6 @@
 {% extends "consumers/base.html" %}
 {% load dict_extras %}
-{% load static %}
+{% load static humanize %}
 
 {% block title %}Process Payment - Balilihan Waterworks{% endblock %}
 
@@ -83,7 +83,7 @@
                         {% with bill=consumer_bills|get_item:consumer.id %}
                         {% if bill %}
                         <div class="text-right">
-                            <div class="text-sm font-bold text-warning-700">₱{{ bill.total_amount_due|floatformat:2 }}</div>
+                            <div class="text-sm font-bold text-warning-700">₱{{ bill.total_amount_due|floatformat:2|intcomma }}</div>
                             <span class="text-[10px] uppercase tracking-wider font-semibold text-warning-600">Due</span>
                         </div>
                         {% endif %}
@@ -198,11 +198,11 @@
                                 </td>
                                 <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
-                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2 }}</td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2|intcomma }}</td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.effective_penalty > 0 %}text-danger-600 font-semibold{% else %}text-dark-400{% endif %}">
-                                    {% if bill.effective_penalty > 0 %}{{ bill.effective_penalty|floatformat:2 }}{% else %}—{% endif %}
+                                    {% if bill.effective_penalty > 0 %}{{ bill.effective_penalty|floatformat:2|intcomma }}{% else %}—{% endif %}
                                 </td>
-                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono font-bold text-dark-900">{{ bill.total_amount_due|floatformat:2 }}</td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono font-bold text-dark-900">{{ bill.total_amount_due|floatformat:2|intcomma }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -224,7 +224,7 @@
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-bold text-dark-800 uppercase">Total Amount Due:</span>
                         <span id="total-due-display" class="text-xl font-bold text-dark-900 font-mono">
-                            ₱{{ total_due|floatformat:2 }}
+                            ₱{{ total_due|floatformat:2|intcomma }}
                         </span>
                     </div>
                 </div>

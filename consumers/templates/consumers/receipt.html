@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Water Bill - {{ consumer.last_name }}, {{ consumer.first_name }}</title>
-    {% load static %}
+    {% load static humanize %}
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -295,10 +295,10 @@
                     <td class="num-col">{{ forloop.counter }}.</td>
                     <td style="font-weight:bold;">{{ bill.billing_period|date:"M Y" }}</td>
                     <td class="consumed-col" style="font-weight:bold;">{{ bill.consumption }}</td>
-                    <td class="amount-col">{{ bill.total_amount|floatformat:2 }}</td>
+                    <td class="amount-col">{{ bill.total_amount|floatformat:2|intcomma }}</td>
                     <td class="penalty-col">
                         {% if bill.effective_penalty > 0 %}
-                        {{ bill.effective_penalty|floatformat:2 }}
+                        {{ bill.effective_penalty|floatformat:2|intcomma }}
                         {% else %}
                         —
                         {% endif %}
@@ -325,7 +325,7 @@
         <!-- Total Amount -->
         <div class="total-section">
             <span class="total-label">Total Amount:</span>
-            <span class="total-amount">{{ grand_total|floatformat:2 }}</span>
+            <span class="total-amount">{{ grand_total|floatformat:2|intcomma }}</span>
         </div>
 
         <!-- Issued By -->
