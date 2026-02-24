@@ -125,6 +125,8 @@
             <input type="hidden" name="consumer_id" value="{{ selected_consumer.id }}">
             <input type="hidden" name="bill_ids" id="hidden-bill-ids"
                    value="{% for b in pending_bills %}{{ b.id }}{% if not forloop.last %},{% endif %}{% endfor %}">
+            <input type="hidden" name="received_amount" id="hidden-received">
+            <input type="hidden" name="remarks" id="hidden-remarks">
 
             <!-- Bill Card -->
             <div class="bg-white rounded-xl border-2 border-dark-300 shadow-md overflow-hidden mb-4">
@@ -157,11 +159,11 @@
                     </div>
                     <div class="flex items-baseline gap-2">
                         <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">Barangay:</span>
-                        <span class="text-sm font-semibold text-dark-800">{{ selected_consumer.barangay.name|default:"—" }}</span>
+                        <span class="text-sm font-semibold text-dark-800">{{ selected_consumer.barangay.name|default:"&mdash;" }}</span>
                     </div>
                     <div class="flex items-baseline gap-2">
                         <span class="text-xs text-dark-500 font-semibold uppercase w-24 flex-shrink-0">ID Number:</span>
-                        <span class="text-sm font-mono font-semibold text-success-700">{{ selected_consumer.id_number|default:"—" }}</span>
+                        <span class="text-sm font-mono font-semibold text-success-700">{{ selected_consumer.id_number|default:"&mdash;" }}</span>
                     </div>
                 </div>
 
@@ -177,7 +179,7 @@
                                            class="w-3.5 h-3.5 rounded cursor-pointer accent-success-600">
                                 </th>
                                 <th class="border border-dark-300 px-2 py-1.5 text-left font-bold text-dark-700">Month</th>
-                                <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">m³</th>
+                                <th class="border border-dark-300 px-2 py-1.5 text-center font-bold text-dark-700">m&#179;</th>
                                 <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Bill</th>
                                 <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-success-700">SC Disc.</th>
                                 <th class="border border-dark-300 px-2 py-1.5 text-right font-bold text-dark-700">Penalty</th>
@@ -200,17 +202,11 @@
                                 <td class="border border-dark-300 px-2 py-1.5 font-semibold text-dark-800">{{ bill.billing_period|date:"M Y" }}</td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-center font-semibold text-dark-800">{{ bill.consumption }}</td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono text-dark-800">{{ bill.total_amount|floatformat:2|intcomma }}</td>
-                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.senior_citizen_discount > 0 %}text-success-600 font-semibold{% else %}text-dark-400{% endif %}">
-                                     {% if bill.senior_citizen_discount > 0 %}-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
-                                 </td>
-                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.senior_citizen_discount > 0 %}text-success-600 font-semibold{% else %}text-dark-400{% endif %}">
-                                     {% if bill.senior_citizen_discount > 0 %}-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
-                                 </td>
-                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.senior_citizen_discount > 0 %}text-success-600 font-semibold{% else %}text-dark-400{% endif %}">
-                                     {% if bill.senior_citizen_discount > 0 %}-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
-                                 </td>
+                                <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.senior_citizen_discount > 0 %}text-success-600 font-semibold{% else %}text-dark-400{% endif %}">
+                                    {% if bill.senior_citizen_discount > 0 %}-{{ bill.senior_citizen_discount|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
+                                </td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono {% if bill.effective_penalty > 0 %}text-danger-600 font-semibold{% else %}text-dark-400{% endif %}">
-                                    {% if bill.effective_penalty > 0 %}{{ bill.effective_penalty|floatformat:2|intcomma }}{% else %}—{% endif %}
+                                    {% if bill.effective_penalty > 0 %}{{ bill.effective_penalty|floatformat:2|intcomma }}{% else %}&mdash;{% endif %}
                                 </td>
                                 <td class="border border-dark-300 px-2 py-1.5 text-right font-mono font-bold text-dark-900">{{ bill.total_amount_due|floatformat:2|intcomma }}</td>
                             </tr>
@@ -228,18 +224,18 @@
                     {% endif %}
                 </div>
 
-
                 <!-- Total Amount Due -->
                 <div class="px-5 py-3 bg-dark-50 border-b border-dark-200">
                     <div class="flex items-center justify-between">
                         <span class="text-sm font-bold text-dark-800 uppercase">Total Amount Due:</span>
                         <span id="total-due-display" class="text-xl font-bold text-dark-900 font-mono">
-                            ₱{{ total_due|floatformat:2|intcomma }}
+                            &#8369;{{ total_due|floatformat:2|intcomma }}
                         </span>
                     </div>
                 </div>
 
                 <!-- Cashier + Proceed button -->
+                {% if pending_bills %}
                 <div class="px-5 py-3 flex items-center justify-between">
                     <div class="flex items-baseline gap-2">
                         <span class="text-xs text-dark-500 font-semibold uppercase">Cashier:</span>
@@ -255,51 +251,37 @@
                 </div>
                 {% endif %}
 
-            </div>
-
-            <!-- Hidden fields carried into form on modal submit -->
-            <input type="hidden" name="received_amount" id="hidden-received">
-            <input type="hidden" name="remarks"         id="hidden-remarks">
-
+            </div><!-- /bill card -->
         </form>
     </div>
     {% endif %}
 
-    <!-- ═══════════════════════════════════════════════════
-         CASH MODAL
-    ════════════════════════════════════════════════════════ -->
+    <!-- CASH MODAL -->
     {% if selected_consumer and pending_bills %}
     <div id="cash-modal"
          class="fixed inset-0 z-50 hidden items-center justify-center"
          style="background: rgba(0,0,0,0.45); backdrop-filter: blur(2px);">
-
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 overflow-hidden"
              style="animation: modalPop .22s ease-out;">
-
             <!-- Modal header -->
             <div class="bg-gradient-to-r from-success-600 to-success-700 text-white px-6 py-4 flex items-center justify-between">
                 <div>
                     <h3 class="text-base font-bold">Cash Transaction</h3>
-                    <p class="text-xs text-white/80 mt-0.5 truncate">
-                        {{ selected_consumer.last_name }}, {{ selected_consumer.first_name }}
-                    </p>
+                    <p class="text-xs text-white/80 mt-0.5">{{ selected_consumer.last_name }}, {{ selected_consumer.first_name }}</p>
                 </div>
                 <button type="button" onclick="closeCashModal()" class="text-white/70 hover:text-white text-2xl leading-none">&times;</button>
             </div>
-
             <div class="px-6 py-5 space-y-4">
-
                 <!-- Total Due -->
                 <div class="bg-dark-50 rounded-xl px-4 py-3 flex items-center justify-between border border-dark-200">
-                    <span class="text-xs font-bold text-dark-700 uppercase tracking-wide">Total Due</span>
-                    <span id="modal-total-due" class="text-2xl font-bold font-mono text-dark-900">₱{{ total_due|floatformat:2|intcomma }}</span>
+                    <span class="text-xs font-bold text-dark-700 uppercase">Total Due</span>
+                    <span id="modal-total-due" class="text-2xl font-bold font-mono text-dark-900">&#8369;{{ total_due|floatformat:2|intcomma }}</span>
                 </div>
-
                 <!-- Cash Received -->
                 <div>
-                    <label class="block text-xs font-bold text-dark-700 uppercase mb-1.5">Cash Received (₱)</label>
+                    <label class="block text-xs font-bold text-dark-700 uppercase mb-1.5">Cash Received (&#8369;)</label>
                     <div class="relative">
-                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500 font-bold">₱</span>
+                        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-dark-500 font-bold">&#8369;</span>
                         <input type="number"
                                id="received_amount"
                                min="{{ total_due|floatformat:2 }}"
@@ -309,43 +291,34 @@
                                oninput="updateChange()">
                     </div>
                     <p id="amount-error" class="text-xs text-danger-600 mt-1 hidden">
-                        <i class="bi bi-exclamation-circle mr-1"></i>Must be at least ₱<span id="min-amount">{{ total_due|floatformat:2 }}</span>
+                        <i class="bi bi-exclamation-circle mr-1"></i>Must be at least &#8369;<span id="min-amount">{{ total_due|floatformat:2 }}</span>
                     </p>
                 </div>
-
                 <!-- Change -->
                 <div class="bg-success-50 rounded-xl border-2 border-success-300 px-4 py-4 flex items-center justify-between">
-                    <span class="text-sm font-bold text-dark-700 uppercase tracking-wide">Change</span>
-                    <span id="change-display" class="text-3xl font-bold font-mono text-success-600">₱0.00</span>
+                    <span class="text-sm font-bold text-dark-700 uppercase">Change</span>
+                    <span id="change-display" class="text-3xl font-bold font-mono text-success-600">&#8369;0.00</span>
                 </div>
-
                 <!-- Remarks -->
                 <div>
                     <label class="block text-xs font-semibold text-dark-700 uppercase mb-1">
                         Remarks <span class="text-dark-400 font-normal">(optional)</span>
                     </label>
-                    <input type="text"
-                           id="remarks"
+                    <input type="text" id="remarks"
                            placeholder="e.g. partial payment, penalty waived..."
                            class="w-full px-3 py-2 text-sm border border-dark-200 rounded-lg focus:outline-none focus:border-success-500 focus:ring-1 focus:ring-success-200">
                 </div>
-
                 <!-- Buttons -->
                 <div class="flex gap-2 pt-1">
-                    <button type="button"
-                            onclick="closeCashModal()"
+                    <button type="button" onclick="closeCashModal()"
                             class="flex-1 py-2.5 bg-light-100 hover:bg-light-200 text-dark-700 text-sm font-semibold rounded-lg border border-light-300 transition-colors">
                         <i class="bi bi-x-lg mr-1"></i>Cancel
                     </button>
-                    <button type="button"
-                            id="submit-btn"
-                            onclick="submitPayment()"
-                            disabled
+                    <button type="button" id="submit-btn" onclick="submitPayment()" disabled
                             class="flex-1 py-2.5 bg-success-600 hover:bg-success-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
                         <i class="bi bi-printer mr-1"></i>Print Receipt
                     </button>
                 </div>
-
             </div>
         </div>
     </div>
@@ -384,7 +357,7 @@ function filterConsumers() {
     let visibleCount = 0;
     cards.forEach(card => {
         const name = card.getAttribute('data-name') || '';
-        const id = card.getAttribute('data-id') || '';
+        const id   = card.getAttribute('data-id') || '';
         const show = name.includes(filter) || id.includes(filter);
         card.style.display = show ? '' : 'none';
         if (show) visibleCount++;
@@ -399,7 +372,7 @@ function filterConsumers() {
 // ---- Bill selection (oldest-first rule) ----
 function initBillSelection() {
     const checkboxes = document.querySelectorAll('.bill-checkbox');
-    const selectAll = document.getElementById('select-all-bills');
+    const selectAll  = document.getElementById('select-all-bills');
     if (!checkboxes.length) return;
 
     checkboxes.forEach(cb => {
@@ -443,22 +416,20 @@ function initBillSelection() {
             }
         });
 
-        // Update total-due display
-        const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        const td  = document.getElementById('total-due-display');
-        const mtd = document.getElementById('modal-total-due');
-        if (td)  td.textContent  = fmt(total);
-        if (mtd) mtd.textContent = fmt(total);
+        const fmt = v => '&#8369;' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        const tdEl  = document.getElementById('total-due-display');
+        const mtdEl = document.getElementById('modal-total-due');
+        if (tdEl)  tdEl.textContent  = '\u20b1' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        if (mtdEl) mtdEl.textContent = '\u20b1' + total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 
-        // Update hidden bill IDs
         const hiddenIds = document.getElementById('hidden-bill-ids');
         if (hiddenIds) hiddenIds.value = ids.join(',');
 
-        // Update cash input minimum
-        const receivedInput = document.getElementById('received_amount');
-        if (receivedInput) {
-            receivedInput.min = total.toFixed(2);
-            document.getElementById('min-amount').textContent = total.toFixed(2);
+        const recv = document.getElementById('received_amount');
+        if (recv) {
+            recv.min = total.toFixed(2);
+            const minSpan = document.getElementById('min-amount');
+            if (minSpan) minSpan.textContent = total.toFixed(2);
         }
 
         window._totalDue = total;
@@ -473,25 +444,17 @@ function updateChange() {
     const received = parseFloat(document.getElementById('received_amount')?.value) || 0;
     const due = window._totalDue;
     const change = received - due;
-
     const changeDisplay = document.getElementById('change-display');
     const submitBtn = document.getElementById('submit-btn');
     const amountError = document.getElementById('amount-error');
 
     if (changeDisplay) {
-        const fmtC = v => '₱' + Math.max(v, 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        changeDisplay.textContent = fmtC(change);
+        changeDisplay.textContent = '\u20b1' + Math.max(change, 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         changeDisplay.classList.toggle('text-success-600', change >= 0);
         changeDisplay.classList.toggle('text-danger-600', change < 0);
     }
-
-    if (submitBtn) {
-        submitBtn.disabled = received < due || received === 0;
-    }
-
-    if (amountError) {
-        amountError.classList.toggle('hidden', received >= due || received === 0);
-    }
+    if (submitBtn)   submitBtn.disabled = received < due || received === 0;
+    if (amountError) amountError.classList.toggle('hidden', received >= due || received === 0);
 }
 
 // ---- Modal open / close ----
@@ -517,7 +480,7 @@ function closeCashModal() {
     if (inp) { inp.value = ''; updateChange(); }
 }
 
-// ---- Submit: copy modal values into hidden form fields ----
+// ---- Submit ----
 function submitPayment() {
     const received = document.getElementById('received_amount')?.value || '';
     const remarks  = document.getElementById('remarks')?.value || '';
@@ -528,7 +491,7 @@ function submitPayment() {
     document.getElementById('payment-form').submit();
 }
 
-// ---- Close modal on backdrop click or Escape ----
+// ---- Close modal on backdrop / Escape ----
 document.addEventListener('click', function(e) {
     const modal = document.getElementById('cash-modal');
     if (modal && e.target === modal) closeCashModal();
@@ -549,3 +512,4 @@ document.addEventListener('DOMContentLoaded', function () {
     updateChange();
 });
 </script>
+{% endblock %}
