@@ -127,19 +127,21 @@
                         </td>
 
                         <td class="px-4 py-2 text-center">
-                            <div class="flex items-center justify-center gap-2">
+                            <div class="flex items-center justify-center gap-2 w-full">
                                 {% if item.reading %}
                                     <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }}, '{{ item.reading.proof_image_url|default:"" }}')"
-                                            class="inline-flex items-center justify-center w-8 h-8 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors flex-shrink-0"
                                             title="View Reading Details">
                                         <i class="bi bi-info-circle text-lg"></i>
                                     </button>
+                                {% else %}
+                                    <div class="w-8 h-8 flex-shrink-0"></div> <!-- Placeholder to keep column straight -->
                                 {% endif %}
-                                    <a href="{% url 'consumers:consumer_bill' item.consumer.id %}"
-                                       class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
-                                       title="View Consumer Bills">
-                                        <i class="bi bi-receipt text-lg"></i>
-                                    </a>
+                                <a href="{% url 'consumers:consumer_bill' item.consumer.id %}"
+                                   class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-600 text-white hover:bg-green-700 transition-colors flex-shrink-0"
+                                   title="View Consumer Bills">
+                                    <i class="bi bi-receipt text-lg"></i>
+                                </a>
                             </div>
                         </td>
                     </tr>
