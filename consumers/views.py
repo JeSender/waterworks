@@ -5779,14 +5779,24 @@ def user_login_history(request):
     # Order by most recent
     login_events = login_events.order_by('-login_timestamp')
 
+    # Annotate with the exact time of last activity (or login if no activities)
+    from django.db.models import Max
+    from django.db.models.functions import Coalesce
+    
+    login_events = login_events.annotate(
+        last_activity_time=Coalesce(Max('activities__created_at'), 'login_timestamp')
+    )
+
     # Calculate ALL Analytics in ONE query using conditional aggregation
     last_24_hours = timezone.now() - timedelta(hours=24)
+    idle_cutoff = timezone.now() - timedelta(hours=2) # 2 hours idle timeout
+    
     stats = login_events.aggregate(
         total_logins=Count('id'),
         successful_logins=Count('id', filter=Q(status='success')),
         failed_logins=Count('id', filter=Q(status='failed')),
-        # Active: Success AND no logout AND occurred within the last 24 hours
-        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True, login_timestamp__gte=last_24_hours)),
+        # Active: Success AND no logout AND had interactive activity within the last 2 hours
+        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True, last_activity_time__gte=idle_cutoff)),
         recent_logins=Count('id', filter=Q(login_timestamp__gte=last_24_hours))
     )
     

@@ -49,17 +49,39 @@ class UserLoginEvent(models.Model):
         return f"{self.user.username} - {self.status} - {self.login_timestamp.strftime('%Y-%m-%d %H:%M:%S')}"
 
     @property
-    def session_duration(self):
-        """Calculate session duration if logged out"""
+    def effective_end_time(self):
+        """Returns logout_timestamp, or last activity time if idle, or None if still active"""
         if self.logout_timestamp:
-            return self.logout_timestamp - self.login_timestamp
+            return self.logout_timestamp
+
+        if self.status != 'success':
+            return self.login_timestamp
+
+        from datetime import timedelta
+        cutoff_time = timezone.now() - timedelta(hours=2) # 2 hours idle timeout
+        
+        # Use pre-fetched activities
+        activities = list(self.activities.all())
+        last_time = activities[0].created_at if activities else self.login_timestamp
+        
+        if last_time < cutoff_time:
+            return last_time # Session went idle organically
+            
         return None
+
+    @property
+    def session_duration(self):
+        """Calculate session duration"""
+        end_time = self.effective_end_time or timezone.now()
+        return end_time - self.login_timestamp
 
     @property
     def session_duration_formatted(self):
         """Return formatted session duration string"""
-        if self.logout_timestamp:
-            duration = self.logout_timestamp - self.login_timestamp
+        end_time = self.effective_end_time
+        
+        if end_time:
+            duration = end_time - self.login_timestamp
             total_seconds = int(duration.total_seconds())
             hours, remainder = divmod(total_seconds, 3600)
             minutes, seconds = divmod(remainder, 60)
@@ -74,10 +96,8 @@ class UserLoginEvent(models.Model):
 
     @property
     def is_active_session(self):
-        """Check if session is still active (logged in < 24 hours ago and no logout recorded)"""
-        from datetime import timedelta
-        is_recent = self.login_timestamp >= timezone.now() - timedelta(hours=24)
-        return self.status == 'success' and self.logout_timestamp is None and is_recent
+        """Check if session is still active (recent activity within 2h and no logout)"""
+        return self.status == 'success' and self.effective_end_time is None
 
     @property
     def activities_count(self):
