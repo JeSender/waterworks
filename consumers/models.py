@@ -74,8 +74,10 @@ class UserLoginEvent(models.Model):
 
     @property
     def is_active_session(self):
-        """Check if session is still active"""
-        return self.status == 'success' and self.logout_timestamp is None
+        """Check if session is still active (logged in < 24 hours ago and no logout recorded)"""
+        from datetime import timedelta
+        is_recent = self.login_timestamp >= timezone.now() - timedelta(hours=24)
+        return self.status == 'success' and self.logout_timestamp is None and is_recent
 
     @property
     def activities_count(self):

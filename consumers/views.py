@@ -5739,6 +5739,11 @@ def user_login_history(request):
     method_filter: str = request.GET.get('method', '')
     date_from: str = request.GET.get('date_from', '')
     date_to: str = request.GET.get('date_to', '')
+    barangay_filter: str = request.GET.get('barangay', '') # New barangay filter
+    
+    # Load barangays for the filter dropdown
+    from .models import Barangay
+    barangays = Barangay.objects.all().order_by('name')
 
     # Base query - prefetch activities for session tracking
     login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities').all()
@@ -5767,6 +5772,10 @@ def user_login_history(request):
         date_to_end = date_to_obj.replace(hour=23, minute=59, second=59)
         login_events = login_events.filter(login_timestamp__lte=date_to_end)
 
+    if barangay_filter:
+        # Filter logins where the user's staff profile is assigned to this barangay
+        login_events = login_events.filter(user__staffprofile__assigned_barangay_id=barangay_filter)
+
     # Order by most recent
     login_events = login_events.order_by('-login_timestamp')
 
@@ -5776,7 +5785,8 @@ def user_login_history(request):
         total_logins=Count('id'),
         successful_logins=Count('id', filter=Q(status='success')),
         failed_logins=Count('id', filter=Q(status='failed')),
-        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True)),
+        # Active: Success AND no logout AND occurred within the last 24 hours
+        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True, login_timestamp__gte=last_24_hours)),
         recent_logins=Count('id', filter=Q(login_timestamp__gte=last_24_hours))
     )
     
@@ -5803,6 +5813,8 @@ def user_login_history(request):
         'method_filter': method_filter,
         'date_from': date_from,
         'date_to': date_to,
+        'barangays': barangays,
+        'barangay_filter': barangay_filter,
         # Analytics
         'total_logins': total_logins,
         'successful_logins': successful_logins,

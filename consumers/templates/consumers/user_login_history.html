@@ -90,6 +90,15 @@
                 </select>
             </div>
             <div>
+                <label class="block text-base font-medium text-dark-700 mb-2">Barangay</label>
+                <select name="barangay" class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500">
+                    <option value="">All Barangays</option>
+                    {% for brgy in barangays %}
+                    <option value="{{ brgy.id }}" {% if barangay_filter|add:"0" == brgy.id %}selected{% endif %}>{{ brgy.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div>
                 <label class="block text-base font-medium text-dark-700 mb-2">From Date</label>
                 <input type="date" name="date_from" class="w-full px-4 py-3 text-base border border-light-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500" value="{{ date_from }}">
             </div>
@@ -138,9 +147,13 @@
                             {% if event.logout_timestamp %}
                             <div class="font-medium">{{ event.logout_timestamp|date:"M d, Y" }}</div>
                             <div class="text-xs text-dark-500">{{ event.logout_timestamp|date:"h:i:s A" }}</div>
-                            {% elif event.status == 'success' and not event.logout_timestamp %}
+                            {% elif event.is_active_session %}
                             <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-success-100 text-success-800">
                                 <i class="bi bi-circle-fill mr-1" style="font-size: 0.4rem;"></i>Still Active
+                            </span>
+                            {% elif event.status == 'success' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-light-200 text-dark-500" title="Session automatically marked inactive after 24 hours">
+                                <i class="bi bi-clock-history mr-1"></i>Inactive (No Logout)
                             </span>
                             {% else %}
                             <span class="text-dark-400">—</span>
@@ -227,19 +240,19 @@
             <nav class="flex justify-center">
                 <ul class="flex items-center gap-1">
                     {% if login_events.has_previous %}
-                    <li><a href="?page={{ login_events.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Previous</a></li>
+                    <li><a href="?page={{ login_events.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Previous</a></li>
                     {% endif %}
 
                     {% for num in login_events.paginator.page_range %}
                     {% if login_events.number == num %}
                     <li><span class="px-3 py-1 text-sm bg-primary-600 text-white rounded">{{ num }}</span></li>
                     {% elif num > login_events.number|add:'-3' and num < login_events.number|add:'3' %}
-                    <li><a href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">{{ num }}</a></li>
+                    <li><a href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">{{ num }}</a></li>
                     {% endif %}
                     {% endfor %}
 
                     {% if login_events.has_next %}
-                    <li><a href="?page={{ login_events.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Next</a></li>
+                    <li><a href="?page={{ login_events.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&method={{ method_filter }}&date_from={{ date_from }}&date_to={{ date_to }}{% if barangay_filter %}&barangay={{ barangay_filter }}{% endif %}" class="px-3 py-1 text-sm border border-light-300 rounded hover:bg-light-100">Next</a></li>
                     {% endif %}
                 </ul>
             </nav>
