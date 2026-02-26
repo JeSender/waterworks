@@ -334,7 +334,7 @@ def api_submit_reading(request):
                 title='New Meter Reading Submitted',
                 message=f'{consumer.first_name} {consumer.last_name} ({consumer.id_number}) - {consumer.barangay.name} | Bill: ₱{total_amount:.2f}',
                 related_object_id=reading.id,
-                redirect_url=reverse('consumers:barangay_meter_readings', kwargs={'barangay_id': consumer.barangay.id})
+                redirect_url=reverse('consumers:consumer_bill', args=[consumer.id])
             )
 
         # Track activity for login session (using current_user from session or token)
@@ -754,7 +754,8 @@ def api_reject_reading(request, reading_id):
                 notification_type='system_alert',
                 title='Reading Rejected',
                 message=f'Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected. Reason: {reason}',
-                related_object_id=reading.id
+                related_object_id=reading.id,
+                redirect_url=reverse('consumers:consumer_bill', args=[reading.consumer.id])
             )
 
         return JsonResponse({
@@ -4674,12 +4675,13 @@ def reject_reading(request, reading_id):
 
     # Create notification for the field staff who submitted
     if reading.submitted_by:
+        from django.urls import reverse
         Notification.objects.create(
             user=reading.submitted_by,
             notification_type='reading_rejected',
             title='Reading Rejected',
             message=f"Your reading for {reading.consumer.first_name} {reading.consumer.last_name} was rejected: {reason}",
-            redirect_url=''
+            redirect_url=reverse('consumers:consumer_bill', args=[reading.consumer.id])
         )
 
     return JsonResponse({
