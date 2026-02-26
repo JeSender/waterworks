@@ -127,18 +127,20 @@
                         </td>
 
                         <td class="px-4 py-2 text-center">
-                            {% if item.reading %}
-                                <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }}, '{{ item.reading.proof_image_url|default:"" }}')"
-                                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
-                                        title="Show Reading Details">
-                                    <i class="bi bi-info-circle mr-1.5"></i> Details
-                                </button>
-                            {% endif %}
-                                <a href="{% url 'consumers:consumer_bill' item.consumer.id %}"
-                                   class="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
-                                   title="View Bills">
-                                    <i class="bi bi-receipt"></i>
-                                </a>
+                            <div class="flex items-center justify-center gap-2">
+                                {% if item.reading %}
+                                    <button onclick="openDetailsModal('{{ item.display_id }}', '{{ item.consumer.first_name }} {{ item.consumer.last_name }}', '{{ item.consumer.barangay.name }}', {{ item.reading.reading_value }}, {{ item.prev_reading.reading_value|default:item.consumer.first_reading|default:0 }}, {{ item.consumption|default:0 }}, '{{ item.reading.reading_date|date:"Y-m-d" }}', '{{ item.reading.get_source_display|default:item.reading.source }}', {{ item.reading.is_confirmed|lower }}, '{{ item.reading.proof_image_url|default:"" }}')"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded bg-blue-600 text-white hover:bg-blue-700 transition-colors"
+                                            title="View Reading Details">
+                                        <i class="bi bi-info-circle text-lg"></i>
+                                    </button>
+                                {% endif %}
+                                    <a href="{% url 'consumers:consumer_bill' item.consumer.id %}"
+                                       class="inline-flex items-center justify-center w-8 h-8 rounded bg-green-600 text-white hover:bg-green-700 transition-colors"
+                                       title="View Consumer Bills">
+                                        <i class="bi bi-receipt text-lg"></i>
+                                    </a>
+                            </div>
                         </td>
                     </tr>
                 {% empty %}
