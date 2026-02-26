@@ -5892,10 +5892,18 @@ def consumer_bill(request, consumer_id):
 
     # Get service history events for this consumer
     consumer_name = f"{consumer.first_name} {consumer.last_name}"
-    service_events = UserActivity.objects.filter(
-        action__in=['consumer_disconnected', 'consumer_reconnected'],
-        description__icontains=consumer.id_number or consumer_name
-    ).order_by('created_at')
+    from django.db.models import Q
+    
+    # We must match either the id_number explicitly in parentheses, or their exact name
+    # We use Q objects to ensure both conditions are searched independently
+    query = Q(action__in=['consumer_disconnected', 'consumer_reconnected'])
+    
+    if consumer.id_number:
+        query &= (Q(description__icontains=consumer.id_number) | Q(description__icontains=consumer_name))
+    else:
+        query &= Q(description__icontains=consumer_name)
+        
+    service_events = UserActivity.objects.filter(query).order_by('created_at')
 
     # Build a timeline of connection status changes
     # Each event marks a status change at a point in time
