@@ -264,6 +264,7 @@
         }
         .btn-print { background: #2563eb; color: #fff; }
         .btn-new { background: #16a34a; color: #fff; }
+        .btn-back { background: #4b5563; color: #fff; }
 
         @media print {
             body { background: #fff; margin: 0; padding: 0; }
@@ -282,6 +283,11 @@
     </style>
 </head>
 <body>
+    <!-- Top Action Buttons (Not Printed) -->
+    <div class="no-print" style="text-align: left; max-width: 90mm; margin: 10px auto 0;">
+        <a href="javascript:history.back()" class="btn-back" style="padding: 10px 20px; text-decoration: none; border-radius: 5px; font-size: 14px; display: inline-block;">&larr; Back</a>
+    </div>
+
     <div class="receipt">
         <!-- Header with Logos -->
         <div class="header">
@@ -481,6 +487,7 @@
 
     <!-- Action Buttons -->
     <div class="no-print">
+        <a href="javascript:history.back()" class="btn-back">Back</a>
         <button class="btn-print" onclick="window.print()">Print Receipt</button>
         <a href="{% url 'consumers:process_payment' %}" class="btn-new">New Payment</a>
     </div>
