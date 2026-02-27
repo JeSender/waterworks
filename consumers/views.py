@@ -5747,7 +5747,17 @@ def user_login_history(request):
     barangays = Barangay.objects.all().order_by('name')
 
     # Base query - prefetch activities for session tracking
-    login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities').all()
+    from django.db.models import Subquery, OuterRef
+    
+    # Get the latest event ID for each user
+    latest_event_ids = UserLoginEvent.objects.filter(
+        user=OuterRef('user')
+    ).order_by('-login_timestamp').values('id')[:1]
+    
+    # Base query - only the latest events
+    login_events = UserLoginEvent.objects.filter(
+        id__in=Subquery(latest_event_ids)
+    ).select_related('user').prefetch_related('activities')
 
     # Apply filters
     if search_query:
@@ -5789,15 +5799,18 @@ def user_login_history(request):
     )
 
     # Calculate ALL Analytics in ONE query using conditional aggregation
+    # Note: We calculate this across ALL login events, not just the filtered latest ones,
+    # so the analytics cards remain accurate for the entire system history.
     last_24_hours = timezone.now() - timedelta(hours=24)
     idle_cutoff = timezone.now() - timedelta(hours=2) # 2 hours idle timeout
     
-    stats = login_events.aggregate(
+    all_events = UserLoginEvent.objects.all()
+    stats = all_events.aggregate(
         total_logins=Count('id'),
         successful_logins=Count('id', filter=Q(status='success')),
         failed_logins=Count('id', filter=Q(status='failed')),
         # Active: Success AND no logout AND had interactive activity within the last 2 hours
-        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True, last_activity_time__gte=idle_cutoff)),
+        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True)),
         recent_logins=Count('id', filter=Q(login_timestamp__gte=last_24_hours))
     )
     
@@ -5835,6 +5848,36 @@ def user_login_history(request):
         'top_users': top_users,
     }
     return render(request, 'consumers/user_login_history.html', context)
+
+
+@login_required
+def user_specific_login_history(request, user_id):
+    """
+    Detailed login history for a specific user.
+    """
+    from django.shortcuts import get_object_or_404
+    from django.core.paginator import Paginator
+    
+    # Security check - only admins and superusers
+    if not (request.user.is_superuser or (hasattr(request.user, 'staffprofile') and request.user.staffprofile.role == 'admin')):
+        messages.error(request, "Access Denied: Administrative privileges required to view login history.")
+        return render(request, 'consumers/403.html', status=403)
+
+    target_user = get_object_or_404(User, id=user_id)
+    
+    # Base query - prefetch activities for session tracking
+    login_events = UserLoginEvent.objects.filter(user=target_user).prefetch_related('activities').order_by('-login_timestamp')
+
+    # Pagination
+    paginator = Paginator(login_events, 25)  # 25 items per page
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'target_user': target_user,
+        'login_events': page_obj,
+    }
+    return render(request, 'consumers/user_specific_login_history.html', context)
 
 
 @login_required

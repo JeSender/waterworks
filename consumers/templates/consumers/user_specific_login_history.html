@@ -2,66 +2,19 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}Login History{% endblock %}
+{% block title %}Login History - {{ target_user.username }}{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
     <!-- Page Header -->
     <div class="mb-6 flex items-start justify-between">
         <div>
-            <h2 class="text-2xl font-bold text-dark-900">Latest Logins</h2>
-            <p class="text-dark-500 text-base mt-1">Monitor Recent User Authentication Patterns</p>
+            <h2 class="text-2xl font-bold text-dark-900">Login History: {{ target_user.get_full_name|default:target_user.username }}</h2>
+            <p class="text-dark-500 text-base mt-1">Detailed Access Log for {{ target_user.username }}</p>
         </div>
-        <a href="{% url 'consumers:home' %}" class="btn-secondary">
-            <i class="bi bi-arrow-left"></i>Back to Dashboard
+        <a href="{% url 'consumers:user_login_history' %}" class="btn-secondary">
+            <i class="bi bi-arrow-left"></i>Back to All Logins
         </a>
-    </div>
-
-    <!-- Analytics Cards -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <!-- Total Logins -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-l-primary-500 hover:shadow-lg transition-all duration-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-dark-600 uppercase tracking-wide mb-1">Total Logins</p>
-                    <p class="text-3xl font-bold text-primary-700">{{ total_logins }}</p>
-                </div>
-                <i class="bi bi-box-arrow-in-right text-4xl text-primary-200"></i>
-            </div>
-        </div>
-
-        <!-- Successful Logins -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-l-success-500 hover:shadow-lg transition-all duration-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-dark-600 uppercase tracking-wide mb-1">Successful</p>
-                    <p class="text-3xl font-bold text-success-700">{{ successful_logins }}</p>
-                </div>
-                <i class="bi bi-check-circle-fill text-4xl text-success-200"></i>
-            </div>
-        </div>
-
-        <!-- Failed Attempts -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-l-danger-500 hover:shadow-lg transition-all duration-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-dark-600 uppercase tracking-wide mb-1">Failed Attempts</p>
-                    <p class="text-3xl font-bold text-danger-700">{{ failed_logins }}</p>
-                </div>
-                <i class="bi bi-x-circle-fill text-4xl text-danger-200"></i>
-            </div>
-        </div>
-
-        <!-- Active Sessions -->
-        <div class="bg-white rounded-xl shadow-md p-6 border-l-4 border-l-info-500 hover:shadow-lg transition-all duration-200">
-            <div class="flex items-center justify-between">
-                <div>
-                    <p class="text-sm font-semibold text-dark-600 uppercase tracking-wide mb-1">Active Sessions</p>
-                    <p class="text-3xl font-bold text-info-700">{{ active_sessions }}</p>
-                </div>
-                <i class="bi bi-activity text-4xl text-info-200"></i>
-            </div>
-        </div>
     </div>
 
     <!-- Filter Card -->
@@ -254,25 +207,6 @@
         {% endif %}
     </div>
 
-    <!-- Top Users Card -->
-    {% if top_users %}
-    <div class="bg-white rounded-xl shadow-md p-6">
-        <h3 class="text-xl font-bold text-dark-900 mb-4 flex items-center gap-2">
-            <i class="bi bi-trophy-fill text-warning-600"></i>
-            Most Active Users
-        </h3>
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {% for user in top_users %}
-            <div class="flex items-center justify-between p-4 bg-light-50 rounded-xl border border-light-200 hover:border-primary-300 transition-colors">
-                <span class="font-semibold text-base text-dark-900">{{ user.username }}</span>
-                <span class="badge badge-primary">
-                    {{ user.login_count }} logins
-                </span>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    {% endif %}
 </div>
 
 {% endblock %}
