@@ -12,6 +12,7 @@ from .decorators import (
 )
 from django.db.models import Q, Max, Count, Sum, OuterRef, Subquery, Value, F
 from django.db.models.functions import Concat, TruncMonth
+from django.db import models
 from django.http import JsonResponse, HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -5807,11 +5808,34 @@ def user_login_history(request):
     all_events = UserLoginEvent.objects.all()
     stats = all_events.aggregate(
         total_logins=Count('id'),
-        successful_logins=Count('id', filter=Q(status='success')),
-        failed_logins=Count('id', filter=Q(status='failed')),
-        # Active: Success AND no logout AND had interactive activity within the last 2 hours
-        active_sessions=Count('id', filter=Q(status='success', logout_timestamp__isnull=True)),
-        recent_logins=Count('id', filter=Q(login_timestamp__gte=last_24_hours))
+        successful_logins=Sum(
+            models.Case(
+                models.When(status='success', then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ),
+        failed_logins=Sum(
+            models.Case(
+                models.When(status='failed', then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ),
+        active_sessions=Sum(
+            models.Case(
+                models.When(status='success', logout_timestamp__isnull=True, then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        ),
+        recent_logins=Sum(
+            models.Case(
+                models.When(login_timestamp__gte=last_24_hours, then=1),
+                default=0,
+                output_field=models.IntegerField()
+            )
+        )
     )
     
     total_logins = stats['total_logins'] or 0
