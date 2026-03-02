@@ -254,9 +254,9 @@
                                             <label class="block text-xs font-medium text-dark-700 mb-1">Email</label>
                                             <input type="email" name="email" value="{{ user.email }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
                                         </div>
-                                        <div>
-                                            <label class="block text-xs font-medium text-dark-700 mb-1">Assigned Barangay</label>
-                                            <select name="assigned_barangay" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                        <div id="editBarangayFieldContainer{{ user.id }}">
+                                            <label class="block text-xs font-medium text-dark-700 mb-1">Assigned Barangay <span class="text-danger-600" id="editBarangayRequired{{ user.id }}" {% if user.staffprofile.role != 'field_staff' %}style="display: none;"{% endif %}>*</span></label>
+                                            <select name="assigned_barangay" id="editUserBarangay{{ user.id }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" {% if user.staffprofile.role == 'field_staff' %}required{% endif %}>
                                                 <option value="">None</option>
                                                 {% for barangay in barangays %}
                                                 <option value="{{ barangay.id }}" {% if user.staffprofile and user.staffprofile.assigned_barangay.id == barangay.id %}selected{% endif %}>
@@ -267,7 +267,7 @@
                                         </div>
                                         <div>
                                             <label class="block text-xs font-medium text-dark-700 mb-1">Role</label>
-                                            <select name="role" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                            <select name="role" id="editUserRole{{ user.id }}" class="w-full px-3 py-2 text-sm border border-light-300 rounded focus:outline-none focus:ring-2 focus:ring-primary-500" onchange="toggleEditBarangayField({{ user.id }})">
                                                 <option value="field_staff" {% if user.staffprofile and user.staffprofile.role == 'field_staff' %}selected{% endif %}>Field Staff (Mobile App Only)</option>
                                                 <option value="cashier" {% if user.staffprofile and user.staffprofile.role == 'cashier' %}selected{% endif %}>Cashier (Web Access)</option>
                                                 <option value="admin" {% if user.staffprofile and user.staffprofile.role == 'admin' %}selected{% endif %}>Admin (Web Access)</option>
@@ -579,7 +579,7 @@ function submitResetPassword(event, userId) {
     return false;
 }
 
-// Toggle barangay field based on role selection
+// Toggle barangay field based on role selection for Create User
 function toggleBarangayField() {
     const role = document.getElementById('createUserRole').value;
     const barangayContainer = document.getElementById('barangayFieldContainer');
@@ -599,9 +599,38 @@ function toggleBarangayField() {
     }
 }
 
+// Toggle barangay field based on role selection for Edit User Modal
+function toggleEditBarangayField(userId) {
+    const roleElement = document.getElementById('editUserRole' + userId);
+    const containerElement = document.getElementById('editBarangayFieldContainer' + userId);
+    const requiredElement = document.getElementById('editBarangayRequired' + userId);
+    const selectElement = document.getElementById('editUserBarangay' + userId);
+
+    if (!roleElement || !containerElement || !requiredElement || !selectElement) return;
+
+    const role = roleElement.value;
+
+    if (role === 'field_staff') {
+        containerElement.style.opacity = '1';
+        requiredElement.style.display = 'inline';
+        selectElement.setAttribute('required', 'required');
+    } else {
+        containerElement.style.opacity = '0.5';
+        requiredElement.style.display = 'none';
+        selectElement.removeAttribute('required');
+    }
+}
+
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
     toggleBarangayField();
+    
+    // Initialize for all edit modals
+    const editRoles = document.querySelectorAll('select[id^="editUserRole"]');
+    editRoles.forEach(select => {
+        const userId = select.id.replace('editUserRole', '');
+        toggleEditBarangayField(userId);
+    });
 });
 
 // Password strength indicator

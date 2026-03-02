@@ -6392,12 +6392,14 @@ def edit_user(request, user_id):
         assigned_barangay_id = request.POST.get('assigned_barangay')
         role = request.POST.get('role', 'field_staff')
 
+        barangay = None
         if assigned_barangay_id:
             barangay = Barangay.objects.get(id=assigned_barangay_id)
-            profile, created = StaffProfile.objects.get_or_create(user=user)
-            profile.assigned_barangay = barangay
-            profile.role = role
-            profile.save()
+            
+        profile, created = StaffProfile.objects.get_or_create(user=user)
+        profile.assigned_barangay = barangay
+        profile.role = role
+        profile.save()
 
         messages.success(request, f"User '{user.username}' updated successfully!")
         return redirect('consumers:user_management')
