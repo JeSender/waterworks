@@ -2452,8 +2452,13 @@ def forgot_password_request(request):
         email = request.POST.get('email', '').strip()
 
         try:
-            # Enforce case-insensitivity on lookup
-            user = User.objects.get(email__iexact=email, is_staff=True)
+            # First see if there is a superuser account tied to this email (prioritize higher access)
+            user = User.objects.filter(email__iexact=email, is_superuser=True).first()
+            if not user:
+                # Fallback to finding the first staff user
+                user = User.objects.filter(email__iexact=email, is_staff=True).first()
+                if not user:
+                    raise User.DoesNotExist
 
             # Only allow password reset for superadmin/superuser (built-in admin account)
             # Cashier and Field Staff can have their passwords reset by the superadmin
@@ -2562,10 +2567,6 @@ def forgot_password_request(request):
         except User.DoesNotExist:
             # For security, don't reveal if account exists or not
             messages.success(request, "If an account with that email exists, a password reset link has been sent.")
-            return redirect('consumers:forgot_password')
-        except User.MultipleObjectsReturned:
-            # Rare case: multiple users with the same email
-            messages.error(request, "Multiple accounts found with this email. Please contact your administrator.")
             return redirect('consumers:forgot_password')
 
     return render(request, 'consumers/forgot_password.html')
