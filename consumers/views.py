@@ -2449,15 +2449,11 @@ def forgot_password_request(request):
         return render(request, 'consumers/forgot_password.html', {'email_disabled': True})
 
     if request.method == "POST":
-        username = request.POST.get('username')
+        email = request.POST.get('email', '').strip()
 
         try:
-            user = User.objects.get(username=username)
-
-            # Check if user has an email address
-            if not user.email:
-                messages.error(request, "No email address found for this account. Please contact your administrator.")
-                return redirect('consumers:forgot_password')
+            # Enforce case-insensitivity on lookup
+            user = User.objects.get(email__iexact=email, is_staff=True)
 
             # Only allow password reset for superadmin/superuser (built-in admin account)
             # Cashier and Field Staff can have their passwords reset by the superadmin
@@ -2564,8 +2560,12 @@ def forgot_password_request(request):
                 return redirect('consumers:forgot_password')
 
         except User.DoesNotExist:
-            # For security, don't reveal if username exists or not
-            messages.success(request, "If an account with that username exists, a password reset link has been sent to the registered email.")
+            # For security, don't reveal if account exists or not
+            messages.success(request, "If an account with that email exists, a password reset link has been sent.")
+            return redirect('consumers:forgot_password')
+        except User.MultipleObjectsReturned:
+            # Rare case: multiple users with the same email
+            messages.error(request, "Multiple accounts found with this email. Please contact your administrator.")
             return redirect('consumers:forgot_password')
 
     return render(request, 'consumers/forgot_password.html')
@@ -2580,8 +2580,6 @@ def forgot_username(request):
 
     if request.method == "POST":
         email = request.POST.get('email', '').strip()
-        first_name = request.POST.get('first_name', '').strip()
-        last_name = request.POST.get('last_name', '').strip()
 
         if email:
             # Try to find user by email
@@ -2599,32 +2597,11 @@ def forgot_username(request):
                     messages.success(request, f"Multiple accounts found for this email.")
             else:
                 messages.error(request, "No staff account found with that email address.")
-
-        elif first_name and last_name:
-            # Try to find user by full name
-            users = User.objects.filter(
-                first_name__iexact=first_name,
-                last_name__iexact=last_name,
-                is_staff=True
-            )
-            if users.exists():
-                if users.count() == 1:
-                    recovered_username = users.first().username
-                    recovery_method = 'name'
-                    messages.success(request, f"Username found for {first_name} {last_name}")
-                else:
-                    usernames = [u.username for u in users]
-                    recovered_username = ", ".join(usernames)
-                    recovery_method = 'name'
-                    messages.success(request, f"Multiple accounts found with this name.")
-            else:
-                messages.error(request, "No staff account found with that name.")
         else:
-            messages.error(request, "Please provide either an email or your full name.")
+            messages.error(request, "Please provide the registered email address.")
 
     return render(request, 'consumers/forgot_username.html', {
-        'recovered_username': recovered_username,
-        'recovery_method': recovery_method
+        'recovered_username': recovered_username
     })
 
 
