@@ -11,11 +11,18 @@
             <h2 class="text-2xl font-bold text-dark-900">Consumer Management</h2>
             <p class="text-dark-500 text-sm mt-1">Manage and view all registered consumers</p>
         </div>
-        <a href="{% url 'consumers:consumer_management' %}"
-           class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:shadow-lg transition-all duration-200">
-            <i class="bi bi-person-plus-fill"></i>
-            Add New Consumer
-        </a>
+        <div class="flex items-center gap-2">
+            <button onclick="document.getElementById('importCsvModal').classList.remove('hidden')"
+               class="px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 bg-success-600 hover:bg-success-700 text-white transition-all duration-200 hover:shadow-lg">
+                <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                Import CSV
+            </button>
+            <a href="{% url 'consumers:consumer_management' %}"
+               class="btn-primary px-4 py-2.5 rounded-lg text-sm font-medium flex items-center gap-2 hover:shadow-lg transition-all duration-200">
+                <i class="bi bi-person-plus-fill"></i>
+                Add New Consumer
+            </a>
+        </div>
     </div>
 
     <!-- Stats Cards -->
@@ -330,4 +337,110 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 </script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const barangaySelect = document.getElementById('barangay');
+    const statusSelect = document.getElementById('status');
+    const searchInput = document.getElementById('search');
+    let searchTimeout;
+    searchInput.addEventListener('input', function() {
+        clearTimeout(searchTimeout);
+    });
+
+    // CSV file input label update
+    const csvFileInput = document.getElementById('csvFileInput');
+    if (csvFileInput) {
+        csvFileInput.addEventListener('change', function() {
+            const label = document.getElementById('csvFileLabel');
+            if (this.files.length > 0) {
+                label.textContent = this.files[0].name;
+                label.className = 'ml-2 text-sm text-success-700 font-medium';
+            } else {
+                label.textContent = 'No file chosen';
+                label.className = 'ml-2 text-sm text-dark-400';
+            }
+        });
+    }
+});
+
+function closeImportModal() {
+    document.getElementById('importCsvModal').classList.add('hidden');
+}
+</script>
+
+<!-- Import CSV Modal -->
+<div id="importCsvModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between px-5 py-3 bg-success-600 rounded-t-xl">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i class="bi bi-file-earmark-arrow-up-fill"></i>
+                Bulk Import Consumers via CSV
+            </h3>
+            <button onclick="closeImportModal()" class="text-white hover:text-success-200">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+
+        <!-- Modal Body -->
+        <div class="px-5 py-4">
+
+            <!-- Info box -->
+            <div class="mb-4 p-3 bg-info-50 border-l-4 border-info-500 rounded">
+                <p class="text-xs text-info-800 font-semibold mb-1">
+                    <i class="bi bi-info-circle-fill mr-1"></i>Before you upload:
+                </p>
+                <ul class="text-xs text-info-700 space-y-1 list-disc ml-4">
+                    <li>Download the <a href="{% url 'consumers:download_consumer_template' %}" class="underline font-semibold">CSV template</a> and fill it with consumer data.</li>
+                    <li>Dates must be in <strong>YYYY-MM-DD</strong> format (e.g., 1990-03-25).</li>
+                    <li>Gender: <strong>Male</strong>, <strong>Female</strong>, or <strong>Other</strong>.</li>
+                    <li>Usage Type: <strong>Residential</strong> or <strong>Commercial</strong>.</li>
+                    <li>Status: <strong>active</strong> or <strong>disconnected</strong> (default: active).</li>
+                    <li>Duplicate meter serial numbers are automatically skipped.</li>
+                    <li>Barangay, Purok, and Meter Brand are created automatically if not found.</li>
+                </ul>
+            </div>
+
+            <!-- Upload Form -->
+            <form method="POST" action="{% url 'consumers:import_consumers_csv' %}" enctype="multipart/form-data" id="importForm">
+                {% csrf_token %}
+                <div class="mb-4">
+                    <label class="block text-xs font-medium text-dark-700 mb-2">Select CSV File <span class="text-danger-600">*</span></label>
+                    <label for="csvFileInput" class="flex items-center gap-3 w-full px-4 py-3 border-2 border-dashed border-success-300 rounded-lg cursor-pointer hover:border-success-500 hover:bg-success-50 transition-colors">
+                        <i class="bi bi-cloud-upload text-success-600 text-xl"></i>
+                        <span class="text-sm text-dark-500">Click to choose file or drag here</span>
+                        <input type="file" id="csvFileInput" name="csv_file" accept=".csv" class="hidden" required>
+                    </label>
+                    <span id="csvFileLabel" class="ml-2 text-sm text-dark-400">No file chosen</span>
+                </div>
+
+            {% if request.session.import_errors %}
+            <div class="mb-4 p-3 bg-danger-50 border border-danger-300 rounded-lg max-h-40 overflow-y-auto">
+                <p class="text-xs font-semibold text-danger-700 mb-1"><i class="bi bi-exclamation-triangle-fill mr-1"></i>Import errors from last upload:</p>
+                {% for err in request.session.import_errors %}
+                <p class="text-xs text-danger-600">{{ err }}</p>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+                <div class="flex items-center justify-end gap-2 mt-4">
+                    <button type="button" onclick="closeImportModal()" class="px-4 py-2 text-sm font-medium text-dark-700 bg-light-100 hover:bg-light-200 rounded-lg transition-colors">
+                        Cancel
+                    </button>
+                    <a href="{% url 'consumers:download_consumer_template' %}" class="px-4 py-2 text-sm font-medium text-success-700 bg-success-50 hover:bg-success-100 border border-success-300 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="bi bi-download"></i>
+                        Download Template
+                    </a>
+                    <button type="submit" class="px-4 py-2 text-sm font-semibold text-white bg-success-600 hover:bg-success-700 rounded-lg transition-colors flex items-center gap-2">
+                        <i class="bi bi-upload"></i>
+                        Import Now
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 {% endblock %}

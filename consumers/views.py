@@ -3167,7 +3167,252 @@ def consumer_management(request):
 
 @login_required
 @consumer_edit_permission_required
+def download_consumer_template(request):
+    """
+    Returns a downloadable CSV file that serves as a template for bulk consumer import.
+    The file contains the required column headers and one example row.
+    """
+    import csv
+    from django.http import HttpResponse
+
+    response = HttpResponse(content_type='text/csv')
+    response['Content-Disposition'] = 'attachment; filename="consumer_import_template.csv"'
+
+    writer = csv.writer(response)
+    # Header row
+    writer.writerow([
+        'first_name', 'middle_name', 'last_name', 'suffix',
+        'birth_date', 'gender', 'phone_number',
+        'civil_status', 'spouse_name',
+        'barangay', 'purok', 'household_number',
+        'usage_type', 'meter_brand', 'serial_number',
+        'first_reading', 'registration_date', 'status'
+    ])
+    # Example row
+    writer.writerow([
+        'Juan', 'Santos', 'Dela Cruz', '',
+        '1985-06-15', 'Male', '09171234567',
+        'Married', 'Maria Dela Cruz',
+        'Poblacion', 'Purok 1', 'HH-001',
+        'Residential', 'Actaris', 'SN-12345678',
+        '100', '2025-01-01', 'active'
+    ])
+    return response
+
+
+@login_required
+@consumer_edit_permission_required
+def import_consumers_csv(request):
+    """
+    Bulk import consumers from an uploaded CSV file.
+    - Validates required fields.
+    - Auto-creates Barangay, Purok, and MeterBrand if they don't exist.
+    - Skips duplicate serial numbers.
+    - Returns a summary of success/failure.
+    """
+    import csv
+    import io
+    from datetime import datetime as _dt
+
+    if request.method != 'POST':
+        return redirect('consumers:consumer_list')
+
+    csv_file = request.FILES.get('csv_file')
+    if not csv_file:
+        messages.error(request, "Please upload a CSV file.")
+        return redirect('consumers:consumer_list')
+
+    if not csv_file.name.endswith('.csv'):
+        messages.error(request, "Only .csv files are accepted.")
+        return redirect('consumers:consumer_list')
+
+    # Read the file
+    try:
+        raw = csv_file.read().decode('utf-8-sig')  # utf-8-sig handles Excel BOM
+    except UnicodeDecodeError:
+        try:
+            csv_file.seek(0)
+            raw = csv_file.read().decode('latin-1')
+        except Exception:
+            messages.error(request, "Could not read the file. Please ensure it is saved as UTF-8 CSV.")
+            return redirect('consumers:consumer_list')
+
+    reader = csv.DictReader(io.StringIO(raw))
+
+    # Normalise column names: strip whitespace & lower-case
+    required_columns = {
+        'first_name', 'last_name', 'birth_date', 'gender', 'phone_number',
+        'civil_status', 'barangay', 'purok', 'household_number',
+        'usage_type', 'meter_brand', 'serial_number', 'first_reading', 'registration_date'
+    }
+
+    if reader.fieldnames is None:
+        messages.error(request, "The CSV file appears to be empty or has no headers.")
+        return redirect('consumers:consumer_list')
+
+    normalised_fields = {f.strip().lower() for f in reader.fieldnames}
+    missing = required_columns - normalised_fields
+    if missing:
+        messages.error(request, f"Missing required columns: {', '.join(sorted(missing))}. Please download and use the template.")
+        return redirect('consumers:consumer_list')
+
+    created_count = 0
+    skipped_count = 0
+    error_rows = []
+
+    VALID_GENDER = {'male', 'female', 'other'}
+    VALID_CIVIL_STATUS = {'single', 'married', 'widowed', 'divorced'}
+    VALID_USAGE = {'residential', 'commercial'}
+    VALID_STATUS = {'active', 'disconnected'}
+    VALID_SUFFIX = {'', 'jr.', 'sr.', 'ii', 'iii', 'iv', 'v'}
+
+    for row_num, row in enumerate(reader, start=2):
+        # Normalise keys
+        row = {k.strip().lower(): v.strip() if v else '' for k, v in row.items()}
+
+        try:
+            # --- Required field validation ---
+            first_name = row.get('first_name', '').title()
+            last_name = row.get('last_name', '').title()
+            middle_name = row.get('middle_name', '').title() or None
+            suffix_raw = row.get('suffix', '').strip()
+            # Map human-readable suffix to choice value
+            suffix = suffix_raw if suffix_raw.lower() in VALID_SUFFIX else ''
+
+            birth_date_str = row.get('birth_date', '')
+            gender = row.get('gender', '').capitalize()
+            phone_number = row.get('phone_number', '')
+            civil_status = row.get('civil_status', '').capitalize()
+            spouse_name = row.get('spouse_name', '').title() or None
+            barangay_name = row.get('barangay', '')
+            purok_name = row.get('purok', '')
+            household_number = row.get('household_number', '')
+            usage_type = row.get('usage_type', '').capitalize()
+            meter_brand_name = row.get('meter_brand', '')
+            serial_number = row.get('serial_number', '')
+            first_reading_str = row.get('first_reading', '0')
+            registration_date_str = row.get('registration_date', '')
+            status = row.get('status', 'active').lower()
+
+            # Validate required fields not empty
+            if not all([first_name, last_name, birth_date_str, gender, phone_number,
+                        civil_status, barangay_name, purok_name, household_number,
+                        usage_type, meter_brand_name, serial_number, registration_date_str]):
+                error_rows.append(f"Row {row_num}: Missing required fields.")
+                skipped_count += 1
+                continue
+
+            # Validate choices
+            if gender.lower() not in VALID_GENDER:
+                error_rows.append(f"Row {row_num}: Invalid gender '{gender}'. Use Male/Female/Other.")
+                skipped_count += 1
+                continue
+            if civil_status.lower() not in VALID_CIVIL_STATUS:
+                error_rows.append(f"Row {row_num}: Invalid civil_status '{civil_status}'.")
+                skipped_count += 1
+                continue
+            if usage_type.lower() not in VALID_USAGE:
+                error_rows.append(f"Row {row_num}: Invalid usage_type '{usage_type}'. Use Residential/Commercial.")
+                skipped_count += 1
+                continue
+            if status not in VALID_STATUS:
+                status = 'active'
+
+            # Parse dates
+            birth_date = None
+            for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
+                try:
+                    birth_date = _dt.strptime(birth_date_str, fmt).date()
+                    break
+                except ValueError:
+                    continue
+            if birth_date is None:
+                error_rows.append(f"Row {row_num}: Invalid birth_date '{birth_date_str}'. Use YYYY-MM-DD.")
+                skipped_count += 1
+                continue
+
+            registration_date = None
+            for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
+                try:
+                    registration_date = _dt.strptime(registration_date_str, fmt).date()
+                    break
+                except ValueError:
+                    continue
+            if registration_date is None:
+                error_rows.append(f"Row {row_num}: Invalid registration_date '{registration_date_str}'. Use YYYY-MM-DD.")
+                skipped_count += 1
+                continue
+
+            # Parse first_reading
+            try:
+                first_reading = int(float(first_reading_str))
+            except (ValueError, TypeError):
+                first_reading = 0
+
+            # Duplicate serial number check
+            if Consumer.objects.filter(serial_number=serial_number).exists():
+                error_rows.append(f"Row {row_num}: Serial number '{serial_number}' already exists — skipped.")
+                skipped_count += 1
+                continue
+
+            # Resolve or create FK objects
+            barangay_obj, _ = Barangay.objects.get_or_create(name__iexact=barangay_name,
+                                                              defaults={'name': barangay_name.title()})
+            purok_obj, _ = Purok.objects.get_or_create(
+                name__iexact=purok_name, barangay=barangay_obj,
+                defaults={'name': purok_name.title(), 'barangay': barangay_obj}
+            )
+            meter_brand_obj, _ = MeterBrand.objects.get_or_create(
+                name__iexact=meter_brand_name,
+                defaults={'name': meter_brand_name.title()}
+            )
+
+            # Create consumer
+            Consumer.objects.create(
+                first_name=first_name,
+                middle_name=middle_name,
+                last_name=last_name,
+                suffix=suffix,
+                birth_date=birth_date,
+                gender=gender,
+                phone_number=phone_number,
+                civil_status=civil_status,
+                spouse_name=spouse_name,
+                barangay=barangay_obj,
+                purok=purok_obj,
+                household_number=household_number,
+                usage_type=usage_type,
+                meter_brand=meter_brand_obj,
+                serial_number=serial_number,
+                first_reading=first_reading,
+                registration_date=registration_date,
+                status=status,
+            )
+            created_count += 1
+
+        except Exception as e:
+            error_rows.append(f"Row {row_num}: Unexpected error — {str(e)}")
+            skipped_count += 1
+            continue
+
+    # Build result message
+    if created_count > 0:
+        messages.success(request, f"✅ Successfully imported {created_count} consumer(s).")
+    if skipped_count > 0:
+        messages.warning(request, f"⚠️ {skipped_count} row(s) were skipped due to errors.")
+    if error_rows:
+        # Store in session to display detailed errors
+        request.session['import_errors'] = error_rows[:50]  # Limit to first 50 errors
+    if created_count == 0 and skipped_count == 0:
+        messages.error(request, "The CSV file appears to have no data rows.")
+
+    return redirect('consumers:consumer_list')
+
+
+@login_required
+@consumer_edit_permission_required
 def add_consumer(request):
+
     """
     Handle adding a new consumer via full page form.
     RESTRICTED: Superuser only - Admins cannot create consumers.

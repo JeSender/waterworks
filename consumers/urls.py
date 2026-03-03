@@ -29,6 +29,8 @@ urlpatterns = [
     path('consumer/<int:consumer_id>/', views.consumer_detail, name='consumer_detail'),
     path('consumer/<int:consumer_id>/edit/', views.edit_consumer, name='edit_consumer'),
     path('consumer/<int:consumer_id>/bills/', views.consumer_bill, name='consumer_bill'),
+    path('consumer/import/', views.import_consumers_csv, name='import_consumers_csv'),
+    path('consumer/import/template/', views.download_consumer_template, name='download_consumer_template'),
 
     # Meter Readings
     path('meter-reading-overview/', views.meter_reading_overview, name='meter_reading_overview'),
