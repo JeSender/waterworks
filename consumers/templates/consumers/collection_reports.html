@@ -1,0 +1,176 @@
+{% extends 'consumers/base.html' %}
+{% load static %}
+{% load humanize %}
+
+{% block title %}Collection Reports{% endblock %}
+
+{% block main_content %}
+<div class="max-w-7xl mx-auto space-y-6">
+
+    <!-- Header & Date Filter -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 rounded-xl shadow-sm border border-light-200">
+        <div>
+            <h1 class="text-2xl font-bold text-dark-900">Collection Reports 📊</h1>
+            <p class="text-sm text-dark-500 mt-1">Daily and Monthly income summaries for cashier balancing.</p>
+        </div>
+
+        <form method="GET" class="flex items-center gap-3">
+            <div class="flex items-center gap-2 bg-light-100 p-1.5 rounded-lg border border-light-300">
+                <i class="bi bi-calendar3 text-dark-500 pl-2"></i>
+                <input type="date" name="date" value="{{ report_date_str }}" 
+                       class="bg-transparent text-sm font-medium text-dark-800 border-none focus:ring-0 cursor-pointer"
+                       onchange="this.form.submit()">
+            </div>
+            <a href="{% url 'consumers:print_collection_report' %}?date={{ report_date_str }}" target="_blank"
+               class="px-4 py-2 bg-dark-800 hover:bg-dark-900 text-white text-sm font-medium rounded-lg flex items-center gap-2 transition-all shadow-sm">
+                <i class="bi bi-printer"></i>
+                <span>Print Report</span>
+            </a>
+        </form>
+    </div>
+
+    <!-- DAILY METRICS CARDS -->
+    <div>
+        <h2 class="text-sm font-bold tracking-wider text-dark-500 uppercase mb-3 flex items-center gap-2">
+            <i class="bi bi-calendar-day text-primary-500"></i>
+            Daily Collection: {{ report_date|date:"F d, Y" }}
+        </h2>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Collected -->
+            <div class="bg-gradient-to-br from-success-50 to-success-100 p-5 rounded-xl border border-success-200 shadow-sm relative overflow-hidden">
+                <div class="absolute -right-4 -top-4 opacity-10">
+                    <i class="bi bi-cash-stack text-8xl text-success-600"></i>
+                </div>
+                <p class="text-sm font-semibold text-success-800 mb-1 relative z-10">Total Collected Today</p>
+                <p class="text-3xl font-bold text-success-900 relative z-10">₱{{ daily_total|intcomma }}</p>
+            </div>
+
+            <!-- Cash vs Online -->
+            <div class="bg-white p-5 rounded-xl border border-light-200 shadow-sm flex flex-col justify-center">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-sm text-dark-600 font-medium flex items-center gap-2"><i class="bi bi-cash text-success-500"></i>Cash</span>
+                    <span class="text-base font-bold text-dark-900">₱{{ daily_cash|intcomma }}</span>
+                </div>
+                <div class="w-full bg-light-200 rounded-full h-1.5 mb-3">
+                    <div class="bg-success-500 h-1.5 rounded-full" style="width: {% if daily_total > 0 %}{{ daily_cash|floatformat:0|add:"0"|divisibleby:daily_total|default:0|add:0|floatformat:0 }}{% else %}0{% endif %}%"></div>
+                </div>
+                
+                <div class="flex justify-between items-center mb-1">
+                    <span class="text-sm text-dark-600 font-medium flex items-center gap-2"><i class="bi bi-phone text-primary-500"></i>Online/GCash</span>
+                    <span class="text-base font-bold text-dark-900">₱{{ daily_online|intcomma }}</span>
+                </div>
+            </div>
+
+            <!-- Residential vs Commercial -->
+            <div class="bg-white p-5 rounded-xl border border-light-200 shadow-sm flex flex-col justify-center lg:col-span-2">
+                <p class="text-xs font-bold tracking-wider text-dark-400 uppercase mb-3">By Usage Type</p>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-light-50 p-3 rounded-lg border border-light-200">
+                        <p class="text-xs text-dark-500 font-medium mb-1">Residential</p>
+                        <p class="text-lg font-bold text-dark-800">₱{{ daily_residential|intcomma }}</p>
+                    </div>
+                    <div class="bg-light-50 p-3 rounded-lg border border-light-200">
+                        <p class="text-xs text-dark-500 font-medium mb-1">Commercial</p>
+                        <p class="text-lg font-bold text-dark-800">₱{{ daily_commercial|intcomma }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- LEFT COLUMN: MONTHLY SUMMARY -->
+        <div class="lg:col-span-1 space-y-6">
+            <div>
+                <h2 class="text-sm font-bold tracking-wider text-dark-500 uppercase mb-3 flex items-center gap-2">
+                    <i class="bi bi-calendar-month text-info-500"></i>
+                    Monthly Summary: {{ month_name }}
+                </h2>
+                <div class="bg-white rounded-xl shadow-sm border border-light-200 overflow-hidden">
+                    <div class="p-5 border-b border-light-100">
+                        <p class="text-sm font-medium text-dark-600 mb-1">Total Amount Billed</p>
+                        <p class="text-2xl font-bold text-dark-900">₱{{ monthly_billed|intcomma }}</p>
+                    </div>
+                    
+                    <div class="p-5 bg-gradient-to-r from-success-50 to-white border-b border-light-100 flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-success-800 flex items-center gap-2"><i class="bi bi-graph-up-arrow"></i> Collected</p>
+                            <p class="text-xl font-bold text-success-700 mt-1">₱{{ monthly_collected|intcomma }}</p>
+                        </div>
+                        <div class="text-right">
+                            <span class="inline-flex items-center justify-center w-12 h-12 rounded-full bg-success-100 text-success-700 font-bold text-sm border-2 border-success-200">
+                                {{ collection_rate }}%
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="p-5 bg-gradient-to-r from-danger-50 to-white flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-danger-800 flex items-center gap-2"><i class="bi bi-exclamation-circle"></i> Unpaid & Overdue</p>
+                            <p class="text-xl font-bold text-danger-700 mt-1">₱{{ monthly_unpaid|intcomma }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT COLUMN: TODAY'S TRANSACTIONS LOG -->
+        <div class="lg:col-span-2">
+            <h2 class="text-sm font-bold tracking-wider text-dark-500 uppercase mb-3 flex items-center gap-2">
+                <i class="bi bi-receipt text-dark-500"></i>
+                Today's Transactions
+            </h2>
+            <div class="bg-white rounded-xl shadow-sm border border-light-200 overflow-hidden">
+                <div class="overflow-x-auto max-h-[500px]">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-light-100 text-dark-600 font-semibold sticky top-0 z-10 border-b border-light-200">
+                            <tr>
+                                <th class="px-4 py-3">Time</th>
+                                <th class="px-4 py-3">Consumer</th>
+                                <th class="px-4 py-3">Receipt No.</th>
+                                <th class="px-4 py-3">Method</th>
+                                <th class="px-4 py-3">Cashier</th>
+                                <th class="px-4 py-3 text-right">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-light-100">
+                            {% for payment in recent_collections %}
+                            <tr class="hover:bg-light-50 transition-colors">
+                                <td class="px-4 py-3 text-dark-500">{{ payment.payment_date|date:"h:i A" }}</td>
+                                <td class="px-4 py-3">
+                                    <p class="font-medium text-dark-900">{{ payment.consumer.full_name }}</p>
+                                    <p class="text-xs text-dark-400">{{ payment.consumer.id_number }}</p>
+                                </td>
+                                <td class="px-4 py-3 font-mono text-xs text-dark-600">{{ payment.receipt_number|default:"-" }}</td>
+                                <td class="px-4 py-3">
+                                    {% if payment.payment_method == 'cash' %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-success-100 text-success-800">
+                                            <i class="bi bi-cash"></i> Cash
+                                        </span>
+                                    {% else %}
+                                        <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-primary-100 text-primary-800">
+                                            <i class="bi bi-phone"></i> Online
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="px-4 py-3 text-dark-600">{{ payment.cashier.username }}</td>
+                                <td class="px-4 py-3 text-right font-bold text-dark-900">₱{{ payment.amount|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-4 py-8 text-center text-dark-400">
+                                    <div class="flex flex-col items-center justify-center">
+                                        <i class="bi bi-inbox text-3xl mb-2 opacity-50"></i>
+                                        <p>No collections recorded for this date.</p>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
