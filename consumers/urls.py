@@ -63,6 +63,7 @@ urlpatterns = [
 
     # Reports Dashboard
     path('reports/', views.collection_reports, name='collection_reports'),
+    path('reports/', views.collection_reports, name='reports'),  # alias for backward compat
     path('reports/print/', views.print_collection_report, name='print_collection_report'),
     path('reports/barangay/<int:barangay_id>/', views.barangay_report, name='barangay_report'),
     path('reports/export-excel/', views.export_report_excel, name='export_report_excel'),
