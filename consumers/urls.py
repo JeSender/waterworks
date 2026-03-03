@@ -68,6 +68,7 @@ urlpatterns = [
 
     path('system-settings-verification/', views.system_settings_verification, name='system_settings_verification'),
     path('system-management/', views.system_management, name='system_management'),
+    path('system/backup/', views.backup_database, name='backup_database'),
 
     # Database Documentation
     path('database-documentation/', views.database_documentation, name='database_documentation'),

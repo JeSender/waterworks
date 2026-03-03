@@ -265,13 +265,25 @@
                 </div>
 
                 <!-- Save Button -->
-                <div class="flex items-center justify-end gap-3" id="save-button-row">
-                    <button type="button" onclick="resetForm()" class="btn-secondary">
-                        <i class="bi bi-arrow-counterclockwise"></i>Reset
+                <div class="flex items-center justify-between gap-3" id="save-button-row">
+                    <!-- Backup Button (Superadmin only) -->
+                    {% if request.user.is_superuser %}
+                    <button type="button" onclick="document.getElementById('backupModal').classList.remove('hidden')"
+                            class="px-4 py-2 text-sm font-medium bg-dark-800 hover:bg-dark-900 text-white rounded-lg flex items-center gap-2 transition-colors">
+                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                        Backup Database
                     </button>
-                    <button type="submit" class="btn-primary" onclick="return confirmSave()">
-                        <i class="bi bi-save"></i>Save Settings
-                    </button>
+                    {% else %}
+                    <div></div>
+                    {% endif %}
+                    <div class="flex items-center gap-3">
+                        <button type="button" onclick="resetForm()" class="btn-secondary">
+                            <i class="bi bi-arrow-counterclockwise"></i>Reset
+                        </button>
+                        <button type="submit" class="btn-primary" onclick="return confirmSave()">
+                            <i class="bi bi-save"></i>Save Settings
+                        </button>
+                    </div>
                 </div>
             </div>
 
@@ -607,3 +619,59 @@ document.addEventListener('keydown', function(e) {
 });
 </script>
 {% endblock %}
+
+{% if request.user.is_superuser %}
+<!-- Backup Database Confirmation Modal -->
+<div id="backupModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <!-- Header -->
+        <div class="flex items-center justify-between px-5 py-3 bg-dark-800 rounded-t-xl">
+            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
+                <i class="bi bi-shield-lock-fill text-yellow-300"></i>
+                Backup Database
+            </h3>
+            <button onclick="document.getElementById('backupModal').classList.add('hidden')" class="text-white hover:text-dark-300">
+                <i class="bi bi-x-lg"></i>
+            </button>
+        </div>
+        <!-- Body -->
+        <div class="px-5 py-4">
+            <div class="flex items-start gap-3 mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                <i class="bi bi-exclamation-triangle-fill text-yellow-600 text-lg mt-0.5"></i>
+                <div>
+                    <p class="text-sm font-semibold text-yellow-800">Sensitive Data Warning</p>
+                    <p class="text-xs text-yellow-700 mt-0.5">The backup contains all consumer names, billing records, and payment history. Store it on a flash drive — do NOT share online.</p>
+                </div>
+            </div>
+            <p class="text-sm text-dark-700 mb-4">
+                This downloads a complete backup as a timestamped <strong>.zip</strong> file containing <strong>12 JSON files</strong> covering all consumers, bills, payments, meter readings, and system settings.
+            </p>
+            <div class="bg-light-50 rounded-lg p-3 mb-4">
+                <p class="text-xs font-semibold text-dark-700 mb-1">📦 Backup includes:</p>
+                <div class="grid grid-cols-2 gap-1 text-xs text-dark-600">
+                    <span><i class="bi bi-check text-success-600"></i> Consumers</span>
+                    <span><i class="bi bi-check text-success-600"></i> Bills &amp; Payments</span>
+                    <span><i class="bi bi-check text-success-600"></i> Meter Readings</span>
+                    <span><i class="bi bi-check text-success-600"></i> System Settings</span>
+                    <span><i class="bi bi-check text-success-600"></i> Barangays &amp; Puroks</span>
+                    <span><i class="bi bi-check text-success-600"></i> Staff &amp; Activity Logs</span>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2">
+                <button type="button" onclick="document.getElementById('backupModal').classList.add('hidden')"
+                        class="px-4 py-2 text-sm font-medium text-dark-700 bg-light-100 hover:bg-light-200 rounded-lg transition-colors">
+                    Cancel
+                </button>
+                <form method="POST" action="{% url 'consumers:backup_database' %}" id="backupForm">
+                    {% csrf_token %}
+                    <button type="submit"
+                            class="px-4 py-2 text-sm font-semibold text-white bg-dark-800 hover:bg-dark-900 rounded-lg flex items-center gap-2 transition-colors">
+                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                        Download Backup Now
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
