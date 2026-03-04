@@ -3064,27 +3064,6 @@ def home(request):
     # Create a date object for proper month/year formatting in template
     selected_date = date(selected_year, selected_month, 1)
 
-    # ----- New Dashboard Additions -----
-    # Recent Activity Log (last 10 events across the system)
-    recent_activities = UserActivity.objects.select_related('user').order_by('-created_at')[:10]
-
-    # Pending meter readings from the mobile app waiting for admin confirmation
-    pending_readings_count = MeterReading.objects.filter(is_confirmed=False).count()
-
-    # Today's Collections (by date only, not datetime)
-    from django.db.models import Sum as _Sum
-    today_collections = Payment.objects.filter(
-        payment_date__date=today
-    ).aggregate(total=_Sum('amount_paid'))['total'] or Decimal('0.00')
-    today_payments_count = Payment.objects.filter(payment_date__date=today).count()
-
-    # Role for the template
-    user_role = 'superadmin'
-    if hasattr(request.user, 'staffprofile'):
-        user_role = request.user.staffprofile.role
-    if request.user.is_superuser:
-        user_role = 'superadmin'
-
     context = {
         'connected_count': connected_count,
         'disconnected_count': disconnected_count,
@@ -3114,14 +3093,8 @@ def home(request):
         'total_bills': total_bills,
         'all_barangays': all_barangays,
         'consumer_bill_status': json.dumps(consumer_bill_status, default=str),
-        # Dashboard additions
-        'recent_activities': recent_activities,
-        'pending_readings_count': pending_readings_count,
-        'today_collections': today_collections,
-        'today_payments_count': today_payments_count,
-        'user_role': user_role,
     }
-    return render(request, 'consumers/dashboard.html', context)
+    return render(request, 'consumers/home.html', context)
 
 
 
