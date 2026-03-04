@@ -432,6 +432,19 @@
     </div>
 </div>
 
+{% if request.user.is_superuser %}
+<!-- Floating Backup Button (Bottom Right) -->
+<button type="button" onclick="openBackupModal()"
+        class="fixed bottom-8 right-8 z-40 bg-dark-900 hover:bg-dark-800 text-white p-4 rounded-full shadow-lg transition-transform hover:scale-105 flex items-center justify-center group"
+        title="Backup Database">
+    <i class="bi bi-cloud-arrow-down-fill text-xl"></i>
+    <!-- Tooltip that shows on hover for wider screens -->
+    <span class="absolute right-full mr-3 whitespace-nowrap bg-dark-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+        Take Database Backup
+    </span>
+</button>
+{% endif %}
+
 {% endblock %}
 
 {% block extra_js %}
@@ -491,6 +504,24 @@ function confirmSave() {
 document.addEventListener('DOMContentLoaded', function() {
     updateTimeline();
     updatePenaltyPreview();
+    
+    // Initialize Backup Years if modal element exists
+    const yearSelect = document.getElementById('backup_year');
+    if (yearSelect) {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        // Generate years from current year down to 10 years ago
+        for (let year = currentYear; year >= currentYear - 10; year--) {
+            const option = document.createElement('option');
+            option.value = year;
+            option.textContent = year;
+            yearSelect.appendChild(option);
+        }
+        
+        // Auto select current month/year
+        document.getElementById('backup_month').value = now.getMonth() + 1;
+        yearSelect.value = currentYear;
+    }
 });
 
 // Format setting key to readable label
@@ -613,63 +644,140 @@ function closeChangeDetail() {
     document.body.style.overflow = '';
 }
 
+// Backup Functions
+function openBackupModal() {
+    document.getElementById('backupModal').classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+}
+
+function closeBackupModal() {
+    document.getElementById('backupModal').classList.add('hidden');
+    document.body.style.overflow = '';
+}
+
+// Toggle Backup Period type
+function toggleBackupPeriod() {
+    const isFiltered = document.getElementById('backup_period_monthly').checked;
+    const filterControls = document.getElementById('backup_filter_controls');
+    
+    if (isFiltered) {
+        filterControls.classList.remove('hidden');
+    } else {
+        filterControls.classList.add('hidden');
+    }
+}
+
 // Close modal on Escape key
 document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeChangeDetail();
+    if (e.key === 'Escape') {
+        closeChangeDetail();
+        closeBackupModal();
+    }
 });
 </script>
 
 {% if request.user.is_superuser %}
-<!-- Backup Database Confirmation Modal -->
-<div id="backupModal" class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+<!-- Backup Database Modal -->
+<div id="backupModal" class="hidden fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div class="fixed inset-0 bg-transparent transition-opacity" onclick="closeBackupModal()"></div>
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg relative">
         <!-- Header -->
-        <div class="flex items-center justify-between px-5 py-3 bg-dark-800 rounded-t-xl">
-            <h3 class="text-sm font-semibold text-white flex items-center gap-2">
-                <i class="bi bi-shield-lock-fill text-yellow-300"></i>
-                Backup Database
+        <div class="flex items-center justify-between px-5 py-3 border-b border-light-200">
+            <h3 class="text-base font-bold text-dark-900 flex items-center gap-2">
+                <i class="bi bi-cloud-arrow-down-fill text-primary-600"></i>
+                Take System Backup
             </h3>
-            <button onclick="document.getElementById('backupModal').classList.add('hidden')" class="text-white hover:text-dark-300">
-                <i class="bi bi-x-lg"></i>
+            <button onclick="closeBackupModal()" class="text-dark-400 hover:text-dark-600 transition-colors">
+                <i class="bi bi-x-lg text-lg"></i>
             </button>
         </div>
+        
         <!-- Body -->
         <div class="px-5 py-4">
-            <div class="flex items-start gap-3 mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
-                <i class="bi bi-exclamation-triangle-fill text-yellow-600 text-lg mt-0.5"></i>
-                <div>
-                    <p class="text-sm font-semibold text-yellow-800">Sensitive Data Warning</p>
-                    <p class="text-xs text-yellow-700 mt-0.5">The backup contains all consumer names, billing records, and payment history. Store it on a flash drive — do NOT share online.</p>
-                </div>
+            <!-- How this helps info box -->
+            <div class="bg-primary-50 border border-primary-200 rounded-lg p-3 mb-4">
+                <h4 class="text-sm font-semibold text-primary-800 flex items-center gap-1.5 mb-1.5">
+                    <i class="bi bi-info-circle-fill"></i> What do I do with these files?
+                </h4>
+                <p class="text-xs text-primary-700 leading-relaxed">
+                    This will download a ZIP archive containing <strong>.json lists</strong> (Django "Fixtures"). These text files contain highly precise, structured backups of every record.
+                    If the system ever crashes or data gets deleted, your developer can easily run a command (<code class="font-mono bg-white px-1 py-0.5 rounded text-dark-600 border mx-0.5 border-primary-100">python manage.py loaddata</code>) to restore exactly what is in this zip file! 
+                </p>
+                <p class="text-xs text-primary-700 leading-relaxed mt-2 font-medium">
+                    <i class="bi bi-lightbulb mr-1"></i> You can download records from the same month multiple times. The system generates a fresh file with the exact current timestamp.
+                </p>
             </div>
-            <p class="text-sm text-dark-700 mb-4">
-                This downloads a complete backup as a timestamped <strong>.zip</strong> file containing <strong>12 JSON files</strong> covering all consumers, bills, payments, meter readings, and system settings.
-            </p>
-            <div class="bg-light-50 rounded-lg p-3 mb-4">
-                <p class="text-xs font-semibold text-dark-700 mb-1">📦 Backup includes:</p>
-                <div class="grid grid-cols-2 gap-1 text-xs text-dark-600">
-                    <span><i class="bi bi-check text-success-600"></i> Consumers</span>
-                    <span><i class="bi bi-check text-success-600"></i> Bills &amp; Payments</span>
-                    <span><i class="bi bi-check text-success-600"></i> Meter Readings</span>
-                    <span><i class="bi bi-check text-success-600"></i> System Settings</span>
-                    <span><i class="bi bi-check text-success-600"></i> Barangays &amp; Puroks</span>
-                    <span><i class="bi bi-check text-success-600"></i> Staff &amp; Activity Logs</span>
+
+            <form method="POST" action="{% url 'consumers:backup_database' %}" id="backupForm">
+                {% csrf_token %}
+                
+                <!-- Backup Scope Selection -->
+                <div class="mb-4">
+                    <label class="block text-sm font-semibold text-dark-800 mb-2">Select Backup Scope:</label>
+                    <div class="space-y-2">
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-light-50 border border-transparent hover:border-light-200 transition-colors">
+                            <input type="radio" name="backup_type" value="all" id="backup_period_all" class="text-primary-600 focus:ring-primary-500 h-4 w-4" onchange="toggleBackupPeriod()">
+                            <span class="text-sm text-dark-700 font-medium">All Time (Full System Backup)</span>
+                        </label>
+                        <label class="flex items-center gap-2 cursor-pointer p-2 rounded hover:bg-light-50 border border-transparent hover:border-light-200 transition-colors">
+                            <input type="radio" name="backup_type" value="monthly" id="backup_period_monthly" class="text-primary-600 focus:ring-primary-500 h-4 w-4" checked onchange="toggleBackupPeriod()">
+                            <span class="text-sm text-dark-700 font-medium">Monthly Records</span>
+                        </label>
+                    </div>
                 </div>
-            </div>
-            <div class="flex items-center justify-end gap-2">
-                <button type="button" onclick="document.getElementById('backupModal').classList.add('hidden')"
-                        class="px-4 py-2 text-sm font-medium text-dark-700 bg-light-100 hover:bg-light-200 rounded-lg transition-colors">
-                    Cancel
-                </button>
-                <form method="POST" action="{% url 'consumers:backup_database' %}" id="backupForm">
-                    {% csrf_token %}
-                    <button type="submit"
-                            class="px-4 py-2 text-sm font-semibold text-white bg-dark-800 hover:bg-dark-900 rounded-lg flex items-center gap-2 transition-colors">
-                        <i class="bi bi-cloud-arrow-down-fill"></i>
-                        Download Backup Now
+
+                <!-- Monthly Controls -->
+                <div id="backup_filter_controls" class="pl-7 mb-5 transition-all">
+                    <div class="flex gap-3">
+                        <div class="flex-1">
+                            <label for="backup_month" class="block text-xs font-semibold text-dark-600 mb-1">Month</label>
+                            <select name="backup_month" id="backup_month" class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <option value="1">January</option>
+                                <option value="2">February</option>
+                                <option value="3">March</option>
+                                <option value="4">April</option>
+                                <option value="5">May</option>
+                                <option value="6">June</option>
+                                <option value="7">July</option>
+                                <option value="8">August</option>
+                                <option value="9">September</option>
+                                <option value="10">October</option>
+                                <option value="11">November</option>
+                                <option value="12">December</option>
+                            </select>
+                        </div>
+                        <div class="flex-1">
+                            <label for="backup_year" class="block text-xs font-semibold text-dark-600 mb-1">Year</label>
+                            <select name="backup_year" id="backup_year" class="w-full px-3 py-2 text-sm border border-light-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                                <!-- Populated by JS -->
+                            </select>
+                        </div>
+                    </div>
+                    <p class="text-xs text-dark-500 mt-2">
+                        <i class="bi bi-filter"></i> Only backing up <strong>Bills, Payments, and Meter Readings</strong> from this month. (Consumers, Staff, and Settings are always included).
+                    </p>
+                </div>
+
+                <!-- Sensitive Data Warning -->
+                <div class="flex items-start gap-3 p-3 bg-red-50 border-l-4 border-red-500 rounded">
+                    <i class="bi bi-shield-lock-fill text-red-600 text-lg mt-0.5"></i>
+                    <div>
+                        <p class="text-xs font-semibold text-red-800">Security Requirement</p>
+                        <p class="text-xs text-red-700 mt-0.5">These files contain highly sensitive personal data. Keep the zip securely on an offline drive.</p>
+                    </div>
+                </div>
+
+                <!-- Footer / Actions -->
+                <div class="flex justify-end gap-3 mt-5 pt-4 border-t border-light-200">
+                    <button type="button" onclick="closeBackupModal()" class="px-4 py-2 text-sm font-medium text-dark-600 hover:text-dark-800 transition-colors">
+                        Cancel
                     </button>
-                </form>
-            </div>
+                    <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                        <i class="bi bi-cloud-arrow-down-fill"></i>
+                        Download Backup
+                    </button>
+                </div>
+            </form>
         </div>
     </div>
 </div>
