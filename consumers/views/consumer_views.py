@@ -172,9 +172,15 @@ def export_delinquent_consumers(request):
 def connected_consumers(request):
     # Optimize query with select_related
     consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok')
+    
+    # Pagination
+    paginator = Paginator(consumers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Connected Consumers',
-        'consumers': consumers
+        'consumers': page_obj
     })
 
 
@@ -184,9 +190,15 @@ def connected_consumers(request):
 def disconnected_consumers_list(request):
     # Optimize query with select_related
     consumers = Consumer.objects.filter(status='disconnected').select_related('barangay', 'purok')
+    
+    # Pagination
+    paginator = Paginator(consumers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Disconnected Consumers',
-        'consumers': consumers
+        'consumers': page_obj
     })
 
 
@@ -269,9 +281,14 @@ def delinquent_consumers(request):
     # Optimize query with select_related
     consumers = Consumer.objects.filter(bills__in=bills).select_related('barangay', 'purok').distinct()
 
+    # Pagination
+    paginator = Paginator(consumers, 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Delinquent Consumers',
-        'consumers': consumers,
+        'consumers': page_obj,
         'selected_month': month,
         'selected_year': year
     })
@@ -822,8 +839,13 @@ def consumer_list(request):
         registration_date__year=current_year
     ).count()
 
+    # Pagination
+    paginator = Paginator(consumers.order_by('-created_at'), 20)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'consumers/consumer_list.html', {
-        'consumers': consumers,
+        'consumers': page_obj,
         'barangays': barangays,
         'total_consumers': total_consumers,
         'connected_count': connected_count,
