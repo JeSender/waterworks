@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Network Security Configuration for Balilihan Waterworks Android App
+
+    Location: app/src/main/res/xml/network_security_config.xml
+
+    This configuration enforces HTTPS-only connections to prevent
+    man-in-the-middle attacks and ensure secure data transmission.
+-->
+<network-security-config>
+
+    <!-- Base configuration: Disable cleartext (HTTP) traffic by default -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <!-- Trust system certificate authorities -->
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!-- Production Railway Domain Configuration -->
+    <domain-config cleartextTrafficPermitted="false">
+        <domain includeSubdomains="true">web-production-9445b.up.railway.app</domain>
+        <domain includeSubdomains="true">railway.app</domain>
+        <domain includeSubdomains="true">up.railway.app</domain>
+    </domain-config>
+
+    <!--
+        DEVELOPMENT ONLY: Uncomment this section for local testing
+        IMPORTANT: Remove or comment out before releasing to production!
+    -->
+    <!--
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">192.168.100.9</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+    </domain-config>
+    -->
+
+</network-security-config>

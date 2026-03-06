@@ -1,0 +1,74 @@
+// ==================== APP-LEVEL build.gradle ====================
+// Location: app/build.gradle
+
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.balilihanwater'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "com.balilihanwater"
+        minSdk 24
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        // Build config fields for API configuration
+        buildConfigField "String", "BASE_URL_PRODUCTION", "\"https://web-production-9445b.up.railway.app/\""
+        buildConfigField "String", "BASE_URL_DEVELOPMENT", "\"http://192.168.100.9:8000/\""
+        buildConfigField "boolean", "DEBUG_MODE", "false"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+
+            // Production configuration
+            buildConfigField "String", "BASE_URL", "\"https://web-production-9445b.up.railway.app/\""
+            buildConfigField "boolean", "DEBUG_MODE", "false"
+        }
+        debug {
+            minifyEnabled false
+
+            // Development configuration
+            buildConfigField "String", "BASE_URL", "\"http://192.168.100.9:8000/\""
+            buildConfigField "boolean", "DEBUG_MODE", "true"
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    buildFeatures {
+        viewBinding true
+        buildConfig true
+    }
+}
+
+dependencies {
+    // AndroidX Core
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.cardview:cardview:1.0.0'
+    implementation 'androidx.recyclerview:recyclerview:1.3.2'
+
+    // Networking
+    implementation 'com.android.volley:volley:1.2.1'
+
+    // JSON Parsing
+    implementation 'com.google.code.gson:gson:2.10.1'
+
+    // Testing
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
+}
