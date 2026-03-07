@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -140,7 +140,7 @@ def system_settings_verification(request):
     Admin verification for System Settings - requires password re-entry.
     Separate from user management verification for independent access control.
     """
-    from .decorators import get_client_ip
+    from ..decorators import get_client_ip
     from django.contrib.auth import authenticate
 
     if request.method == 'POST':
@@ -679,7 +679,7 @@ def user_login_history(request):
     Enhanced login history with filtering, search, and analytics.
     Restricted to superusers and admins for security.
     """
-    from .decorators import admin_or_superuser_required
+    from ..decorators import admin_or_superuser_required
     from django.db.models import Count, Q
     from datetime import timedelta
     from django.core.paginator import Paginator
@@ -892,7 +892,7 @@ def admin_verification(request):
     Admin verification - requires password re-entry before accessing user management.
     Provides extra security layer for sensitive operations.
     """
-    from .decorators import get_client_ip
+    from ..decorators import get_client_ip
     from django.contrib.auth import authenticate
 
     # Only superusers and admins can access this page
@@ -1055,7 +1055,7 @@ def create_user(request):
     Create a new user with security validations.
     RESTRICTED: Superuser only - Admins cannot create users.
     """
-    from .decorators import check_password_strength
+    from ..decorators import check_password_strength
     from django.contrib.auth.hashers import make_password
 
     # Helper function for proper casing
@@ -1222,7 +1222,7 @@ def delete_user(request, user_id):
 
 def reset_user_password(request, user_id):
     """Reset user password (superuser and admin)."""
-    from .decorators import check_password_strength
+    from ..decorators import check_password_strength
 
     is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
 

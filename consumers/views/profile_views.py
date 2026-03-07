@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -137,7 +137,7 @@ def edit_profile(request):
     """
     Allow admin users to edit their profile and upload photo.
     """
-    from .decorators import get_client_ip, get_user_agent
+    from ..decorators import get_client_ip, get_user_agent
 
     try:
         profile = request.user.staffprofile

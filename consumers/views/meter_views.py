@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -495,7 +495,7 @@ def confirm_all_readings(request, barangay_id):
                 cons = reading.reading_value - baseline
 
             # Get system settings and calculate using TIERED RATES
-            from .utils import calculate_tiered_water_bill
+            from ..utils import calculate_tiered_water_bill
 
             setting = SystemSetting.objects.first()
             if setting:
@@ -593,7 +593,7 @@ def confirm_all_readings_global(request):
                 cons = reading.reading_value - baseline
 
             # Get system settings and calculate using TIERED RATES
-            from .utils import calculate_tiered_water_bill
+            from ..utils import calculate_tiered_water_bill
 
             setting = SystemSetting.objects.first()
             if setting:
@@ -811,7 +811,7 @@ def confirm_reading(request, reading_id):
             consumption = current.reading_value - baseline
 
         # Generate bill
-        from .utils import calculate_tiered_water_bill
+        from ..utils import calculate_tiered_water_bill
         setting = SystemSetting.objects.first()
 
         billing_day = setting.billing_day_of_month if setting else 1
@@ -1277,7 +1277,7 @@ def confirm_selected_readings(request, barangay_id):
                 cons = reading.reading_value - baseline
 
             # Get system settings and calculate using TIERED RATES
-            from .utils import calculate_tiered_water_bill
+            from ..utils import calculate_tiered_water_bill
 
             setting = SystemSetting.objects.first()
             if setting:

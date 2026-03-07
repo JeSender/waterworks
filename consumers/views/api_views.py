@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -630,7 +630,7 @@ def api_confirm_reading(request, reading_id):
             return JsonResponse({'error': 'Invalid consumption calculation'}, status=400)
 
         # Calculate bill using tiered rates
-        from .utils import calculate_tiered_water_bill
+        from ..utils import calculate_tiered_water_bill
         setting = SystemSetting.objects.first()
 
         if setting:
@@ -976,7 +976,7 @@ def api_get_pending_readings(request):
 @csrf_exempt
 def api_login(request):
     """Enhanced API login for Android app with security tracking."""
-    from .decorators import get_client_ip, get_user_agent
+    from ..decorators import get_client_ip, get_user_agent
 
     if request.method != 'POST':
         return JsonResponse({'error': 'Method not allowed'}, status=405)

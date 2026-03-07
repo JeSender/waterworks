@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -760,7 +760,7 @@ def edit_consumer(request, consumer_id):
 
             # Recalculate senior citizen discount on pending bills if birth_date changed
             if form.cleaned_data.get('birth_date') != old_birth_date:
-                from .utils import update_bill_penalty
+                from ..utils import update_bill_penalty
                 pending_bills = consumer.bills.filter(status='Pending')
                 for bill in pending_bills:
                     update_bill_penalty(bill, save=True)

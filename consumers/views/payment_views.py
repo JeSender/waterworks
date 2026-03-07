@@ -121,7 +121,7 @@ def calculate_water_bill(consumer, consumption):
     - total_amount: Total bill amount
     - breakdown: Dict with tier-by-tier calculation details
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     # Use tiered calculation from utils
     total_amount, average_rate, breakdown = calculate_tiered_water_bill(
@@ -158,7 +158,7 @@ def inquire(request):
     Displays consumers with pending bills and shows a water bill for the selected consumer.
     Users can uncheck newer months to issue a partial bill (oldest months first).
     """
-    from .utils import calculate_penalty, update_bill_penalty, get_payment_breakdown
+    from ..utils import calculate_penalty, update_bill_penalty, get_payment_breakdown
 
     # Get system settings for penalty calculation
     system_settings = SystemSetting.objects.first()
@@ -237,7 +237,7 @@ def process_payment(request):
     GET  (?consumer=X): show pending bills + cash/change form
     POST (?consumer=X): create Payment, mark bill Paid, redirect to receipt
     """
-    from .utils import update_bill_penalty, get_payment_breakdown
+    from ..utils import update_bill_penalty, get_payment_breakdown
     from .models import Notification
 
     system_settings = SystemSetting.objects.first()
@@ -373,7 +373,7 @@ def water_bill_print(request, consumer_id):
     Display a printable water bill for a consumer matching the official paper form.
     Shows all pending bills or a subset if ?bills=id1,id2 is passed (partial bill).
     """
-    from .utils import update_bill_penalty
+    from ..utils import update_bill_penalty
 
     system_settings = SystemSetting.objects.first()
     consumer = get_object_or_404(Consumer.objects.select_related('barangay', 'purok'), id=consumer_id)
@@ -411,7 +411,7 @@ def payment_receipt(request, payment_id):
     Ensures the payment exists and belongs to a valid bill/consumer.
     Includes tiered rate breakdown for transparent billing.
     """
-    from .utils import calculate_tiered_water_bill
+    from ..utils import calculate_tiered_water_bill
 
     payment = get_object_or_404(
         Payment.objects.select_related('bill__consumer', 'bill__previous_reading', 'bill__current_reading'),
