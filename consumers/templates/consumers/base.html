@@ -164,10 +164,28 @@
             color: #1f2937; /* dark-800 */
         }
 
-        /* === LAYOUT CONSTANTS === */
+        /* === LAYOUT CONSTANTS & CONTAINERS === */
         :root {
             --sidebar-width: 220px;
             --header-height: 50px;
+        }
+
+        .header-bar {
+            height: var(--header-height);
+            z-index: 1030;
+        }
+
+        .sidebar {
+            width: var(--sidebar-width);
+            top: var(--header-height);
+            z-index: 1020;
+            box-shadow: 2px 0 10px rgba(0,0,0,0.05);
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            margin-top: var(--header-height);
+            overflow-y: auto;
         }
 
         /* === FORM INPUT STYLES === */
@@ -533,7 +551,7 @@
 <body class="bg-light-100" id="main-body">
 
     <!-- Header Bar -->
-    <div class="header-bar bg-white fixed top-0 left-0 right-0 flex items-center justify-between px-3 shadow-sm border-b border-light-300" style="height: var(--header-height); z-index: 1030;">
+    <div class="header-bar bg-white fixed top-0 left-0 right-0 flex items-center justify-between px-3 shadow-sm border-b border-light-300">
         <div class="flex items-center gap-2">
             <img src="{% static 'consumers/images/logo.png' %}" alt="Logo" class="rounded-full border-2 border-primary-500" style="width: 32px; height: 32px;">
             <h1 class="mb-0 font-bold text-dark-900 text-base">Balilihan Waterworks</h1>
@@ -675,9 +693,7 @@
     </div>
 
     <!-- Sidebar -->
-    <div class="sidebar bg-white text-dark-900 fixed left-0 bottom-0 flex flex-col py-2 px-2 border-r border-light-300"
-         style="width: var(--sidebar-width); top: var(--header-height); z-index: 1020; box-shadow: 2px 0 10px rgba(0,0,0,0.05);"
-         id="sidebar">
+    <div class="sidebar bg-white text-dark-900 fixed left-0 bottom-0 flex flex-col py-2 px-2 border-r border-light-300" id="sidebar">
         <nav class="flex-grow overflow-y-auto scrollbar-thin">
             <!-- Main Section: Superadmin & Admin -->
             {% if user.is_superuser or user.staffprofile.role == 'superadmin' or user.staffprofile.role == 'admin' %}
@@ -819,7 +835,7 @@
     <div id="headerToastContainer" class="header-toast-container"></div>
 
     <!-- Main Content -->
-    <div class="main-content min-h-screen p-5" style="margin-left: var(--sidebar-width); margin-top: var(--header-height); overflow-y: auto;" id="main-content">
+    <div class="main-content min-h-screen p-5" id="main-content">
         {% block main_content %}
         <div class="card p-4 mt-3">
             <h3 class="mb-3 text-2xl font-bold">Welcome, {{ request.user.username }}</h3>
