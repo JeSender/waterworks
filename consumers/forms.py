@@ -17,6 +17,18 @@ def proper_case(value):
 
 
 class ConsumerForm(forms.ModelForm):
+    # Change meter_brand to CharField to allow manual text input
+    meter_brand = forms.CharField(
+        max_length=100,
+        required=True,
+        label="Meter Brand",
+        widget=forms.TextInput(attrs={
+            'class': 'form-control', 
+            'style': 'text-transform: capitalize;', 
+            'placeholder': 'Enter Meter Brand (e.g. Actaris)'
+        })
+    )
+
     # Date pickers for birth_date and registration_date
     birth_date = forms.DateField(
         widget=forms.DateInput(attrs={'type': 'date', 'class': 'form-control'})
@@ -29,6 +41,10 @@ class ConsumerForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Sort barangay dropdown alphabetically
         self.fields['barangay'].queryset = Barangay.objects.order_by('name')
+        
+        # Initialize meter_brand with name instead of ID for editing
+        if self.instance and self.instance.pk and self.instance.meter_brand:
+            self.initial['meter_brand'] = self.instance.meter_brand.name
 
     def clean_first_name(self):
         """Apply proper casing to first name."""
@@ -49,6 +65,21 @@ class ConsumerForm(forms.ModelForm):
         """Apply proper casing to spouse name."""
         value = self.cleaned_data.get('spouse_name', '')
         return proper_case(value) if value else value
+
+    def clean_meter_brand(self):
+        """Convert the manual text input into a MeterBrand instance."""
+        brand_name = self.cleaned_data.get('meter_brand')
+        if brand_name:
+            from .models import MeterBrand
+            # Ensure proper casing
+            brand_name_clean = proper_case(brand_name)
+            # Create or get the MeterBrand
+            brand_obj, _ = MeterBrand.objects.get_or_create(
+                name__iexact=brand_name_clean,
+                defaults={'name': brand_name_clean}
+            )
+            return brand_obj
+        return None
 
     def clean(self):
         """
@@ -114,7 +145,6 @@ class ConsumerForm(forms.ModelForm):
 
             # Water Meter Information
             'usage_type': forms.Select(attrs={'class': 'form-select'}),
-            'meter_brand': forms.Select(attrs={'class': 'form-select'}),
             'serial_number': forms.TextInput(attrs={'class': 'form-control'}),
             'first_reading': forms.NumberInput(attrs={'class': 'form-control'}),
         }
