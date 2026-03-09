@@ -62,25 +62,14 @@
                 </div>
                 <h3 class="text-lg font-semibold text-dark-800 mb-2">Account Found!</h3>
 
-                {% if recovery_result.username %}
-                <div class="bg-dark-100 rounded-lg p-3 mb-3">
-                    <p class="text-xs text-dark-500 mb-1">Your Username</p>
-                    <p class="text-lg font-bold text-dark-800">{{ recovery_result.username }}</p>
-                </div>
-                {% endif %}
+                <p class="text-sm text-dark-600 mb-6">
+                    If an account matches, we've sent an email containing your recovered username. Please check your inbox and spam folder.
+                </p>
 
-                {% if recovery_result.reset_url %}
-                <div class="bg-primary-50 rounded-lg p-3 mb-3">
-                    <p class="text-xs text-primary-600 mb-1">Password Reset Link</p>
-                    <p class="text-xs text-dark-600 break-all font-mono bg-white p-2 rounded border">{{ recovery_result.reset_url }}</p>
-                </div>
-                <button onclick="copyLink('{{ recovery_result.reset_url }}')" class="w-full py-2 bg-primary-100 text-primary-700 rounded-lg text-sm font-medium hover:bg-primary-200 mb-2">
-                    <i class="bi bi-clipboard mr-1"></i> Copy Reset Link
-                </button>
-                <a href="{{ recovery_result.reset_url }}" class="block w-full py-2 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 text-center">
-                    Reset Password Now
+                <a href="{% url 'consumers:staff_login' %}" class="block w-full py-2.5 bg-primary-600 text-white rounded-lg text-sm font-medium hover:bg-primary-700 text-center">
+                    Return to Login
                 </a>
-                {% endif %}
+
 
                 <a href="{% url 'consumers:staff_login' %}" class="block mt-4 text-sm text-primary-600 hover:underline">
                     <i class="bi bi-arrow-left mr-1"></i>Back to Login

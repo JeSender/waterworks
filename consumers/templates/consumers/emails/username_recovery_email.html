@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Username Recovery Request</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 0;
+        }
+        .email-container {
+            max-width: 600px;
+            margin: 20px auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .email-header {
+            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            color: #ffffff;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .email-header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .email-header p {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        .email-body {
+            padding: 30px 20px;
+        }
+        .email-body h2 {
+            color: #1f2937;
+            font-size: 20px;
+            margin-top: 0;
+        }
+        .email-body p {
+            color: #4b5563;
+            font-size: 15px;
+            line-height: 1.7;
+        }
+        .info-box {
+            background-color: #eff6ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .info-box .username {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+            padding: 8px 12px;
+            background-color: #dbeafe;
+            display: inline-block;
+            border-radius: 4px;
+            margin-top: 8px;
+            font-family: monospace;
+        }
+        .security-notice {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .security-notice p {
+            margin: 0;
+            color: #92400e;
+            font-size: 14px;
+        }
+        .security-notice strong {
+            color: #78350f;
+        }
+        .email-footer {
+            background-color: #f9fafb;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+        }
+        .email-footer p {
+            margin: 5px 0;
+            font-size: 13px;
+            color: #9ca3af;
+        }
+        @media only screen and (max-width: 600px) {
+            .email-container {
+                margin: 10px;
+                border-radius: 4px;
+            }
+            .email-header, .email-body {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="email-container">
+        <!-- Header -->
+        <div class="email-header">
+            <h1>👤 Username Recovery</h1>
+            <p>Balilihan Waterworks Management System</p>
+        </div>
+
+        <!-- Body -->
+        <div class="email-body">
+            <h2>Hello!</h2>
+
+            <p>We received a request to recover the username associated with this email address for the Balilihan Waterworks system. If you didn't make this request, you can safely ignore this email.</p>
+
+            <div class="info-box">
+                <p style="margin: 0; color: #1e40af;"><strong>Your account username is:</strong></p>
+                <div class="username">{{ username }}</div>
+            </div>
+
+            <!-- Security Notice -->
+            <div class="security-notice">
+                <p><strong>⚠️ Security Notice:</strong></p>
+                <p>For your security, please never share your username and password with anyone. If you suspect your account has been compromised, please reset your password immediately or contact your system administrator.</p>
+            </div>
+
+            <p>You can now return to the login page and access your account.</p>
+
+            <p>Best regards,<br>
+            <strong>Balilihan Waterworks Team</strong></p>
+        </div>
+
+        <!-- Footer -->
+        <div class="email-footer">
+            <p>This is an automated message from Balilihan Waterworks Management System.</p>
+            <p>Please do not reply to this email.</p>
+            <p style="margin-top: 15px;">© 2026 Balilihan Waterworks. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>

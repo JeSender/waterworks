@@ -1,0 +1,23 @@
+👤 Username Recovery
+Balilihan Waterworks Management System
+=====================================================
+
+Hello!
+
+We received a request to recover the username associated with this email address for the Balilihan Waterworks system. If you didn't make this request, you can safely ignore this email.
+
+Your account username is:
+>>> {{ username }} <<<
+
+⚠️ Security Notice:
+For your security, please never share your username and password with anyone. If you suspect your account has been compromised, please reset your password immediately or contact your system administrator.
+
+You can now return to the login page and access your account.
+
+Best regards,
+Balilihan Waterworks Team
+
+---
+This is an automated message from Balilihan Waterworks Management System.
+Please do not reply to this email.
+© 2026 Balilihan Waterworks. All rights reserved.

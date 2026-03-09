@@ -247,12 +247,9 @@ def forgot_password_request(request):
                 if not user:
                     raise User.DoesNotExist
 
-            # Only allow password reset for superadmin/superuser (built-in admin account)
-            # Cashier and Field Staff can have their passwords reset by the superadmin
-            is_superadmin = user.is_superuser or (hasattr(user, 'staffprofile') and user.staffprofile.role == 'superadmin')
-
-            if not is_superadmin:
-                messages.error(request, "Password reset is only available for Superadmin accounts. Please contact your administrator to reset your password.")
+            # Allow password reset for all staff accounts
+            if not user.is_staff:
+                messages.error(request, "Password reset is only available for staff accounts. Please contact your administrator.")
                 return redirect('consumers:forgot_password')
 
             # Check if user already has a valid token
@@ -371,21 +368,34 @@ def forgot_username(request):
         email = request.POST.get('email', '').strip()
 
         if email:
+            # For security, always claim success to prevent email enumeration
+            messages.success(request, "If an account matches that email, a recovery message has been sent.")
+            
             # Try to find user by email
             users = User.objects.filter(email__iexact=email, is_staff=True)
             if users.exists():
-                if users.count() == 1:
-                    recovered_username = users.first().username
-                    recovery_method = 'email'
-                    messages.success(request, f"Username found for email: {email}")
-                else:
-                    # Multiple users with same email
-                    usernames = [u.username for u in users]
-                    recovered_username = ", ".join(usernames)
-                    recovery_method = 'email'
-                    messages.success(request, f"Multiple accounts found for this email.")
-            else:
-                messages.error(request, "No staff account found with that email address.")
+                from django.core.mail import EmailMultiAlternatives
+                from django.template.loader import render_to_string
+                
+                usernames = [u.username for u in users]
+                recovered_usernames_str = ", ".join(usernames)
+                
+                # Send email securely instead of exposing it in UI
+                try:
+                    email_context = {'username': recovered_usernames_str}
+                    html_message = render_to_string('consumers/emails/username_recovery_email.html', email_context)
+                    plain_message = render_to_string('consumers/emails/username_recovery_email.txt', email_context)
+                    
+                    subject = 'Username Recovery - Balilihan Waterworks'
+                    from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
+                    
+                    msg = EmailMultiAlternatives(subject, plain_message, from_email, [email])
+                    msg.attach_alternative(html_message, "text/html")
+                    msg.send(fail_silently=False)
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error sending username recovery: {e}")
         else:
             messages.error(request, "Please provide the registered email address.")
 
@@ -428,15 +438,7 @@ def account_recovery(request):
         else:
             messages.error(request, "Please enter your email or full name.")
 
-        if user:
-            # Check if user is admin/superuser (can reset password)
-            can_reset = user.is_superuser or (user.is_staff and user.groups.filter(name='Admin').exists())
-
-            recovery_result = {
-                'username': user.username,
-            }
-
-            if can_reset:
+        if user and user.is_staff:
                 # Generate password reset token
                 existing_token = PasswordResetToken.objects.filter(
                     user=user,
@@ -455,17 +457,44 @@ def account_recovery(request):
                 reset_url = request.build_absolute_uri(
                     reverse('consumers:password_reset_confirm', kwargs={'token': token.token})
                 )
-                recovery_result['reset_url'] = reset_url
+                
+                # Send email securely instead of returning it!
+                from django.core.mail import EmailMultiAlternatives
+                from django.template.loader import render_to_string
+                
+                try:
+                    email_context = {
+                        'username': user.username,
+                        'reset_url': reset_url,
+                        'request_time': token.created_at.strftime('%B %d, %Y at %I:%M %p'),
+                        'expiration_time': token.expires_at.strftime('%B %d, %Y at %I:%M %p'),
+                        'ip_address': get_client_ip(request) or 'Unknown',
+                    }
+                    html_message = render_to_string('consumers/emails/password_reset_email.html', email_context)
+                    plain_message = render_to_string('consumers/emails/password_reset_email.txt', email_context)
+                    
+                    subject = 'Account Recovery & Password Reset - Balilihan Waterworks'
+                    from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
+                    
+                    msg = EmailMultiAlternatives(subject, plain_message, from_email, [user.email])
+                    msg.attach_alternative(html_message, "text/html")
+                    msg.send(fail_silently=False)
+                    
+                    # Log activity
+                    UserActivity.objects.create(
+                        user=user,
+                        action='password_reset_requested',
+                        description=f'Account recovery email sent for {user.username}',
+                        ip_address=get_client_ip(request)
+                    )
+                except Exception as e:
+                    import logging
+                    logger = logging.getLogger(__name__)
+                    logger.error(f"Error sending recovery email: {e}")
 
-                # Log activity
-                UserActivity.objects.create(
-                    user=user,
-                    action='password_reset_requested',
-                    description=f'Account recovery initiated for {user.username}',
-                    ip_address=get_client_ip(request)
-                )
-
-            messages.success(request, "Account found successfully!")
+        # Always show a generic success message to prevent enumeration
+        messages.success(request, "If an account was found, a recovery email has been sent with further instructions.")
+        recovery_result = {'email_sent': True}
 
     return render(request, 'consumers/account_recovery.html', {
         'recovery_result': recovery_result

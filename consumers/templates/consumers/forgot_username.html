@@ -133,42 +133,6 @@
                     </a>
                 </div>
             </form>
-            {% endif %}
-
-            <!-- Username Display -->
-            {% if recovered_username %}
-            <div class="login-card rounded-2xl p-6 text-center">
-                <i class="bi bi-check-circle-fill text-white text-4xl mb-3 block"></i>
-                <h4 class="text-lg font-bold text-white mb-2">Username Found!</h4>
-                <p class="text-sm text-white/80">
-                    Account found for the provided email address
-                </p>
-
-                <div class="username-display">
-                    <p class="text-xs text-white/80 mb-2 font-semibold">Your Username:</p>
-                    <p id="usernameText" class="text-white font-mono text-lg bg-black/20 p-3 rounded text-center font-bold">{{ recovered_username }}</p>
-                </div>
-
-                <!-- Copy Button -->
-                <button onclick="copyUsername()"
-                        class="w-full mt-4 py-2.5 bg-white/20 hover:bg-white/30 border border-white/30 text-white font-medium rounded-lg transition-all backdrop-blur-sm shadow flex items-center justify-center gap-2 copy-button">
-                    <i class="bi bi-clipboard"></i> Copy Username
-                </button>
-
-                <!-- Go to Login -->
-                <a href="{% url 'consumers:staff_login' %}"
-                   class="block w-full mt-3 py-2.5 border border-white/10 text-white font-medium hover:bg-white/10 transition-all rounded-lg text-center backdrop-blur-sm">
-                    <i class="bi bi-box-arrow-in-right mr-1"></i> Go to Login
-                </a>
-
-                <!-- Reset Password Link -->
-                <div class="text-center mt-4">
-                    <a href="{% url 'consumers:forgot_password' %}" class="text-sm text-white hover:text-white/80 hover:underline">
-                        <i class="bi bi-key mr-1"></i> Also forgot password? Reset it here
-                    </a>
-                </div>
-            </div>
-            {% endif %}
 
             <!-- Error Messages -->
             {% if messages %}
