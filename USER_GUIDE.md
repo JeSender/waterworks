@@ -134,7 +134,7 @@ It is best practice to run Django projects inside a virtual environment to isola
 
    **Email Configuration (Gmail SMTP):**
    ```
-   EMAIL_HOST_USER=balilihanwaterworks@gmail.com
+   EMAIL_HOST_USER=balilihanwaterworks6342@gmail.com
    EMAIL_HOST_PASSWORD=your-16-character-app-password
    DEFAULT_FROM_EMAIL=Balilihan Waterworks <noreply@balilihan-waterworks.com>
    ```
@@ -273,7 +273,7 @@ The system sends password reset emails and notifications. Follow these steps to 
 Update your `.env` file:
 
 ```env
-EMAIL_HOST_USER=balilihanwaterworks@gmail.com
+EMAIL_HOST_USER=balilihanwaterworks6342@gmail.com
 EMAIL_HOST_PASSWORD=abcd efgh ijkl mnop  # Remove spaces: abcdefghijklmnop
 DEFAULT_FROM_EMAIL=Balilihan Waterworks <noreply@balilihan-waterworks.com>
 ```

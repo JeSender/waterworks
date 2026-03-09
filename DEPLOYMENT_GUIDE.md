@@ -297,7 +297,7 @@ The system sends password reset emails using Gmail SMTP.
 ### 9.2 Update .env File
 
 ```
-EMAIL_HOST_USER=balilihanwaterworks@gmail.com
+EMAIL_HOST_USER=balilihanwaterworks6342@gmail.com
 EMAIL_HOST_PASSWORD=abcdefghijklmnop
 DEFAULT_FROM_EMAIL=Balilihan Waterworks <noreply@balilihan-waterworks.com>
 ```
