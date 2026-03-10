@@ -1579,7 +1579,7 @@ def test_email(request):
 
 
 @login_required
-@is_admin_user
+@user_management_permission_required
 def area_management(request):
     """
     Dedicated view for managing Barangays and Puroks natively.
