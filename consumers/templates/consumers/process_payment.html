@@ -26,12 +26,12 @@
                 </div>
             </div>
 
-            {# Search #}
+            {# Search + Quick Load #}
             <div class="relative mb-2.5">
                 <i class="bi bi-search absolute left-3 top-1/2 -translate-y-1/2 text-white/60 text-sm"></i>
                 <input type="text"
                        id="search-consumer"
-                       placeholder="Search by name or ID number…"
+                       placeholder="Type name or ID — auto-loads on 1 match…"
                        autocomplete="off"
                        class="w-full pl-9 pr-4 py-2.5 text-sm bg-white/15 border border-white/25 rounded-xl
                               text-white placeholder-white/50 focus:outline-none focus:bg-white/25 focus:border-white/60
@@ -234,6 +234,12 @@
                             {{ pending_bills|length }} bill{{ pending_bills|length|pluralize }}
                         </span>
                         {% endif %}
+                        
+                        {% if locked_bill_ids %}
+                        <span class="ml-auto px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 shadow-sm" style="background:#dcfce7; color:#166534; border: 1px solid #bbf7d0;">
+                            <i class="bi bi-lock-fill"></i> Locked from Inquire
+                        </span>
+                        {% endif %}
                     </p>
 
                     {% if pending_bills %}
@@ -313,9 +319,13 @@
                                     ₱{{ total_due|floatformat:2|intcomma }}
                                 </td>
                                 <td class="border border-gray-600 px-2 py-2 text-center">
+                                    {% if not locked_bill_ids %}
                                     <input type="checkbox" id="select-all-bills" checked
                                            title="Select/Deselect all"
                                            class="w-3.5 h-3.5 rounded cursor-pointer">
+                                    {% else %}
+                                    <i class="bi bi-lock-fill text-gray-400 text-[10px]" title="Selection Locked"></i>
+                                    {% endif %}
                                 </td>
                             </tr>
                         </tfoot>
@@ -473,10 +483,13 @@
 
 {% block extra_js %}
 <script>
-// ── Consumer search (live filter, no page reload) ────────────────────────────
+// ── Consumer search (live filter + auto-select on 1 result) ──────────────────
 (function () {
     const inp = document.getElementById('search-consumer');
     if (!inp) return;
+
+    // Auto-focus so cashier can start typing immediately
+    inp.focus();
 
     function filter() {
         const q = inp.value.toLowerCase().trim();
@@ -484,20 +497,37 @@
         const noRes = document.getElementById('no-results');
         const list  = document.getElementById('consumer-list');
         let n = 0;
+        let lastVisible = null;
         cards.forEach(c => {
-            const show = c.dataset.name.includes(q) || c.dataset.id.includes(q);
+            const show = !q || c.dataset.name.includes(q) || c.dataset.id.includes(q);
             c.style.display = show ? '' : 'none';
-            if (show) n++;
+            if (show) { n++; lastVisible = c; }
         });
         document.getElementById('visible-count').textContent = n;
         if (noRes && list) {
             noRes.classList.toggle('hidden', n > 0);
             list.classList.toggle('hidden', n === 0);
         }
+
+        // ── AUTO-SELECT: if only 1 consumer remains, navigate to them ──
+        if (n === 1 && lastVisible && q.length >= 3) {
+            // Brief highlight so cashier sees what is being loaded
+            lastVisible.classList.add('animate-pulse');
+            window.location.href = lastVisible.href;
+        }
     }
 
     let t;
-    inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(filter, 180); });
+    inp.addEventListener('input', () => { clearTimeout(t); t = setTimeout(filter, 350); });
+
+    // Enter key: jump to first visible consumer
+    inp.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') {
+            const first = [...document.querySelectorAll('.consumer-card')]
+                .find(c => c.style.display !== 'none');
+            if (first) window.location.href = first.href;
+        }
+    });
 }());
 
 // ── Barangay filter (requires page reload to filter server-side) ─────────────
@@ -518,12 +548,36 @@ function clearBarangay() {
 
 // ── Bill selection — oldest-first rule ──────────────────────────────────────
 window._totalDue = parseFloat("{{ total_due|floatformat:2 }}" || "0") || 0;
+const lockedBillIdsStr = "{{ locked_bill_ids|default_if_none:'' }}";
 
 function initBillSelection() {
     const checkboxes = document.querySelectorAll('.bill-checkbox');
     const selectAll  = document.getElementById('select-all-bills');
     if (!checkboxes.length) return;
+    
+    // ── LOCKED MODE: Enforce Inquire slip match ──
+    let isLocked = false;
+    let lockedIds = [];
+    if (lockedBillIdsStr.trim() !== '') {
+        isLocked = true;
+        lockedIds = lockedBillIdsStr.split(',').map(id => id.trim());
+        
+        checkboxes.forEach(cb => {
+            const billId = cb.dataset.billId;
+            // Only check if it's in the locked list
+            cb.checked = lockedIds.includes(billId);
+            // Disable all checkboxes so they can't be changed
+            cb.disabled = true;
+            cb.classList.add('cursor-not-allowed');
+            cb.classList.remove('cursor-pointer');
+        });
+        
+        // Initial total update based on locked selection
+        updateTotals();
+        return; // Skip attaching event listeners since it's locked
+    }
 
+    // ── STANDARD MODE ──
     checkboxes.forEach(cb => {
         cb.addEventListener('change', function () {
             const idx = parseInt(this.dataset.index);

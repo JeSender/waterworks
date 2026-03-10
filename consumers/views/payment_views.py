@@ -346,13 +346,21 @@ def process_payment(request):
     selected_consumer = None
     pending_bills = []
     total_due = Decimal('0.00')
+    locked_bill_ids = request.GET.get('bills', '')
 
     if selected_consumer_id:
         selected_consumer = get_object_or_404(Consumer, id=selected_consumer_id)
         pending_bills = list(selected_consumer.bills.filter(status='Pending').order_by('billing_period'))
+        
+        locked_id_list = []
+        if locked_bill_ids:
+            locked_id_list = [int(b.strip()) for b in locked_bill_ids.split(',') if b.strip()]
+
         for bill in pending_bills:
             update_bill_penalty(bill, system_settings, save=True)
-            total_due += bill.total_amount_due
+            # If locked bills are specified, only sum those for the initial total_due
+            if not locked_id_list or bill.id in locked_id_list:
+                total_due += bill.total_amount_due
 
     context = {
         'consumers': consumers,
@@ -362,6 +370,7 @@ def process_payment(request):
         'total_due': total_due,
         'barangays': barangays,
         'selected_barangay': selected_barangay,
+        'locked_bill_ids': locked_bill_ids,
     }
     return render(request, 'consumers/process_payment.html', context)
 
