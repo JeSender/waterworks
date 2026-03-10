@@ -1497,47 +1497,44 @@ def test_email(request):
             'message': f'Connecting to {settings.EMAIL_HOST}:{settings.EMAIL_PORT}...'
         })
 
-        # Create SMTP connection
-        if settings.EMAIL_USE_TLS:
-            server = smtplib.SMTP(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=10)
-            server.starttls()
-        else:
-            server = smtplib.SMTP_SSL(settings.EMAIL_HOST, settings.EMAIL_PORT, timeout=10)
-
-        result['tests'][-1]['status'] = 'PASS'
-        result['tests'][-1]['message'] = 'Connected to Gmail SMTP server'
-
-        # Test 3: Try authentication
+        # Test 2: Check Resend API Key
         result['tests'].append({
-            'name': 'SMTP Authentication',
+            'name': 'Resend API Key Check',
             'status': 'TESTING',
-            'message': 'Authenticating...'
+            'message': 'Checking API key...'
         })
 
-        server.login(settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD)
+        if settings.RESEND_API_KEY:
+            import resend
+            resend.api_key = settings.RESEND_API_KEY
+            result['tests'][-1]['status'] = 'PASS'
+            result['tests'][-1]['message'] = 'Resend API key is configured'
+        else:
+            result['tests'][-1]['status'] = 'FAIL'
+            result['tests'][-1]['message'] = 'Resend API key is missing'
+            result['error'] = 'RESEND_API_KEY not found in settings'
+            return JsonResponse(result, json_dumps_params={'indent': 2})
 
-        result['tests'][-1]['status'] = 'PASS'
-        result['tests'][-1]['message'] = 'Authentication successful!'
-
-        server.quit()
-
-        # Test 4: Try sending a test email
+        # Test 3: Try sending a test email
         if request.GET.get('send') == 'true':
             to_email = request.GET.get('to', request.user.email)
             result['tests'].append({
-                'name': 'Send Test Email',
+                'name': 'Send Test Email (Resend)',
                 'status': 'TESTING',
-                'message': f'Sending to {to_email}...'
+                'message': f'Sending to {to_email} via Resend...'
             })
 
             try:
-                send_mail(
-                    subject='Test Email - Balilihan Waterworks',
-                    message='This is a test email from Balilihan Waterworks. If you received this, email is working correctly!',
-                    from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[to_email],
-                    fail_silently=False,
-                )
+                import resend
+                resend.api_key = settings.RESEND_API_KEY
+                
+                resend.Emails.send({
+                    "from": settings.DEFAULT_FROM_EMAIL,
+                    "to": [to_email],
+                    "subject": "Test Email - Balilihan Waterworks (via Resend)",
+                    "html": "<p>This is a test email from Balilihan Waterworks via the <strong>Resend API</strong>. If you received this, email is working correctly!</p>",
+                })
+                
                 result['tests'][-1]['status'] = 'PASS'
                 result['tests'][-1]['message'] = f'Email sent successfully to {to_email}'
                 result['success'] = True
@@ -1550,7 +1547,7 @@ def test_email(request):
             result['tests'].append({
                 'name': 'Ready to Send',
                 'status': 'INFO',
-                'message': 'Add ?send=true&to=email@example.com to send a test email'
+                'message': 'Add ?send=true&to=email@example.com to send a test email via Resend'
             })
 
     except smtplib.SMTPAuthenticationError as e:

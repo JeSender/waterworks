@@ -230,9 +230,9 @@ def forgot_password_request(request):
     from django.template.loader import render_to_string
     from django.utils.html import strip_tags
 
-    # Check if email is configured before processing any requests
-    if not settings.EMAIL_HOST_USER or not settings.EMAIL_HOST_PASSWORD:
-        messages.error(request, "Password reset via email is currently unavailable. Please contact your system administrator for password assistance.")
+    # Check if Resend API is configured
+    if not settings.RESEND_API_KEY:
+        messages.error(request, "Password reset via email is currently unavailable (API key missing). Please contact your system administrator.")
         return render(request, 'consumers/forgot_password.html', {'email_disabled': True})
 
     if request.method == "POST":
@@ -290,26 +290,27 @@ def forgot_password_request(request):
             # Send email
             try:
                 subject = 'Password Reset Request - Balilihan Waterworks'
-                # Gmail requires from_email to match EMAIL_HOST_USER
-                from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
+                from_email = settings.DEFAULT_FROM_EMAIL
                 to_email = user.email
 
                 # Log email attempt (for debugging)
                 import logging
                 logger = logging.getLogger(__name__)
-                logger.info(f"Attempting to send password reset email to {to_email} from {from_email}")
+                logger.info(f"Attempting to send password reset email to {to_email} via Resend API")
 
-                # Create email with both HTML and plain text versions
-                email = EmailMultiAlternatives(
-                    subject=subject,
-                    body=plain_message,
-                    from_email=from_email,
-                    to=[to_email]
-                )
-                email.attach_alternative(html_message, "text/html")
-
-                # Send with explicit connection settings
-                email.send(fail_silently=False)
+                # Send email using Resend API
+                import resend
+                resend.api_key = settings.RESEND_API_KEY
+                
+                params = {
+                    "from": from_email,
+                    "to": [to_email],
+                    "subject": subject,
+                    "html": html_message,
+                    "text": plain_message,
+                }
+                
+                resend.Emails.send(params)
 
                 # Log the activity
                 UserActivity.objects.create(
@@ -330,19 +331,13 @@ def forgot_password_request(request):
                 error_msg = str(e)
                 logger.error(f"Error sending password reset email to {user.email}: {error_msg}", exc_info=True)
 
-                # Check for common email configuration issues
-                if not settings.EMAIL_HOST_USER:
-                    logger.error("EMAIL_HOST_USER is not configured!")
-                    messages.error(request, "Email service is not configured. Please contact your administrator to set up EMAIL_HOST_USER.")
-                elif not settings.EMAIL_HOST_PASSWORD:
-                    logger.error("EMAIL_HOST_PASSWORD is not configured!")
-                    messages.error(request, "Email service is not configured. Please contact your administrator to set up EMAIL_HOST_PASSWORD.")
-                elif "authentication" in error_msg.lower() or "535" in error_msg:
-                    logger.error("Gmail authentication failed - check EMAIL_HOST_PASSWORD (must be App Password)")
-                    messages.error(request, "Email authentication failed. Please ensure Gmail App Password is configured correctly.")
-                elif "connection" in error_msg.lower() or "timeout" in error_msg.lower():
-                    logger.error("Connection to Gmail SMTP failed")
-                    messages.error(request, "Could not connect to email server. Please try again later.")
+                # Check for common Resend configuration issues
+                if not settings.RESEND_API_KEY:
+                    logger.error("RESEND_API_KEY is not configured!")
+                    messages.error(request, "Email service is not configured. Please contact your administrator.")
+                elif "unauthorized" in error_msg.lower() or "401" in error_msg:
+                    logger.error("Resend API key is invalid or unauthorized")
+                    messages.error(request, "Email service authorization failed. Please check the API key.")
                 else:
                     messages.error(request, f"Failed to send password reset email. Error: {error_msg[:100]}")
 
@@ -387,11 +382,20 @@ def forgot_username(request):
                     plain_message = render_to_string('consumers/emails/username_recovery_email.txt', email_context)
                     
                     subject = 'Username Recovery - Balilihan Waterworks'
-                    from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
+                    from_email = settings.DEFAULT_FROM_EMAIL
                     
-                    msg = EmailMultiAlternatives(subject, plain_message, from_email, [email])
-                    msg.attach_alternative(html_message, "text/html")
-                    msg.send(fail_silently=False)
+                    import resend
+                    resend.api_key = settings.RESEND_API_KEY
+                    
+                    params = {
+                        "from": from_email,
+                        "to": [email],
+                        "subject": subject,
+                        "html": html_message,
+                        "text": plain_message,
+                    }
+                    
+                    resend.Emails.send(params)
                 except Exception as e:
                     import logging
                     logger = logging.getLogger(__name__)
@@ -474,11 +478,20 @@ def account_recovery(request):
                 plain_message = render_to_string('consumers/emails/password_reset_email.txt', email_context)
                 
                 subject = 'Account Recovery & Password Reset - Balilihan Waterworks'
-                from_email = settings.EMAIL_HOST_USER or settings.DEFAULT_FROM_EMAIL
+                from_email = settings.DEFAULT_FROM_EMAIL
                 
-                msg = EmailMultiAlternatives(subject, plain_message, from_email, [user.email])
-                msg.attach_alternative(html_message, "text/html")
-                msg.send(fail_silently=False)
+                import resend
+                resend.api_key = settings.RESEND_API_KEY
+                
+                params = {
+                    "from": from_email,
+                    "to": [user.email],
+                    "subject": subject,
+                    "html": html_message,
+                    "text": plain_message,
+                }
+                
+                resend.Emails.send(params)
                 
                 # Log activity
                 UserActivity.objects.create(
