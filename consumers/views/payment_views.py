@@ -317,6 +317,25 @@ def process_payment(request):
 
             last_payment = payment
 
+        # --- Log the payment activity ---
+        if last_payment:
+            try:
+                current_session = UserLoginEvent.objects.filter(
+                    user=request.user,
+                    session_key=request.session.session_key,
+                    logout_timestamp__isnull=True
+                ).first()
+                UserActivity.objects.create(
+                    user=request.user,
+                    action='payment_processed',
+                    description=f'Processed payment for consumer {consumer.full_name} ({consumer.id_number}) – OR#{last_payment.or_number}',
+                    ip_address=request.META.get('REMOTE_ADDR', ''),
+                    user_agent=request.META.get('HTTP_USER_AGENT', ''),
+                    login_event=current_session
+                )
+            except Exception:
+                pass  # Never block payment for logging failures
+
         # Create notification for superadmin
         Notification.objects.create(
             notification_type='payment',
@@ -406,6 +425,24 @@ def water_bill_print(request, consumer_id):
 
     for bill in pending_bills:
         update_bill_penalty(bill, system_settings, save=True)
+
+    # --- Log the inquire/print activity ---
+    try:
+        current_session = UserLoginEvent.objects.filter(
+            user=request.user,
+            session_key=request.session.session_key,
+            logout_timestamp__isnull=True
+        ).first()
+        UserActivity.objects.create(
+            user=request.user,
+            action='bill_generated',
+            description=f'Inquired/printed bill for consumer {consumer.full_name} ({consumer.id_number}) – {pending_bills.count()} month(s)',
+            ip_address=request.META.get('REMOTE_ADDR', ''),
+            user_agent=request.META.get('HTTP_USER_AGENT', ''),
+            login_event=current_session
+        )
+    except Exception:
+        pass  # Never block print for logging failures
 
     total_amount = sum(bill.total_amount for bill in pending_bills)
     total_penalty = sum(bill.effective_penalty for bill in pending_bills)

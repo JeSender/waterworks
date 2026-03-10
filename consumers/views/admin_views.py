@@ -710,14 +710,8 @@ def user_login_history(request):
     from django.db.models import Max
     from django.db.models.functions import Coalesce
 
-    # First, get latest event per user
-    latest_event_ids = UserLoginEvent.objects.values('user_id').annotate(
-        max_id=Max('id')
-    ).values_list('max_id', flat=True)
-    
-    login_events = UserLoginEvent.objects.filter(
-        id__in=latest_event_ids
-    ).select_related('user').prefetch_related('activities')
+    # Show ALL login events (not just latest per user) so every login is tracked
+    login_events = UserLoginEvent.objects.select_related('user').prefetch_related('activities')
 
     # Apply filters
     if search_query:
