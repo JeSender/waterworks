@@ -312,6 +312,7 @@ def process_payment(request):
 
             # Mark bill as paid
             bill.status = 'Paid'
+            bill.queued_for_payment = False
             bill.save()
 
             last_payment = payment
@@ -346,15 +347,17 @@ def process_payment(request):
     selected_consumer = None
     pending_bills = []
     total_due = Decimal('0.00')
-    locked_bill_ids = request.GET.get('bills', '')
+    locked_bill_ids = ''
 
     if selected_consumer_id:
         selected_consumer = get_object_or_404(Consumer, id=selected_consumer_id)
         pending_bills = list(selected_consumer.bills.filter(status='Pending').order_by('billing_period'))
         
-        locked_id_list = []
-        if locked_bill_ids:
-            locked_id_list = [int(b.strip()) for b in locked_bill_ids.split(',') if b.strip()]
+        # Read queued bills from database
+        queued_bills = selected_consumer.bills.filter(status='Pending', queued_for_payment=True)
+        locked_id_list = list(queued_bills.values_list('id', flat=True))
+        if locked_id_list:
+            locked_bill_ids = ','.join(map(str, locked_id_list))
 
         for bill in pending_bills:
             update_bill_penalty(bill, system_settings, save=True)
@@ -392,8 +395,14 @@ def water_bill_print(request, consumer_id):
     if bills_param:
         bill_id_list = [int(bid.strip()) for bid in bills_param.split(',') if bid.strip()]
         pending_bills = consumer.bills.filter(id__in=bill_id_list, status='Pending').order_by('billing_period')
+        
+        # Mark selected bills as queued for payment in Cashier view, unmark others
+        consumer.bills.filter(status='Pending').update(queued_for_payment=False)
+        pending_bills.update(queued_for_payment=True)
     else:
         pending_bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+        # Mark all pending as queued for payment
+        pending_bills.update(queued_for_payment=True)
 
     for bill in pending_bills:
         update_bill_penalty(bill, system_settings, save=True)

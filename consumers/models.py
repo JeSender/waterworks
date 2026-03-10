@@ -989,6 +989,11 @@ class Bill(models.Model):
         default='Pending'
     )
 
+    queued_for_payment = models.BooleanField(
+        default=False,
+        help_text="True if Inquire office selected this for payment"
+    )
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

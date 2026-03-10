@@ -284,11 +284,6 @@
                class="inline-flex items-center px-5 py-2.5 bg-primary-600 hover:bg-primary-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
                 <i class="bi bi-printer-fill mr-2"></i>Print Water Bill
             </a>
-            <a href="{% url 'consumers:process_payment' %}?consumer={{ selected_consumer.id }}"
-               id="proceed-payment-btn"
-               class="inline-flex items-center px-5 py-2.5 bg-success-600 hover:bg-success-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
-                <i class="bi bi-cash-coin mr-2"></i>Proceed to Payment
-            </a>
         </div>
         {% endif %}
     </div>
@@ -351,10 +346,8 @@ function initBillSelection() {
     const checkboxes = document.querySelectorAll('.bill-checkbox');
     const selectAll = document.getElementById('select-all-bills');
     const printBtn = document.getElementById('print-bill-btn');
-    const proceedBtn = document.getElementById('proceed-payment-btn');
     const totalDisplay = document.getElementById('total-amount-display');
     const basePrintUrl = printBtn ? printBtn.href : '';
-    const baseProceedUrl = proceedBtn ? proceedBtn.href.split('&')[0] : ''; // keep ?consumer=123 part
 
     if (!checkboxes.length) return;
 
@@ -416,27 +409,15 @@ function initBillSelection() {
         }
 
         // Update URLs with selected bill IDs for partial payments
-        if (printBtn || proceedBtn) {
+        if (printBtn) {
             const hasPartialSelection = billIds.length > 0 && billIds.length < checkboxes.length;
             const paramString = hasPartialSelection ? '?bills=' + billIds.join(',') : '';
-            const paymentParam = hasPartialSelection ? '&bills=' + billIds.join(',') : '';
 
-            if (printBtn) {
-                printBtn.href = basePrintUrl + paramString;
-                if (billIds.length === 0) {
-                    printBtn.classList.add('pointer-events-none', 'opacity-50');
-                } else {
-                    printBtn.classList.remove('pointer-events-none', 'opacity-50');
-                }
-            }
-            
-            if (proceedBtn) {
-                proceedBtn.href = baseProceedUrl + paymentParam;
-                if (billIds.length === 0) {
-                    proceedBtn.classList.add('pointer-events-none', 'opacity-50');
-                } else {
-                    proceedBtn.classList.remove('pointer-events-none', 'opacity-50');
-                }
+            printBtn.href = basePrintUrl + paramString;
+            if (billIds.length === 0) {
+                printBtn.classList.add('pointer-events-none', 'opacity-50');
+            } else {
+                printBtn.classList.remove('pointer-events-none', 'opacity-50');
             }
         }
     }
