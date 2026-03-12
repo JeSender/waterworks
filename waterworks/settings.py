@@ -262,7 +262,8 @@ try:
             api_secret=_api_secret,
             secure=True
         )
-        _email_logger.info(f"Cloudinary configured with cloud: {_cloud_name}")
+        import logging
+        logging.getLogger('cloudinary').info(f"Cloudinary configured with cloud: {_cloud_name}")
     else:
         # Silently skip if not configured so it doesn't alarm the user on startup
         pass
