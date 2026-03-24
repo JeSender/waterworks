@@ -62,10 +62,7 @@
                 </div>
                 <div>
                     <p class="text-xs font-medium text-dark-500 uppercase">Residential</p>
-                    <p class="text-2xl font-bold text-dark-900">
-                        {% widthratio consumers|length 1 1 as total %}
-                        {{ consumers|default_if_none:consumers|length|default:"0" }}
-                    </p>
+                    <p class="text-2xl font-bold text-dark-900">{{ residential_count|default:"0" }}</p>
                 </div>
             </div>
         </div>
@@ -78,10 +75,11 @@
                 </div>
                 <div>
                     <p class="text-xs font-medium text-dark-500 uppercase">Commercial</p>
-                    <p class="text-2xl font-bold text-dark-900">0</p>
+                    <p class="text-2xl font-bold text-dark-900">{{ commercial_count|default:"0" }}</p>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- Consumer Table -->

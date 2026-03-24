@@ -175,15 +175,21 @@ def export_delinquent_consumers(request):
 def connected_consumers(request):
     # Optimize query with select_related
     consumers = Consumer.objects.filter(status='active').select_related('barangay', 'purok')
-    
+
+    # Count by usage type from the full queryset
+    residential_count = consumers.filter(usage_type='Residential').count()
+    commercial_count = consumers.filter(usage_type='Commercial').count()
+
     # Pagination
     paginator = Paginator(consumers, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     return render(request, 'consumers/consumer_list_filtered.html', {
         'title': 'Connected Consumers',
-        'consumers': page_obj
+        'consumers': page_obj,
+        'residential_count': residential_count,
+        'commercial_count': commercial_count,
     })
 
 
@@ -284,6 +290,10 @@ def delinquent_consumers(request):
     # Optimize query with select_related
     consumers = Consumer.objects.filter(bills__in=bills).select_related('barangay', 'purok').distinct()
 
+    # Count by usage type from the full queryset
+    residential_count = consumers.filter(usage_type='Residential').count()
+    commercial_count = consumers.filter(usage_type='Commercial').count()
+
     # Pagination
     paginator = Paginator(consumers, 20)
     page_number = request.GET.get('page')
@@ -293,7 +303,9 @@ def delinquent_consumers(request):
         'title': 'Delinquent Consumers',
         'consumers': page_obj,
         'selected_month': month,
-        'selected_year': year
+        'selected_year': year,
+        'residential_count': residential_count,
+        'commercial_count': commercial_count,
     })
 
 
