@@ -15,25 +15,30 @@
         </h2>
         <div class="flex flex-wrap items-center gap-3">
             <form method="GET" action="{% url 'consumers:reports' %}" id="filterForm" class="flex flex-wrap items-center gap-2">
-                <label for="year" class="text-sm font-semibold text-gray-700">Year:</label>
-                <select name="year" id="year" onchange="this.form.submit()"
-                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
-                    {% for y in year_choices %}
-                    <option value="{{ y }}" {% if y == year %}selected{% endif %}>{{ y }}</option>
-                    {% endfor %}
-                </select>
-                <label for="month_from" class="text-sm font-semibold text-gray-700 ml-2">From:</label>
+                <label for="month_from" class="text-sm font-semibold text-gray-700">From:</label>
                 <select name="month_from" id="month_from" onchange="this.form.submit()"
                     class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
                     {% for mc in month_choices %}
                     <option value="{{ mc.num }}" {% if mc.num == month_from %}selected{% endif %}>{{ mc.name }}</option>
                     {% endfor %}
                 </select>
-                <label for="month_to" class="text-sm font-semibold text-gray-700">To:</label>
+                <select name="year_from" id="year_from" onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                    {% for y in year_choices %}
+                    <option value="{{ y }}" {% if y == year_from %}selected{% endif %}>{{ y }}</option>
+                    {% endfor %}
+                </select>
+                <label for="month_to" class="text-sm font-semibold text-gray-700 ml-2">To:</label>
                 <select name="month_to" id="month_to" onchange="this.form.submit()"
                     class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
                     {% for mc in month_choices %}
                     <option value="{{ mc.num }}" {% if mc.num == month_to %}selected{% endif %}>{{ mc.name }}</option>
+                    {% endfor %}
+                </select>
+                <select name="year_to" id="year_to" onchange="this.form.submit()"
+                    class="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:ring-primary-500 focus:border-primary-500">
+                    {% for y in year_choices %}
+                    <option value="{{ y }}" {% if y == year_to %}selected{% endif %}>{{ y }}</option>
                     {% endfor %}
                 </select>
             </form>

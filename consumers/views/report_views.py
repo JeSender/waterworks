@@ -137,80 +137,114 @@ def calculate_water_bill(consumer, consumption):
 def reports(request):
     """
     Income dashboard showing monthly and yearly income — all barangays combined and per barangay.
+    Supports cross-year date ranges via year_from + month_from → year_to + month_to.
     """
     import calendar as cal
-    from django.db.models.functions import ExtractMonth
+    from django.db.models.functions import ExtractMonth, ExtractYear
 
     now = datetime.now()
     current_year = now.year
 
-    # --- Filters: year, month_from, month_to ---
-    year = request.GET.get('year', current_year)
-    try:
-        year = int(year)
-    except (ValueError, TypeError):
-        year = current_year
-
-    month_from = request.GET.get('month_from', 1)
-    month_to = request.GET.get('month_to', 12)
-    try:
-        month_from = int(month_from)
-        month_to = int(month_to)
-    except (ValueError, TypeError):
-        month_from, month_to = 1, 12
-    month_from = max(1, min(12, month_from))
-    month_to = max(month_from, min(12, month_to))
-
-    # Year choices
+    # Year choices (used for both dropdowns)
     earliest_payment = Payment.objects.order_by('payment_date').first()
     start_year = earliest_payment.payment_date.year if earliest_payment else current_year
     year_choices = list(range(current_year, start_year - 1, -1))
 
+    # --- Filters: year_from, month_from, year_to, month_to ---
+    try:
+        year_from = int(request.GET.get('year_from', current_year))
+    except (ValueError, TypeError):
+        year_from = current_year
+
+    try:
+        year_to = int(request.GET.get('year_to', current_year))
+    except (ValueError, TypeError):
+        year_to = current_year
+
+    try:
+        month_from = int(request.GET.get('month_from', 1))
+        month_to = int(request.GET.get('month_to', 12))
+    except (ValueError, TypeError):
+        month_from, month_to = 1, 12
+
+    month_from = max(1, min(12, month_from))
+    month_to = max(1, min(12, month_to))
+
+    # Ensure from <= to chronologically
+    from_date = date(year_from, month_from, 1)
+    # Last day of to-month
+    import calendar as _cal
+    last_day = _cal.monthrange(year_to, month_to)[1]
+    to_date = date(year_to, month_to, last_day)
+    if from_date > to_date:
+        # Swap to keep sane
+        from_date, to_date = to_date, from_date
+        year_from, month_from, year_to, month_to = year_to, month_to, year_from, month_from
+        last_day = _cal.monthrange(year_to, month_to)[1]
+        to_date = date(year_to, month_to, last_day)
+
     # Month choices
     month_choices = [{'num': m, 'name': cal.month_name[m]} for m in range(1, 13)]
-    month_names = [cal.month_name[m] for m in range(1, 13)]
+    month_names_map = {m: cal.month_name[m] for m in range(1, 13)}
+
+    # Build ordered list of (year, month) tuples in the range
+    period_months = []
+    y, m = year_from, month_from
+    while (y, m) <= (year_to, month_to):
+        period_months.append((y, m))
+        m += 1
+        if m > 12:
+            m = 1
+            y += 1
 
     # --- All Barangays: monthly totals (income + consumption) ---
     monthly_qs = (
         Payment.objects.filter(
-            payment_date__year=year,
-            payment_date__month__gte=month_from,
-            payment_date__month__lte=month_to,
+            payment_date__date__gte=from_date,
+            payment_date__date__lte=to_date,
         )
-        .annotate(month=ExtractMonth('payment_date'))
-        .values('month')
+        .annotate(
+            yr=ExtractYear('payment_date'),
+            mo=ExtractMonth('payment_date'),
+        )
+        .values('yr', 'mo')
         .annotate(total=Sum('amount_paid'), consumption=Sum('bill__consumption'))
-        .order_by('month')
+        .order_by('yr', 'mo')
     )
-    monthly_dict = {row['month']: row for row in monthly_qs}
+    monthly_dict = {(row['yr'], row['mo']): row for row in monthly_qs}
     monthly_data = []
     range_total_income = 0
     range_total_consumption = 0
-    for m in range(month_from, month_to + 1):
-        row = monthly_dict.get(m, {})
+    for (py, pm) in period_months:
+        row = monthly_dict.get((py, pm), {})
         amount = row.get('total', 0) or 0
         cons = row.get('consumption', 0) or 0
-        monthly_data.append({'month': month_names[m - 1], 'total': amount, 'consumption': cons})
+        label = f"{month_names_map[pm]} {py}" if year_from != year_to else month_names_map[pm]
+        monthly_data.append({'month': label, 'total': amount, 'consumption': cons})
         range_total_income += amount
         range_total_consumption += cons
 
     # Range display label
-    if month_from == month_to:
-        range_label = f"{cal.month_name[month_from]} {year}"
+    if (year_from, month_from) == (year_to, month_to):
+        range_label = f"{cal.month_name[month_from]} {year_from}"
+    elif year_from == year_to:
+        range_label = f"{cal.month_abbr[month_from]} – {cal.month_abbr[month_to]} {year_from}"
     else:
-        range_label = f"{cal.month_abbr[month_from]} – {cal.month_abbr[month_to]} {year}"
+        range_label = f"{cal.month_abbr[month_from]} {year_from} – {cal.month_abbr[month_to]} {year_to}"
 
     # --- Per Barangay: monthly totals (income + consumption) ---
     per_brgy_qs = (
         Payment.objects.filter(
-            payment_date__year=year,
-            payment_date__month__gte=month_from,
-            payment_date__month__lte=month_to,
+            payment_date__date__gte=from_date,
+            payment_date__date__lte=to_date,
         )
-        .annotate(month=ExtractMonth('payment_date'))
-        .values('bill__consumer__barangay__id', 'bill__consumer__barangay__name', 'month')
+        .annotate(
+            yr=ExtractYear('payment_date'),
+            mo=ExtractMonth('payment_date'),
+        )
+        .values('bill__consumer__barangay__id', 'bill__consumer__barangay__name', 'yr', 'mo')
         .annotate(total=Sum('amount_paid'), consumption=Sum('bill__consumption'))
-        .order_by('bill__consumer__barangay__name', 'month')
+        .order_by('bill__consumer__barangay__name', 'yr', 'mo')
     )
     brgy_map = {}
     for row in per_brgy_qs:
@@ -220,7 +254,7 @@ def reports(request):
             brgy_map[brgy_id] = {'name': brgy_name, 'months': {}, 'range_total': 0, 'range_consumption': 0}
         amount = row['total'] or 0
         cons = row['consumption'] or 0
-        brgy_map[brgy_id]['months'][row['month']] = {'total': amount, 'consumption': cons}
+        brgy_map[brgy_id]['months'][(row['yr'], row['mo'])] = {'total': amount, 'consumption': cons}
         brgy_map[brgy_id]['range_total'] += amount
         brgy_map[brgy_id]['range_consumption'] += cons
 
@@ -228,10 +262,11 @@ def reports(request):
     for brgy_id in sorted(brgy_map, key=lambda x: brgy_map[x]['name']):
         entry = brgy_map[brgy_id]
         months = []
-        for m in range(month_from, month_to + 1):
-            md = entry['months'].get(m, {})
+        for (py, pm) in period_months:
+            md = entry['months'].get((py, pm), {})
+            label = f"{month_names_map[pm]} {py}" if year_from != year_to else month_names_map[pm]
             months.append({
-                'month': month_names[m - 1],
+                'month': label,
                 'total': md.get('total', 0) or 0,
                 'consumption': md.get('consumption', 0) or 0,
             })
@@ -245,7 +280,8 @@ def reports(request):
     barangays = Barangay.objects.all().order_by('name')
 
     context = {
-        'year': year,
+        'year_from': year_from,
+        'year_to': year_to,
         'year_choices': year_choices,
         'month_choices': month_choices,
         'month_from': month_from,
