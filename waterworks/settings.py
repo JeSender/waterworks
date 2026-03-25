@@ -22,11 +22,11 @@ DEBUG = config('DEBUG', default=False, cast=bool)
 # Render environment detection
 RENDER_ENVIRONMENT = config('RENDER', default='')
 
-ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='127.0.0.1,localhost,192.168.100.9', cast=Csv())
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='*', cast=Csv())
 
-# Add Render domain for production deployment
-if RENDER_ENVIRONMENT or '.onrender.com' not in str(ALLOWED_HOSTS):
-    ALLOWED_HOSTS.append('.onrender.com')
+# Ensure Render internal IP health checks and external domains work seamlessly
+if '*' not in ALLOWED_HOSTS:
+    ALLOWED_HOSTS.append('*')
 
 # CSRF configuration for Render (HTTPS proxy)
 CSRF_TRUSTED_ORIGINS = config('CSRF_TRUSTED_ORIGINS', default='https://waterworksbalilihan.onrender.com', cast=Csv())
