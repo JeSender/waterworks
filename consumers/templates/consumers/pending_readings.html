@@ -197,13 +197,18 @@
             </div>
 
             <!-- Buttons -->
-            <div class="flex gap-2 p-3 bg-gray-50 border-t">
-                <button onclick="closeConfirmModal()" class="flex-1 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg text-sm">
-                    Cancel
+            <div class="flex gap-2 p-3 bg-gray-50 border-t items-center justify-between">
+                <button onclick="closeConfirmModal()" class="px-3 py-2 text-gray-500 hover:text-gray-700 font-medium text-sm">
+                    Close
                 </button>
-                <button onclick="doConfirm()" class="flex-1 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm">
-                    <i class="bi bi-check-circle-fill mr-1"></i> Confirm
-                </button>
+                <div class="flex gap-2 flex-1 justify-end">
+                    <button onclick="doCancel()" class="px-4 py-2 bg-red-100 hover:bg-red-200 text-red-700 font-medium rounded-lg text-sm">
+                        <i class="bi bi-x-circle mr-1"></i> Reject
+                    </button>
+                    <button onclick="doConfirm()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg text-sm">
+                        <i class="bi bi-check-circle-fill mr-1"></i> Confirm
+                    </button>
+                </div>
             </div>
         </div>
     </div>
@@ -286,6 +291,63 @@ function closeFullPhoto() {
 function confirmFromFullPhoto() {
     closeFullPhoto();
     doConfirm();
+}
+
+function doCancel() {
+    if (!currentId) return;
+    const id = currentId;
+    closeConfirmModal();
+
+    Swal.fire({
+        title: 'Reject Reading?',
+        text: 'This will cancel the reading and notify the field staff to re-read.',
+        icon: 'warning',
+        input: 'textarea',
+        inputLabel: 'Reason for rejection (optional but recommended)',
+        inputPlaceholder: 'Type reason here...',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#6b7280',
+        confirmButtonText: 'Yes, Reject',
+        cancelButtonText: 'Cancel'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            const reason = result.value || 'Cancelled by admin';
+            showLoading('Rejecting reading...');
+
+            fetch(`/meter-readings/${id}/reject/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': getCookie('csrftoken'),
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ reason: reason })
+            })
+            .then(res => res.json())
+            .then(data => {
+                hideLoading();
+                if (data.status === 'success') {
+                    showToast('success', data.message || 'Reading rejected!');
+                    const row = document.getElementById(`reading-row-${id}`);
+                    if (row) {
+                        row.style.opacity = '0';
+                        setTimeout(() => row.remove(), 300);
+                    }
+                    setTimeout(() => {
+                        if (!document.querySelector('[id^="reading-row-"]')) location.reload();
+                    }, 400);
+                } else {
+                    showToast('error', data.message || 'Failed to reject');
+                }
+            })
+            .catch(err => {
+                hideLoading();
+                showToast('error', err.message || 'Error occurred');
+            });
+        }
+    });
 }
 
 function doConfirm() {
