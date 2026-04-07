@@ -1,0 +1,169 @@
+{% load humanize %}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>{{ target_user.get_full_name|default:target_user.username }} - Remittance Report</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #fff; color: #111; font-size: 12px; }
+        .page { width: 8.5in; min-height: 11in; margin: 15px auto; padding: 0.5in; border: 1px solid #ccc; background: white; }
+        @media print {
+            body { background: white; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+            .page { width: 100%; border: none; margin: 0; padding: 0; box-shadow: none; }
+            .no-print { display: none !important; }
+            @page { size: 8.5in 11in; margin: 0.5in; }
+        }
+        .header { text-align: center; border-bottom: 2px solid #1e3a6e; padding-bottom: 10px; margin-bottom: 20px; }
+        .header h1 { font-size: 16px; color: #1e3a6e; text-transform: uppercase; margin-bottom: 4px; }
+        .header h2 { font-size: 14px; font-weight: normal; color: #444; }
+        .header p { font-size: 11px; color: #777; margin-top: 5px; }
+
+        .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; background: #f8f9fa; padding: 10px; border: 1px solid #eee; }
+        .info-block strong { color: #333; }
+        .info-block p { font-size: 13px; color: #555; }
+
+        .summary-boxes { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 25px; }
+        .box { padding: 12px; border: 1px solid #ddd; text-align: center; border-radius: 4px; }
+        .box .label { font-size: 10px; font-weight: bold; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+        .box .value { font-size: 16px; font-weight: bold; color: #1e3a6e; }
+        .box.main { background: #eef2ff; border-color: #c7d2fe; }
+        .box.main .value { color: #4338ca; font-size: 18px; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th { background: #1e3a6e; color: white; padding: 8px; text-align: left; font-size: 11px; }
+        th.center { text-align: center; }
+        th.right { text-align: right; }
+        td { border: 1px solid #ddd; padding: 6px 8px; font-size: 11px; }
+        tr:nth-child(even) { background: #fdfdfd; }
+        tfoot td { font-weight: bold; background: #f1f5f9; padding: 8px; }
+
+        .signatures { display: flex; justify-content: space-between; margin-top: 50px; padding-top: 20px; }
+        .sig-line { width: 200px; text-align: center; }
+        .sig-line .line { border-bottom: 1px solid #000; height: 30px; margin-bottom: 5px; }
+        .sig-line .name { font-weight: bold; font-size: 12px; }
+        .sig-line .role { font-size: 10px; color: #666; }
+
+        .btn-controls { padding: 15px; text-align: center; background: #f1f5f9; margin-bottom: 15px; border-radius: 5px; }
+        button { cursor: pointer; padding: 8px 16px; border: none; border-radius: 4px; font-weight: bold; font-size: 12px; margin: 0 5px; }
+        .btn-print { background: #1e3a6e; color: white; }
+        .btn-close { background: #ccc; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="no-print btn-controls">
+        <button class="btn-print" onclick="window.print()">Print Report</button>
+        <button class="btn-close" onclick="window.close()">Close Document</button>
+    </div>
+
+    <div class="page">
+        <div class="header">
+            <h1>Balilihan Waterworks System</h1>
+            <h2>Individual Cashier Remittance Summary</h2>
+            <p>
+                Period: 
+                {% if filter_type == 'today' %}
+                    {{ filter_start|date:"F d, Y" }} (Today)
+                {% elif filter_type == 'month' %}
+                    {{ filter_start|date:"F Y" }} (This Month)
+                {% else %}
+                    {{ filter_start|date:"M d, Y" }} &mdash; {{ filter_end|date:"M d, Y" }}
+                {% endif %}
+            </p>
+        </div>
+
+        <div class="info-grid">
+            <div class="info-block">
+                <p><strong>Cashier/Collector:</strong> {{ target_user.get_full_name|upper|default:target_user.username|upper }}</p>
+                <p><strong>System Role:</strong> {{ role }}</p>
+            </div>
+            <div class="info-block" style="text-align: right;">
+                <p><strong>Date Generated:</strong> {% now "F d, Y P" %}</p>
+                <p><strong>Total Transactions:</strong> {{ period_count }}</p>
+            </div>
+        </div>
+
+        <h3 style="font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; color: #333;">Income Overview</h3>
+        <div class="summary-boxes">
+            <div class="box">
+                <div class="label">Today</div>
+                <div class="value">&#8369;{{ today_total|floatformat:2|intcomma }}</div>
+            </div>
+            <div class="box">
+                <div class="label">This Month</div>
+                <div class="value">&#8369;{{ month_total|floatformat:2|intcomma }}</div>
+            </div>
+            <div class="box main">
+                <div class="label">Amount to Remit</div>
+                <div class="value">&#8369;{{ period_total|floatformat:2|intcomma }}</div>
+            </div>
+            <div class="box">
+                <div class="label">All-Time Recorded</div>
+                <div class="value">&#8369;{{ alltime_total|floatformat:2|intcomma }}</div>
+            </div>
+        </div>
+
+        {% if include_names %}
+            <h3 style="font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; margin-top: 30px; color: #333;">Processed Consumers Breakdown</h3>
+            {% if consumers_list %}
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 40px;" class="center">#</th>
+                        <th>Consumer Name</th>
+                        <th>ID Number</th>
+                        <th class="center">Txn Count</th>
+                        <th class="right">Total Collected</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for c in consumers_list %}
+                    <tr>
+                        <td class="center">{{ forloop.counter }}</td>
+                        <td><strong>{{ c.full_name }}</strong></td>
+                        <td style="font-family: monospace;">{{ c.id_number }}</td>
+                        <td class="center">{{ c.txn_count }}</td>
+                        <td class="right">&#8369;{{ c.total_paid|floatformat:2|intcomma }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="right">GRAND TOTAL TO REMIT:</td>
+                        <td class="right" style="color: #1e3a6e; font-size: 13px;">&#8369;{{ period_total|floatformat:2|intcomma }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+            {% else %}
+            <p style="text-align: center; padding: 20px; font-style: italic; color: #666; border: 1px dashed #ccc;">No transactions processed by this user during the selected period.</p>
+            {% endif %}
+        {% else %}
+            <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f8fcf8; border: 1px dashed #a3e635;">
+                <h2 style="font-size: 24px; color: #15803d; margin-bottom: 5px;">REMITTANCE CLEARANCE</h2>
+                <p>The total amount to be remitted by the collector for this period is <strong>&#8369;{{ period_total|floatformat:2|intcomma }}</strong>.</p>
+                <p style="font-size: 10px; color: #777; margin-top: 10px;">Consumer breakdown omitted by request.</p>
+            </div>
+        {% endif %}
+
+        <div class="signatures">
+            <div class="sig-line">
+                <div class="line"></div>
+                <div class="name">{{ target_user.get_full_name|upper|default:target_user.username|upper }}</div>
+                <div class="role">Remitted By / Cashier</div>
+            </div>
+            <div class="sig-line">
+                <div class="line"></div>
+                <div class="name">______________________</div>
+                <div class="role">Received By / Treasure</div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        window.onload = function() {
+            // Optional: Auto print
+            // setTimeout(() => window.print(), 500);
+        };
+    </script>
+</body>
+</html>

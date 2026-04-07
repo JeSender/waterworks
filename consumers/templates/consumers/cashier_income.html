@@ -387,12 +387,19 @@
                         </div>
                     </div>
                 </div>
-                <!-- View history link -->
-                <div class="px-4 pb-3">
-                    <a href="{% url 'consumers:payment_history' %}?processed_by={{ cashier.user_id }}&date_from={{ filter_start|date:'Y-m-d' }}&date_to={{ filter_end|date:'Y-m-d' }}"
-                       class="w-full flex items-center justify-center gap-2 px-3 py-2 bg-light-50 hover:bg-primary-50 border border-light-300 hover:border-primary-300 text-dark-700 hover:text-primary-700 text-xs font-semibold rounded-lg transition-all">
-                        <i class="bi bi-receipt-cutoff"></i>
-                        View Transaction History
+                <!-- Print Actions -->
+                <div class="px-4 pb-3 flex gap-2">
+                    <a href="{% url 'consumers:print_cashier_remittance' cashier.user_id %}?date_from={{ filter_start|date:'Y-m-d' }}&date_to={{ filter_end|date:'Y-m-d' }}&filter={{ filter_type }}&month={{ selected_month }}&year={{ selected_year }}&include_names=0"
+                       target="_blank"
+                       class="w-1/2 flex items-center justify-center gap-1.5 px-2 py-2 bg-white hover:bg-light-50 border border-light-300 text-dark-700 hover:text-dark-900 text-[11px] font-bold rounded-lg transition-colors">
+                        <i class="bi bi-printer text-dark-500"></i>
+                        Print Summary
+                    </a>
+                    <a href="{% url 'consumers:print_cashier_remittance' cashier.user_id %}?date_from={{ filter_start|date:'Y-m-d' }}&date_to={{ filter_end|date:'Y-m-d' }}&filter={{ filter_type }}&month={{ selected_month }}&year={{ selected_year }}&include_names=1"
+                       target="_blank"
+                       class="w-1/2 flex items-center justify-center gap-1.5 px-2 py-2 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 hover:text-indigo-800 text-[11px] font-bold rounded-lg transition-colors">
+                        <i class="bi bi-printer-fill text-indigo-600"></i>
+                        Print Detailed
                     </a>
                 </div>
             </div>

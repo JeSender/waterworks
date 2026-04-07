@@ -23,6 +23,7 @@ urlpatterns = [
     path('home/', views.home, name='home'),
     path('home/stats/', views.dashboard_stats_partial, name='dashboard_stats_partial'),
     path('cashier-income/', views.cashier_income_dashboard, name='cashier_income_dashboard'),
+    path('cashier-income/print/<int:user_id>/', views.print_cashier_remittance, name='print_cashier_remittance'),
 
     # Consumer Management
     path('consumer-management/', views.consumer_management, name='consumer_management'),
