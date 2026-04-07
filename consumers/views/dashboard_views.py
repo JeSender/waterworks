@@ -395,6 +395,8 @@ def cashier_income_dashboard(request):
     if filter_type == 'today':
         filter_start = today
         filter_end = today
+        selected_month = current_month
+        selected_year = current_year
     elif filter_type == 'custom' and date_from_str and date_to_str:
         try:
             filter_start = datetime.strptime(date_from_str, '%Y-%m-%d').date()
@@ -402,16 +404,37 @@ def cashier_income_dashboard(request):
         except ValueError:
             filter_start = date(current_year, current_month, 1)
             filter_end = today
+        selected_month = current_month
+        selected_year = current_year
     else:
-        # Default: this month
+        # Default is month filter
         filter_type = 'month'
-        filter_start = date(current_year, current_month, 1)
-        filter_end = today
+        month_param = request.GET.get('month')
+        year_param = request.GET.get('year')
+        if month_param and year_param:
+            try:
+                selected_month = int(month_param)
+                selected_year = int(year_param)
+            except ValueError:
+                selected_month = current_month
+                selected_year = current_year
+        else:
+            selected_month = current_month
+            selected_year = current_year
 
-    # --- Get ALL users who have ever processed payments (any role) ---
-    collector_users = User.objects.filter(
-        processed_payments__isnull=False
-    ).distinct().select_related('staffprofile').order_by('first_name', 'last_name', 'username')
+        import calendar
+        _, last_day = calendar.monthrange(selected_year, selected_month)
+        filter_start = date(selected_year, selected_month, 1)
+        filter_end = date(selected_year, selected_month, last_day)
+
+    # --- Get ONLY 'cashier' role users who have processed payments ---
+    try:
+        collector_users = User.objects.filter(
+            staffprofile__role='cashier',
+            processed_payments__isnull=False
+        ).distinct().select_related('staffprofile').order_by('first_name', 'last_name', 'username')
+    except Exception:
+        collector_users = User.objects.none()
 
     cashier_income_list = []
 
@@ -422,11 +445,11 @@ def cashier_income_dashboard(request):
             payment_date__date=today
         ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
-        # This month's total
+        # Selected month's total
         month_total = Payment.objects.filter(
             processed_by=user,
-            payment_date__month=current_month,
-            payment_date__year=current_year
+            payment_date__month=selected_month,
+            payment_date__year=selected_year
         ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
         # Filtered period total
@@ -483,8 +506,8 @@ def cashier_income_dashboard(request):
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     overall_month = Payment.objects.filter(
-        payment_date__month=current_month,
-        payment_date__year=current_year
+        payment_date__month=selected_month,
+        payment_date__year=selected_year
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     overall_period = Payment.objects.filter(
@@ -502,6 +525,46 @@ def cashier_income_dashboard(request):
         payment_date__date__lte=filter_end
     ).count()
 
+    # --- My Processed Consumers Breakdown (for the logged in user) ---
+    barangay_filter = request.GET.get('barangay', '')
+    
+    # Base query for the period
+    my_payments = Payment.objects.filter(
+        payment_date__date__gte=filter_start,
+        payment_date__date__lte=filter_end,
+        processed_by=request.user
+    ).select_related('bill__consumer', 'bill__consumer__barangay').order_by('-payment_date')
+
+    if barangay_filter:
+        my_payments = my_payments.filter(bill__consumer__barangay_id=barangay_filter)
+
+    my_processed_consumers = []
+    # Group by consumer to show total collected per consumer in the period
+    from django.db.models import Count
+    
+    consumer_totals = my_payments.values(
+        'bill__consumer__id', 
+        'bill__consumer__first_name', 
+        'bill__consumer__last_name', 
+        'bill__consumer__id_number',
+        'bill__consumer__barangay__name'
+    ).annotate(
+        total_paid=Sum('amount_paid'),
+        txn_count=Count('id')
+    ).order_by('-total_paid')
+
+    for ct in consumer_totals:
+        my_processed_consumers.append({
+            'consumer_id': ct['bill__consumer__id'],
+            'full_name': f"{ct['bill__consumer__first_name']} {ct['bill__consumer__last_name']}",
+            'id_number': ct['bill__consumer__id_number'],
+            'barangay': ct['bill__consumer__barangay__name'] or 'Unknown',
+            'total_paid': ct['total_paid'],
+            'txn_count': ct['txn_count']
+        })
+        
+    all_barangays = Barangay.objects.all().order_by('name')
+
     context = {
         'cashier_income_list': cashier_income_list,
         'overall_today': overall_today,
@@ -513,10 +576,15 @@ def cashier_income_dashboard(request):
         'today': today,
         'current_month': current_month,
         'current_year': current_year,
+        'selected_month': selected_month,
+        'selected_year': selected_year,
         'filter_type': filter_type,
         'filter_start': filter_start,
         'filter_end': filter_end,
         'date_from': date_from_str or filter_start.strftime('%Y-%m-%d'),
         'date_to': date_to_str or filter_end.strftime('%Y-%m-%d'),
+        'my_processed_consumers': my_processed_consumers,
+        'all_barangays': all_barangays,
+        'barangay_filter': int(barangay_filter) if barangay_filter.isdigit() else '',
     }
     return render(request, 'consumers/cashier_income.html', context)
