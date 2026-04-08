@@ -451,8 +451,8 @@ def cashier_income_dashboard(request):
         # Selected month's total
         month_total = Payment.objects.filter(
             processed_by=user,
-            payment_date__month=selected_month,
-            payment_date__year=selected_year
+            payment_date__month=current_month,
+            payment_date__year=current_year
         ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
         # Filtered period total
@@ -509,8 +509,8 @@ def cashier_income_dashboard(request):
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     overall_month = Payment.objects.filter(
-        payment_date__month=selected_month,
-        payment_date__year=selected_year
+        payment_date__month=current_month,
+        payment_date__year=current_year
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     overall_period = Payment.objects.filter(
@@ -658,8 +658,8 @@ def print_cashier_remittance(request, user_id):
 
     month_total = Payment.objects.filter(
         processed_by=target_user,
-        payment_date__month=selected_month,
-        payment_date__year=selected_year
+        payment_date__month=current_month,
+        payment_date__year=current_year
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     period_total = Payment.objects.filter(
