@@ -313,8 +313,8 @@ def home(request):
         'delinquent_count': delinquent_count,
         'delinquent_bills': delinquent_bills,
         'total_delinquent_amount': total_delinquent_amount,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
+        'month_from': selected_month_from, 'year_from': selected_year_from, 'month_to': selected_month_to, 'year_to': selected_year_to,
+        
         'selected_date': selected_date,
         'current_date': datetime.now(),
         # Revenue data
@@ -388,44 +388,47 @@ def cashier_income_dashboard(request):
     current_year = today.year
 
     # --- Date filter from GET params ---
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    filter_type = request.GET.get('filter', 'month')  # 'today', 'month', 'custom'
+    filter_type = request.GET.get('filter', 'month_range')
+
+    # Defaults
+    selected_month_from = current_month
+    selected_year_from = current_year
+    selected_month_to = current_month
+    selected_year_to = current_year
 
     if filter_type == 'today':
         filter_start = today
         filter_end = today
-        selected_month = current_month
-        selected_year = current_year
-    elif filter_type == 'custom' and date_from_str and date_to_str:
-        try:
-            filter_start = datetime.strptime(date_from_str, '%Y-%m-%d').date()
-            filter_end = datetime.strptime(date_to_str, '%Y-%m-%d').date()
-        except ValueError:
-            filter_start = date(current_year, current_month, 1)
-            filter_end = today
-        selected_month = current_month
-        selected_year = current_year
     else:
-        # Default is month filter
-        filter_type = 'month'
-        month_param = request.GET.get('month')
-        year_param = request.GET.get('year')
-        if month_param and year_param:
-            try:
-                selected_month = int(month_param)
-                selected_year = int(year_param)
-            except ValueError:
-                selected_month = current_month
-                selected_year = current_year
-        else:
-            selected_month = current_month
-            selected_year = current_year
+        # Default is month_range
+        filter_type = 'month_range'
+        try:
+            selected_month_from = int(request.GET.get('month_from', current_month))
+            selected_year_from = int(request.GET.get('year_from', current_year))
+            selected_month_to = int(request.GET.get('month_to', current_month))
+            selected_year_to = int(request.GET.get('year_to', current_year))
+        except ValueError:
+            selected_month_from = current_month
+            selected_year_from = current_year
+            selected_month_to = current_month
+            selected_year_to = current_year
 
         import calendar
-        _, last_day = calendar.monthrange(selected_year, selected_month)
-        filter_start = date(selected_year, selected_month, 1)
-        filter_end = date(selected_year, selected_month, last_day)
+        d1 = date(selected_year_from, selected_month_from, 1)
+        _, last_day_to = calendar.monthrange(selected_year_to, selected_month_to)
+        d2 = date(selected_year_to, selected_month_to, last_day_to)
+        
+        if d1 > d2:
+            filter_start = date(selected_year_to, selected_month_to, 1)
+            _, last_day_from = calendar.monthrange(selected_year_from, selected_month_from)
+            filter_end = date(selected_year_from, selected_month_from, last_day_from)
+            # Swap for context variables
+            selected_month_from, selected_year_from, selected_month_to, selected_year_to = (
+                selected_month_to, selected_year_to, selected_month_from, selected_year_from
+            )
+        else:
+            filter_start = d1
+            filter_end = d2
 
     # --- Get ONLY 'cashier' role users who have processed payments ---
     try:
@@ -576,13 +579,13 @@ def cashier_income_dashboard(request):
         'today': today,
         'current_month': current_month,
         'current_year': current_year,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
+        'month_from': selected_month_from, 'year_from': selected_year_from, 'month_to': selected_month_to, 'year_to': selected_year_to,
+        
         'filter_type': filter_type,
         'filter_start': filter_start,
         'filter_end': filter_end,
-        'date_from': date_from_str or filter_start.strftime('%Y-%m-%d'),
-        'date_to': date_to_str or filter_end.strftime('%Y-%m-%d'),
+        
+        
         'my_processed_consumers': my_processed_consumers,
         'all_barangays': all_barangays,
         'barangay_filter': int(barangay_filter) if barangay_filter.isdigit() else '',
@@ -605,45 +608,47 @@ def print_cashier_remittance(request, user_id):
     current_year = today.year
 
     # --- Date filter from GET params ---
-    date_from_str = request.GET.get('date_from', '')
-    date_to_str = request.GET.get('date_to', '')
-    filter_type = request.GET.get('filter', 'month')
+    filter_type = request.GET.get('filter', 'month_range')
+
+    # Defaults
+    selected_month_from = current_month
+    selected_year_from = current_year
+    selected_month_to = current_month
+    selected_year_to = current_year
 
     if filter_type == 'today':
         filter_start = today
         filter_end = today
-        selected_month = current_month
-        selected_year = current_year
-    elif filter_type == 'custom' and date_from_str and date_to_str:
-        try:
-            filter_start = datetime.strptime(date_from_str, '%Y-%m-%d').date()
-            filter_end = datetime.strptime(date_to_str, '%Y-%m-%d').date()
-        except ValueError:
-            filter_start = date(current_year, current_month, 1)
-            filter_end = today
-        selected_month = current_month
-        selected_year = current_year
     else:
-        filter_type = 'month'
-        month_param = request.GET.get('month')
-        year_param = request.GET.get('year')
-        if month_param and year_param:
-            try:
-                selected_month = int(month_param)
-                selected_year = int(year_param)
-            except ValueError:
-                selected_month = current_month
-                selected_year = current_year
-        else:
-            selected_month = current_month
-            selected_year = current_year
+        # Default is month_range
+        filter_type = 'month_range'
+        try:
+            selected_month_from = int(request.GET.get('month_from', current_month))
+            selected_year_from = int(request.GET.get('year_from', current_year))
+            selected_month_to = int(request.GET.get('month_to', current_month))
+            selected_year_to = int(request.GET.get('year_to', current_year))
+        except ValueError:
+            selected_month_from = current_month
+            selected_year_from = current_year
+            selected_month_to = current_month
+            selected_year_to = current_year
 
         import calendar
-        _, last_day = calendar.monthrange(selected_year, selected_month)
-        filter_start = date(selected_year, selected_month, 1)
-        filter_end = date(selected_year, selected_month, last_day)
-
-    include_names = request.GET.get('include_names', '0') == '1'
+        d1 = date(selected_year_from, selected_month_from, 1)
+        _, last_day_to = calendar.monthrange(selected_year_to, selected_month_to)
+        d2 = date(selected_year_to, selected_month_to, last_day_to)
+        
+        if d1 > d2:
+            filter_start = date(selected_year_to, selected_month_to, 1)
+            _, last_day_from = calendar.monthrange(selected_year_from, selected_month_from)
+            filter_end = date(selected_year_from, selected_month_from, last_day_from)
+            # Swap for context variables
+            selected_month_from, selected_year_from, selected_month_to, selected_year_to = (
+                selected_month_to, selected_year_to, selected_month_from, selected_year_from
+            )
+        else:
+            filter_start = d1
+            filter_end = d2
 
     # Retrieve totals for this user
     today_total = Payment.objects.filter(
@@ -675,30 +680,29 @@ def print_cashier_remittance(request, user_id):
 
     # Get consumers processed
     consumers_list = []
-    if include_names:
-        from django.db.models import Count
-        my_payments = Payment.objects.filter(
-            payment_date__date__gte=filter_start,
-            payment_date__date__lte=filter_end,
-            processed_by=target_user
-        )
-        
-        consumer_totals = my_payments.values(
-            'bill__consumer__first_name', 
-            'bill__consumer__last_name', 
-            'bill__consumer__id_number',
-        ).annotate(
-            total_paid=Sum('amount_paid'),
-            txn_count=Count('id')
-        ).order_by('-total_paid')
+    from django.db.models import Count
+    my_payments = Payment.objects.filter(
+        payment_date__date__gte=filter_start,
+        payment_date__date__lte=filter_end,
+        processed_by=target_user
+    )
+    
+    consumer_totals = my_payments.values(
+        'bill__consumer__first_name', 
+        'bill__consumer__last_name', 
+        'bill__consumer__id_number',
+    ).annotate(
+        total_paid=Sum('amount_paid'),
+        txn_count=Count('id')
+    ).order_by('-total_paid')
 
-        for ct in consumer_totals:
-            consumers_list.append({
-                'full_name': f"{ct['bill__consumer__first_name']} {ct['bill__consumer__last_name']}",
-                'id_number': ct['bill__consumer__id_number'],
-                'total_paid': ct['total_paid'],
-                'txn_count': ct['txn_count']
-            })
+    for ct in consumer_totals:
+        consumers_list.append({
+            'full_name': f"{ct['bill__consumer__first_name']} {ct['bill__consumer__last_name']}",
+            'id_number': ct['bill__consumer__id_number'],
+            'total_paid': ct['total_paid'],
+            'txn_count': ct['txn_count']
+        })
             
     try:
         role = target_user.staffprofile.get_role_display()
@@ -712,9 +716,9 @@ def print_cashier_remittance(request, user_id):
         'filter_type': filter_type,
         'filter_start': filter_start,
         'filter_end': filter_end,
-        'selected_month': selected_month,
-        'selected_year': selected_year,
-        'include_names': include_names,
+        'month_from': selected_month_from, 'year_from': selected_year_from, 'month_to': selected_month_to, 'year_to': selected_year_to,
+        
+        
         'today_total': today_total,
         'month_total': month_total,
         'period_total': period_total,

@@ -64,7 +64,7 @@
                 Period: 
                 {% if filter_type == 'today' %}
                     {{ filter_start|date:"F d, Y" }} (Today)
-                {% elif filter_type == 'month' %}
+                {% elif filter_type == 'month_range' and month_from == month_to and year_from == year_to %}
                     {{ filter_start|date:"F Y" }} (This Month)
                 {% else %}
                     {{ filter_start|date:"M d, Y" }} &mdash; {{ filter_end|date:"M d, Y" }}
@@ -103,7 +103,7 @@
             </div>
         </div>
 
-        {% if include_names %}
+        
             <h3 style="font-size: 12px; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin-bottom: 10px; margin-top: 30px; color: #333;">Processed Consumers Breakdown</h3>
             {% if consumers_list %}
             <table>
@@ -137,13 +137,7 @@
             {% else %}
             <p style="text-align: center; padding: 20px; font-style: italic; color: #666; border: 1px dashed #ccc;">No transactions processed by this user during the selected period.</p>
             {% endif %}
-        {% else %}
-            <div style="text-align: center; margin-top: 40px; padding: 30px; background: #f8fcf8; border: 1px dashed #a3e635;">
-                <h2 style="font-size: 24px; color: #15803d; margin-bottom: 5px;">REMITTANCE CLEARANCE</h2>
-                <p>The total amount to be remitted by the collector for this period is <strong>&#8369;{{ period_total|floatformat:2|intcomma }}</strong>.</p>
-                <p style="font-size: 10px; color: #777; margin-top: 10px;">Consumer breakdown omitted by request.</p>
-            </div>
-        {% endif %}
+
 
         <div class="signatures">
             <div class="sig-line">
