@@ -2,7 +2,67 @@
 {% load humanize %}
 {% load static %}
 
-{% block title %}Cashier Income Report - Balilihan Waterworks{% endblock %}
+{% block title %}Cashier Income Report - Balilihan Waterworks
+    <!-- Print Filter Modal -->
+    <div id="printModal" class="hidden fixed inset-0 z-[100] bg-dark-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between p-4 border-b border-light-200">
+                <h3 class="font-bold text-dark-800 flex items-center gap-2">
+                    <i class="bi bi-printer text-emerald-600"></i>
+                    Print Options
+                </h3>
+                <button type="button" onclick="closePrintModal()" class="text-dark-400 hover:text-dark-700 transition-colors">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <label class="block text-sm text-dark-700 font-medium mb-2">Filter by Barangay</label>
+                <select id="modal_barangay" class="w-full px-4 py-2 border border-light-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-5">
+                    <option value="">-- All Barangays --</option>
+                    {% for brgy in all_barangays %}
+                        <option value="{{ brgy.id }}">{{ brgy.name }}</option>
+                    {% endfor %}
+                </select>
+                
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="closePrintModal()" class="px-4 py-2 bg-white border border-light-300 text-dark-700 hover:bg-light-50 rounded-lg text-sm font-semibold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmPrint()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5">
+                        <i class="bi bi-printer-fill"></i>
+                        Proceed to Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPrintUrl = '';
+
+        function openPrintModal(baseUrl) {
+            currentPrintUrl = baseUrl;
+            document.getElementById('printModal').classList.remove('hidden');
+        }
+
+        function closePrintModal() {
+            document.getElementById('printModal').classList.add('hidden');
+            document.getElementById('modal_barangay').value = '';
+            currentPrintUrl = '';
+        }
+
+        function confirmPrint() {
+            const barangayId = document.getElementById('modal_barangay').value;
+            let finalUrl = currentPrintUrl;
+            if (barangayId) {
+                finalUrl += '&barangay=' + encodeURIComponent(barangayId);
+            }
+            window.open(finalUrl, '_blank');
+            closePrintModal();
+        }
+    </script>
+
+{% endblock %}
 
 {% block main_content %}
 <div class="max-w-7xl mx-auto">
@@ -21,9 +81,9 @@
                 </p>
             </div>
             <div class="flex items-center gap-2">
-                <a href="{% url 'consumers:home' %}" class="px-4 py-2 bg-white border border-light-300 text-dark-700 text-sm font-medium rounded-lg hover:bg-light-50 transition-colors flex items-center gap-2">
+                <a href="{% url 'consumers:home' %}" class="text-dark-500 hover:text-dark-800 text-sm font-medium transition-colors flex items-center gap-1.5">
                     <i class="bi bi-arrow-left"></i>
-                    Back to Dashboard
+                    Back
                 </a>
             </div>
         </div>
@@ -170,17 +230,76 @@
                 </div>
                 <!-- Print Actions -->
                 <div class="px-4 pb-3 flex gap-2">
-                    <a href="{% url 'consumers:print_cashier_remittance' cashier.user_id %}?filter={{ filter_type }}&month_from={{ month_from }}&year_from={{ year_from }}&month_to={{ month_to }}&year_to={{ year_to }}"
-                       target="_blank"
+                    <button type="button" onclick="openPrintModal('{% url 'consumers:print_cashier_remittance' cashier.user_id %}?filter={{ filter_type }}&month_from={{ month_from }}&year_from={{ year_from }}&month_to={{ month_to }}&year_to={{ year_to }}')"
                        class="w-full flex items-center justify-center gap-1.5 px-2 py-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 hover:text-emerald-800 text-[12px] font-bold rounded-lg transition-colors">
                         <i class="bi bi-printer-fill text-emerald-600"></i>
                         Print Summary
-                    </a>
+                    </button>
                 </div>
             </div>
             {% endfor %}
         </div>
     </div>
     {% endif %}
+
+
+    <!-- Print Filter Modal -->
+    <div id="printModal" class="hidden fixed inset-0 z-[100] bg-dark-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div class="flex items-center justify-between p-4 border-b border-light-200">
+                <h3 class="font-bold text-dark-800 flex items-center gap-2">
+                    <i class="bi bi-printer text-emerald-600"></i>
+                    Print Options
+                </h3>
+                <button type="button" onclick="closePrintModal()" class="text-dark-400 hover:text-dark-700 transition-colors">
+                    <i class="bi bi-x-lg"></i>
+                </button>
+            </div>
+            <div class="p-5">
+                <label class="block text-sm text-dark-700 font-medium mb-2">Filter by Barangay</label>
+                <select id="modal_barangay" class="w-full px-4 py-2 border border-light-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 mb-5">
+                    <option value="">-- All Barangays --</option>
+                    {% for brgy in all_barangays %}
+                        <option value="{{ brgy.id }}">{{ brgy.name }}</option>
+                    {% endfor %}
+                </select>
+                
+                <div class="flex gap-2 justify-end">
+                    <button type="button" onclick="closePrintModal()" class="px-4 py-2 bg-white border border-light-300 text-dark-700 hover:bg-light-50 rounded-lg text-sm font-semibold transition-colors">
+                        Cancel
+                    </button>
+                    <button type="button" onclick="confirmPrint()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm rounded-lg text-sm font-bold transition-colors flex items-center gap-1.5">
+                        <i class="bi bi-printer-fill"></i>
+                        Proceed to Print
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        let currentPrintUrl = '';
+
+        function openPrintModal(baseUrl) {
+            currentPrintUrl = baseUrl;
+            document.getElementById('printModal').classList.remove('hidden');
+        }
+
+        function closePrintModal() {
+            document.getElementById('printModal').classList.add('hidden');
+            document.getElementById('modal_barangay').value = '';
+            currentPrintUrl = '';
+        }
+
+        function confirmPrint() {
+            const barangayId = document.getElementById('modal_barangay').value;
+            let finalUrl = currentPrintUrl;
+            if (barangayId) {
+                finalUrl += '&barangay=' + encodeURIComponent(barangayId);
+            }
+            window.open(finalUrl, '_blank');
+            closePrintModal();
+        }
+    </script>
 
 {% endblock %}

@@ -650,41 +650,40 @@ def print_cashier_remittance(request, user_id):
             filter_start = d1
             filter_end = d2
 
+    barangay_filter = request.GET.get('barangay', '')
+    
+    base_qs = Payment.objects.filter(processed_by=target_user)
+    if barangay_filter:
+        base_qs = base_qs.filter(bill__consumer__barangay_id=barangay_filter)
+
     # Retrieve totals for this user
-    today_total = Payment.objects.filter(
-        processed_by=target_user,
+    today_total = base_qs.filter(
         payment_date__date=today
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
-    month_total = Payment.objects.filter(
-        processed_by=target_user,
+    month_total = base_qs.filter(
         payment_date__month=current_month,
         payment_date__year=current_year
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
-    period_total = Payment.objects.filter(
-        processed_by=target_user,
+    period_total = base_qs.filter(
         payment_date__date__gte=filter_start,
         payment_date__date__lte=filter_end
     ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
     
-    period_count = Payment.objects.filter(
-        processed_by=target_user,
+    period_count = base_qs.filter(
         payment_date__date__gte=filter_start,
         payment_date__date__lte=filter_end
     ).count()
 
-    alltime_total = Payment.objects.filter(
-        processed_by=target_user
-    ).aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
+    alltime_total = base_qs.aggregate(total=Sum('amount_paid'))['total'] or Decimal('0.00')
 
     # Get consumers processed
     consumers_list = []
     from django.db.models import Count
-    my_payments = Payment.objects.filter(
+    my_payments = base_qs.filter(
         payment_date__date__gte=filter_start,
-        payment_date__date__lte=filter_end,
-        processed_by=target_user
+        payment_date__date__lte=filter_end
     )
     
     consumer_totals = my_payments.values(
@@ -725,6 +724,7 @@ def print_cashier_remittance(request, user_id):
         'period_count': period_count,
         'alltime_total': alltime_total,
         'consumers_list': consumers_list,
+        'selected_barangay_name': Barangay.objects.get(id=barangay_filter).name if barangay_filter else 'All Barangays',
     }
     
     return render(request, 'consumers/print_cashier_remittance.html', context)
