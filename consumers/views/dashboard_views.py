@@ -313,8 +313,6 @@ def home(request):
         'delinquent_count': delinquent_count,
         'delinquent_bills': delinquent_bills,
         'total_delinquent_amount': total_delinquent_amount,
-        'month_from': selected_month_from, 'year_from': selected_year_from, 'month_to': selected_month_to, 'year_to': selected_year_to,
-        
         'selected_date': selected_date,
         'current_date': datetime.now(),
         # Revenue data

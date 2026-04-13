@@ -313,10 +313,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Calculate total revenue
     const revenueData = {{ revenue_data|safe }};
     const totalRevenue = revenueData.reduce((sum, value) => sum + value, 0);
-    document.getElementById('totalRevenue').textContent = '₱' + totalRevenue.toLocaleString('en-PH', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    const totalRevenueEl = document.getElementById('totalRevenue');
+    if (totalRevenueEl) {
+        totalRevenueEl.textContent = '₱' + totalRevenue.toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
 });
 
 // Generate Report Function
