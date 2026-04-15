@@ -57,12 +57,19 @@
     </div>
 
     <div class="page">
-        <div class="header" style="position: relative;">
-            <img src="{% static 'consumers/images/logo.png' %}" alt="Balilihan Logo" style="position: absolute; left: 15px; top: 5px; width: 70px; height: auto; object-fit: contain;">
+        <div class="header" style="display: flex; align-items: center; justify-content: center; gap: 20px; text-align: center;">
+            <img src="{% static 'consumers/images/municipal.jpg' %}" alt="Municipal Seal" style="width: 75px; height: 75px; object-fit: contain; border-radius: 50%;">
             <div>
-                <h1>Balilihan Waterworks System</h1>
+                <div style="color: #000; line-height: 1.3;">
+                    <div style="font-size: 13px;">Republic of the Philippines</div>
+                    <div style="font-size: 15px; font-weight: bold;">OFFICE OF THE TREASURER</div>
+                    <div style="font-size: 15px; font-weight: bold;">MTO-BALILIHAN</div>
+                    <div style="font-size: 13px;">Balilihan, 6342, Bohol</div>
+                </div>
+                
+                <h1 style="margin-top: 15px; color: #065f46;">BALILIHAN WATERWORKS SYSTEM</h1>
                 <h2>Individual Cashier Remittance Summary<br><small style='font-size: 11px; color: #666;'>[{{ selected_barangay_name }}]</small></h2>
-                <p>
+                <div style="font-size: 11px; color: #777; margin-top: 5px;">
                 Period: 
                 {% if filter_type == 'today' %}
                     {{ filter_start|date:"F d, Y" }} (Today)
@@ -71,8 +78,9 @@
                 {% else %}
                     {{ filter_start|date:"M d, Y" }} &mdash; {{ filter_end|date:"M d, Y" }}
                 {% endif %}
-                </p>
+                </div>
             </div>
+            <img src="{% static 'consumers/images/logo.png' %}" alt="Waterworks Logo" style="width: 75px; height: 75px; object-fit: contain; border-radius: 50%;">
         </div>
 
         <div class="info-grid">
