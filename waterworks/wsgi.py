@@ -15,5 +15,5 @@ os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'waterworks.settings')
 
 application = get_wsgi_application()
 
-# Vercel expects 'app' variable
+# Render expects 'app' variable
 app = application

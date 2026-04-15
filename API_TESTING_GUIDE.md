@@ -514,13 +514,13 @@ user.save()
 2. **Verify all 11 fields** are present in response
 3. **Check calculations** match expected values
 4. **Test with Android app** using actual device
-5. **Deploy to production** (Vercel)
+5. **Deploy to production** (Render)
 
 ---
 
 ## Production Deployment
 
-When deploying to Vercel:
+When deploying to Render:
 
 ```bash
 # 1. Commit changes
@@ -530,13 +530,13 @@ git commit -m "Update API for Android app bill details"
 # 2. Push to GitHub
 git push origin main
 
-# 3. Vercel will auto-deploy from main branch
+# 3. Render will auto-deploy from main branch
 
 # 4. Verify production API
-curl https://waterworks-rose.vercel.app/api/consumers/
+curl https://waterworks-rose.onrender.com/api/consumers/
 ```
 
-**Note:** Vercel free tier has cold start delays (3-10 seconds on first request after inactivity).
+**Note:** Render free tier has cold start delays (3-10 seconds on first request after inactivity).
 
 ---
 

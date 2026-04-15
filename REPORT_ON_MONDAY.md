@@ -3,7 +3,7 @@
 
 ---
 
-**Deployment Platform:** Render (NOT Vercel)
+**Deployment Platform:** Render (NOT Render)
 **Database:** PostgreSQL (Neon)
 **Framework:** Django 5.2.7
 **Status:** Live and Running

@@ -88,7 +88,7 @@ ProgrammingError: relation "consumers_accountlockout" does not exist
 ### ✓ Immediate Tests (Do Now):
 
 1. **Test Login Page:**
-   - URL: https://waterworks-rose.vercel.app/login/
+   - URL: https://waterworks-rose.onrender.com/login/
    - Expected: No 500 error, login form loads properly
    - ✅ Should work now
 
@@ -103,7 +103,7 @@ ProgrammingError: relation "consumers_accountlockout" does not exist
    - ✅ Security feature now active
 
 4. **Test API Performance:**
-   - URL: https://waterworks-rose.vercel.app/api/consumers/
+   - URL: https://waterworks-rose.onrender.com/api/consumers/
    - Expected: Fast response (< 500ms)
    - ✅ 99.7% faster queries
 
@@ -135,7 +135,7 @@ ProgrammingError: relation "consumers_accountlockout" does not exist
 
 **Environment Variable:**
 - Variable Name: `DATABASE_URL`
-- Stored In: Vercel Environment Variables
+- Stored In: Render Environment Variables
 - Status: ✅ Configured correctly
 
 ---
@@ -168,7 +168,7 @@ Database: 11 indexes, optimized lookups
 ## Next Steps:
 
 ### Immediate:
-1. ✅ Test the login page at https://waterworks-rose.vercel.app/login/
+1. ✅ Test the login page at https://waterworks-rose.onrender.com/login/
 2. ✅ Verify no 500 errors
 3. ✅ Confirm rate limiting works
 
@@ -183,7 +183,7 @@ Database: 11 indexes, optimized lookups
 ## Security Notes:
 
 ⚠️ **Database Credentials:**
-- DATABASE_URL is stored securely in Vercel environment variables
+- DATABASE_URL is stored securely in Render environment variables
 - Never commit DATABASE_URL to git repository
 - Credentials are only used during deployment
 - Production database is protected by SSL/TLS

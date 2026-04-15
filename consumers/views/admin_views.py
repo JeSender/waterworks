@@ -1471,7 +1471,7 @@ def test_email(request):
         result['tests'].append({
             'name': 'Check EMAIL_HOST_USER',
             'status': 'FAIL',
-            'message': 'EMAIL_HOST_USER is empty. Set it in Vercel environment variables.'
+            'message': 'EMAIL_HOST_USER is empty. Set it in Render environment variables.'
         })
         result['error'] = 'EMAIL_HOST_USER not configured'
         return JsonResponse(result)
@@ -1486,7 +1486,7 @@ def test_email(request):
         result['tests'].append({
             'name': 'Check EMAIL_HOST_PASSWORD',
             'status': 'FAIL',
-            'message': 'EMAIL_HOST_PASSWORD is empty. Set it in Vercel environment variables.'
+            'message': 'EMAIL_HOST_PASSWORD is empty. Set it in Render environment variables.'
         })
         result['error'] = 'EMAIL_HOST_PASSWORD not configured'
         return JsonResponse(result)

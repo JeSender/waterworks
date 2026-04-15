@@ -28,7 +28,7 @@ This guide will help you build a smart meter reading app (Android/Web/IoT device
            ▼
 ┌─────────────────────┐     HTTPS      ┌──────────────────────┐
 │   Mobile App        │────────────────▶│  Waterworks API      │
-│   (Android/iOS)     │◀────────────────│  (Vercel + Neon DB)  │
+│   (Android/iOS)     │◀────────────────│  (Render + Neon DB)  │
 └─────────────────────┘                 └──────────────────────┘
            │                                      │
            ▼                                      ▼
@@ -41,7 +41,7 @@ This guide will help you build a smart meter reading app (Android/Web/IoT device
 ## API Endpoints Reference
 
 ### Base URL
-- **Production**: `https://waterworks-rose.vercel.app`
+- **Production**: `https://waterworks-rose.onrender.com`
 - **Local**: `http://localhost:8000`
 
 ### Required Endpoints
@@ -168,7 +168,7 @@ interface ApiService {
 #### api/RetrofitClient.kt
 ```kotlin
 object RetrofitClient {
-    private const val BASE_URL = "https://waterworks-rose.vercel.app/"
+    private const val BASE_URL = "https://waterworks-rose.onrender.com/"
 
     private val cookieJar = JavaNetCookieJar(CookieManager().apply {
         setCookiePolicy(CookiePolicy.ACCEPT_ALL)
@@ -596,7 +596,7 @@ const char* ssid = "YOUR_WIFI_SSID";
 const char* password = "YOUR_WIFI_PASSWORD";
 
 // API Configuration
-const char* apiUrl = "https://waterworks-rose.vercel.app";
+const char* apiUrl = "https://waterworks-rose.onrender.com";
 const char* username = "smart_meter_user";
 const char* userPassword = "your_password";
 
@@ -748,7 +748,7 @@ void submitReading() {
 
 ### 1. Test Authentication
 ```bash
-curl -X POST https://waterworks-rose.vercel.app/api/login/ \
+curl -X POST https://waterworks-rose.onrender.com/api/login/ \
   -H "Content-Type: application/json" \
   -d '{"username":"test_user","password":"test_pass"}' \
   -c cookies.txt
@@ -756,7 +756,7 @@ curl -X POST https://waterworks-rose.vercel.app/api/login/ \
 
 ### 2. Test Get Consumers
 ```bash
-curl https://waterworks-rose.vercel.app/api/consumers/ \
+curl https://waterworks-rose.onrender.com/api/consumers/ \
   -b cookies.txt
 ```
 
@@ -774,13 +774,13 @@ curl https://waterworks-rose.vercel.app/api/consumers/ \
 
 ### 3. Test Get Rates
 ```bash
-curl https://waterworks-rose.vercel.app/api/rates/ \
+curl https://waterworks-rose.onrender.com/api/rates/ \
   -b cookies.txt
 ```
 
 ### 4. Test Submit Reading
 ```bash
-curl -X POST https://waterworks-rose.vercel.app/api/meter-readings/ \
+curl -X POST https://waterworks-rose.onrender.com/api/meter-readings/ \
   -H "Content-Type: application/json" \
   -b cookies.txt \
   -d '{

@@ -6,8 +6,8 @@ The error `relation "consumers_accountlockout" does not exist` means the product
 
 ### Option 1: Run Migrations Locally Against Production DB (Recommended)
 
-1. **Get your production DATABASE_URL from Vercel:**
-   - Go to Vercel Dashboard → Your Project → Settings → Environment Variables
+1. **Get your production DATABASE_URL from Render:**
+   - Go to Render Dashboard → Your Project → Settings → Environment Variables
    - Copy the `DATABASE_URL` value (should start with `postgresql://neondb_owner:...`)
 
 2. **Set the DATABASE_URL temporarily in your local environment:**
@@ -70,7 +70,7 @@ And add these indexes for performance:
 ⚠️ **After running migrations:**
 - Clear the DATABASE_URL environment variable from your local machine
 - Never commit the DATABASE_URL to git
-- Test the login at https://waterworks-rose.vercel.app/login/
+- Test the login at https://waterworks-rose.onrender.com/login/
 
 ## Troubleshooting:
 
@@ -87,7 +87,7 @@ python manage.py showmigrations consumers
 
 ## After Migration is Complete:
 
-1. Test login on production: https://waterworks-rose.vercel.app/login/
+1. Test login on production: https://waterworks-rose.onrender.com/login/
 2. Verify no 500 errors
 3. Check that rate limiting is working (try 5 wrong passwords)
 4. Confirm consumer list loads fast

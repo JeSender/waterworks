@@ -4,7 +4,7 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 [![Django](https://img.shields.io/badge/Django-5.2.7-green.svg)](https://www.djangoproject.com/)
 [![Python](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black.svg)](https://vercel.com/)
+[![Deployed on Render](https://img.shields.io/badge/Deployed%20on-Render-black.svg)](https://render.com/)
 [![Database](https://img.shields.io/badge/Database-Neon%20PostgreSQL-green.svg)](https://neon.tech/)
 
 ---
@@ -13,9 +13,9 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 **Type:** Water Utility Management System
 **Technology Stack:** Django (Backend) + Neon PostgreSQL (Database) + Android (Mobile)
-**Deployment:** Vercel (PaaS) + Neon (Serverless PostgreSQL)
+**Deployment:** Render (PaaS) + Neon (Serverless PostgreSQL)
 **Security Level:** Enterprise-Grade
-**Live URL:** https://waterworks-rose.vercel.app
+**Live URL:** https://waterworks-rose.onrender.com
 
 ---
 
@@ -103,28 +103,28 @@ A comprehensive water utility management system with web portal, mobile app inte
 
 ---
 
-## Vercel + Neon Deployment
+## Render + Neon Deployment
 
 ### Prerequisites
 - GitHub account
-- Vercel account (sign up for free at https://vercel.com)
+- Render account (sign up for free at https://render.com)
 - Neon account (sign up for free at https://neon.tech)
 - Your project code ready
 
 ### Deployment Steps
 
-See **[VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)** for complete step-by-step instructions.
+See **[RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md)** for complete step-by-step instructions.
 
 **Quick Overview:**
 1. Create Neon PostgreSQL database
 2. Push code to GitHub
-3. Import project to Vercel from GitHub repo
-4. Set environment variables in Vercel dashboard
+3. Import project to Render from GitHub repo
+4. Set environment variables in Render dashboard
 5. Deploy automatically
-6. Run migrations via Vercel CLI or locally
+6. Run migrations via Render CLI or locally
 7. Test and verify
 
-### Environment Variables (Vercel Dashboard)
+### Environment Variables (Render Dashboard)
 
 ```bash
 # Security
@@ -132,14 +132,14 @@ SECRET_KEY=your-secret-key-here
 DEBUG=False
 
 # Hosts
-ALLOWED_HOSTS=.vercel.app,waterworks-rose.vercel.app
+ALLOWED_HOSTS=.onrender.com,waterworks-rose.onrender.com
 
 # Database (from Neon dashboard)
 DATABASE_URL=postgresql://user:password@host/database?sslmode=require
 
 # CORS (for Android app)
-CORS_ALLOWED_ORIGINS=https://waterworks-rose.vercel.app
-CSRF_TRUSTED_ORIGINS=https://waterworks-rose.vercel.app
+CORS_ALLOWED_ORIGINS=https://waterworks-rose.onrender.com
+CSRF_TRUSTED_ORIGINS=https://waterworks-rose.onrender.com
 
 # Email (for password reset)
 EMAIL_HOST_USER=your-gmail@gmail.com
@@ -166,8 +166,8 @@ waterworks/
 │   ├── urls.py            # Main URL config
 │   └── wsgi.py            # WSGI config
 ├── requirements.txt       # Python dependencies
-├── vercel.json           # Vercel configuration
-├── build_files.sh        # Vercel build script
+├── render.json           # Render configuration
+├── build_files.sh        # Render build script
 ├── .gitignore            # Git ignore rules
 └── README.md             # This file
 ```
@@ -228,19 +228,19 @@ waterworks/
 
 1. Update base URL in your Android app:
    ```java
-   String BASE_URL = "https://waterworks-rose.vercel.app";
+   String BASE_URL = "https://waterworks-rose.onrender.com";
    ```
 
 2. Update all API endpoints to use HTTPS
 
-3. **Note:** Vercel free tier has cold start delays (3-10 seconds on first request after inactivity)
+3. **Note:** Render free tier has cold start delays (3-10 seconds on first request after inactivity)
 
 4. Test connectivity:
    - Login API
    - Consumer list
    - Meter reading submission
 
-See **[ANDROID_APP_VERCEL_SETUP.md](ANDROID_APP_VERCEL_SETUP.md)** for details.
+See **[ANDROID_APP_RENDER_SETUP.md](ANDROID_APP_RENDER_SETUP.md)** for details.
 
 ---
 
@@ -310,19 +310,19 @@ python manage.py test consumers
 - **[docs/SYSTEM_ARCHITECTURE.md](docs/SYSTEM_ARCHITECTURE.md)** - Technical architecture documentation
 - **[docs/SYSTEM_FLOW.md](docs/SYSTEM_FLOW.md)** - Business process workflows
 - **[DATABASE_DOCUMENTATION.md](DATABASE_DOCUMENTATION.md)** - Database schema and models
-- **[VERCEL_DEPLOYMENT_GUIDE.md](VERCEL_DEPLOYMENT_GUIDE.md)** - Complete deployment guide
+- **[RENDER_DEPLOYMENT_GUIDE.md](RENDER_DEPLOYMENT_GUIDE.md)** - Complete deployment guide
 - **[DEPLOYMENT_SUMMARY.md](DEPLOYMENT_SUMMARY.md)** - Changes and configuration summary
 - **[FINAL_IMPLEMENTATION_SUMMARY.md](FINAL_IMPLEMENTATION_SUMMARY.md)** - Feature overview
 - **[SECURITY_FEATURES_THESIS_DEFENSE.md](SECURITY_FEATURES_THESIS_DEFENSE.md)** - Security documentation
-- **[ANDROID_APP_VERCEL_SETUP.md](ANDROID_APP_VERCEL_SETUP.md)** - Mobile app guide
+- **[ANDROID_APP_RENDER_SETUP.md](ANDROID_APP_RENDER_SETUP.md)** - Mobile app guide
 
 ---
 
 ## Maintenance
 
-### View Logs (Vercel)
-- Go to Vercel Dashboard → Your Project → Deployments → View Logs
-- Or use Vercel CLI: `vercel logs`
+### View Logs (Render)
+- Go to Render Dashboard → Your Project → Deployments → View Logs
+- Or use Render CLI: `render logs`
 
 ### Database Access (Neon)
 - Go to Neon Dashboard → Your Project → SQL Editor
@@ -332,7 +332,7 @@ python manage.py test consumers
 ```bash
 git add .
 git commit -m "Update: description"
-git push  # Vercel auto-deploys from main branch
+git push  # Render auto-deploys from main branch
 ```
 
 ---
@@ -341,9 +341,9 @@ git push  # Vercel auto-deploys from main branch
 
 ### Common Issues
 
-**Build Fails on Vercel**
+**Build Fails on Render**
 - Check `requirements.txt` syntax
-- View build logs in Vercel dashboard
+- View build logs in Render dashboard
 - Ensure Python 3.11 compatibility
 
 **Static Files Not Loading**
@@ -351,25 +351,25 @@ git push  # Vercel auto-deploys from main branch
 - Check WhiteNoise middleware configuration
 
 **Database Connection Error**
-- Verify `DATABASE_URL` in Vercel environment variables
+- Verify `DATABASE_URL` in Render environment variables
 - Ensure Neon database is active (check for sleep mode)
 - Add `?sslmode=require` to connection string
 
 **CORS Errors from Mobile**
-- Add Vercel domain to `CORS_ALLOWED_ORIGINS`
+- Add Render domain to `CORS_ALLOWED_ORIGINS`
 - Check `corsheaders` in `INSTALLED_APPS`
 
 **Cold Start Delays**
-- Expected behavior on Vercel free tier (3-10 seconds)
+- Expected behavior on Render free tier (3-10 seconds)
 - Consider upgrading for always-on performance
 
-See **VERCEL_DEPLOYMENT_GUIDE.md** for more troubleshooting.
+See **RENDER_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 
 ---
 
 ## Cost
 
-### Vercel Free Tier (Hobby)
+### Render Free Tier (Hobby)
 - **Unlimited deployments**
 - **100 GB bandwidth/month**
 - **Serverless function execution limits**
@@ -382,7 +382,7 @@ See **VERCEL_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 - Perfect for development and small projects
 
 ### Upgrade When Needed
-- Vercel Pro: $20/month (team features, more resources)
+- Render Pro: $20/month (team features, more resources)
 - Neon Pro: Starting at $19/month (more storage, no auto-suspend)
 
 ---
@@ -390,14 +390,14 @@ See **VERCEL_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 ## For Thesis Defense
 
 ### Demo Preparation
-1. Ensure Vercel app is deployed and running
+1. Ensure Render app is deployed and running
 2. Test all features beforehand (account for cold starts)
 3. Prepare live demo script
 4. Have backup screenshots/video
 5. Test from multiple devices
 
 ### Key Highlights
-- Cloud-based deployment (Vercel + Neon)
+- Cloud-based deployment (Render + Neon)
 - Enterprise-grade security
 - Mobile integration
 - Real-time data sync
@@ -413,9 +413,9 @@ See **VERCEL_DEPLOYMENT_GUIDE.md** for more troubleshooting.
 - Read `SECURITY_FEATURES_THESIS_DEFENSE.md` for security details
 
 ### Platform Resources
-- [Vercel Documentation](https://vercel.com/docs)
+- [Render Documentation](https://render.com/docs)
 - [Neon Documentation](https://neon.tech/docs)
-- [Django on Vercel Guide](https://vercel.com/templates/python/django-hello-world)
+- [Django on Render Guide](https://render.com/templates/python/django-hello-world)
 
 ---
 
@@ -428,7 +428,7 @@ This project is developed for educational purposes as part of a thesis/research 
 ## Acknowledgments
 
 - Django Framework
-- Vercel Platform
+- Render Platform
 - Neon PostgreSQL
 - WhiteNoise (Static Files)
 - OpenPyXL (Excel Export)
@@ -460,11 +460,11 @@ This project is developed for educational purposes as part of a thesis/research 
 ---
 
 **System Status:** PRODUCTION READY
-**Platform:** Vercel + Neon PostgreSQL
-**Live URL:** https://waterworks-rose.vercel.app
+**Platform:** Render + Neon PostgreSQL
+**Live URL:** https://waterworks-rose.onrender.com
 **Last Updated:** November 2025
 
 ---
 
 *Developed for Balilihan Waterworks Management*
-*Built with Django - Deployed on Vercel - Powered by Neon PostgreSQL*
+*Built with Django - Deployed on Render - Powered by Neon PostgreSQL*

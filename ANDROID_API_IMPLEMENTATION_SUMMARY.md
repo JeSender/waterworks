@@ -378,7 +378,7 @@ Step 4: Calculate Total
 3. **Check Users** - Ensure users have first_name/last_name
 4. **Test with App** - Try on actual Android device
 
-### Deploy to Vercel:
+### Deploy to Render:
 
 ```bash
 # 1. Commit changes
@@ -388,13 +388,13 @@ git commit -m "Add complete bill details to meter reading API"
 # 2. Push to GitHub
 git push origin main
 
-# 3. Vercel auto-deploys from main branch
+# 3. Render auto-deploys from main branch
 
 # 4. Test production API
-curl https://waterworks-rose.vercel.app/api/consumers/
+curl https://waterworks-rose.onrender.com/api/consumers/
 ```
 
-**Note:** Vercel free tier has cold start delays (3-10 seconds on first request after inactivity).
+**Note:** Render free tier has cold start delays (3-10 seconds on first request after inactivity).
 
 ---
 
@@ -534,9 +534,9 @@ If you encounter issues:
    # Local
    Check Django console output
 
-   # Production (Vercel)
-   View deployment logs in Vercel dashboard
-   # Or use: vercel logs
+   # Production (Render)
+   View deployment logs in Render dashboard
+   # Or use: render logs
    ```
 
 2. **Run Diagnostics**

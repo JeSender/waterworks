@@ -10,7 +10,7 @@ from django.contrib.auth import views as auth_views
 
 @csrf_exempt
 def healthcheck(request):
-    """Simple healthcheck endpoint for Vercel deployment"""
+    """Simple healthcheck endpoint for Render deployment"""
     return HttpResponse("OK", status=200)
 
 def custom_404_view(request, exception=None):
