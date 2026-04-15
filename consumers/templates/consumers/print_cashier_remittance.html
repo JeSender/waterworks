@@ -1,4 +1,4 @@
-{% load humanize %}
+{% load static humanize %}
 <!DOCTYPE html>
 <html>
 <head>
@@ -57,10 +57,12 @@
     </div>
 
     <div class="page">
-        <div class="header">
-            <h1>Balilihan Waterworks System</h1>
-            <h2>Individual Cashier Remittance Summary<br><small style='font-size: 11px; color: #666;'>[{{ selected_barangay_name }}]</small></h2>
-            <p>
+        <div class="header" style="position: relative;">
+            <img src="{% static 'consumers/images/logo.png' %}" alt="Balilihan Logo" style="position: absolute; left: 15px; top: 5px; width: 70px; height: auto; object-fit: contain;">
+            <div>
+                <h1>Balilihan Waterworks System</h1>
+                <h2>Individual Cashier Remittance Summary<br><small style='font-size: 11px; color: #666;'>[{{ selected_barangay_name }}]</small></h2>
+                <p>
                 Period: 
                 {% if filter_type == 'today' %}
                     {{ filter_start|date:"F d, Y" }} (Today)
@@ -69,7 +71,8 @@
                 {% else %}
                     {{ filter_start|date:"M d, Y" }} &mdash; {{ filter_end|date:"M d, Y" }}
                 {% endif %}
-            </p>
+                </p>
+            </div>
         </div>
 
         <div class="info-grid">
