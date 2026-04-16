@@ -12,8 +12,9 @@ from .models import (
 
 # NEW: Admin for User Login Events
 @admin.register(UserLoginEvent)
-class Use
-                     r__username', 'user__first_name', 'user__last_name', 'ip_address']
+class UserLoginEventAdmin(admin.ModelAdmin):
+    list_display = ['user', 'login_timestamp', 'ip_address', 'status']
+    search_fields = ['user__username', 'user__first_name', 'user__last_name', 'ip_address']
     ordering = ['-login_timestamp']
     readonly_fields = ['user', 'login_timestamp', 'ip_address', 'user_agent', 'login_method', 'status', 'session_key', 'logout_timestamp']
 
