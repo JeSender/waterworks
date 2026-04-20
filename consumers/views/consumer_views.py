@@ -559,17 +559,37 @@ def import_consumers_csv(request):
         messages.error(request, 'The CSV file appears to be empty or has no headers.')
         return redirect('consumers:consumer_management')
 
-    # Standardize column names
-    col_map = {f.strip().lower(): f.strip() for f in reader.fieldnames}
+    # Standardize column names with fuzzy matching to handle truncated Excel headers
+    raw_headers = {f.strip().lower(): f.strip() for f in reader.fieldnames}
     required_keys = [
         'first_name', 'last_name', 'birth_date', 'gender', 'phone_number',
         'civil_status', 'barangay', 'purok', 'household_number',
         'usage_type', 'meter_brand', 'serial_number', 'first_reading', 'registration_date'
     ]
-    missing_cols = [k for k in required_keys if k not in col_map]
+    
+    # Match headers even if they are slightly truncated (common in Excel)
+    col_map = {}
+    for key in required_keys:
+        # 1. Try exact match
+        if key in raw_headers:
+            col_map[key] = raw_headers[key]
+        else:
+            # 2. Try fuzzy match (e.g. 'phone_nun' matches 'phone_number')
+            for rh_key, rh_orig in raw_headers.items():
+                if rh_key.startswith(key[:8]) or key.startswith(rh_key[:8]):
+                    col_map[key] = rh_orig
+                    break
+
+    # Check for absolutely missing columns (critical ones)
+    CRITICAL_KEYS = {'first_name', 'last_name', 'birth_date', 'serial_number', 'barangay'}
+    missing_cols = [k for k in CRITICAL_KEYS if k not in col_map]
     if missing_cols:
-        messages.error(request, f"Missing required columns: {', '.join(missing_cols)}. Please use the template.")
+        messages.error(request, f"Missing critical columns: {', '.join(missing_cols)}. Please ensure your CSV has the correct headers.")
         return redirect('consumers:consumer_management')
+
+    # Fill in optional col_map gaps with empty strings to avoid KeyErrors
+    for key in required_keys:
+        if key not in col_map: col_map[key] = ''
 
     all_rows = list(reader)
     if not all_rows:
@@ -579,9 +599,9 @@ def import_consumers_csv(request):
     # --- Pre-fetching & Normalization ---
     def clean_val(val, default=''):
         """Clean 'N/A', 'n/a', 'None' strings from user input."""
-        if not val: return default
+        if val is None: return default
         v = str(val).strip()
-        if v.lower() in ('n/a', 'none', 'null', '-' , '.'):
+        if v.lower() in ('n/a', 'none', 'null', '-' , '.', 'na'):
             return default
         return v
 
@@ -614,8 +634,8 @@ def import_consumers_csv(request):
     seen_serials_in_file = set()
 
     for row_num, row in enumerate(all_rows, start=2):
-        # Normalize row keys
-        d = {k: clean_val(row.get(col_map[k])) for k in required_keys}
+        # Map values safely (handle missing columns in d)
+        d = {k: (clean_val(row.get(col_map[k])) if col_map[k] else '') for k in required_keys}
         d['middle_name'] = clean_val(row.get(col_map.get('middle_name', '')))
         d['suffix'] = clean_val(row.get(col_map.get('suffix', '')))
         d['status'] = clean_val(row.get(col_map.get('status', '')), 'active').lower()
@@ -626,11 +646,21 @@ def import_consumers_csv(request):
         last_name   = ' '.join(w.capitalize() for w in d['last_name'].split())
         middle_name = ' '.join(w.capitalize() for w in d['middle_name'].split()) if d['middle_name'] else None
         
-        # Missing fields check
-        missing = [k for k in required_keys if not d[k]]
+        # Missing fields check - RELAXED for non-critical fields like phone/household
+        STRICT_REQUIRED = [
+            'first_name', 'last_name', 'birth_date', 'gender', 
+            'barangay', 'usage_type', 'serial_number', 'registration_date'
+        ]
+        missing = [k for k in STRICT_REQUIRED if not d[k]]
         if missing:
-            hard_errors.append(f"Row {row_num}: Missing fields: {', '.join(missing)}")
+            hard_errors.append(f"Row {row_num}: Missing strictly required fields: {', '.join(missing)}")
             continue
+
+        # Fill defaults for optional but missing fields (like N/A phone/purok/household)
+        if not d['phone_number']: d['phone_number'] = 'n/a'
+        if not d['household_number']: d['household_number'] = '0'
+        if not d['purok']: d['purok'] = 'n/a'
+        if not d['meter_brand']: d['meter_brand'] = 'Generic'
 
         # Choice checks
         gender = d['gender'].capitalize()
