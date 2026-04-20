@@ -511,174 +511,174 @@ def import_consumers_csv(request):
     try:
         with transaction.atomic():
             for row_num, row in enumerate(reader, start=2):
-        # Normalise keys — strip whitespace and lowercase
-        row = {k.strip().lower(): (v.strip() if v else '') for k, v in row.items()}
+                # Normalise keys — strip whitespace and lowercase
+                row = {k.strip().lower(): (v.strip() if v else '') for k, v in row.items()}
 
-        try:
-            # ---- Field extraction ----
-            first_name = ' '.join(w.capitalize() for w in row.get('first_name', '').split())
-            last_name = ' '.join(w.capitalize() for w in row.get('last_name', '').split())
-            middle_name = ' '.join(w.capitalize() for w in row.get('middle_name', '').split()) or None
-            suffix_raw = row.get('suffix', '').strip()
-            suffix = suffix_raw if suffix_raw.lower() in VALID_SUFFIX else ''
-
-            birth_date_str = row.get('birth_date', '')
-            gender = row.get('gender', '').strip().capitalize()
-            phone_number = row.get('phone_number', '').strip()
-            civil_status = row.get('civil_status', '').strip().capitalize()
-            spouse_name = ' '.join(w.capitalize() for w in row.get('spouse_name', '').split()) or None
-            barangay_name = row.get('barangay', '').strip()
-            purok_name = row.get('purok', '').strip()
-            household_number = row.get('household_number', '').strip()
-            usage_type = row.get('usage_type', '').strip().capitalize()
-            meter_brand_name = row.get('meter_brand', '').strip()
-            serial_number = row.get('serial_number', '').strip()
-            first_reading_str = row.get('first_reading', '0').strip()
-            registration_date_str = row.get('registration_date', '').strip()
-            status = row.get('status', 'active').strip().lower()
-
-            # ---- Required field presence check ----
-            if not all([first_name, last_name, birth_date_str, gender, phone_number,
-                        civil_status, barangay_name, purok_name, household_number,
-                        usage_type, meter_brand_name, serial_number, registration_date_str]):
-                missing_fields = [
-                    f for f, v in [
-                        ('first_name', first_name), ('last_name', last_name),
-                        ('birth_date', birth_date_str), ('gender', gender),
-                        ('phone_number', phone_number), ('civil_status', civil_status),
-                        ('barangay', barangay_name), ('purok', purok_name),
-                        ('household_number', household_number), ('usage_type', usage_type),
-                        ('meter_brand', meter_brand_name), ('serial_number', serial_number),
-                        ('registration_date', registration_date_str)
-                    ] if not v
-                ]
-                error_rows.append(f"Row {row_num}: Missing fields: {', '.join(missing_fields)}.")
-                skipped_count += 1
-                continue
-
-            # ---- Choice validations ----
-            if gender.lower() not in VALID_GENDER:
-                error_rows.append(f"Row {row_num}: Invalid gender '{gender}'. Use Male, Female, or Other.")
-                skipped_count += 1
-                continue
-            if civil_status.lower() not in VALID_CIVIL_STATUS:
-                error_rows.append(f"Row {row_num}: Invalid civil_status '{civil_status}'. Use Single/Married/Widowed/Divorced.")
-                skipped_count += 1
-                continue
-            if usage_type.lower() not in VALID_USAGE:
-                error_rows.append(f"Row {row_num}: Invalid usage_type '{usage_type}'. Use Residential or Commercial.")
-                skipped_count += 1
-                continue
-            if status not in VALID_STATUS:
-                status = 'active'  # Default gracefully
-
-            # ---- Date parsing (supports YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY) ----
-            birth_date = None
-            for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
                 try:
-                    birth_date = _dt.strptime(birth_date_str, fmt).date()
-                    break
-                except ValueError:
+                    # ---- Field extraction ----
+                    first_name = ' '.join(w.capitalize() for w in row.get('first_name', '').split())
+                    last_name = ' '.join(w.capitalize() for w in row.get('last_name', '').split())
+                    middle_name = ' '.join(w.capitalize() for w in row.get('middle_name', '').split()) or None
+                    suffix_raw = row.get('suffix', '').strip()
+                    suffix = suffix_raw if suffix_raw.lower() in VALID_SUFFIX else ''
+
+                    birth_date_str = row.get('birth_date', '')
+                    gender = row.get('gender', '').strip().capitalize()
+                    phone_number = row.get('phone_number', '').strip()
+                    civil_status = row.get('civil_status', '').strip().capitalize()
+                    spouse_name = ' '.join(w.capitalize() for w in row.get('spouse_name', '').split()) or None
+                    barangay_name = row.get('barangay', '').strip()
+                    purok_name = row.get('purok', '').strip()
+                    household_number = row.get('household_number', '').strip()
+                    usage_type = row.get('usage_type', '').strip().capitalize()
+                    meter_brand_name = row.get('meter_brand', '').strip()
+                    serial_number = row.get('serial_number', '').strip()
+                    first_reading_str = row.get('first_reading', '0').strip()
+                    registration_date_str = row.get('registration_date', '').strip()
+                    status = row.get('status', 'active').strip().lower()
+
+                    # ---- Required field presence check ----
+                    if not all([first_name, last_name, birth_date_str, gender, phone_number,
+                                civil_status, barangay_name, purok_name, household_number,
+                                usage_type, meter_brand_name, serial_number, registration_date_str]):
+                        missing_fields = [
+                            f for f, v in [
+                                ('first_name', first_name), ('last_name', last_name),
+                                ('birth_date', birth_date_str), ('gender', gender),
+                                ('phone_number', phone_number), ('civil_status', civil_status),
+                                ('barangay', barangay_name), ('purok', purok_name),
+                                ('household_number', household_number), ('usage_type', usage_type),
+                                ('meter_brand', meter_brand_name), ('serial_number', serial_number),
+                                ('registration_date', registration_date_str)
+                            ] if not v
+                        ]
+                        error_rows.append(f"Row {row_num}: Missing fields: {', '.join(missing_fields)}.")
+                        skipped_count += 1
+                        continue
+
+                    # ---- Choice validations ----
+                    if gender.lower() not in VALID_GENDER:
+                        error_rows.append(f"Row {row_num}: Invalid gender '{gender}'. Use Male, Female, or Other.")
+                        skipped_count += 1
+                        continue
+                    if civil_status.lower() not in VALID_CIVIL_STATUS:
+                        error_rows.append(f"Row {row_num}: Invalid civil_status '{civil_status}'. Use Single/Married/Widowed/Divorced.")
+                        skipped_count += 1
+                        continue
+                    if usage_type.lower() not in VALID_USAGE:
+                        error_rows.append(f"Row {row_num}: Invalid usage_type '{usage_type}'. Use Residential or Commercial.")
+                        skipped_count += 1
+                        continue
+                    if status not in VALID_STATUS:
+                        status = 'active'  # Default gracefully
+
+                    # ---- Date parsing (supports YYYY-MM-DD, MM/DD/YYYY, DD/MM/YYYY) ----
+                    birth_date = None
+                    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
+                        try:
+                            birth_date = _dt.strptime(birth_date_str, fmt).date()
+                            break
+                        except ValueError:
+                            continue
+                    if birth_date is None:
+                        error_rows.append(f"Row {row_num}: Invalid birth_date '{birth_date_str}'. Use YYYY-MM-DD (e.g. 1990-03-25).")
+                        skipped_count += 1
+                        continue
+
+                    registration_date = None
+                    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
+                        try:
+                            registration_date = _dt.strptime(registration_date_str, fmt).date()
+                            break
+                        except ValueError:
+                            continue
+                    if registration_date is None:
+                        error_rows.append(f"Row {row_num}: Invalid registration_date '{registration_date_str}'. Use YYYY-MM-DD.")
+                        skipped_count += 1
+                        continue
+
+                    # ---- Numeric parsing ----
+                    try:
+                        first_reading = int(float(first_reading_str))
+                    except (ValueError, TypeError):
+                        first_reading = 0
+
+                    # ---- Duplicate serial number check ----
+                    if Consumer.objects.filter(serial_number=serial_number).exists():
+                        error_rows.append(f"Row {row_num}: Serial number '{serial_number}' already exists — skipped.")
+                        skipped_count += 1
+                        continue
+
+                    # ---- Duplicate name check (matches ConsumerForm validation) ----
+                    name_duplicate = Consumer.objects.filter(
+                        first_name__iexact=first_name,
+                        last_name__iexact=last_name
+                    ).first()
+                    if name_duplicate:
+                        error_rows.append(
+                            f"Row {row_num}: Consumer '{first_name} {last_name}' already exists "
+                            f"(ID: {name_duplicate.id_number or 'N/A'}). Use a different middle name or suffix to distinguish."
+                        )
+                        skipped_count += 1
+                        continue
+
+                    # ---- Resolve or create FK lookup objects (case-insensitive) ----
+                    barangay_obj = Barangay.objects.filter(name__iexact=barangay_name).first()
+                    if not barangay_obj:
+                        barangay_obj = Barangay.objects.create(name=barangay_name.title())
+
+                    purok_obj = Purok.objects.filter(name__iexact=purok_name, barangay=barangay_obj).first()
+                    if not purok_obj:
+                        purok_obj = Purok.objects.create(name=purok_name.title(), barangay=barangay_obj)
+
+                    meter_brand_obj = MeterBrand.objects.filter(name__iexact=meter_brand_name).first()
+                    if not meter_brand_obj:
+                        meter_brand_obj = MeterBrand.objects.create(name=meter_brand_name.title())
+
+                    # ---- Create the consumer record ----
+                    consumer = Consumer.objects.create(
+                        first_name=first_name,
+                        middle_name=middle_name,
+                        last_name=last_name,
+                        suffix=suffix,
+                        birth_date=birth_date,
+                        gender=gender,
+                        phone_number=phone_number,
+                        civil_status=civil_status,
+                        spouse_name=spouse_name,
+                        barangay=barangay_obj,
+                        purok=purok_obj,
+                        household_number=household_number,
+                        usage_type=usage_type,
+                        meter_brand=meter_brand_obj,
+                        serial_number=serial_number,
+                        first_reading=first_reading,
+                        registration_date=registration_date,
+                        status=status,
+                    )
+
+                    # ---- Log user activity for audit trail ----
+                    try:
+                        UserActivity.objects.create(
+                            user=request.user,
+                            action='consumer_created',
+                            description=f"[CSV Import] Created consumer: {consumer.full_name} (ID: {consumer.id_number}) — {consumer.barangay.name}",
+                            login_event=current_session,
+                            ip_address=request.META.get('REMOTE_ADDR'),
+                        )
+                    except Exception:
+                        pass  # Don't fail the import if activity logging fails
+
+                    created_count += 1
+
+                except Exception as e:
+                    error_rows.append(f"Row {row_num}: Unexpected error — {str(e)}")
+                    skipped_count += 1
                     continue
-            if birth_date is None:
-                error_rows.append(f"Row {row_num}: Invalid birth_date '{birth_date_str}'. Use YYYY-MM-DD (e.g. 1990-03-25).")
-                skipped_count += 1
-                continue
 
-            registration_date = None
-            for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%d/%m/%Y', '%m-%d-%Y'):
-                try:
-                    registration_date = _dt.strptime(registration_date_str, fmt).date()
-                    break
-                except ValueError:
-                    continue
-            if registration_date is None:
-                error_rows.append(f"Row {row_num}: Invalid registration_date '{registration_date_str}'. Use YYYY-MM-DD.")
-                skipped_count += 1
-                continue
-
-            # ---- Numeric parsing ----
-            try:
-                first_reading = int(float(first_reading_str))
-            except (ValueError, TypeError):
-                first_reading = 0
-
-            # ---- Duplicate serial number check ----
-            if Consumer.objects.filter(serial_number=serial_number).exists():
-                error_rows.append(f"Row {row_num}: Serial number '{serial_number}' already exists — skipped.")
-                skipped_count += 1
-                continue
-
-            # ---- Duplicate name check (matches ConsumerForm validation) ----
-            name_duplicate = Consumer.objects.filter(
-                first_name__iexact=first_name,
-                last_name__iexact=last_name
-            ).first()
-            if name_duplicate:
-                error_rows.append(
-                    f"Row {row_num}: Consumer '{first_name} {last_name}' already exists "
-                    f"(ID: {name_duplicate.id_number or 'N/A'}). Use a different middle name or suffix to distinguish."
-                )
-                skipped_count += 1
-                continue
-
-            # ---- Resolve or create FK lookup objects (case-insensitive) ----
-            barangay_obj = Barangay.objects.filter(name__iexact=barangay_name).first()
-            if not barangay_obj:
-                barangay_obj = Barangay.objects.create(name=barangay_name.title())
-
-            purok_obj = Purok.objects.filter(name__iexact=purok_name, barangay=barangay_obj).first()
-            if not purok_obj:
-                purok_obj = Purok.objects.create(name=purok_name.title(), barangay=barangay_obj)
-
-            meter_brand_obj = MeterBrand.objects.filter(name__iexact=meter_brand_name).first()
-            if not meter_brand_obj:
-                meter_brand_obj = MeterBrand.objects.create(name=meter_brand_name.title())
-
-            # ---- Create the consumer record ----
-            consumer = Consumer.objects.create(
-                first_name=first_name,
-                middle_name=middle_name,
-                last_name=last_name,
-                suffix=suffix,
-                birth_date=birth_date,
-                gender=gender,
-                phone_number=phone_number,
-                civil_status=civil_status,
-                spouse_name=spouse_name,
-                barangay=barangay_obj,
-                purok=purok_obj,
-                household_number=household_number,
-                usage_type=usage_type,
-                meter_brand=meter_brand_obj,
-                serial_number=serial_number,
-                first_reading=first_reading,
-                registration_date=registration_date,
-                status=status,
-            )
-
-            # ---- Log user activity for audit trail ----
-            try:
-                UserActivity.objects.create(
-                    user=request.user,
-                    action='consumer_created',
-                    description=f"[CSV Import] Created consumer: {consumer.full_name} (ID: {consumer.id_number}) — {consumer.barangay.name}",
-                    login_event=current_session,
-                    ip_address=request.META.get('REMOTE_ADDR'),
-                )
-            except Exception:
-                pass  # Don't fail the import if activity logging fails
-
-            created_count += 1
-
-        except Exception as e:
-            error_rows.append(f"Row {row_num}: Unexpected error — {str(e)}")
-            skipped_count += 1
-            continue
-
-        # If there are any errors, rollback the transaction to prevent partial imports
-        if error_rows:
-            raise ValueError("Validation errors found in CSV.")
+            # If there are any errors, rollback the transaction to prevent partial imports
+            if error_rows:
+                raise ValueError("Validation errors found in CSV.")
 
     except ValueError:
         # Transaction rolled back
