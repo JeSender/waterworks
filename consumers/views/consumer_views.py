@@ -478,26 +478,39 @@ def export_consumers_by_barangay(request):
         'first_reading', 'registration_date', 'status'
     ])
 
+    # Normalize maps so exported values are guaranteed to pass re-import validation
+    GENDER_NORM = {'male': 'Male', 'female': 'Female', 'other': 'Other'}
+    CIVIL_NORM  = {'single': 'Single', 'married': 'Married', 'widowed': 'Widowed', 'divorced': 'Divorced'}
+    USAGE_NORM  = {'residential': 'Residential', 'commercial': 'Commercial'}
+    SUFFIX_NORM = {'jr.': 'Jr.', 'sr.': 'Sr.', 'ii': 'II', 'iii': 'III', 'iv': 'IV', 'v': 'V'}
+    STATUS_NORM = {'active': 'active', 'disconnected': 'disconnected'}
+
     for c in consumers_qs:
+        raw_gender  = (c.gender or '').strip()
+        raw_civil   = (c.civil_status or '').strip()
+        raw_usage   = (c.usage_type or '').strip()
+        raw_suffix  = (c.suffix or '').strip()
+        raw_status  = (c.status or 'active').strip().lower()
+
         writer.writerow([
             c.first_name or '',
             c.middle_name or '',
             c.last_name or '',
-            c.suffix or '',
+            SUFFIX_NORM.get(raw_suffix.lower(), raw_suffix),
             c.birth_date.strftime('%Y-%m-%d') if c.birth_date else '',
-            c.gender or '',
+            GENDER_NORM.get(raw_gender.lower(), raw_gender),
             c.phone_number or '',
-            c.civil_status or '',
+            CIVIL_NORM.get(raw_civil.lower(), raw_civil),
             c.spouse_name or '',
             c.barangay.name if c.barangay else '',
             c.purok.name if c.purok else '',
             c.household_number or '',
-            c.usage_type or '',
+            USAGE_NORM.get(raw_usage.lower(), raw_usage),
             c.meter_brand.name if c.meter_brand else '',
             c.serial_number or '',
-            c.first_reading if c.first_reading is not None else '',
+            c.first_reading if c.first_reading is not None else '0',
             c.registration_date.strftime('%Y-%m-%d') if c.registration_date else '',
-            c.status or 'active',
+            STATUS_NORM.get(raw_status, 'active'),
         ])
 
     return response
@@ -559,7 +572,6 @@ def import_consumers_csv(request):
     VALID_CIVIL_STATUS = {'single', 'married', 'widowed', 'divorced'}
     VALID_USAGE        = {'residential', 'commercial'}
     VALID_STATUS       = {'active', 'disconnected'}
-    VALID_SUFFIX       = {'', 'jr.', 'sr.', 'ii', 'iii', 'iv', 'v'}
 
     all_rows = list(reader)
     if not all_rows:
@@ -578,8 +590,10 @@ def import_consumers_csv(request):
         first_name            = ' '.join(w.capitalize() for w in row.get('first_name', '').split())
         last_name             = ' '.join(w.capitalize() for w in row.get('last_name', '').split())
         middle_name           = ' '.join(w.capitalize() for w in row.get('middle_name', '').split()) or None
-        suffix_raw            = row.get('suffix', '').strip()
-        suffix                = suffix_raw if suffix_raw.lower() in VALID_SUFFIX else ''
+        suffix_raw = row.get('suffix', '').strip()
+        # Normalize suffix to the exact model choice value (case-insensitive)
+        SUFFIX_MAP = {'jr.': 'Jr.', 'sr.': 'Sr.', 'ii': 'II', 'iii': 'III', 'iv': 'IV', 'v': 'V', '': ''}
+        suffix = SUFFIX_MAP.get(suffix_raw.lower(), '')  # default to '' if unrecognised
         birth_date_str        = row.get('birth_date', '')
         gender                = row.get('gender', '').strip().capitalize()
         phone_number          = row.get('phone_number', '').strip()
