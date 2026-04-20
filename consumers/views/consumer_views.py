@@ -567,8 +567,9 @@ def import_consumers_csv(request):
         return redirect('consumers:consumer_management')
 
     # ---- PASS 1: validate every row, zero DB writes ----
-    rows_data    = []
-    error_rows   = []
+    rows_data    = []   # rows ready for DB insert
+    hard_errors  = []   # format/field errors — abort the whole import
+    skipped_rows = []   # duplicates — skip the row, import the rest
     seen_serials = set()
 
     for row_num, row in enumerate(all_rows, start=2):
@@ -606,17 +607,17 @@ def import_consumers_csv(request):
             ] if not v
         ]
         if missing_fields:
-            error_rows.append("Row {}: Missing required fields: {}.".format(row_num, ', '.join(missing_fields)))
+            hard_errors.append("Row {}: Missing required fields: {}.".format(row_num, ', '.join(missing_fields)))
             continue
 
         if gender.lower() not in VALID_GENDER:
-            error_rows.append("Row {}: Invalid gender '{}'. Use Male, Female, or Other.".format(row_num, gender))
+            hard_errors.append("Row {}: Invalid gender '{}'. Use Male, Female, or Other.".format(row_num, gender))
             continue
         if civil_status.lower() not in VALID_CIVIL_STATUS:
-            error_rows.append("Row {}: Invalid civil_status '{}'. Use Single/Married/Widowed/Divorced.".format(row_num, civil_status))
+            hard_errors.append("Row {}: Invalid civil_status '{}'. Use Single/Married/Widowed/Divorced.".format(row_num, civil_status))
             continue
         if usage_type.lower() not in VALID_USAGE:
-            error_rows.append("Row {}: Invalid usage_type '{}'. Use Residential or Commercial.".format(row_num, usage_type))
+            hard_errors.append("Row {}: Invalid usage_type '{}'. Use Residential or Commercial.".format(row_num, usage_type))
             continue
         if status not in VALID_STATUS:
             status = 'active'
@@ -629,7 +630,7 @@ def import_consumers_csv(request):
             except ValueError:
                 continue
         if birth_date is None:
-            error_rows.append("Row {}: Invalid birth_date '{}'. Use YYYY-MM-DD.".format(row_num, birth_date_str))
+            hard_errors.append("Row {}: Invalid birth_date '{}'. Use YYYY-MM-DD.".format(row_num, birth_date_str))
             continue
 
         registration_date = None
@@ -640,7 +641,7 @@ def import_consumers_csv(request):
             except ValueError:
                 continue
         if registration_date is None:
-            error_rows.append("Row {}: Invalid registration_date '{}'. Use YYYY-MM-DD.".format(row_num, registration_date_str))
+            hard_errors.append("Row {}: Invalid registration_date '{}'. Use YYYY-MM-DD.".format(row_num, registration_date_str))
             continue
 
         try:
@@ -648,11 +649,12 @@ def import_consumers_csv(request):
         except (ValueError, TypeError):
             first_reading = 0
 
+        # Duplicates — skip the row but do NOT abort the whole import
         if Consumer.objects.filter(serial_number=serial_number).exists():
-            error_rows.append("Row {}: Serial '{}' already exists in the database.".format(row_num, serial_number))
+            skipped_rows.append("Row {}: Serial '{}' already in the database — skipped.".format(row_num, serial_number))
             continue
         if serial_number in seen_serials:
-            error_rows.append("Row {}: Serial '{}' appears more than once in this file.".format(row_num, serial_number))
+            skipped_rows.append("Row {}: Serial '{}' appears more than once in this file — skipped.".format(row_num, serial_number))
             continue
         seen_serials.add(serial_number)
 
@@ -660,8 +662,8 @@ def import_consumers_csv(request):
             first_name__iexact=first_name, last_name__iexact=last_name
         ).first()
         if name_dup:
-            error_rows.append(
-                "Row {}: Consumer '{} {}' already exists (ID: {}). Use a different middle name or suffix.".format(
+            skipped_rows.append(
+                "Row {}: '{}  {}' already exists (ID: {}) — skipped.".format(
                     row_num, first_name, last_name, name_dup.id_number or 'N/A'
                 )
             )
@@ -679,13 +681,19 @@ def import_consumers_csv(request):
             'registration_date': registration_date, 'status': status,
         })
 
-    # Abort if any validation error found
-    if error_rows:
+    # Hard errors (bad format / missing fields) → abort the entire import
+    if hard_errors:
         messages.error(
             request,
-            "❌ Import aborted! {} row(s) have errors. Fix them and try again.".format(len(error_rows))
+            "❌ Import aborted! {} row(s) have format errors. Fix them and try again.".format(len(hard_errors))
         )
-        request.session['import_errors'] = error_rows[:50]
+        request.session['import_errors'] = hard_errors[:50]
+        return redirect('consumers:consumer_management')
+
+    if not rows_data:
+        messages.warning(request, "⚠️ No new consumers to import. All rows were duplicates or already exist.")
+        if skipped_rows:
+            request.session['import_errors'] = skipped_rows[:50]
         return redirect('consumers:consumer_management')
 
     # ---- PASS 2: all valid, write to DB in a single transaction ----
@@ -743,7 +751,16 @@ def import_consumers_csv(request):
             created_count += 1
 
     request.session.pop('import_errors', None)
-    messages.success(request, "✅ Successfully imported {} consumer(s).".format(created_count))
+    msg = "✅ Successfully imported {} consumer(s).".format(created_count)
+    if skipped_rows:
+        messages.success(request, msg)
+        messages.warning(
+            request,
+            "⚠️ {} row(s) were skipped (duplicate serial or name).".format(len(skipped_rows))
+        )
+        request.session['import_errors'] = skipped_rows[:50]
+    else:
+        messages.success(request, msg)
     return redirect('consumers:consumer_management')
 
 
