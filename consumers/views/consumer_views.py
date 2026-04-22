@@ -561,15 +561,18 @@ def import_consumers_csv(request):
 
     # Standardize column names with fuzzy matching to handle truncated Excel headers
     raw_headers = {f.strip().lower(): f.strip() for f in reader.fieldnames}
-    required_keys = [
-        'first_name', 'last_name', 'birth_date', 'gender', 'phone_number',
-        'civil_status', 'barangay', 'purok', 'household_number',
-        'usage_type', 'meter_brand', 'serial_number', 'first_reading', 'registration_date'
+    expected_keys = [
+        'first_name', 'middle_name', 'last_name', 'suffix',
+        'birth_date', 'gender', 'phone_number',
+        'civil_status', 'spouse_name',
+        'barangay', 'purok', 'household_number',
+        'usage_type', 'meter_brand', 'serial_number',
+        'first_reading', 'registration_date', 'status'
     ]
     
     # Match headers even if they are slightly truncated (common in Excel)
     col_map = {}
-    for key in required_keys:
+    for key in expected_keys:
         # 1. Try exact match
         if key in raw_headers:
             col_map[key] = raw_headers[key]
@@ -588,7 +591,7 @@ def import_consumers_csv(request):
         return redirect('consumers:consumer_management')
 
     # Fill in optional col_map gaps with empty strings to avoid KeyErrors
-    for key in required_keys:
+    for key in expected_keys:
         if key not in col_map: col_map[key] = ''
 
     all_rows = list(reader)
@@ -607,9 +610,9 @@ def import_consumers_csv(request):
 
     # 1. Pre-fetch existing serials and names for deduplication
     existing_serials = set(Consumer.objects.values_list('serial_number', flat=True))
-    # Simple list of (first, last) tuples for memory check
-    existing_names = set(Consumer.objects.values_list('first_name', 'last_name'))
-    existing_names = {(fn.lower().strip(), ln.lower().strip()) for fn, ln in existing_names if fn and ln}
+    # Simple list of (first, last, birth_date) tuples for memory check to allow same names but different person
+    existing_consumers = set(Consumer.objects.values_list('first_name', 'last_name', 'birth_date'))
+    existing_entities = {(fn.lower().strip(), ln.lower().strip(), bd) for fn, ln, bd in existing_consumers if fn and ln and bd}
 
     # 2. Pre-fetch related objects
     barangays = {b.name.lower(): b for b in Barangay.objects.all()}
@@ -635,11 +638,11 @@ def import_consumers_csv(request):
 
     for row_num, row in enumerate(all_rows, start=2):
         # Map values safely (handle missing columns in d)
-        d = {k: (clean_val(row.get(col_map[k])) if col_map[k] else '') for k in required_keys}
-        d['middle_name'] = clean_val(row.get(col_map.get('middle_name', '')))
-        d['suffix'] = clean_val(row.get(col_map.get('suffix', '')))
-        d['status'] = clean_val(row.get(col_map.get('status', '')), 'active').lower()
-        d['spouse_name'] = clean_val(row.get(col_map.get('spouse_name', '')))
+        d = {k: (clean_val(row.get(col_map[k])) if col_map[k] else '') for k in expected_keys}
+        
+        # Override defaults for specific fields if they are completely empty
+        if not d['status']: d['status'] = 'active'
+        d['status'] = d['status'].lower()
 
         # Proper casing for names
         first_name  = ' '.join(w.capitalize() for w in d['first_name'].split())
@@ -705,8 +708,8 @@ def import_consumers_csv(request):
             continue
         seen_serials_in_file.add(sn)
 
-        if (first_name.lower(), last_name.lower()) in existing_names:
-            skipped_rows.append(f"Row {row_num}: '{first_name} {last_name}' already exists — skipped.")
+        if (first_name.lower(), last_name.lower(), birth_date) in existing_entities:
+            skipped_rows.append(f"Row {row_num}: '{first_name} {last_name}' with this birth date already exists — skipped.")
             continue
 
         # Validated data
