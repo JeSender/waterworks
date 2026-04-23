@@ -278,11 +278,14 @@ def process_payment(request):
 
         # Create one payment per bill
         last_payment = None
-        for i, bill in enumerate(bills):
-            update_bill_penalty(bill, system_settings, save=True)
+        payments_to_create = []
+        bills_to_update = []
+        
+        for bill in bills:
+            # Note: penalty was already updated in the total_due calculation loop above
             bill_total = bill.total_amount_due
 
-            payment = Payment(
+            payments_to_create.append(Payment(
                 bill=bill,
                 original_bill_amount=bill.total_amount,
                 penalty_amount=bill.effective_penalty,
@@ -290,19 +293,29 @@ def process_payment(request):
                 days_overdue_at_payment=bill.days_overdue,
                 senior_citizen_discount=bill.senior_citizen_discount,
                 amount_paid=bill_total,
-                received_amount=bill_total, # Assuming exact amount for streamlined flow
-                or_number=or_number,       # Manual OR input
+                received_amount=bill_total,
+                or_number=or_number,
                 processed_by=request.user,
                 remarks=remarks,
-            )
-            payment.save()
+            ))
 
             # Mark bill as paid
             bill.status = 'Paid'
             bill.queued_for_payment = False
-            bill.save()
+            bills_to_update.append(bill)
 
-            last_payment = payment
+        # Execute DB operations
+        if payments_to_create:
+            for p in payments_to_create:
+                p.save() # We use save() instead of bulk_create because we need the IDs and Payment.save() has logic
+            
+            # Update bills in bulk for speed
+            from django.db import transaction
+            with transaction.atomic():
+                for b in bills_to_update:
+                    b.save(update_fields=['status', 'queued_for_payment'])
+            
+            last_payment = payments_to_create[-1]
 
         # --- Log the payment activity ---
         if last_payment:
@@ -353,11 +366,13 @@ def process_payment(request):
         consumers = consumers.filter(barangay_id=selected_barangay)
 
     # Build consumer → pending bill map (only queued bills)
+    # OPTIMIZATION: Don't update penalties for EVERY consumer in the list on every load.
+    # The penalty will be updated when the consumer is selected or processed.
     consumer_bills = {}
     for c in consumers:
         bill = c.bills.filter(status='Pending', queued_for_payment=True).order_by('-billing_period').first()
         if bill:
-            update_bill_penalty(bill, system_settings, save=True)
+            # We skip update_bill_penalty(bill, system_settings, save=True) here for speed
             consumer_bills[c.id] = bill
 
     consumers = [c for c in consumers if c.id in consumer_bills]
