@@ -286,6 +286,41 @@ def reconnect_consumer(request, consumer_id):
     return redirect('consumers:consumer_detail', consumer.id)
 
 
+@login_required
+def disconnection_notice_print(request, consumer_id):
+    """
+    Render a printable Disconnection Notice for a consumer.
+    Computes:
+      - disconnect_date  : from UserActivity logs or today's date
+      - overdue_months   : count of Pending (unpaid) bills
+      - pending_bills    : queryset of unpaid bills
+      - total_amount_due : sum of all pending bill totals
+    """
+    consumer = get_object_or_404(Consumer, id=consumer_id)
+
+    # ── Resolve disconnection date from activity log ──────────────────
+    disconnect_event = UserActivity.objects.filter(
+        action='consumer_disconnected',
+        description__icontains=consumer.id_number or consumer.first_name
+    ).order_by('-created_at').first()
+
+    disconnect_date = disconnect_event.created_at if disconnect_event else timezone.now()
+
+    # ── Pending (unpaid) bills ────────────────────────────────────────
+    pending_bills = consumer.bills.filter(status='Pending').order_by('billing_period')
+    overdue_months = pending_bills.count()
+    total_amount_due = sum(b.total_amount_due for b in pending_bills)
+
+    context = {
+        'consumer':         consumer,
+        'disconnect_date':  disconnect_date,
+        'overdue_months':   overdue_months,
+        'pending_bills':    pending_bills,
+        'total_amount_due': total_amount_due,
+        'now':              timezone.now(),
+    }
+    return render(request, 'consumers/disconnection_notice_print.html', context)
+
 
 @login_required
 def delinquent_consumers(request):

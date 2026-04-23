@@ -211,6 +211,15 @@
         </button>
         {% endif %}
         {% endif %}
+
+        <!-- Print Disconnection Notice (visible when disconnected) -->
+        {% if consumer.status == 'disconnected' %}
+        <a href="{% url 'consumers:disconnection_notice_print' consumer.id %}"
+           target="_blank"
+           class="px-4 py-2 bg-dark-700 text-white text-sm font-medium rounded hover:bg-dark-800 transition-colors shadow-sm flex items-center gap-1">
+            <i class="bi bi-printer-fill"></i>&nbsp;Print Disconnection Notice
+        </a>
+        {% endif %}
     </div>
 </div>
 
