@@ -1410,8 +1410,7 @@ class Payment(models.Model):
     or_number = models.CharField(
         max_length=50,
         unique=True,
-        editable=False,
-        help_text="Official Receipt number (auto-generated)"
+        help_text="Official Receipt (OR) Number (Manual Input)"
     )
     payment_date = models.DateTimeField(
         auto_now_add=True,
@@ -1448,10 +1447,14 @@ class Payment(models.Model):
             raise ValidationError("Received amount cannot be less than the amount due.")
 
     def save(self, *args, **kwargs):
+        # Default received_amount to amount_paid if not provided
+        if self.received_amount is None:
+            self.received_amount = self.amount_paid
+
         # Auto-compute change
         self.change = self.received_amount - self.amount_paid
 
-        # Auto-generate OR number if not set (e.g., during initial save)
+        # Auto-generate fallback OR number ONLY if manual input is somehow missing
         if not self.or_number:
             date_str = timezone.now().strftime('%Y%m%d')
             unique_suffix = uuid.uuid4().hex[:6].upper()

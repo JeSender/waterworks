@@ -250,13 +250,11 @@ def process_payment(request):
     if request.method == 'POST':
         selected_consumer_id = request.POST.get('consumer_id')
         bill_ids_raw = request.POST.get('bill_ids', '')
-        received_amount_raw = request.POST.get('received_amount', '0')
+        or_number = request.POST.get('or_number', '').strip()
         remarks = request.POST.get('remarks', '').strip()
 
-        try:
-            received_amount = Decimal(received_amount_raw)
-        except Exception:
-            messages.error(request, "Invalid cash amount entered.")
+        if not or_number:
+            messages.error(request, "Official Receipt (OR) Number is required.")
             return redirect(f"{request.path}?consumer={selected_consumer_id}")
 
         consumer = get_object_or_404(Consumer, id=selected_consumer_id)
@@ -278,23 +276,11 @@ def process_payment(request):
             update_bill_penalty(bill, system_settings, save=True)
             total_due += bill.total_amount_due
 
-        if received_amount < total_due:
-            messages.error(request, f"Cash received (₱{received_amount:.2f}) is less than the amount due (₱{total_due:.2f}).")
-            return redirect(f"{request.path}?consumer={selected_consumer_id}")
-
-        # Create one payment per bill (split received proportionally if multiple bills)
+        # Create one payment per bill
         last_payment = None
         for i, bill in enumerate(bills):
             update_bill_penalty(bill, system_settings, save=True)
             bill_total = bill.total_amount_due
-
-            if i == len(list(bills)) - 1:
-                # Last bill gets the remainder of received amount
-                bill_received = received_amount - sum(
-                    b.total_amount_due for j, b in enumerate(bills) if j < i
-                )
-            else:
-                bill_received = bill_total
 
             payment = Payment(
                 bill=bill,
@@ -304,7 +290,8 @@ def process_payment(request):
                 days_overdue_at_payment=bill.days_overdue,
                 senior_citizen_discount=bill.senior_citizen_discount,
                 amount_paid=bill_total,
-                received_amount=bill_received if i == len(list(bills)) - 1 else bill_total,
+                received_amount=bill_total, # Assuming exact amount for streamlined flow
+                or_number=or_number,       # Manual OR input
                 processed_by=request.user,
                 remarks=remarks,
             )

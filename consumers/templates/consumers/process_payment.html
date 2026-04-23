@@ -371,7 +371,7 @@
                 <div class="bg-gradient-to-r from-success-600 to-success-700 px-6 py-4 flex items-center justify-between">
                     <div>
                         <h3 class="text-sm font-bold text-white flex items-center gap-2">
-                            <i class="bi bi-cash-stack"></i> Cash Transaction
+                            <i class="bi bi-cash-stack"></i> Process Payment
                         </h3>
                         <p class="text-white/70 text-xs mt-0.5">
                             {{ selected_consumer.last_name }}, {{ selected_consumer.first_name }}
@@ -384,51 +384,31 @@
                         </p>
                     </div>
                 </div>
-
-                {# Transaction Body — 3-column grid #}
+                {# Transaction Body — Streamlined OR Input #}
                 <div class="px-6 py-5">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 items-start">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5 items-start">
 
-                        {# Cash Received #}
+                        {# Manual OR Number Input #}
                         <div>
                             <label class="block text-xs font-bold text-dark-600 uppercase tracking-wider mb-2">
-                                <i class="bi bi-cash mr-1 text-success-500"></i>Cash Received
+                                <i class="bi bi-hash mr-1 text-success-500"></i>Official Receipt (OR) Number
                             </label>
                             <div class="relative">
-                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-success-600 font-black text-xl leading-none select-none">₱</span>
-                                <input type="number"
-                                       id="received_amount"
-                                       min="{{ total_due|floatformat:2 }}"
-                                       step="0.01"
-                                       placeholder="0.00"
-                                       class="w-full pl-10 pr-3 py-3.5 text-2xl font-bold border-2 border-success-300 rounded-xl
+                                <span class="absolute left-3.5 top-1/2 -translate-y-1/2 text-dark-400 font-bold select-none">#</span>
+                                <input type="text"
+                                       id="or_number"
+                                       name="or_number"
+                                       required
+                                       placeholder="Enter OR Number"
+                                       class="w-full pl-9 pr-3 py-3.5 text-xl font-bold border-2 border-success-300 rounded-xl
                                               focus:outline-none focus:border-success-500 focus:ring-4 focus:ring-success-100
-                                              bg-white text-dark-900 text-right transition-all"
-                                       oninput="updateChange()">
+                                              bg-white text-dark-900 transition-all uppercase"
+                                       oninput="validateForm()">
                             </div>
-                            <p id="amount-error" class="text-xs text-danger-600 mt-1.5 hidden flex items-center gap-1">
+                            <p id="or-error" class="text-xs text-danger-600 mt-1.5 hidden flex items-center gap-1">
                                 <i class="bi bi-exclamation-circle-fill"></i>
-                                Min: ₱<span id="min-amount">{{ total_due|floatformat:2 }}</span>
+                                OR number is required to proceed.
                             </p>
-
-                            {# Quick Amounts #}
-                            <div class="mt-2.5">
-                                <p class="text-[10px] font-bold text-dark-400 uppercase tracking-wider mb-1.5">Quick Amount</p>
-                                <div class="flex flex-wrap gap-1.5" id="quick-amounts">
-                                    {# JS inserts buttons here #}
-                                </div>
-                            </div>
-                        </div>
-
-                        {# Change #}
-                        <div>
-                            <label class="block text-xs font-bold text-dark-600 uppercase tracking-wider mb-2">
-                                <i class="bi bi-arrow-return-left mr-1 text-info-500"></i>Change
-                            </label>
-                            <div class="bg-success-50 border-2 border-success-200 rounded-xl px-4 py-4 flex flex-col items-center justify-center min-h-[72px]">
-                                <span id="change-display" class="text-3xl font-bold font-mono text-success-600 leading-none">₱0.00</span>
-                                <span class="text-[10px] text-dark-400 mt-1.5 uppercase font-semibold tracking-wide">Amount to Return</span>
-                            </div>
                         </div>
 
                         {# Remarks + Submit #}
@@ -452,8 +432,8 @@
                                     class="w-full py-3.5 bg-success-600 hover:bg-success-700 text-white font-bold text-base rounded-xl
                                            transition-all shadow-md disabled:opacity-40 disabled:cursor-not-allowed
                                            flex items-center justify-center gap-2">
-                                <i class="bi bi-printer-fill text-lg"></i>
-                                Print &amp; Post Receipt
+                                <i class="bi bi-check-circle-fill text-lg"></i>
+                                Mark as Paid
                             </button>
 
                             <a href="{% url 'consumers:process_payment' %}{% if selected_barangay %}?barangay={{ selected_barangay }}{% endif %}"
@@ -627,71 +607,43 @@ function initBillSelection() {
         const hiddenIds = document.getElementById('hidden-bill-ids');
         if (hiddenIds) hiddenIds.value = ids.join(',');
 
-        const recv = document.getElementById('received_amount');
-        if (recv) {
-            recv.min = total.toFixed(2);
-            const minSpan = document.getElementById('min-amount');
-            if (minSpan) minSpan.textContent = total.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-        }
-
         window._totalDue = total;
-        buildQuickAmounts(total);
-        updateChange();
+        validateForm();
     }
 }
 
-// ── Cash / Change calculator ─────────────────────────────────────────────────
-function updateChange() {
-    const received  = parseFloat(document.getElementById('received_amount')?.value) || 0;
-    const due       = window._totalDue;
-    const change    = received - due;
-
-    const changeEl  = document.getElementById('change-display');
+// ── Form Validation ──────────────────────────────────────────────────────────
+function validateForm() {
+    const orInput = document.getElementById('or_number');
     const submitBtn = document.getElementById('submit-btn');
-    const errEl     = document.getElementById('amount-error');
-    const fmt = v => '₱' + v.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    const orError = document.getElementById('or-error');
+    const due = window._totalDue;
 
-    if (changeEl) {
-        changeEl.textContent = fmt(Math.max(change, 0));
-        changeEl.classList.toggle('text-success-600', change >= 0);
-        changeEl.classList.toggle('text-danger-600',  change < 0);
-    }
-    if (submitBtn) submitBtn.disabled = received < due || received === 0;
-    if (errEl)     errEl.classList.toggle('hidden', received >= due || received === 0);
-}
+    const orValue = orInput ? orInput.value.trim() : '';
+    const isValid = orValue.length > 0 && due > 0;
 
-// ── Quick amount presets ─────────────────────────────────────────────────────
-function buildQuickAmounts(due) {
-    const container = document.getElementById('quick-amounts');
-    if (!container || due <= 0) return;
-
-    const seen = new Set();
-    const presets = [];
-    [0, 20, 50, 100, 200, 500].forEach(add => {
-        const v = Math.ceil((due + add) / 10) * 10;
-        if (!seen.has(v) && v >= due) { seen.add(v); presets.push(v); }
-    });
-
-    container.innerHTML = presets.slice(0, 5).map(p =>
-        `<button type="button" onclick="setAmount(${p})"
-                 class="px-3 py-1.5 text-xs font-semibold bg-success-50 hover:bg-success-100
-                        text-success-700 border border-success-200 rounded-lg transition-colors">
-             ₱${p.toLocaleString()}
-         </button>`
-    ).join('');
-}
-
-function setAmount(val) {
-    const inp = document.getElementById('received_amount');
-    if (inp) { inp.value = val.toFixed(2); updateChange(); }
+    if (submitBtn) submitBtn.disabled = !isValid;
+    if (orError) orError.classList.toggle('hidden', orValue.length > 0 || orValue === '');
 }
 
 // ── Submit ────────────────────────────────────────────────────────────────────
 function submitPayment() {
-    const received = document.getElementById('received_amount')?.value || '';
-    const remarks  = document.getElementById('remarks')?.value || '';
-    document.getElementById('hidden-received').value = received;
-    document.getElementById('hidden-remarks').value  = remarks;
+    const orInput = document.getElementById('or_number');
+    const remarks = document.getElementById('remarks')?.value || '';
+    const due = window._totalDue;
+
+    if (!orInput || orInput.value.trim() === '') {
+        const orError = document.getElementById('or-error');
+        if (orError) orError.classList.remove('hidden');
+        return;
+    }
+
+    if (due <= 0) {
+        alert("Please select at least one bill to pay.");
+        return;
+    }
+
+    document.getElementById('hidden-remarks').value = remarks;
     const btn = document.getElementById('submit-btn');
     if (btn) {
         btn.disabled = true;
@@ -703,18 +655,16 @@ function submitPayment() {
 // ── Init ──────────────────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', function () {
     initBillSelection();
-    updateChange();
-    if (window._totalDue > 0) buildQuickAmounts(window._totalDue);
+    validateForm();
 
-    // Auto-focus cash input + Enter key to submit
-    const inp = document.getElementById('received_amount');
-    if (inp) {
-        inp.focus();
-        inp.addEventListener('keydown', function (e) {
+    // Auto-focus OR input + Enter key to submit
+    const orInput = document.getElementById('or_number');
+    if (orInput) {
+        orInput.focus();
+        orInput.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') {
                 e.preventDefault();
-                const v = parseFloat(inp.value) || 0;
-                if (v >= window._totalDue && v > 0) submitPayment();
+                submitPayment();
             }
         });
     }
